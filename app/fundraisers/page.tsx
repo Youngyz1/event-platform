@@ -1,4 +1,4 @@
-import Navbar from "@/components/Navbar";
+
 import FundraiserCard from "@/components/FundraiserCard";
 import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
@@ -11,7 +11,7 @@ export default async function FundraisersPage() {
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950">
-      <Navbar />
+       
 
       <section className="mx-auto max-w-7xl px-6 py-14">
         <div className="mb-10">

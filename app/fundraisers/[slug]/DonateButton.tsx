@@ -11,6 +11,8 @@ export default function DonateButton({
 }) {
   const [amount, setAmount] = useState(25);
   const [custom, setCustom] = useState("");
+  const [donorName, setDonorName] = useState("");
+  const [donorEmail, setDonorEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
   const presets = [10, 25, 50, 100];
@@ -28,6 +30,8 @@ export default function DonateButton({
         amount: finalAmount,
         fundraiserTitle,
         fundraiserSlug,
+        donorName,
+        donorEmail,
       }),
     });
 
@@ -67,6 +71,22 @@ export default function DonateButton({
         value={custom}
         onChange={(e) => { setCustom(e.target.value); setAmount(0); }}
         placeholder="Custom amount ($)"
+        className="w-full border border-zinc-300 rounded-2xl px-5 py-3 outline-none focus:border-green-500"
+      />
+
+      <input
+        type="text"
+        value={donorName}
+        onChange={(e) => setDonorName(e.target.value)}
+        placeholder="Your name (optional)"
+        className="w-full border border-zinc-300 rounded-2xl px-5 py-3 outline-none focus:border-green-500"
+      />
+
+      <input
+        type="email"
+        value={donorEmail}
+        onChange={(e) => setDonorEmail(e.target.value)}
+        placeholder="Email receipt (optional)"
         className="w-full border border-zinc-300 rounded-2xl px-5 py-3 outline-none focus:border-green-500"
       />
 

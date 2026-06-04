@@ -15,7 +15,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<Geocodin
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
       {
         headers: {
-          "User-Agent": "EventPlatform/1.0",
+          "User-Agent": "EventBrithe/1.0",
         },
       }
     );
@@ -63,7 +63,7 @@ export async function searchCity(query: string): Promise<GeocodingResult[]> {
       `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
       {
         headers: {
-          "User-Agent": "EventPlatform/1.0",
+          "User-Agent": "EventBrithe/1.0",
         },
       }
     );

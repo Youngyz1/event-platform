@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import Navbar from "@/components/Navbar";
+
 
 type Organizer = {
   id: string;
@@ -201,7 +201,7 @@ export default function OrganizerProfilePage() {
 
   return (
     <main className="min-h-screen bg-white text-zinc-950">
-      <Navbar />
+       
 
       <section className="border-b border-zinc-200 bg-white">
         <div className="relative h-[300px] w-full overflow-hidden bg-zinc-900 md:h-[360px]">

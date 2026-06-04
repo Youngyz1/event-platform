@@ -1,4 +1,4 @@
-import Navbar from "@/components/Navbar";
+
 import EventCard from "@/components/EventCard";
 import Footer from "@/components/Footer";
 import MapSection from "@/components/MapSection";
@@ -48,6 +48,20 @@ export default async function EventsPage({
     source: "eventbrite";
   };
 
+  type LocalEvent = {
+    id: string;
+    slug: string;
+    title: string;
+    event_date: string | null;
+    city: string | null;
+    banner: string | null;
+    category: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    url: null;
+    source: "local";
+  };
+
   let eventbriteEvents: EventbriteEvent[] = [];
 
   if (location) {
@@ -69,9 +83,9 @@ export default async function EventsPage({
   }
 
   // ── 3. Merge & deduplicate by title ─────────────────────────────────
-  const supabaseNormalized = (supabaseEvents || []).map((e) => ({
+  const supabaseNormalized: LocalEvent[] = (supabaseEvents || []).map((e) => ({
     id: e.id,
-    slug: e.slug,
+    slug: e.slug || e.id,
     title: e.title,
     event_date: e.event_date ?? null,
     city: e.city ?? e.venue ?? null,
@@ -83,7 +97,7 @@ export default async function EventsPage({
     source: "local",
   }));
 
-  const allEvents = [...supabaseNormalized, ...eventbriteEvents];
+  const allEvents: Array<LocalEvent | EventbriteEvent> = [...supabaseNormalized, ...eventbriteEvents];
 
   const hasFilters = !!(query || location || category || date);
   const buildQuery = (extra: Record<string, string>) => {
@@ -98,7 +112,7 @@ export default async function EventsPage({
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950">
-      <Navbar />
+       
 
       <section className="mx-auto max-w-7xl px-6 py-14">
         <div className="mb-8">

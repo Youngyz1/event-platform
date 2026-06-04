@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
+
 import Footer from "@/components/Footer";
 
 export default async function OrganizersDirectoryPage() {
@@ -13,7 +13,7 @@ export default async function OrganizersDirectoryPage() {
   return (
     <main className="min-h-screen bg-zinc-50 text-black flex flex-col justify-between">
       <div>
-        <Navbar />
+         
 
         {/* HERO HEADER */}
         <section className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 text-white py-20 px-6 shadow-md">

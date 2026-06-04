@@ -27,6 +27,8 @@ export default function VerifyTicketPage({ params }: { params: Promise<{ code: s
   const [loading, setLoading] = useState(true);
   const [checking, setChecking] = useState(false);
   const [checkResult, setCheckResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [canCheckIn, setCanCheckIn] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -40,6 +42,8 @@ export default function VerifyTicketPage({ params }: { params: Promise<{ code: s
             setError(data.error);
           } else {
             setOrder(data.order);
+            setCanCheckIn(Boolean(data.can_check_in));
+            setAuthenticated(Boolean(data.authenticated));
           }
           setLoading(false);
         })
@@ -67,7 +71,10 @@ export default function VerifyTicketPage({ params }: { params: Promise<{ code: s
       body: JSON.stringify({ code, action: "checkin" }),
     });
     const data = await res.json();
-    setCheckResult({ success: data.success, message: data.message });
+    setCheckResult({
+      success: Boolean(data.success),
+      message: data.message || data.error || "Could not check in this ticket.",
+    });
     if (data.success && order) {
       setOrder({ ...order, status: "used", checked_in_at: new Date().toISOString() });
     }
@@ -113,7 +120,7 @@ export default function VerifyTicketPage({ params }: { params: Promise<{ code: s
         {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-block bg-orange-500 rounded-2xl px-4 py-2 mb-4">
-            <span className="text-white font-black text-sm tracking-widest">EVENTPLATFORM</span>
+            <span className="text-white font-black text-sm tracking-widest">EVENTBRITHE</span>
           </div>
           <h1 className="text-white text-2xl font-black">Ticket Verification</h1>
           <p className="text-slate-400 text-sm mt-1">Door Staff Portal</p>
@@ -207,7 +214,7 @@ export default function VerifyTicketPage({ params }: { params: Promise<{ code: s
             </div>
 
             {/* Check In Button */}
-            {order.status === "valid" && (
+            {order.status === "valid" && canCheckIn && (
               <div className="px-6 pb-6">
                 {checkResult ? (
                   <div className={`rounded-2xl p-4 text-center font-black ${checkResult.success ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
@@ -222,6 +229,16 @@ export default function VerifyTicketPage({ params }: { params: Promise<{ code: s
                     {checking ? "Checking in..." : "✓ Check In Guest"}
                   </button>
                 )}
+              </div>
+            )}
+
+            {order.status === "valid" && !canCheckIn && (
+              <div className="px-6 pb-6">
+                <div className="rounded-2xl bg-amber-50 p-4 text-center text-sm font-semibold text-amber-800">
+                  {authenticated
+                    ? "Only this event's organizer can check in guests."
+                    : "This ticket is valid. Organizer staff must log in to check in guests."}
+                </div>
               </div>
             )}
 

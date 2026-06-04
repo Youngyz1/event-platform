@@ -179,7 +179,7 @@ async function fetchGoFundMeFundraiser(source: SourceRow) {
   const parsedUrl = new URL(source.source_url);
   const response = await fetch(parsedUrl.toString(), {
     headers: {
-      "User-Agent": "Mozilla/5.0 EventPlatformImporter/1.0",
+      "User-Agent": "Mozilla/5.0 EventBritheImporter/1.0",
       Accept: "text/html,application/xhtml+xml",
     },
     signal: AbortSignal.timeout(12000),

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Navbar from "@/components/Navbar";
+
 import { supabase } from "@/lib/supabase";
 
 type GoFundMeSource = {
@@ -179,7 +179,7 @@ export default function GoFundMeSyncPage() {
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950">
-      <Navbar />
+       
 
       <section className="mx-auto max-w-7xl px-6 py-12">
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">

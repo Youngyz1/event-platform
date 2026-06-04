@@ -1,9 +1,7 @@
 import Link from "next/link";
-import Navbar from "@/components/Navbar";
 import EventCard from "@/components/EventCard";
 import FundraiserCard from "@/components/FundraiserCard";
 import Footer from "@/components/Footer";
-import MapSection from "@/components/MapSection";
 import LocationSearch from "@/components/LocationSearch";
 import NearbyEvents from "@/components/NearbyEvents";
 import { supabase } from "@/lib/supabase";
@@ -35,7 +33,7 @@ const nearbyCities = [
 ];
 
 export default async function HomePage() {
-  const [{ data: events }, { data: fundraisers }, { data: mapEvents }] = await Promise.all([
+  const [{ data: events }, { data: fundraisers }] = await Promise.all([
     supabase
       .from("events")
       .select("*")
@@ -46,17 +44,10 @@ export default async function HomePage() {
       .select("*")
       .order("created_at", { ascending: false })
       .limit(3),
-    supabase
-      .from("events")
-      .select("id, slug, title, latitude, longitude, event_date, city, banner, category")
-      .not("latitude", "is", null)
-      .limit(50),
   ]);
 
   return (
     <main className="min-h-screen bg-white text-black">
-
-      <Navbar />
 
       {/* HERO */}
       <section id="about" className="relative h-[460px] w-full overflow-hidden md:h-[520px]">
@@ -73,7 +64,7 @@ export default async function HomePage() {
             DISCOVER • BOOK • FUNDRAISE
           </p>
           <h1 className="max-w-2xl text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
-            <span className="bg-orange-500/80 px-2">FROM AFROBEATS</span>
+            <span className="bg-orange-500/80 px-2">FROM POP BALLADS</span>
             <br />
             <span className="bg-white/20 px-2">TO TECH SUMMITS</span>
           </h1>
@@ -127,20 +118,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* MAP — EVENTS NEAR YOU */}
-      <section className="max-w-7xl mx-auto px-4 py-10 sm:px-6">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <p className="text-sm font-black uppercase tracking-wide text-blue-600">Discover</p>
-            <h2 className="text-3xl font-black sm:text-4xl mt-1">Events Near You</h2>
-          </div>
-          <Link href="/events" className="text-orange-500 font-semibold hover:text-orange-600 text-sm">
-            View all →
-          </Link>
-        </div>
-        <MapSection events={mapEvents ?? []} height="420px" />
-      </section>
-
       {/* NEARBY EVENTS — location-aware, client-side */}
       <NearbyEvents />
 
@@ -178,8 +155,8 @@ export default async function HomePage() {
       <section className="max-w-7xl mx-auto px-4 py-12 sm:px-6">
         <div className="flex items-center justify-between mb-10">
           <div>
-            <h2 className="text-3xl font-black sm:text-4xl">Community Events</h2>
-            <p className="text-sm text-zinc-500 mt-1">Events created by your community</p>
+            <h2 className="text-3xl font-black sm:text-4xl">Events</h2>
+            <p className="text-sm text-zinc-500 mt-1">Discover events happening near you</p>
           </div>
           <Link href="/events" className="text-orange-500 font-semibold hover:text-orange-600">
             View all

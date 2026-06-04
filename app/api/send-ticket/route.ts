@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const verifyUrl = `${baseUrl}/verify/${qrCode}`;
 
     const { error } = await resend.emails.send({
-      from: "EventPlatform <onboarding@resend.dev>",
+      from: "EventBrithe <onboarding@resend.dev>",
       to: buyerEmail,
       subject: `Your ticket for ${eventTitle} 🎟️`,
       html: `
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
                   <!-- Header -->
                   <tr>
                     <td style="background:linear-gradient(135deg,#f97316,#ea580c);padding:32px;text-align:center;">
-                      <p style="margin:0;color:#fed7aa;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">EventPlatform</p>
+                      <p style="margin:0;color:#fed7aa;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">EventBrithe</p>
                       <h1 style="margin:8px 0 0;color:#ffffff;font-size:28px;font-weight:900;">You're In! 🎉</h1>
                     </td>
                   </tr>
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
                   <tr>
                     <td style="background:#fafafa;border-top:1px solid #f4f4f5;padding:20px 32px;text-align:center;">
                       <p style="margin:0;color:#a1a1aa;font-size:12px;">
-                        EventPlatform · Questions? <a href="mailto:support@yourdomain.com" style="color:#f97316;">Contact support</a>
+                        EventBrithe · Questions? <a href="mailto:support@eventbrithe.com" style="color:#f97316;">Contact support</a>
                       </p>
                     </td>
                   </tr>

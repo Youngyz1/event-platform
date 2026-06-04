@@ -4,8 +4,60 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+async function donationExists(paymentIntentId: string) {
+  const { data, error } = await supabaseAdmin
+    .from("donations")
+    .select("id")
+    .eq("payment_intent_id", paymentIntentId)
+    .single();
+
+  if (error && error.code === "42703") return false;
+  return Boolean(data);
+}
+
+async function insertDonation(session: Stripe.Checkout.Session, meta: Stripe.Metadata) {
+  const fundraiserId = meta.fundraiser_id;
+  const paymentIntentId =
+    typeof session.payment_intent === "string" ? session.payment_intent : session.id;
+
+  if (!fundraiserId) {
+    console.error("Missing fundraiser metadata in donation webhook:", meta);
+    return;
+  }
+
+  if (await donationExists(paymentIntentId)) return;
+
+  const amount = Number(meta.amount) || (session.amount_total ?? 0) / 100;
+  const fullPayload = {
+    fundraiser_id: fundraiserId,
+    donor_name: meta.donor_name || "Anonymous",
+    donor_email: meta.donor_email || session.customer_email || null,
+    amount,
+    currency: session.currency?.toUpperCase() || "USD",
+    status: "succeeded",
+    payment_intent_id: paymentIntentId,
+  };
+
+  const { error } = await supabaseAdmin.from("donations").insert(fullPayload);
+
+  if (!error) return;
+
+  console.error("Donation insert error:", error.message);
+
+  const { error: fallbackError } = await supabaseAdmin.from("donations").insert({
+    fundraiser_id: fullPayload.fundraiser_id,
+    donor_name: fullPayload.donor_name,
+    donor_email: fullPayload.donor_email,
+    amount: fullPayload.amount,
+    status: fullPayload.status,
+    payment_intent_id: fullPayload.payment_intent_id,
+  });
+
+  if (fallbackError) console.error("Donation fallback insert error:", fallbackError.message);
+}
 
 export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
@@ -19,11 +71,7 @@ export async function POST(req: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      sig!,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
+    event = stripe.webhooks.constructEvent(body, sig!, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error("Webhook signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature." }, { status: 400 });
@@ -33,27 +81,22 @@ export async function POST(req: NextRequest) {
     const session = event.data.object as Stripe.Checkout.Session;
     const meta = session.metadata || {};
 
+    if (meta.kind === "donation") {
+      await insertDonation(session, meta);
+      return NextResponse.json({ received: true });
+    }
+
     const {
-      qr_code,
-      event_id,
-      ticket_id,
-      seat_id,
-      seat_label,
-      event_slug,
-      event_title,
-      ticket_name,
-      quantity,
-      buyer_name,
-      buyer_email,
-      total_amount,
+      qr_code, event_id, ticket_id, seat_id, seat_label,
+      event_slug, event_title, quantity, buyer_name, buyer_email, total_amount,
     } = meta;
 
     if (!event_id || !qr_code) {
-      console.error("Missing metadata in webhook:", meta);
-      return NextResponse.json({ error: "Missing metadata." }, { status: 400 });
+      console.error("Missing ticket metadata in webhook:", meta);
+      return NextResponse.json({ received: true });
     }
 
-    // Check order doesn't already exist (idempotency)
+    // Idempotency check
     const { data: existing } = await supabaseAdmin
       .from("ticket_orders")
       .select("id")
@@ -61,8 +104,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!existing) {
-      // Create the confirmed order
-      await supabaseAdmin.from("ticket_orders").insert({
+      const { error: insertError } = await supabaseAdmin.from("ticket_orders").insert({
         event_id,
         ticket_id: ticket_id || null,
         seat_id: seat_id || null,
@@ -75,9 +117,10 @@ export async function POST(req: NextRequest) {
         status: "valid",
         stripe_session_id: session.id,
       });
+
+      if (insertError) console.error("Insert error:", insertError.message);
     }
 
-    // Mark seat as sold
     if (seat_id) {
       await supabaseAdmin
         .from("seats")
@@ -85,7 +128,6 @@ export async function POST(req: NextRequest) {
         .eq("id", seat_id);
     }
 
-    // Send ticket email
     const recipientEmail = buyer_email || session.customer_email;
     if (recipientEmail) {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";

@@ -129,7 +129,7 @@ export default function NearbyEvents() {
         <div className="mb-8">
           <p className="text-sm font-black uppercase tracking-wide text-orange-600">Events</p>
           <h2 className="text-3xl font-black sm:text-4xl mt-1">Events Near You</h2>
-          <p className="text-zinc-500 mt-2">We couldn't detect your location. Pick a city to get started:</p>
+          <p className="text-zinc-500 mt-2">We couldn&apos;t detect your location. Pick a city to get started:</p>
         </div>
         <div className="flex flex-wrap gap-3">
           {suggestedCities.map((c) => (
@@ -161,7 +161,6 @@ export default function NearbyEvents() {
               Events in {city?.split(",")[0]}
             </h2>
             <p className="text-sm text-zinc-500 mt-1">
-              Live listings from Ticketmaster
             </p>
           </div>
           <Link
