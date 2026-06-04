@@ -95,17 +95,17 @@ export default function NearbyEvents() {
   // Skeleton loader
   if (status === "detecting" || (status === "granted" && loading)) {
     return (
-      <section className="max-w-7xl mx-auto px-4 py-12 sm:px-6">
-        <div className="flex items-center justify-between mb-10">
+      <section className="mx-auto max-w-7xl px-3 py-8 sm:px-6 sm:py-12">
+        <div className="mb-6 flex items-center justify-between sm:mb-10">
           <div>
             <div className="h-4 w-24 bg-zinc-200 rounded animate-pulse mb-2" />
             <div className="h-8 w-64 bg-zinc-200 rounded animate-pulse" />
           </div>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="bg-zinc-100 rounded-2xl overflow-hidden animate-pulse">
-              <div className="h-56 bg-zinc-200" />
+              <div className="h-36 bg-zinc-200 sm:h-56" />
               <div className="p-5 space-y-3">
                 <div className="h-3 w-24 bg-zinc-300 rounded" />
                 <div className="h-5 w-full bg-zinc-300 rounded" />
@@ -125,13 +125,13 @@ export default function NearbyEvents() {
       "Houston, TX", "Miami, FL", "Atlanta, GA",
     ];
     return (
-      <section className="max-w-7xl mx-auto px-4 py-12 sm:px-6">
-        <div className="mb-8">
+      <section className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-12">
+        <div className="mb-4 rounded-2xl border border-orange-100 bg-orange-50 p-4 sm:mb-8 sm:bg-transparent sm:p-0 sm:border-0">
           <p className="text-sm font-black uppercase tracking-wide text-orange-600">Events</p>
-          <h2 className="text-3xl font-black sm:text-4xl mt-1">Events Near You</h2>
-          <p className="text-zinc-500 mt-2">We couldn&apos;t detect your location. Pick a city to get started:</p>
+          <h2 className="mt-1 text-2xl font-black sm:text-4xl">More Events Near You</h2>
+          <p className="mt-1 text-sm text-zinc-600 sm:mt-2 sm:text-base">Pick a city to load more nearby listings.</p>
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide sm:flex-wrap sm:gap-3">
           {suggestedCities.map((c) => (
             <button
               key={c}
@@ -140,7 +140,7 @@ export default function NearbyEvents() {
                 setStatus("granted");
                 fetchEvents(c);
               }}
-              className="bg-zinc-100 hover:bg-orange-100 hover:text-orange-600 px-5 py-2.5 rounded-full font-semibold text-sm transition"
+              className="shrink-0 rounded-full bg-zinc-100 px-4 py-2 text-xs font-black transition hover:bg-orange-100 hover:text-orange-600 sm:px-5 sm:py-2.5 sm:text-sm"
             >
               {c}
             </button>
@@ -153,11 +153,11 @@ export default function NearbyEvents() {
   // Events loaded
   if (status === "granted" && !loading) {
     return (
-      <section className="max-w-7xl mx-auto px-4 py-12 sm:px-6">
-        <div className="flex items-center justify-between mb-10">
+      <section className="mx-auto max-w-7xl px-3 py-8 sm:px-6 sm:py-12">
+        <div className="mb-6 flex items-center justify-between sm:mb-10">
           <div>
             <p className="text-sm font-black uppercase tracking-wide text-orange-600">Near You</p>
-            <h2 className="text-3xl font-black sm:text-4xl mt-1">
+            <h2 className="mt-1 text-2xl font-black sm:text-4xl">
               Events in {city?.split(",")[0]}
             </h2>
             <p className="text-sm text-zinc-500 mt-1">
@@ -172,7 +172,7 @@ export default function NearbyEvents() {
         </div>
 
         {events.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
             {events.slice(0, 6).map((e) => (
               <a key={e.id} href={e.url} target="_blank" rel="noopener noreferrer" className="block">
                 <EventCard

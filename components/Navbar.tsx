@@ -172,18 +172,28 @@ export default function Navbar() {
       {menuOpen && (
         <div className="border-t border-zinc-200 bg-white px-4 py-4 md:hidden">
           <form action="/events" className="grid gap-3">
-            <input
-              name="q"
-              type="search"
-              placeholder="Search events"
-              className="rounded-xl border border-zinc-200 px-4 py-3 outline-none focus:border-orange-500"
-            />
-            <input
-              name="location"
-              type="search"
-              placeholder="Location"
-              className="rounded-xl border border-zinc-200 px-4 py-3 outline-none focus:border-orange-500"
-            />
+            <label className="relative block">
+              <input
+                name="q"
+                type="search"
+                placeholder="Search events"
+                className="w-full rounded-xl border border-zinc-200 px-10 py-3 outline-none focus:border-orange-500"
+              />
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+                <SearchIcon />
+              </span>
+            </label>
+            <label className="relative block">
+              <input
+                name="location"
+                type="search"
+                placeholder="Location"
+                className="w-full rounded-xl border border-zinc-200 px-10 py-3 outline-none focus:border-orange-500"
+              />
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+                <LocationIcon />
+              </span>
+            </label>
             <button className="rounded-xl bg-orange-600 px-4 py-3 font-black text-white">
               Search
             </button>

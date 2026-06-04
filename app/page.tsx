@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase";
 
 const categories = [
   { label: "Music",                    icon: "ti-microphone" },
-  { label: "Nightlife",                icon: "ti-disco-ball" },
+  { label: "Nightlife",                icon: "ti-moon-stars" },
   { label: "Performing & Visual Arts", icon: "ti-masks-theater" },
   { label: "Holidays",                 icon: "ti-calendar-event" },
   { label: "Dating",                   icon: "ti-heart" },
@@ -50,7 +50,7 @@ export default async function HomePage() {
     <main className="min-h-screen bg-white text-black">
 
       {/* HERO */}
-      <section id="about" className="relative h-[460px] w-full overflow-hidden md:h-[520px]">
+      <section id="about" className="relative h-[220px] w-full overflow-hidden sm:h-[420px] md:h-[520px]">
         <img
           src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?q=80&w=1600&auto=format&fit=crop"
           alt="concert"
@@ -59,18 +59,18 @@ export default async function HomePage() {
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-black/40" />
-        <div className="relative z-10 flex flex-col justify-center h-full max-w-7xl mx-auto px-6">
-          <p className="inline-block bg-orange-500 text-white text-sm font-bold px-3 py-1 mb-4 w-fit">
+        <div className="relative z-10 flex h-full max-w-7xl flex-col justify-center px-4 sm:mx-auto sm:px-6">
+          <p className="mb-2 inline-block w-fit bg-orange-500 px-2.5 py-1 text-[11px] font-bold text-white sm:mb-4 sm:px-3 sm:text-sm">
             DISCOVER • BOOK • FUNDRAISE
           </p>
-          <h1 className="max-w-2xl text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
+          <h1 className="max-w-xl text-2xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
             <span className="bg-orange-500/80 px-2">FROM POP BALLADS</span>
             <br />
             <span className="bg-white/20 px-2">TO TECH SUMMITS</span>
           </h1>
           <Link
             href="/events"
-            className="mt-8 bg-white text-black px-8 py-4 rounded-full font-bold text-lg w-fit hover:bg-orange-500 hover:text-white transition"
+            className="mt-4 w-fit rounded-full bg-white px-5 py-2.5 text-sm font-black text-black transition hover:bg-orange-500 hover:text-white sm:mt-8 sm:px-8 sm:py-4 sm:text-lg"
           >
             Explore Events
           </Link>
@@ -78,39 +78,56 @@ export default async function HomePage() {
       </section>
 
       {/* SEARCH BAR */}
-      <section className="max-w-7xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
-        <form action="/events" className="bg-white border border-zinc-200 rounded-2xl shadow-sm p-4">
-          <div className="grid gap-4 md:grid-cols-4">
-            <input name="q" type="text" placeholder="Search events"
-              className="border border-zinc-200 rounded-xl px-4 py-3 outline-none focus:border-orange-500" />
-            <input name="location" type="text" placeholder="Location"
-              className="border border-zinc-200 rounded-xl px-4 py-3 outline-none focus:border-orange-500" />
-            <input name="date" type="date"
-              className="border border-zinc-200 rounded-xl px-4 py-3 outline-none focus:border-orange-500" />
-            <button className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-semibold transition">
+      <section className="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-8">
+        <form action="/events" className="rounded-2xl border border-zinc-200 bg-white p-2.5 shadow-sm sm:p-4">
+          <div className="grid gap-2 sm:gap-3 md:grid-cols-[1fr_1fr_180px_140px]">
+            <label className="relative block">
+              <i className="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-lg text-zinc-400" aria-hidden="true" />
+              <input
+                name="q"
+                type="text"
+                placeholder="Search events"
+                className="w-full rounded-xl border border-zinc-200 px-10 py-2.5 text-sm font-semibold outline-none focus:border-orange-500 sm:py-3"
+              />
+            </label>
+            <label className="relative block">
+              <i className="ti ti-map-pin absolute left-3 top-1/2 -translate-y-1/2 text-lg text-zinc-400" aria-hidden="true" />
+              <input
+                name="location"
+                type="text"
+                placeholder="Location"
+                className="w-full rounded-xl border border-zinc-200 px-10 py-2.5 text-sm font-semibold outline-none focus:border-orange-500 sm:py-3"
+              />
+            </label>
+            <label className="relative hidden sm:block">
+              <i className="ti ti-calendar-event absolute left-3 top-1/2 -translate-y-1/2 text-lg text-zinc-400" aria-hidden="true" />
+              <input
+                name="date"
+                type="date"
+                className="w-full rounded-xl border border-zinc-200 px-10 py-3 text-sm font-semibold outline-none focus:border-orange-500"
+              />
+            </label>
+            <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-orange-600 sm:py-3">
+              <i className="ti ti-search text-lg" aria-hidden="true" />
               Search
             </button>
           </div>
         </form>
-
-        <div className="mt-4">
-          <LocationSearch />
-        </div>
       </section>
 
       {/* CATEGORIES */}
-      <section className="max-w-7xl mx-auto px-4 py-8 sm:px-6 sm:py-10">
-        <div className="flex items-start justify-between gap-6 overflow-x-auto pb-4 scrollbar-hide">
+      <section className="mx-auto max-w-7xl px-3 py-3 sm:px-6 sm:py-10">
+        <div className="flex items-start gap-4 overflow-x-auto pb-3 scrollbar-hide sm:justify-between sm:gap-6">
           {categories.map(({ label, icon }) => (
             <Link
               href={`/events?category=${encodeURIComponent(label)}`}
               key={label}
-              className="flex flex-col items-center gap-3 min-w-[100px] group"
+              className="group flex min-w-[70px] flex-col items-center gap-2 sm:min-w-[100px] sm:gap-3"
             >
-              <div className="w-24 h-24 rounded-full border border-zinc-200 bg-white flex items-center justify-center group-hover:border-orange-400 group-hover:bg-orange-50 transition">
-                <i className={`ti ${icon} text-3xl text-zinc-500 group-hover:text-orange-500 transition`} aria-hidden="true" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-zinc-200 bg-white transition group-hover:border-orange-400 group-hover:bg-orange-50 sm:h-24 sm:w-24">
+                <i className={`ti ${icon} text-2xl text-zinc-500 transition group-hover:text-orange-500 sm:text-3xl`} aria-hidden="true" />
               </div>
-              <span className="text-sm font-semibold text-center text-zinc-700 group-hover:text-orange-500 transition leading-tight">
+              <span className="max-w-[82px] text-center text-[11px] font-black leading-tight text-zinc-700 transition group-hover:text-orange-500 sm:text-sm">
                 {label}
               </span>
             </Link>
@@ -118,53 +135,21 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* NEARBY EVENTS — location-aware, client-side */}
-      <NearbyEvents />
-
-      {/* ACTIVE FUNDRAISERS */}
-      <section className="max-w-7xl mx-auto px-4 py-14 sm:px-6 sm:py-20">
-        <div className="flex items-center justify-between mb-10">
-          <h2 className="text-3xl font-black sm:text-4xl">Active Fundraisers</h2>
-          <Link href="/fundraisers" className="text-green-600 font-semibold hover:text-green-700">
-            View all
-          </Link>
-        </div>
-
-        {fundraisers && fundraisers.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {fundraisers.map((f) => (
-              <FundraiserCard
-                key={f.id}
-                slug={f.slug}
-                title={f.title}
-                raised={f.raised ?? 0}
-                goal={f.goal ?? 0}
-                image={f.banner || "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1200&auto=format&fit=crop"}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="text-zinc-500">
-            No fundraisers yet.{" "}
-            <a href="/create-fundraiser" className="text-green-600 font-semibold">Start one.</a>
-          </p>
-        )}
-      </section>
-
       {/* COMMUNITY EVENTS — your own Supabase events */}
-      <section className="max-w-7xl mx-auto px-4 py-12 sm:px-6">
-        <div className="flex items-center justify-between mb-10">
+      <section className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-12">
+        <div className="mb-5 flex items-center justify-between sm:mb-10">
           <div>
-            <h2 className="text-3xl font-black sm:text-4xl">Events</h2>
+            <p className="mb-1 text-xs font-black uppercase tracking-wide text-orange-600 sm:text-sm">Events</p>
+            <h2 className="text-2xl font-black sm:text-4xl">Events Near You</h2>
             <p className="text-sm text-zinc-500 mt-1">Discover events happening near you</p>
           </div>
-          <Link href="/events" className="text-orange-500 font-semibold hover:text-orange-600">
+          <Link href="/events" className="shrink-0 text-sm font-black text-orange-500 hover:text-orange-600 sm:text-base">
             View all
           </Link>
         </div>
 
         {events && events.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
             {events.map((e) => (
               <EventCard
                 key={e.id}
@@ -184,6 +169,43 @@ export default async function HomePage() {
           <p className="text-zinc-500">
             No events yet.{" "}
             <a href="/create-event" className="text-orange-500 font-semibold">Create one.</a>
+          </p>
+        )}
+      </section>
+
+      <section className="mx-auto max-w-7xl px-3 py-2 sm:px-6 sm:py-8">
+        <LocationSearch />
+      </section>
+
+      {/* NEARBY EVENTS — location-aware, client-side */}
+      <NearbyEvents />
+
+      {/* ACTIVE FUNDRAISERS */}
+      <section className="mx-auto max-w-7xl px-3 py-10 sm:px-6 sm:py-20">
+        <div className="mb-6 flex items-center justify-between sm:mb-10">
+          <h2 className="text-2xl font-black sm:text-4xl">Active Fundraisers</h2>
+          <Link href="/fundraisers" className="text-sm font-black text-green-600 hover:text-green-700 sm:text-base">
+            View all
+          </Link>
+        </div>
+
+        {fundraisers && fundraisers.length > 0 ? (
+          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+            {fundraisers.map((f) => (
+              <FundraiserCard
+                key={f.id}
+                slug={f.slug}
+                title={f.title}
+                raised={f.raised ?? 0}
+                goal={f.goal ?? 0}
+                image={f.banner || "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1200&auto=format&fit=crop"}
+              />
+            ))}
+          </div>
+        ) : (
+          <p className="text-zinc-500">
+            No fundraisers yet.{" "}
+            <a href="/create-fundraiser" className="font-semibold text-green-600">Start one.</a>
           </p>
         )}
       </section>

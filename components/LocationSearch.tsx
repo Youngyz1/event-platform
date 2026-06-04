@@ -19,7 +19,7 @@ export default function LocationSearch() {
           const response = await fetch(`/api/geocode?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
           if (response.ok) { const data = await response.json(); setUserLocation(data); setLocationStatus('granted'); }
           else setLocationStatus('denied');
-        } catch (e) { setLocationStatus('denied'); }
+        } catch { setLocationStatus('denied'); }
       },
       () => setLocationStatus('denied'),
       { timeout: 10000 }
@@ -47,56 +47,64 @@ export default function LocationSearch() {
   
 
   return (
-    <div className='space-y-4'>
+    <div className="relative space-y-3">
       {locationStatus === 'granted' && userLocation && (
-        <div className='bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between'>
-          <div className='flex items-center gap-3'>
-            <span className='text-2xl'>📍</span>
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-100 bg-blue-50 px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <i className="ti ti-map-pin text-lg text-blue-600" aria-hidden="true" />
             <div>
-              <p className='text-sm text-blue-600 font-semibold'>Your current location</p>
-              <p className='font-bold'>{userLocation.city}, {userLocation.state}</p>
+              <p className="text-xs font-black text-blue-600">Your location</p>
+              <p className="truncate text-sm font-bold">{userLocation.city}, {userLocation.state}</p>
             </div>
           </div>
           <button
             onClick={() => router.push(`/events?location=${encodeURIComponent(userLocation.city)}`)}
-            className='bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-sm'
+            className="shrink-0 rounded-lg bg-blue-600 px-3 py-2 text-xs font-black text-white"
           >
-            Find Events
+            Find
           </button>
         </div>
       )}
       {locationStatus === 'loading' && (
-        <div className='bg-zinc-50 border border-zinc-200 rounded-xl p-4'>Detecting location...</div>
+        <div className="rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-semibold text-zinc-500">
+          Detecting location...
+        </div>
       )}
       {locationStatus === 'denied' && (
-        <div className='bg-zinc-50 border border-zinc-200 rounded-xl p-4'>Enable location to find events near you</div>
+        <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-semibold text-zinc-600">
+          <i className="ti ti-current-location text-base text-orange-600" aria-hidden="true" />
+          Enable location or pick a city.
+        </div>
       )}
-      <input
-        type='text'
-        value={searchQuery}
-        onChange={e => setSearchQuery(e.target.value)}
-        placeholder='Search city'
-        className='w-full border border-zinc-200 rounded-xl px-4 py-3'
-      />
+      <div className="relative">
+        <i className="ti ti-map-pin-search absolute left-3 top-1/2 -translate-y-1/2 text-lg text-zinc-400" aria-hidden="true" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Search city"
+          className="w-full rounded-xl border border-zinc-200 px-10 py-3 text-sm font-semibold outline-none focus:border-orange-500"
+        />
+      </div>
       {cityResults.length > 0 && (
-        <div className='absolute bg-white border shadow-lg z-50'>
+        <div className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-lg">
           {cityResults.map((c, i) => (
             <button
               key={i}
               onClick={() => router.push(`/events?location=${encodeURIComponent(c.city)}`)}
-              className='block w-full text-left p-3'
+              className="block w-full px-4 py-3 text-left text-sm font-bold hover:bg-orange-50"
             >
               {c.city}
             </button>
           ))}
         </div>
       )}
-      <div className='flex gap-2 flex-wrap'>
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {['New York', 'Los Angeles', 'Chicago', 'Miami', 'Boston'].map(city => (
           <button
             key={city}
             onClick={() => router.push(`/events?location=${encodeURIComponent(city)}`)}
-            className='bg-zinc-100 px-4 py-2 rounded-full text-sm'
+            className="shrink-0 rounded-full bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-800 hover:bg-orange-100 hover:text-orange-700"
           >
             {city}
           </button>
