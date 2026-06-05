@@ -30,11 +30,13 @@ export default function EventMap({ events, userLat, userLng, height = "420px" }:
   const mappableEvents = events.filter((e) => e.latitude && e.longitude);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!mapRef.current || mapInstanceRef.current) return;
 
     // Dynamically import Leaflet (client-side only, CSS loaded via globals.css)
     import("leaflet").then((L) => {
-      if (!mapRef.current || mapInstanceRef.current) return;
+      if (cancelled || !mapRef.current || mapInstanceRef.current) return;
 
       // Default center: New Jersey if no user location
       const defaultLat = userLat ?? 40.0583;
@@ -88,6 +90,7 @@ export default function EventMap({ events, userLat, userLng, height = "420px" }:
         marker.addTo(map);
 
         marker.on("click", () => {
+          if (cancelled) return;
           setActiveEvent(event);
         });
 
@@ -109,11 +112,17 @@ export default function EventMap({ events, userLat, userLng, height = "420px" }:
         `);
       });
 
+      if (cancelled) {
+        map.remove();
+        return;
+      }
+
       mapInstanceRef.current = map;
       setMapReady(true);
     });
 
     return () => {
+      cancelled = true;
       if (mapInstanceRef.current) {
         (mapInstanceRef.current as { remove: () => void }).remove();
         mapInstanceRef.current = null;

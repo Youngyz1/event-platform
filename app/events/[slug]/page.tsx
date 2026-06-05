@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import TicketCheckout from "./TicketCheckout";
 import VenueMapClient from "@/components/VenueMapClient";
+import CommentsSection from "@/components/CommentsSection";
 
 function paragraphs(value: string | null | undefined) {
   return (value || "")
@@ -229,6 +230,15 @@ export default async function EventPage({
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div className="mt-12">
+              <CommentsSection
+                targetType="event"
+                targetId={event.id}
+                title="Event Comments"
+                accent="orange"
+              />
             </div>
 
             {/* Venue Map */}

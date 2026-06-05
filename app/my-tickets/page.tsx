@@ -89,7 +89,7 @@ export default function MyTicketsPage() {
           <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-zinc-300">
             <p className="text-5xl mb-4">🎟️</p>
             <h2 className="text-2xl font-black">No tickets yet</h2>
-            <p className="text-zinc-500 mt-2">When you buy tickets they'll appear here.</p>
+            <p className="text-zinc-500 mt-2">When you buy tickets they&apos;ll appear here.</p>
             <Link
               href="/events"
               className="mt-6 inline-block bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold transition"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 
 const EventMap = dynamic(() => import("@/components/EventMap"), { ssr: false });
@@ -26,27 +26,42 @@ export default function MapSection({ events, height }: Props) {
   const [userLat, setUserLat] = useState<number | null>(null);
   const [userLng, setUserLng] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "granted" | "denied">("idle");
+  const mountedRef = useRef(false);
 
   function requestLocation() {
     if (!navigator.geolocation) {
+      if (!mountedRef.current) return;
       setLocationStatus("denied");
       return;
     }
+    if (!mountedRef.current) return;
     setLocationStatus("loading");
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        if (!mountedRef.current) return;
         setUserLat(pos.coords.latitude);
         setUserLng(pos.coords.longitude);
         setLocationStatus("granted");
       },
-      () => setLocationStatus("denied"),
+      () => {
+        if (!mountedRef.current) return;
+        setLocationStatus("denied");
+      },
       { timeout: 8000 }
     );
   }
 
   // Auto-request on mount
   useEffect(() => {
-    requestLocation();
+    mountedRef.current = true;
+    const timeout = window.setTimeout(() => {
+      requestLocation();
+    }, 0);
+
+    return () => {
+      mountedRef.current = false;
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   return (

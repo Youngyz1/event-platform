@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import DonateButton from "./DonateButton";
+import CommentsSection from "@/components/CommentsSection";
 
 function paragraphs(value: string | null | undefined) {
   return (value || "")
@@ -199,13 +200,12 @@ export default async function FundraiserPage({
               </div>
             </div>
 
-            <div className="rounded-3xl border border-green-200 bg-green-50 p-8">
-              <p className="text-sm font-black uppercase tracking-wide text-green-700">Success Story</p>
-              <h2 className="mt-2 text-3xl font-black">What success looks like</h2>
-              <p className="mt-4 text-lg leading-8 text-green-950">
-                Success means this campaign reaches enough supporters to close the remaining gap, give the organizer room to act, and show the community that people are willing to stand behind the cause.
-              </p>
-            </div>
+            <CommentsSection
+              targetType="fundraiser"
+              targetId={fundraiser.id}
+              title="Comments"
+              accent="green"
+            />
 
           </div>
 

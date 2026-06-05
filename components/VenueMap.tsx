@@ -16,10 +16,12 @@ export default function VenueMap({ lat, lng, title, venue, city }: Props) {
   const [mapReady, setMapReady] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (!mapRef.current || mapInstanceRef.current) return;
 
     import("leaflet").then((L) => {
-      if (!mapRef.current || mapInstanceRef.current) return;
+      if (cancelled || !mapRef.current || mapInstanceRef.current) return;
 
       const map = L.map(mapRef.current, {
         center: [lat, lng],
@@ -63,11 +65,17 @@ export default function VenueMap({ lat, lng, title, venue, city }: Props) {
         `, { maxWidth: 240 })
         .openPopup();
 
+      if (cancelled) {
+        map.remove();
+        return;
+      }
+
       mapInstanceRef.current = map;
       setMapReady(true);
     });
 
     return () => {
+      cancelled = true;
       if (mapInstanceRef.current) {
         (mapInstanceRef.current as { remove: () => void }).remove();
         mapInstanceRef.current = null;

@@ -57,7 +57,7 @@ export default function TicketCheckout({
   const [venueLayout, setVenueLayout] = useState<VenueLayout | null>(null);
   const [allSeats, setAllSeats] = useState<SeatData[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<SeatData[]>([]);
-  const [loadingSeats, setLoadingSeats] = useState(false);
+  const [loadingSeats, setLoadingSeats] = useState(true);
   const [seatMapAvailable, setSeatMapAvailable] = useState(false);
 
   // Buyer info
@@ -66,7 +66,6 @@ export default function TicketCheckout({
 
   useEffect(() => {
     if (!event.id) return;
-    setLoadingSeats(true);
     fetch(`/api/seats?event_id=${event.id}`)
       .then((r) => r.json())
       .then((data) => {

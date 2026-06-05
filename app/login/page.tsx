@@ -24,13 +24,20 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const { error: loginError } = await supabase.auth.signInWithPassword({
+    const { data, error: loginError } = await supabase.auth.signInWithPassword({
       email: form.email,
       password: form.password,
     });
 
     if (loginError) {
       setError(loginError.message);
+      setLoading(false);
+      return;
+    }
+
+    if (data.user && !data.user.email_confirmed_at) {
+      await supabase.auth.signOut();
+      setError("Please verify your email before logging in.");
       setLoading(false);
       return;
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import EventCard from "@/components/EventCard";
 import Link from "next/link";
 
@@ -22,24 +22,37 @@ export default function NearbyEvents() {
   const [city, setCity] = useState<string | null>(null);
   const [status, setStatus] = useState<LocationStatus>("idle");
   const [loading, setLoading] = useState(false);
+  const mountedRef = useRef(false);
 
   useEffect(() => {
-    detectAndFetch();
+    mountedRef.current = true;
+    const timeout = window.setTimeout(() => {
+      detectAndFetch();
+    }, 0);
+
+    return () => {
+      mountedRef.current = false;
+      window.clearTimeout(timeout);
+    };
   }, []);
 
   async function detectAndFetch() {
+    if (!mountedRef.current) return;
     setStatus("detecting");
 
     // Step 1 — try browser geolocation
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (pos) => {
+          if (!mountedRef.current) return;
           try {
             const res = await fetch(
               `/api/geocode?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`
             );
+            if (!mountedRef.current) return;
             if (res.ok) {
               const data = await res.json();
+              if (!mountedRef.current) return;
               const detectedCity = `${data.city}, ${data.state}`;
               setCity(detectedCity);
               setStatus("granted");
@@ -60,10 +73,13 @@ export default function NearbyEvents() {
   }
 
   async function fallbackToIP() {
+    if (!mountedRef.current) return;
     try {
       // ip-api.com is free, no key needed
       const res = await fetch("http://ip-api.com/json/?fields=city,regionName,status");
+      if (!mountedRef.current) return;
       const data = await res.json();
+      if (!mountedRef.current) return;
       if (data.status === "success" && data.city) {
         const detectedCity = `${data.city}, ${data.regionName}`;
         setCity(detectedCity);
@@ -73,22 +89,25 @@ export default function NearbyEvents() {
         setStatus("denied");
       }
     } catch {
-      setStatus("denied");
+      if (mountedRef.current) setStatus("denied");
     }
   }
 
   async function fetchEvents(location: string) {
+    if (!mountedRef.current) return;
     setLoading(true);
     try {
       const res = await fetch(
         `/api/eventbrite?location=${encodeURIComponent(location)}`
       );
+      if (!mountedRef.current) return;
       const data = await res.json();
+      if (!mountedRef.current) return;
       setEvents(data.events || []);
     } catch {
-      setEvents([]);
+      if (mountedRef.current) setEvents([]);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   }
 

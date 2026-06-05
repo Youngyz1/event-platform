@@ -1,14 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
   const [form, setForm] = useState({
     email: "",
@@ -23,6 +22,7 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSuccess(false);
 
     if (form.password !== form.confirmPassword) {
       setError("Passwords do not match.");
@@ -31,9 +31,17 @@ export default function SignupPage() {
 
     setLoading(true);
 
+    const emailRedirectTo =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/login`
+        : undefined;
+
     const { error: signupError } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
+      options: {
+        emailRedirectTo,
+      },
     });
 
     if (signupError) {
@@ -42,7 +50,9 @@ export default function SignupPage() {
       return;
     }
 
-    router.push("/");
+    await supabase.auth.signOut();
+    setSuccess(true);
+    setLoading(false);
   }
 
   return (
@@ -55,6 +65,12 @@ export default function SignupPage() {
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-5 py-4 rounded-2xl text-sm">
             {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm text-green-800">
+            Account created. Check your email and confirm your account before logging in.
           </div>
         )}
 

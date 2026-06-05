@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LocationSearch() {
@@ -9,39 +9,64 @@ export default function LocationSearch() {
   const [locationStatus, setLocationStatus] = useState('idle');
   const [searchQuery, setSearchQuery] = useState('');
   const [cityResults, setCityResults] = useState<{ city: string }[]>([]);
+  const mountedRef = useRef(false);
 
   const detectLocation = () => {
+    if (!mountedRef.current) return;
     if (!navigator.geolocation) { setLocationStatus('denied'); return; }
     setLocationStatus('loading');
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        if (!mountedRef.current) return;
         try {
           const response = await fetch(`/api/geocode?lat=${pos.coords.latitude}&lng=${pos.coords.longitude}`);
-          if (response.ok) { const data = await response.json(); setUserLocation(data); setLocationStatus('granted'); }
+          if (!mountedRef.current) return;
+          if (response.ok) {
+            const data = await response.json();
+            if (!mountedRef.current) return;
+            setUserLocation(data);
+            setLocationStatus('granted');
+          }
           else setLocationStatus('denied');
-        } catch { setLocationStatus('denied'); }
+        } catch {
+          if (mountedRef.current) setLocationStatus('denied');
+        }
       },
-      () => setLocationStatus('denied'),
+      () => {
+        if (mountedRef.current) setLocationStatus('denied');
+      },
       { timeout: 10000 }
     );
   };
 
   useEffect(() => {
+    mountedRef.current = true;
     // Defer calling detectLocation to avoid synchronous setState inside the effect
     const t = setTimeout(() => detectLocation(), 0);
-    return () => clearTimeout(t);
+    return () => {
+      mountedRef.current = false;
+      clearTimeout(t);
+    };
   }, []);
 
   useEffect(() => {
+    let active = true;
+
     const searchCities = async () => {
       if (searchQuery.length < 2) { setCityResults([]); return; }
       try {
         const response = await fetch(`/api/geocode?q=${encodeURIComponent(searchQuery)}`);
-        if (response.ok) { const results = await response.json(); setCityResults(results); }
+        if (response.ok) {
+          const results = await response.json();
+          if (active) setCityResults(results);
+        }
       } catch (e) { console.error(e); }
     };
     const debounce = setTimeout(searchCities, 300);
-    return () => clearTimeout(debounce);
+    return () => {
+      active = false;
+      clearTimeout(debounce);
+    };
   }, [searchQuery]);
 
   
