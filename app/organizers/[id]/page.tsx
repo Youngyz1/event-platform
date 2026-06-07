@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
 
 type Organizer = {
@@ -16,6 +17,7 @@ type Organizer = {
   twitter: string | null;
   website: string | null;
   user_id: string;
+  status: string | null;
 };
 
 type Event = {
@@ -239,8 +241,9 @@ export default function OrganizerProfilePage() {
                 <p className="mb-3 text-sm font-black uppercase tracking-wide text-orange-600">
                   Organizer
                 </p>
-                <h1 className="text-4xl font-black leading-tight text-zinc-950 md:text-5xl">
+                <h1 className="inline-flex flex-wrap items-center gap-3 text-4xl font-black leading-tight text-zinc-950 md:text-5xl">
                   {organizer.name}
+                  <VerifiedBadge verified={organizer.status === 'verified'} />
                 </h1>
 
                 <div className="mt-8 grid max-w-2xl grid-cols-2 gap-y-6 sm:grid-cols-4">

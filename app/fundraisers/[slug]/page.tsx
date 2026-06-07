@@ -2,6 +2,8 @@ import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import DonateButton from "./DonateButton";
 import CommentsSection from "@/components/CommentsSection";
+import { recordDonationFromStripeSessionId } from "@/lib/donations";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
 function paragraphs(value: string | null | undefined) {
   return (value || "")
@@ -12,10 +14,17 @@ function paragraphs(value: string | null | undefined) {
 
 export default async function FundraiserPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ success?: string; session_id?: string }>;
 }) {
   const { slug } = await params;
+  const query = searchParams ? await searchParams : {};
+
+  if (query.success === "true" && query.session_id) {
+    await recordDonationFromStripeSessionId(query.session_id);
+  }
 
   const { data: fundraiser } = await supabase
     .from("fundraisers")
@@ -218,7 +227,10 @@ export default async function FundraiserPage({
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-full bg-green-500" />
                   <div>
-                    <h3 className="font-bold text-xl">{fundraiser.organizer}</h3>
+                    <h3 className="inline-flex items-center gap-2 font-bold text-xl">
+                      {fundraiser.organizer}
+                      <VerifiedBadge verified={false} />
+                    </h3>
                     <p className="text-zinc-500">Campaign organizer</p>
                   </div>
                 </div>

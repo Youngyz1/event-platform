@@ -1,63 +1,13 @@
 import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { recordDonationFromSession } from "@/lib/donations";
 
+// Service role: bypasses RLS — admin operations only
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
-async function donationExists(paymentIntentId: string) {
-  const { data, error } = await supabaseAdmin
-    .from("donations")
-    .select("id")
-    .eq("payment_intent_id", paymentIntentId)
-    .single();
-
-  if (error && error.code === "42703") return false;
-  return Boolean(data);
-}
-
-async function insertDonation(session: Stripe.Checkout.Session, meta: Stripe.Metadata) {
-  const fundraiserId = meta.fundraiser_id;
-  const paymentIntentId =
-    typeof session.payment_intent === "string" ? session.payment_intent : session.id;
-
-  if (!fundraiserId) {
-    console.error("Missing fundraiser metadata in donation webhook:", meta);
-    return;
-  }
-
-  if (await donationExists(paymentIntentId)) return;
-
-  const amount = Number(meta.amount) || (session.amount_total ?? 0) / 100;
-  const fullPayload = {
-    fundraiser_id: fundraiserId,
-    donor_name: meta.donor_name || "Anonymous",
-    donor_email: meta.donor_email || session.customer_email || null,
-    amount,
-    currency: session.currency?.toUpperCase() || "USD",
-    status: "succeeded",
-    payment_intent_id: paymentIntentId,
-  };
-
-  const { error } = await supabaseAdmin.from("donations").insert(fullPayload);
-
-  if (!error) return;
-
-  console.error("Donation insert error:", error.message);
-
-  const { error: fallbackError } = await supabaseAdmin.from("donations").insert({
-    fundraiser_id: fullPayload.fundraiser_id,
-    donor_name: fullPayload.donor_name,
-    donor_email: fullPayload.donor_email,
-    amount: fullPayload.amount,
-    status: fullPayload.status,
-    payment_intent_id: fullPayload.payment_intent_id,
-  });
-
-  if (fallbackError) console.error("Donation fallback insert error:", fallbackError.message);
-}
 
 export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
@@ -82,7 +32,7 @@ export async function POST(req: NextRequest) {
     const meta = session.metadata || {};
 
     if (meta.kind === "donation") {
-      await insertDonation(session, meta);
+      await recordDonationFromSession(session);
       return NextResponse.json({ received: true });
     }
 

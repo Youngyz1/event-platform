@@ -1,8 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+
+import {
+  CreatorField,
+  CreatorPanel,
+  CreatorWorkspace,
+  greenInputClass,
+} from "@/components/CreatorWorkspace";
 import { supabase } from "@/lib/supabase";
+
+const FUNDRAISER_STEPS = [
+  { label: "Fundraiser Details" },
+  { label: "Goal & Story" },
+  { label: "Settings" },
+  { label: "Review & Publish" },
+];
+
+const campaignCategories = ["Charity", "Medical", "Education", "Church", "Community Projects"];
 
 function generateSlug(title: string) {
   return title
@@ -12,57 +29,90 @@ function generateSlug(title: string) {
     .replace(/\s+/g, "-");
 }
 
+function money(value: string | number) {
+  return `$${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
+
 export default function CreateFundraiserPage() {
   const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [checking, setChecking] = useState(true);
+  const [email, setEmail] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState("");
+  const [visibility, setVisibility] = useState("public");
 
   const [form, setForm] = useState({
     title: "",
+    short_description: "",
     story: "",
     goal: "",
     raised: "",
     organizer: "",
     banner: "",
+    category: "Charity",
+    tags: "",
   });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) {
         router.push("/login");
-      } else {
-        setChecking(false);
+        return;
       }
+      setEmail(data.session.user.email || "");
+      setChecking(false);
     });
   }, [router]);
 
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const progress = useMemo(() => {
+    const goal = Number(form.goal || 0);
+    const raised = Number(form.raised || 0);
+    return goal ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
+  }, [form.goal, form.raised]);
+
+  function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+    setNotice("");
+    setForm({ ...form, [event.target.name]: event.target.value });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function saveDraft() {
+    localStorage.setItem("fundraiser-draft", JSON.stringify({ form, visibility }));
+    setNotice("Draft saved on this device.");
+  }
+
+  function nextStep() {
+    setCurrentStep((step) => Math.min(step + 1, FUNDRAISER_STEPS.length - 1));
+  }
+
+  function previousStep() {
+    setCurrentStep((step) => Math.max(step - 1, 0));
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     setLoading(true);
     setError("");
+    setNotice("");
 
     const slug = generateSlug(form.title);
     const { data: { session } } = await supabase.auth.getSession();
 
-    // Upload video if selected
+    if (!session) {
+      router.push("/login");
+      return;
+    }
+
     let video_url = null;
     if (videoFile) {
       setUploadProgress("Uploading video...");
       const ext = videoFile.name.split(".").pop();
       const fileName = `${slug}-${Date.now()}.${ext}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from("videos")
-        .upload(fileName, videoFile);
+      const { error: uploadError } = await supabase.storage.from("videos").upload(fileName, videoFile);
 
       if (uploadError) {
         setError("Video upload failed: " + uploadError.message);
@@ -70,26 +120,24 @@ export default function CreateFundraiserPage() {
         return;
       }
 
-      const { data: urlData } = supabase.storage
-        .from("videos")
-        .getPublicUrl(fileName);
-
+      const { data: urlData } = supabase.storage.from("videos").getPublicUrl(fileName);
       video_url = urlData.publicUrl;
       setUploadProgress("");
     }
 
+    const story = [form.short_description, form.story].filter(Boolean).join("\n\n");
     const { error: insertError } = await supabase
       .from("fundraisers")
       .insert({
         title: form.title,
         slug,
-        story: form.story,
+        story,
         goal: Number(form.goal),
         raised: Number(form.raised) || 0,
         organizer: form.organizer,
         banner: form.banner,
         video_url,
-        user_id: session?.user.id,
+        user_id: session.user.id,
       });
 
     if (insertError) {
@@ -98,155 +146,218 @@ export default function CreateFundraiserPage() {
       return;
     }
 
+    localStorage.removeItem("fundraiser-draft");
     router.push(`/fundraisers/${slug}`);
   }
 
   if (checking) {
     return (
-      <main className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <p className="text-zinc-400 text-lg">Checking access...</p>
+      <main className="flex min-h-screen items-center justify-center bg-zinc-100">
+        <p className="text-lg font-semibold text-zinc-400">Checking access...</p>
       </main>
     );
   }
 
-  return (
-    <main className="min-h-screen bg-zinc-50">
-      <section className="max-w-4xl mx-auto px-6 py-20">
+  const tips = [
+    "Choose a compelling campaign title.",
+    "Set a realistic goal.",
+    "Tell your story with clear impact.",
+    "Add a powerful cover image.",
+  ];
 
-        <div className="mb-12">
-          <p className="text-green-600 font-semibold mb-3">Campaign Dashboard</p>
-          <h1 className="text-5xl font-black">Start a Fundraiser</h1>
-          <p className="text-zinc-600 text-lg mt-4">
-            Launch your campaign and start collecting donations.
-          </p>
+  const aside = (
+    <>
+      <CreatorPanel title="Fundraiser Tips">
+        <div className="space-y-4">
+          {tips.map((tip) => (
+            <p key={tip} className="flex gap-3 text-sm font-semibold text-zinc-600">
+              <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
+              {tip}
+            </p>
+          ))}
         </div>
+      </CreatorPanel>
 
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-5 py-4 rounded-2xl">
-            {error}
+      <CreatorPanel title="Preview">
+        <div className="overflow-hidden rounded-xl bg-zinc-100">
+          {form.banner ? (
+            <div className="h-32 bg-cover bg-center" style={{ backgroundImage: `url(${form.banner})` }} />
+          ) : (
+            <div className="flex h-32 items-center justify-center text-zinc-400">
+              <i className="ti ti-photo text-4xl" aria-hidden="true" />
+            </div>
+          )}
+        </div>
+        <h3 className="mt-4 text-xl font-black">{form.title || "Fundraiser Title"}</h3>
+        <p className="mt-1 text-sm font-medium text-zinc-500">by {form.organizer || "Organizer Name"}</p>
+        <div className="mt-4">
+          <p className="text-sm font-black">{money(form.raised)} raised of {money(form.goal)} goal</p>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-200">
+            <div className="h-full rounded-full bg-emerald-500" style={{ width: `${progress}%` }} />
+          </div>
+          <p className="mt-2 text-xs font-bold text-zinc-500">{progress}% funded</p>
+        </div>
+      </CreatorPanel>
+
+      <CreatorPanel title="Visibility">
+        <fieldset className="space-y-4">
+          {[
+            ["public", "Public", "Anyone can discover and view"],
+            ["private", "Private", "Only people with a link can view"],
+          ].map(([value, label, detail]) => (
+            <label key={value} className="flex cursor-pointer gap-3">
+              <input
+                checked={visibility === value}
+                className="mt-1 accent-emerald-600"
+                name="visibility"
+                onChange={() => setVisibility(value)}
+                type="radio"
+              />
+              <span>
+                <span className="block text-sm font-black">{label}</span>
+                <span className="text-xs font-medium text-zinc-500">{detail}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      </CreatorPanel>
+    </>
+  );
+
+  const footer = (
+    <div className="flex flex-col-reverse justify-between gap-3 sm:flex-row sm:items-center">
+      <Link href="/dashboard" className="rounded-xl border border-zinc-200 px-4 py-2.5 text-center text-sm font-black text-zinc-700 hover:bg-zinc-50">
+        Cancel
+      </Link>
+      <div className="flex gap-3">
+        {currentStep > 0 && (
+          <button onClick={previousStep} type="button" className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-black text-zinc-700 hover:bg-zinc-50">
+            Back
+          </button>
+        )}
+        {currentStep < FUNDRAISER_STEPS.length - 1 ? (
+          <button onClick={nextStep} type="button" className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white hover:bg-emerald-700">
+            Next: {FUNDRAISER_STEPS[currentStep + 1].label}
+          </button>
+        ) : (
+          <button disabled={loading} form="create-fundraiser-form" type="submit" className="rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white hover:bg-emerald-700 disabled:bg-emerald-300">
+            {loading ? uploadProgress || "Launching..." : "Launch Fundraiser"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <CreatorWorkspace
+      active="Fundraisers"
+      accent="green"
+      title="Create Fundraiser"
+      description="Set up your fundraiser and start making an impact."
+      email={email}
+      steps={FUNDRAISER_STEPS}
+      currentStep={currentStep}
+      onStepChange={setCurrentStep}
+      onSaveDraft={saveDraft}
+      aside={aside}
+      footer={footer}
+    >
+      <form id="create-fundraiser-form" onSubmit={handleSubmit} className="space-y-5">
+        {(error || notice) && (
+          <div className={`rounded-2xl border px-5 py-4 text-sm font-bold ${error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+            {error || notice}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        {currentStep === 0 && (
+          <>
+            <CreatorPanel title="Basic Information">
+              <div className="grid gap-5">
+                <CreatorField label="Fundraiser Title">
+                  <input name="title" value={form.title} onChange={handleChange} required type="text" placeholder="Support Education for Underprivileged Children" className={greenInputClass} />
+                </CreatorField>
 
-          <div>
-            <label className="block font-semibold mb-3">Campaign Title</label>
-            <input
-              name="title"
-              value={form.title}
-              onChange={handleChange}
-              required
-              type="text"
-              placeholder="Help Build Community Schools"
-              className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-green-500"
-            />
-          </div>
+                <CreatorField label="Organized By">
+                  <input name="organizer" value={form.organizer} onChange={handleChange} type="text" placeholder="Community Future Initiative" className={greenInputClass} />
+                </CreatorField>
 
-          <div>
-            <label className="block font-semibold mb-3">Organizer Name</label>
-            <input
-              name="organizer"
-              value={form.organizer}
-              onChange={handleChange}
-              type="text"
-              placeholder="Community Future Initiative"
-              className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-green-500"
-            />
-          </div>
+                <CreatorField label="Short Description" hint={`${form.short_description.length}/160`}>
+                  <textarea name="short_description" value={form.short_description} onChange={handleChange} maxLength={160} rows={4} placeholder="A short summary of your fundraiser..." className={greenInputClass} />
+                </CreatorField>
+              </div>
+            </CreatorPanel>
 
-          <div className="grid md:grid-cols-2 gap-5">
-            <div>
-              <label className="block font-semibold mb-3">Fundraising Goal ($)</label>
-              <input
-                name="goal"
-                value={form.goal}
-                onChange={handleChange}
-                required
-                type="number"
-                placeholder="20000"
-                className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-green-500"
-              />
+            <CreatorPanel title="Fundraiser Image">
+              <div className="grid gap-5">
+                <CreatorField label="Cover Image URL" hint="Use a wide image, ideally 1200 x 630.">
+                  <input name="banner" value={form.banner} onChange={handleChange} type="url" placeholder="https://..." className={greenInputClass} />
+                </CreatorField>
+                <CreatorField label="Campaign Video" hint="Optional. MP4, MOV, or AVI uploads are supported by your storage bucket.">
+                  <input type="file" accept="video/*" onChange={(event) => setVideoFile(event.target.files?.[0] || null)} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm font-semibold" />
+                </CreatorField>
+              </div>
+            </CreatorPanel>
+          </>
+        )}
+
+        {currentStep === 1 && (
+          <CreatorPanel title="Goal & Story">
+            <div className="grid gap-5">
+              <div className="grid gap-5 md:grid-cols-2">
+                <CreatorField label="Fundraising Goal">
+                  <input name="goal" value={form.goal} onChange={handleChange} required type="number" min="1" placeholder="20000" className={greenInputClass} />
+                </CreatorField>
+                <CreatorField label="Funds Raised So Far">
+                  <input name="raised" value={form.raised} onChange={handleChange} type="number" min="0" placeholder="0" className={greenInputClass} />
+                </CreatorField>
+              </div>
+              <CreatorField label="Campaign Story">
+                <textarea name="story" value={form.story} onChange={handleChange} required rows={10} placeholder="Tell people why this cause matters, who it helps, and how funds will be used..." className={greenInputClass} />
+              </CreatorField>
             </div>
-            <div>
-              <label className="block font-semibold mb-3">Funds Raised So Far ($)</label>
-              <input
-                name="raised"
-                value={form.raised}
-                onChange={handleChange}
-                type="number"
-                placeholder="0"
-                className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-green-500"
-              />
+          </CreatorPanel>
+        )}
+
+        {currentStep === 2 && (
+          <CreatorPanel title="Settings">
+            <div className="grid gap-5">
+              <CreatorField label="Campaign Category">
+                <select name="category" value={form.category} onChange={handleChange} className={greenInputClass}>
+                  {campaignCategories.map((category) => (
+                    <option key={category}>{category}</option>
+                  ))}
+                </select>
+              </CreatorField>
+              <CreatorField label="Tags" hint="Use commas to separate tags for internal organization.">
+                <input name="tags" value={form.tags} onChange={handleChange} type="text" placeholder="school, community, scholarship" className={greenInputClass} />
+              </CreatorField>
+              <div className="rounded-2xl bg-emerald-50 p-5 text-sm font-semibold leading-6 text-emerald-800 ring-1 ring-emerald-100">
+                Campaign categories and tags are staged for the future marketplace filters. The current publish flow keeps database writes limited to the existing fundraiser fields.
+              </div>
             </div>
-          </div>
+          </CreatorPanel>
+        )}
 
-          <div>
-            <label className="block font-semibold mb-3">Banner Image URL</label>
-            <input
-              name="banner"
-              value={form.banner}
-              onChange={handleChange}
-              type="text"
-              placeholder="https://..."
-              className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-green-500"
-            />
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-3">
-              Campaign Video <span className="text-zinc-400 font-normal">(optional)</span>
-            </label>
-            <div className="border-2 border-dashed border-zinc-300 rounded-2xl p-8 text-center hover:border-green-500 transition">
-              <input
-                type="file"
-                accept="video/*"
-                onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                className="hidden"
-                id="video-upload"
-              />
-              <label htmlFor="video-upload" className="cursor-pointer">
-                {videoFile ? (
-                  <div>
-                    <p className="text-green-600 font-semibold">✓ {videoFile.name}</p>
-                    <p className="text-zinc-400 text-sm mt-1">Click to change</p>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-4xl mb-3">🎥</p>
-                    <p className="font-semibold text-zinc-700">Click to upload a video</p>
-                    <p className="text-zinc-400 text-sm mt-1">MP4, MOV, AVI up to 50MB</p>
-                  </div>
-                )}
-              </label>
+        {currentStep === 3 && (
+          <CreatorPanel title="Review & Publish">
+            <div className="grid gap-4">
+              {[
+                ["Fundraiser", form.title || "Not set"],
+                ["Organizer", form.organizer || "Not set"],
+                ["Category", form.category],
+                ["Goal", money(form.goal)],
+                ["Raised", money(form.raised)],
+                ["Visibility", visibility],
+              ].map(([label, value]) => (
+                <div key={label} className="flex flex-col justify-between gap-1 rounded-xl bg-zinc-50 px-4 py-3 ring-1 ring-zinc-200 sm:flex-row">
+                  <p className="text-sm font-black text-zinc-500">{label}</p>
+                  <p className="text-sm font-bold text-zinc-950">{value}</p>
+                </div>
+              ))}
             </div>
-            {uploadProgress && (
-              <p className="text-green-600 font-semibold mt-3">{uploadProgress}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block font-semibold mb-3">Your Story</label>
-            <textarea
-              name="story"
-              value={form.story}
-              onChange={handleChange}
-              required
-              rows={8}
-              placeholder="Tell people why this cause matters..."
-              className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-green-500"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-green-500 hover:bg-green-600 disabled:bg-green-300 text-white py-5 rounded-2xl font-bold text-lg transition"
-          >
-            {loading ? (uploadProgress || "Launching...") : "Launch Campaign"}
-          </button>
-
-        </form>
-      </section>
-    </main>
+          </CreatorPanel>
+        )}
+      </form>
+    </CreatorWorkspace>
   );
 }

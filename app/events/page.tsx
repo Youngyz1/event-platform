@@ -17,10 +17,12 @@ export default async function EventsPage({
   const date = filters.date?.trim();
   const view = filters.view || "list";
 
-  // ── 1. Supabase events ──────────────────────────────────────────────
+  // FIXED: only show public, approved events on the public listing page
   let eventsQuery = supabase
     .from("events")
     .select("*")
+    .eq("visibility", "public")
+    .eq("status", "approved")
     .order("event_date", { ascending: true });
 
   if (query) eventsQuery = eventsQuery.ilike("title", `%${query}%`);

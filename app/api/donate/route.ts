@@ -3,9 +3,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+
+// Service role: bypasses RLS — admin operations only
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set — server misconfiguration.");
+}
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
 export async function POST(req: NextRequest) {
@@ -48,7 +54,7 @@ export async function POST(req: NextRequest) {
         },
       ],
       mode: "payment",
-      success_url: `${baseUrl}/fundraisers/${fundraiserSlug}?success=true`,
+      success_url: `${baseUrl}/fundraisers/${fundraiserSlug}?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/fundraisers/${fundraiserSlug}?cancelled=true`,
       metadata: {
         kind: "donation",

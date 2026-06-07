@@ -1,12 +1,18 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-// Dynamically import Leaflet map picker (client only)
+import {
+  CreatorField,
+  CreatorPanel,
+  CreatorWorkspace,
+  inputClass,
+} from "@/components/CreatorWorkspace";
+import { supabase } from "@/lib/supabase";
+
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
 
 type Organizer = {
@@ -15,11 +21,19 @@ type Organizer = {
   photo: string | null;
 };
 
+const EVENT_STEPS = [
+  { label: "Event Details" },
+  { label: "Date & Time" },
+  { label: "Location" },
+  { label: "Tickets & Pricing" },
+  { label: "Review & Publish" },
+];
+
 const VENUE_TEMPLATES = [
-  { label: "General Admission (no seats)", value: "none" },
-  { label: "Small Venue — 50 seats (5 rows × 10)", value: "small" },
-  { label: "Medium Hall — 200 seats (10 rows × 20)", value: "medium" },
-  { label: "Large Arena — 500 seats (10 rows × 50)", value: "large" },
+  { label: "General Admission", value: "none", detail: "No assigned seats" },
+  { label: "Small Venue", value: "small", detail: "50 seats, 5 rows x 10" },
+  { label: "Medium Hall", value: "medium", detail: "200 seats, floor and balcony" },
+  { label: "Large Arena", value: "large", detail: "500 seats, floor and VIP" },
 ];
 
 const TEMPLATE_CONFIG: Record<string, { sections: { name: string; rows: number; seatsPerRow: number }[] }> = {
@@ -36,30 +50,45 @@ function generateSlug(title: string) {
     .replace(/\s+/g, "-");
 }
 
+function money(value: string | number) {
+  return `$${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+}
+
 export default function CreateEventPage() {
   const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [checking, setChecking] = useState(true);
+  const [email, setEmail] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState("");
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [venueTemplate, setVenueTemplate] = useState("none");
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [visibility, setVisibility] = useState("public");
 
   const [form, setForm] = useState({
     organizer_id: "",
     title: "",
     category: "Music",
+    event_type: "In person",
     event_date: "",
+    end_date: "",
     venue: "",
     city: "",
     banner: "",
     description: "",
-    ticket1_name: "Regular Ticket",
+    ticket1_name: "Regular",
     ticket1_price: "",
-    ticket2_name: "VIP Ticket",
+    ticket1_quantity: "100",
+    ticket2_name: "VIP",
     ticket2_price: "",
+    ticket2_quantity: "50",
+    ticket3_name: "VVIP",
+    ticket3_price: "",
+    ticket3_quantity: "20",
     latitude: "",
     longitude: "",
   });
@@ -68,67 +97,99 @@ export default function CreateEventPage() {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) {
         router.push("/login");
-      } else {
-        const { data: organizerProfiles, error: organizerError } = await supabase
-          .from("organizers")
-          .select("id, name, photo")
-          .eq("user_id", data.session.user.id)
-          .order("created_at", { ascending: false });
-
-        if (organizerError) setError(organizerError.message);
-
-        const profiles = organizerProfiles ?? [];
-        setOrganizers(profiles);
-        setForm((current) => ({
-          ...current,
-          organizer_id: current.organizer_id || profiles[0]?.id || "",
-        }));
-        setChecking(false);
+        return;
       }
+
+      setEmail(data.session.user.email || "");
+
+      const { data: organizerProfiles, error: organizerError } = await supabase
+        .from("organizers")
+        .select("id, name, photo")
+        .eq("user_id", data.session.user.id)
+        .order("created_at", { ascending: false });
+
+      if (organizerError) setError(organizerError.message);
+
+      const profiles = organizerProfiles ?? [];
+      setOrganizers(profiles);
+      setForm((current) => ({
+        ...current,
+        organizer_id: current.organizer_id || profiles[0]?.id || "",
+      }));
+      setChecking(false);
     });
   }, [router]);
 
+  const organizerName = useMemo(
+    () => organizers.find((organizer) => organizer.id === form.organizer_id)?.name || "Organizer",
+    [form.organizer_id, organizers]
+  );
+
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    setNotice("");
+    setForm({ ...form, [event.target.name]: event.target.value });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function saveDraft() {
+    localStorage.setItem("event-draft", JSON.stringify({ form, venueTemplate, visibility }));
+    setNotice("Draft saved on this device.");
+  }
+
+  function nextStep() {
+    setCurrentStep((step) => Math.min(step + 1, EVENT_STEPS.length - 1));
+  }
+
+  function previousStep() {
+    setCurrentStep((step) => Math.max(step - 1, 0));
+  }
+
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     setLoading(true);
     setError("");
+    setNotice("");
 
     const slug = generateSlug(form.title);
     const { data: { session } } = await supabase.auth.getSession();
 
-    if (!session) { router.push("/login"); return; }
-    if (!form.organizer_id) {
-      setError("Create or select an organizer profile before publishing an event.");
-      setLoading(false); return;
-    }
-    if (!organizers.some((o) => o.id === form.organizer_id)) {
-      setError("Select one of your organizer profiles before publishing an event.");
-      setLoading(false); return;
+    if (!session) {
+      router.push("/login");
+      return;
     }
 
-    // Upload video if selected
+    if (!form.organizer_id) {
+      setError("Create or select an organizer profile before publishing an event.");
+      setLoading(false);
+      return;
+    }
+
+    if (!organizers.some((organizer) => organizer.id === form.organizer_id)) {
+      setError("Select one of your organizer profiles before publishing an event.");
+      setLoading(false);
+      return;
+    }
+
     let video_url = null;
     if (videoFile) {
       setUploadProgress("Uploading video...");
       const ext = videoFile.name.split(".").pop();
       const fileName = `${slug}-${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from("event-videos").upload(fileName, videoFile);
+
       if (uploadError) {
         setError("Video upload failed: " + uploadError.message);
-        setLoading(false); return;
+        setLoading(false);
+        return;
       }
+
       const { data: urlData } = supabase.storage.from("event-videos").getPublicUrl(fileName);
       video_url = urlData.publicUrl;
       setUploadProgress("");
     }
 
-    const { data: event, error: eventError } = await supabase
+    const { data: createdEvent, error: eventError } = await supabase
       .from("events")
       .insert({
         title: form.title,
@@ -144,280 +205,358 @@ export default function CreateEventPage() {
         user_id: session.user.id,
         latitude: form.latitude ? parseFloat(form.latitude) : null,
         longitude: form.longitude ? parseFloat(form.longitude) : null,
+        visibility: visibility || "public",
       })
       .select()
       .single();
 
-    if (eventError) { setError(eventError.message); setLoading(false); return; }
+    if (eventError) {
+      setError(eventError.message);
+      setLoading(false);
+      return;
+    }
 
     const tickets = [
-      { event_id: event.id, name: form.ticket1_name, price: Number(form.ticket1_price), quantity: 100 },
-      { event_id: event.id, name: form.ticket2_name, price: Number(form.ticket2_price), quantity: 50 },
-    ].filter((t) => t.name && t.price);
+      { event_id: createdEvent.id, name: form.ticket1_name, price: Number(form.ticket1_price), quantity: Number(form.ticket1_quantity || 0) },
+      { event_id: createdEvent.id, name: form.ticket2_name, price: Number(form.ticket2_price), quantity: Number(form.ticket2_quantity || 0) },
+      { event_id: createdEvent.id, name: form.ticket3_name, price: Number(form.ticket3_price), quantity: Number(form.ticket3_quantity || 0) },
+    ].filter((ticket) => ticket.name && ticket.price);
 
     if (tickets.length > 0) {
       const { error: ticketError } = await supabase.from("tickets").insert(tickets);
-      if (ticketError) { setError(ticketError.message); setLoading(false); return; }
+      if (ticketError) {
+        setError(ticketError.message);
+        setLoading(false);
+        return;
+      }
     }
 
-    // Create venue seat layout if template chosen
     if (venueTemplate !== "none" && TEMPLATE_CONFIG[venueTemplate]) {
       const templateCfg = TEMPLATE_CONFIG[venueTemplate];
       const { data: layout, error: layoutError } = await supabase
         .from("venue_layouts")
-        .insert({ event_id: event.id, name: "Main Venue", sections: templateCfg.sections })
+        .insert({ event_id: createdEvent.id, name: "Main Venue", sections: templateCfg.sections })
         .select()
         .single();
 
       if (!layoutError && layout) {
-        // Generate all seat records
         const seatRows: object[] = [];
         const rowLabels = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
         for (const section of templateCfg.sections) {
-          for (let r = 0; r < section.rows; r++) {
-            for (let s = 1; s <= section.seatsPerRow; s++) {
+          for (let row = 0; row < section.rows; row++) {
+            for (let seat = 1; seat <= section.seatsPerRow; seat++) {
               seatRows.push({
                 layout_id: layout.id,
-                event_id: event.id,
+                event_id: createdEvent.id,
                 section: section.name,
-                row_label: rowLabels[r] || String(r + 1),
-                seat_number: s,
+                row_label: rowLabels[row] || String(row + 1),
+                seat_number: seat,
                 status: "available",
               });
             }
           }
         }
-        // Insert in batches of 500
-        for (let i = 0; i < seatRows.length; i += 500) {
-          await supabase.from("seats").insert(seatRows.slice(i, i + 500));
+
+        for (let index = 0; index < seatRows.length; index += 500) {
+          await supabase.from("seats").insert(seatRows.slice(index, index + 500));
         }
       }
     }
 
+    localStorage.removeItem("event-draft");
     router.push(`/events/${slug}`);
   }
 
   if (checking) {
     return (
-      <main className="min-h-screen bg-zinc-50 flex items-center justify-center">
-        <p className="text-zinc-400 text-lg">Checking access...</p>
+      <main className="flex min-h-screen items-center justify-center bg-zinc-100">
+        <p className="text-lg font-semibold text-zinc-400">Checking access...</p>
       </main>
     );
   }
 
-  return (
-    <main className="min-h-screen bg-zinc-50">
-      <section className="max-w-4xl mx-auto px-6 py-20">
-        <div className="mb-12">
-          <p className="text-orange-500 font-semibold mb-3">Organizer Dashboard</p>
-          <h1 className="text-5xl font-black">Create New Event</h1>
-          <p className="text-zinc-600 text-lg mt-4">Publish your event and start selling tickets.</p>
-        </div>
+  const tips = [
+    "Use a clear, searchable event title.",
+    "Add a detailed description with audience expectations.",
+    "Choose the category that best matches your event.",
+    "Use a high-quality cover image.",
+  ];
 
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-5 py-4 rounded-2xl">{error}</div>
+  const aside = (
+    <>
+      <CreatorPanel title="Event Tips">
+        <div className="space-y-4">
+          {tips.map((tip) => (
+            <p key={tip} className="flex gap-3 text-sm font-semibold text-zinc-600">
+              <span className="mt-1 h-2 w-2 rounded-full bg-orange-500" />
+              {tip}
+            </p>
+          ))}
+        </div>
+      </CreatorPanel>
+
+      <CreatorPanel title="Preview">
+        <div className="overflow-hidden rounded-xl bg-zinc-100">
+          {form.banner ? (
+            <div className="h-32 bg-cover bg-center" style={{ backgroundImage: `url(${form.banner})` }} />
+          ) : (
+            <div className="flex h-32 items-center justify-center text-zinc-400">
+              <i className="ti ti-photo text-4xl" aria-hidden="true" />
+            </div>
+          )}
+        </div>
+        <h3 className="mt-4 text-xl font-black">{form.title || "Event Title"}</h3>
+        <p className="mt-1 text-sm font-medium text-zinc-500">{organizerName}</p>
+        <div className="mt-4 space-y-2 text-sm font-semibold text-zinc-500">
+          <p>{form.event_date || "Date and time"}</p>
+          <p>{[form.venue, form.city].filter(Boolean).join(", ") || "Location"}</p>
+          <p>{form.ticket1_price ? `From ${money(form.ticket1_price)}` : "Ticket pricing"}</p>
+        </div>
+      </CreatorPanel>
+
+      <CreatorPanel title="Visibility">
+        <fieldset className="space-y-4">
+          {[
+            ["public", "Public", "Anyone can discover and view"],
+            ["private", "Private", "Only people with a link can view"],
+          ].map(([value, label, detail]) => (
+            <label key={value} className="flex cursor-pointer gap-3">
+              <input
+                checked={visibility === value}
+                className="mt-1 accent-orange-600"
+                name="visibility"
+                onChange={() => setVisibility(value)}
+                type="radio"
+              />
+              <span>
+                <span className="block text-sm font-black">{label}</span>
+                <span className="text-xs font-medium text-zinc-500">{detail}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
+      </CreatorPanel>
+    </>
+  );
+
+  const footer = (
+    <div className="flex flex-col-reverse justify-between gap-3 sm:flex-row sm:items-center">
+      <Link href="/dashboard" className="rounded-xl border border-zinc-200 px-4 py-2.5 text-center text-sm font-black text-zinc-700 hover:bg-zinc-50">
+        Cancel
+      </Link>
+      <div className="flex gap-3">
+        {currentStep > 0 && (
+          <button onClick={previousStep} type="button" className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-black text-zinc-700 hover:bg-zinc-50">
+            Back
+          </button>
+        )}
+        {currentStep < EVENT_STEPS.length - 1 ? (
+          <button onClick={nextStep} type="button" className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-black text-white hover:bg-orange-700">
+            Next: {EVENT_STEPS[currentStep + 1].label}
+          </button>
+        ) : (
+          <button disabled={loading} form="create-event-form" type="submit" className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-black text-white hover:bg-orange-700 disabled:bg-orange-300">
+            {loading ? uploadProgress || "Publishing..." : "Publish Event"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <CreatorWorkspace
+      active="Events"
+      accent="orange"
+      title="Create Event"
+      description="Fill in the details below to create your event."
+      email={email}
+      steps={EVENT_STEPS}
+      currentStep={currentStep}
+      onStepChange={setCurrentStep}
+      onSaveDraft={saveDraft}
+      aside={aside}
+      footer={footer}
+    >
+      <form id="create-event-form" onSubmit={handleSubmit} className="space-y-5">
+        {(error || notice) && (
+          <div className={`rounded-2xl border px-5 py-4 text-sm font-bold ${error ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+            {error || notice}
+          </div>
         )}
 
         {organizers.length === 0 && (
-          <div className="mb-6 bg-orange-50 border border-orange-200 text-orange-800 px-5 py-4 rounded-2xl">
+          <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm font-bold text-orange-800">
             Create an organizer profile first.{" "}
-            <Link href="/create-organizer" className="font-bold underline">Create organizer</Link>
+            <Link href="/create-organizer" className="underline">Create organizer</Link>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Organizer */}
-          <div>
-            <label className="block font-semibold mb-3">Organizer Profile</label>
-            <select name="organizer_id" value={form.organizer_id} onChange={handleChange} required
-              disabled={organizers.length === 0}
-              className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500 disabled:bg-zinc-100">
-              {organizers.length === 0
-                ? <option value="">No organizer profiles yet</option>
-                : organizers.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
-            </select>
-          </div>
+        {currentStep === 0 && (
+          <>
+            <CreatorPanel title="Basic Information">
+              <div className="grid gap-5">
+                <CreatorField label="Organizer Profile">
+                  <select name="organizer_id" value={form.organizer_id} onChange={handleChange} required disabled={organizers.length === 0} className={inputClass}>
+                    {organizers.length === 0
+                      ? <option value="">No organizer profiles yet</option>
+                      : organizers.map((organizer) => <option key={organizer.id} value={organizer.id}>{organizer.name}</option>)}
+                  </select>
+                </CreatorField>
 
-          {/* Title */}
-          <div>
-            <label className="block font-semibold mb-3">Event Title</label>
-            <input name="title" value={form.title} onChange={handleChange} required type="text"
-              placeholder="Afrobeats Summer Festival"
-              className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500" />
-          </div>
+                <CreatorField label="Event Title">
+                  <input name="title" value={form.title} onChange={handleChange} required type="text" placeholder="Annual Charity Gala Dinner" className={inputClass} />
+                </CreatorField>
 
-          {/* Category */}
-          <div>
-            <label className="block font-semibold mb-3">Category</label>
-            <select name="category" value={form.category} onChange={handleChange}
-              className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500">
-              <option>Music</option><option>Business</option><option>Technology</option>
-              <option>Sports</option><option>Dating</option><option>Education</option>
-              <option>Nightlife</option><option>Holidays</option><option>Performing &amp; Visual Arts</option>
-            </select>
-          </div>
+                <CreatorField label="Event Description">
+                  <textarea name="description" value={form.description} onChange={handleChange} required rows={7} placeholder="Tell people about your event..." className={inputClass} />
+                </CreatorField>
 
-          {/* Date */}
-          <div>
-            <label className="block font-semibold mb-3">Event Date</label>
-            <input name="event_date" value={form.event_date} onChange={handleChange} required type="datetime-local"
-              className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500" />
-          </div>
-
-          {/* Venue + City */}
-          <div className="grid md:grid-cols-2 gap-5">
-            <div>
-              <label className="block font-semibold mb-3">Venue</label>
-              <input name="venue" value={form.venue} onChange={handleChange} type="text" placeholder="Abidjan Stadium"
-                className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500" />
-            </div>
-            <div>
-              <label className="block font-semibold mb-3">City</label>
-              <input name="city" value={form.city} onChange={handleChange} type="text" placeholder="Abidjan"
-                className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500" />
-            </div>
-          </div>
-
-          {/* Location Pin on Map */}
-          <div>
-            <label className="block font-semibold mb-3">
-              📍 Pin Venue on Map
-              <span className="text-zinc-400 font-normal text-sm ml-2">(helps attendees find you)</span>
-            </label>
-            {form.latitude && form.longitude ? (
-              <div className="flex items-center gap-4 bg-green-50 border border-green-200 rounded-2xl px-5 py-4">
-                <span className="text-green-600 font-semibold text-sm">
-                  ✓ Location set: {parseFloat(form.latitude).toFixed(5)}, {parseFloat(form.longitude).toFixed(5)}
-                </span>
-                <button type="button" onClick={() => setShowMapPicker(true)}
-                  className="text-sm text-blue-600 font-semibold hover:underline">Change</button>
-                <button type="button" onClick={() => { setForm(f => ({ ...f, latitude: "", longitude: "" })); }}
-                  className="text-sm text-red-500 font-semibold hover:underline ml-auto">Remove</button>
-              </div>
-            ) : (
-              <button type="button" onClick={() => setShowMapPicker(true)}
-                className="w-full border-2 border-dashed border-zinc-300 hover:border-orange-400 rounded-2xl px-5 py-6 text-center transition">
-                <span className="text-3xl block mb-2">🗺️</span>
-                <span className="font-semibold text-zinc-600">Click to pin your venue on the map</span>
-              </button>
-            )}
-
-            {showMapPicker && (
-              <div className="mt-4 rounded-2xl overflow-hidden border border-zinc-300 shadow-lg">
-                <div className="bg-zinc-800 text-white px-4 py-2 text-sm font-semibold flex justify-between">
-                  <span>Click on the map to set your venue location</span>
-                  <button type="button" onClick={() => setShowMapPicker(false)} className="text-zinc-400 hover:text-white">✕ Done</button>
+                <div className="grid gap-5 md:grid-cols-2">
+                  <CreatorField label="Category">
+                    <select name="category" value={form.category} onChange={handleChange} className={inputClass}>
+                      {["Music", "Business", "Technology", "Sports", "Dating", "Education", "Nightlife", "Holidays", "Performing & Visual Arts", "Charity", "Community"].map((category) => (
+                        <option key={category}>{category}</option>
+                      ))}
+                    </select>
+                  </CreatorField>
+                  <CreatorField label="Event Type">
+                    <select name="event_type" value={form.event_type} onChange={handleChange} className={inputClass}>
+                      <option>In person</option>
+                      <option>Virtual</option>
+                      <option>Hybrid</option>
+                    </select>
+                  </CreatorField>
                 </div>
-                <LocationPicker
-                  lat={form.latitude ? parseFloat(form.latitude) : undefined}
-                  lng={form.longitude ? parseFloat(form.longitude) : undefined}
-                  onPick={(lat, lng) => {
-                    setForm(f => ({ ...f, latitude: String(lat), longitude: String(lng) }));
-                  }}
-                />
               </div>
-            )}
-          </div>
+            </CreatorPanel>
 
-          {/* Banner */}
-          <div>
-            <label className="block font-semibold mb-3">Banner Image URL</label>
-            <input name="banner" value={form.banner} onChange={handleChange} type="text" placeholder="https://..."
-              className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500" />
-          </div>
+            <CreatorPanel title="Event Image">
+              <div className="grid gap-5">
+                <CreatorField label="Event Banner URL" hint="Use a wide image, ideally 1200 x 630.">
+                  <input name="banner" value={form.banner} onChange={handleChange} type="url" placeholder="https://..." className={inputClass} />
+                </CreatorField>
+                <CreatorField label="Event Video" hint="Optional. MP4, MOV, or AVI uploads are supported by your storage bucket.">
+                  <input type="file" accept="video/*" onChange={(event) => setVideoFile(event.target.files?.[0] || null)} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm font-semibold" />
+                </CreatorField>
+              </div>
+            </CreatorPanel>
+          </>
+        )}
 
-          {/* Video */}
-          <div>
-            <label className="block font-semibold mb-3">
-              Event Video <span className="text-zinc-400 font-normal">(optional)</span>
-            </label>
-            <div className="border-2 border-dashed border-zinc-300 rounded-2xl p-8 text-center hover:border-orange-500 transition">
-              <input type="file" accept="video/*" onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
-                className="hidden" id="video-upload" />
-              <label htmlFor="video-upload" className="cursor-pointer">
-                {videoFile ? (
+        {currentStep === 1 && (
+          <CreatorPanel title="Date & Time">
+            <div className="grid gap-5 md:grid-cols-2">
+              <CreatorField label="Start Date & Time">
+                <input name="event_date" value={form.event_date} onChange={handleChange} required type="datetime-local" className={inputClass} />
+              </CreatorField>
+              <CreatorField label="End Date & Time">
+                <input name="end_date" value={form.end_date} onChange={handleChange} type="datetime-local" className={inputClass} />
+              </CreatorField>
+            </div>
+          </CreatorPanel>
+        )}
+
+        {currentStep === 2 && (
+          <CreatorPanel title="Location">
+            <div className="grid gap-5">
+              <div className="grid gap-5 md:grid-cols-2">
+                <CreatorField label="Venue">
+                  <input name="venue" value={form.venue} onChange={handleChange} type="text" placeholder="Abidjan Stadium" className={inputClass} />
+                </CreatorField>
+                <CreatorField label="City">
+                  <input name="city" value={form.city} onChange={handleChange} type="text" placeholder="Abidjan" className={inputClass} />
+                </CreatorField>
+              </div>
+
+              <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-5">
+                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
                   <div>
-                    <p className="text-orange-500 font-semibold">✓ {videoFile.name}</p>
-                    <p className="text-zinc-400 text-sm mt-1">Click to change</p>
+                    <p className="font-black">Venue Map Pin</p>
+                    <p className="mt-1 text-sm font-medium text-zinc-500">
+                      {form.latitude && form.longitude
+                        ? `Location set: ${parseFloat(form.latitude).toFixed(5)}, ${parseFloat(form.longitude).toFixed(5)}`
+                        : "Set a map pin so attendees can find the venue."}
+                    </p>
                   </div>
-                ) : (
-                  <div>
-                    <p className="text-4xl mb-3">🎥</p>
-                    <p className="font-semibold text-zinc-700">Click to upload a video</p>
-                    <p className="text-zinc-400 text-sm mt-1">MP4, MOV, AVI up to 50MB</p>
+                  <button type="button" onClick={() => setShowMapPicker((open) => !open)} className="rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-black text-white">
+                    {showMapPicker ? "Hide Map" : "Set Map Pin"}
+                  </button>
+                </div>
+                {showMapPicker && (
+                  <div className="mt-5 overflow-hidden rounded-2xl border border-zinc-200">
+                    <LocationPicker
+                      lat={form.latitude ? parseFloat(form.latitude) : undefined}
+                      lng={form.longitude ? parseFloat(form.longitude) : undefined}
+                      onPick={(lat, lng) => setForm((current) => ({ ...current, latitude: String(lat), longitude: String(lng) }))}
+                    />
                   </div>
                 )}
-              </label>
+              </div>
             </div>
-            {uploadProgress && <p className="text-orange-500 font-semibold mt-3">{uploadProgress}</p>}
-          </div>
+          </CreatorPanel>
+        )}
 
-          {/* Description */}
-          <div>
-            <label className="block font-semibold mb-3">Event Description</label>
-            <textarea name="description" value={form.description} onChange={handleChange} rows={6}
-              placeholder="Describe your event..."
-              className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500" />
-          </div>
+        {currentStep === 3 && (
+          <>
+            <CreatorPanel title="Tickets & Pricing">
+              <div className="space-y-4">
+                {[
+                  ["ticket1", form.ticket1_name, form.ticket1_price, form.ticket1_quantity],
+                  ["ticket2", form.ticket2_name, form.ticket2_price, form.ticket2_quantity],
+                  ["ticket3", form.ticket3_name, form.ticket3_price, form.ticket3_quantity],
+                ].map(([prefix]) => (
+                  <div key={prefix} className="grid gap-3 rounded-2xl bg-zinc-50 p-4 ring-1 ring-zinc-200 md:grid-cols-[1fr_140px_140px]">
+                    <input name={`${prefix}_name`} value={form[`${prefix}_name` as keyof typeof form]} onChange={handleChange} placeholder="Ticket name" className={inputClass} />
+                    <input name={`${prefix}_price`} value={form[`${prefix}_price` as keyof typeof form]} onChange={handleChange} type="number" min="0" placeholder="Price" className={inputClass} />
+                    <input name={`${prefix}_quantity`} value={form[`${prefix}_quantity` as keyof typeof form]} onChange={handleChange} type="number" min="0" placeholder="Qty" className={inputClass} />
+                  </div>
+                ))}
+              </div>
+            </CreatorPanel>
 
-          {/* Venue Layout / Seat Map */}
-          <div>
-            <label className="block font-semibold mb-3">
-              🪑 Venue Layout &amp; Seat Map
-            </label>
-            <div className="grid sm:grid-cols-2 gap-3">
-              {VENUE_TEMPLATES.map((t) => (
-                <button
-                  key={t.value}
-                  type="button"
-                  onClick={() => setVenueTemplate(t.value)}
-                  className={`text-left border rounded-2xl px-5 py-4 transition ${
-                    venueTemplate === t.value
-                      ? "border-orange-500 bg-orange-50 text-orange-900"
-                      : "border-zinc-200 hover:border-zinc-300 bg-white"
-                  }`}
-                >
-                  <p className="font-bold">{t.label}</p>
-                </button>
+            <CreatorPanel title="Venue Layout & Seat Map">
+              <div className="grid gap-3 sm:grid-cols-2">
+                {VENUE_TEMPLATES.map((template) => (
+                  <button
+                    key={template.value}
+                    type="button"
+                    onClick={() => setVenueTemplate(template.value)}
+                    className={`rounded-2xl border px-5 py-4 text-left transition ${
+                      venueTemplate === template.value
+                        ? "border-orange-500 bg-orange-50 text-orange-900"
+                        : "border-zinc-200 bg-white hover:border-zinc-300"
+                    }`}
+                  >
+                    <p className="font-black">{template.label}</p>
+                    <p className="mt-1 text-sm font-medium text-zinc-500">{template.detail}</p>
+                  </button>
+                ))}
+              </div>
+            </CreatorPanel>
+          </>
+        )}
+
+        {currentStep === 4 && (
+          <CreatorPanel title="Review & Publish">
+            <div className="grid gap-4">
+              {[
+                ["Event", form.title || "Not set"],
+                ["Organizer", organizerName],
+                ["Category", `${form.category} / ${form.event_type}`],
+                ["Date", form.event_date || "Not set"],
+                ["Location", [form.venue, form.city].filter(Boolean).join(", ") || "Not set"],
+                ["Tickets", [form.ticket1_name, form.ticket2_name, form.ticket3_name].filter(Boolean).join(", ")],
+                ["Visibility", visibility],
+              ].map(([label, value]) => (
+                <div key={label} className="flex flex-col justify-between gap-1 rounded-xl bg-zinc-50 px-4 py-3 ring-1 ring-zinc-200 sm:flex-row">
+                  <p className="text-sm font-black text-zinc-500">{label}</p>
+                  <p className="text-sm font-bold text-zinc-950">{value}</p>
+                </div>
               ))}
             </div>
-            {venueTemplate !== "none" && (
-              <p className="mt-3 text-sm text-zinc-500 bg-zinc-50 rounded-xl px-4 py-3">
-                ✓ A seat map will be generated automatically when you publish this event.
-                Attendees will be able to pick their seats during checkout.
-              </p>
-            )}
-          </div>
-
-          {/* Tickets */}
-          <div>
-            <label className="block font-semibold mb-5">Ticket Types</label>
-            <div className="space-y-5">
-              <div className="grid md:grid-cols-2 gap-5">
-                <input name="ticket1_name" value={form.ticket1_name} onChange={handleChange} type="text"
-                  placeholder="Regular Ticket"
-                  className="border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500" />
-                <input name="ticket1_price" value={form.ticket1_price} onChange={handleChange} type="number"
-                  placeholder="25"
-                  className="border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500" />
-              </div>
-              <div className="grid md:grid-cols-2 gap-5">
-                <input name="ticket2_name" value={form.ticket2_name} onChange={handleChange} type="text"
-                  placeholder="VIP Ticket"
-                  className="border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500" />
-                <input name="ticket2_price" value={form.ticket2_price} onChange={handleChange} type="number"
-                  placeholder="100"
-                  className="border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500" />
-              </div>
-            </div>
-          </div>
-
-          <button type="submit" disabled={loading}
-            className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-5 rounded-2xl font-bold text-lg transition">
-            {loading ? (uploadProgress || "Publishing...") : "Publish Event"}
-          </button>
-        </form>
-      </section>
-    </main>
+          </CreatorPanel>
+        )}
+      </form>
+    </CreatorWorkspace>
   );
 }

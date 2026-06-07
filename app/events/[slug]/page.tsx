@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import TicketCheckout from "./TicketCheckout";
 import VenueMapClient from "@/components/VenueMapClient";
 import CommentsSection from "@/components/CommentsSection";
+import { createSupabaseServer } from "@/lib/supabase-server";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
 function paragraphs(value: string | null | undefined) {
   return (value || "")
@@ -26,10 +28,17 @@ export default async function EventPage({
 
   if (!event) return notFound();
 
+  // FIXED: private events are only visible to their owner.
+  if (event.visibility === "private") {
+    const supabaseServer = await createSupabaseServer();
+    const { data: { user } } = await supabaseServer.auth.getUser();
+    if (!user || user.id !== event.user_id) return notFound();
+  }
+
   const { data: organizer } = event.organizer_id
     ? await supabase
         .from("organizers")
-        .select("id, name, bio, photo, website")
+        .select("id, name, bio, photo, website, status")
         .eq("id", event.organizer_id)
         .single()
     : { data: null };
@@ -193,12 +202,16 @@ export default async function EventPage({
                         href={primaryOrganizerUrl}
                         target={primaryOrganizerUrl.startsWith("http") ? "_blank" : undefined}
                         rel={primaryOrganizerUrl.startsWith("http") ? "noreferrer" : undefined}
-                        className="text-xl font-black text-zinc-950 hover:text-orange-600"
+                        className="inline-flex items-center gap-2 text-xl font-black text-zinc-950 hover:text-orange-600"
                       >
                         {primaryOrganizerName}
+                        <VerifiedBadge verified={organizer?.status === 'verified'} />
                       </a>
                     ) : (
-                      <h3 className="text-xl font-black text-zinc-950">{primaryOrganizerName}</h3>
+                      <h3 className="inline-flex items-center gap-2 text-xl font-black text-zinc-950">
+                        {primaryOrganizerName}
+                        <VerifiedBadge verified={organizer?.status === 'verified'} />
+                      </h3>
                     )}
                     {primaryOrganizerDescription && (
                       <p className="mt-2 text-zinc-600">{primaryOrganizerDescription}</p>
