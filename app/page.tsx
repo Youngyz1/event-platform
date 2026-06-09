@@ -2,8 +2,12 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import EventCard from "@/components/EventCard";
 import Footer from "@/components/Footer";
-import MobileHomepageSearch from "@/components/MobileHomepageSearch";
 import { supabase } from "@/lib/supabase";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import {
+  HOMEPAGE_HERO_SETTING_KEYS,
+  getHomepageHeroSettings,
+} from "@/lib/homepage-hero";
 import FeaturedSlider, { type FeaturedSliderItem } from "@/components/FeaturedSlider";
 import AboutUsSection from "@/components/ui/about-us-section";
 import { Gallery4, type Gallery4Item } from "@/components/ui/gallery4";
@@ -65,8 +69,18 @@ function fundraiserImage(src: string | null | undefined) {
 }
 
 export default async function HomePage() {
-  const [{ data: featuredEvents }, { data: featuredFundraisers }] =
+  const supabaseAdmin = createSupabaseAdmin();
+
+  const [
+    { data: heroRows },
+    { data: featuredEvents },
+    { data: featuredFundraisers },
+  ] =
     await Promise.all([
+      supabaseAdmin
+        .from("platform_settings")
+        .select("key, value")
+        .in("key", HOMEPAGE_HERO_SETTING_KEYS),
       supabase
         .from("events")
         .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
@@ -78,6 +92,7 @@ export default async function HomePage() {
         .eq("is_homepage_featured", true)
         .limit(6),
     ]);
+  const hero = getHomepageHeroSettings(heroRows);
 
   const [featuredSliderEvents, featuredSliderFundraisers] = await Promise.all([
     (featuredEvents?.length ?? 0) >= 2
@@ -149,36 +164,33 @@ export default async function HomePage() {
   }));
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-50 lg:bg-white lg:text-zinc-950">
-      <MobileHomepageSearch />
-
-      <section className="bg-zinc-950 px-2 pt-3 sm:px-6 sm:pt-6 lg:bg-white lg:px-8">
+    <main className="min-h-screen bg-white text-zinc-950">
+      <section className="bg-white px-2 pt-3 sm:px-6 sm:pt-6 lg:px-8">
         <div
-          className="relative mx-auto flex aspect-[16/7] max-w-7xl items-center overflow-hidden rounded-sm bg-cover bg-center px-4 py-4 sm:min-h-[420px] sm:px-12 sm:py-16 lg:rounded-b-lg lg:px-20"
+          className="relative mx-auto flex aspect-[16/7] max-w-7xl items-center overflow-hidden rounded-sm bg-cover bg-center px-4 py-4 sm:min-h-[420px] sm:px-12 sm:py-16 lg:aspect-[16/5] lg:rounded-b-lg lg:px-20"
           style={{
-            backgroundImage:
-              "url(https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1800&auto=format&fit=crop)",
+            backgroundImage: `url("${hero.imageUrl.replaceAll('"', "")}")`,
           }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-black/5 sm:from-black/85 sm:via-black/45 sm:to-black/10" />
           <div className="relative max-w-[92%] sm:max-w-3xl">
             <p className="inline-flex bg-pink-200 px-2 py-1 text-[8px] font-black uppercase tracking-wide text-zinc-950 sm:px-3 sm:text-sm">
-              Events • Fundraising • Sponsorships
+              {hero.eyebrow}
             </p>
             <h1 className="mt-2 max-w-full text-[22px] font-black leading-[1.04] tracking-tight text-white sm:mt-3 sm:text-6xl lg:text-7xl">
               <span className="whitespace-nowrap bg-indigo-300 px-2 text-zinc-950 sm:box-decoration-clone sm:px-3">
-                Sell Tickets. Raise Funds.
+                {hero.headlineLine1}
               </span>
               <br />
               <span className="whitespace-nowrap bg-pink-200 px-2 text-zinc-950 sm:box-decoration-clone sm:px-3">
-                Find Sponsors.
+                {hero.headlineLine2}
               </span>
             </h1>
             <Link
-              href="/events"
+              href={hero.buttonHref}
               className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-[9px] font-black text-zinc-950 transition hover:bg-orange-50 sm:mt-8 sm:px-8 sm:py-3 sm:text-base"
             >
-              Browse Events
+              {hero.buttonText}
             </Link>
           </div>
         </div>
@@ -190,16 +202,16 @@ export default async function HomePage() {
               href={`/events?category=${encodeURIComponent(name)}`}
               className="group flex flex-col items-center text-center"
             >
-              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-500 transition group-hover:border-orange-200 group-hover:text-orange-600 sm:h-24 sm:w-24 sm:border-indigo-100 sm:bg-white sm:text-zinc-600">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-indigo-100 bg-white text-zinc-600 transition group-hover:border-orange-200 group-hover:text-orange-600 sm:h-24 sm:w-24">
                 <Icon className="h-5 w-5 sm:h-9 sm:w-9" strokeWidth={1.6} />
               </span>
-              <span className="mt-2 text-[9px] font-bold leading-tight text-zinc-200 sm:mt-3 sm:text-sm sm:text-zinc-950">{name}</span>
+              <span className="mt-2 text-[9px] font-bold leading-tight text-zinc-950 sm:mt-3 sm:text-sm">{name}</span>
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="bg-zinc-950 py-7 sm:bg-white sm:py-10">
+      <section className="bg-white py-7 sm:py-10">
         <div className="mx-auto mb-3 flex max-w-7xl items-center justify-between px-3 sm:mb-5 sm:px-6 lg:px-8">
           <p className="text-[9px] font-black uppercase tracking-widest text-orange-600 sm:text-xs">
             Featured This Week
@@ -209,12 +221,12 @@ export default async function HomePage() {
       </section>
 
       {/* ── TASK 1 — Events grid (deduplicated, max 6) ─────────────────────────── */}
-      <section className="mx-auto max-w-7xl bg-zinc-950 px-3 py-10 sm:bg-transparent sm:px-6 sm:py-16 lg:px-8">
+      <section className="mx-auto max-w-7xl bg-white px-3 py-10 sm:px-6 sm:py-16 lg:px-8">
         <div className="mb-5 flex flex-col justify-between gap-2 sm:mb-8 sm:flex-row sm:items-end sm:gap-4">
           <div>
             <p className="text-[9px] font-black uppercase tracking-wide text-orange-600 sm:text-sm">Events</p>
-            <h2 className="mt-1 text-2xl font-black tracking-tight text-white sm:mt-2 sm:text-4xl sm:text-zinc-950">Discover events</h2>
-            <p className="mt-1 text-[10px] text-zinc-400 sm:mt-2 sm:text-base sm:text-zinc-600">Buy tickets, save events, and explore local organizers.</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950 sm:mt-2 sm:text-4xl">Discover events</h2>
+            <p className="mt-1 text-[10px] text-zinc-600 sm:mt-2 sm:text-base">Buy tickets, save events, and explore local organizers.</p>
           </div>
           <Link href="/events" className="text-[9px] font-black text-orange-600 hover:text-orange-700 sm:text-sm">
             View all events →

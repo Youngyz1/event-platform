@@ -15,7 +15,7 @@ const adminLinks = [
   ['Events',            '/admin/events'],
   ['Fundraisers',       '/admin/fundraisers'],
   ['Payments',          '/admin/payments'],
-  ['Homepage Featured', '/admin/homepage'],
+  ['Homepage',          '/admin/homepage'],
   ['Settings',          '/admin/settings'],
 ] as const;
 

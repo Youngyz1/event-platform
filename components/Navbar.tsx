@@ -33,6 +33,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const [account, setAccount] = useState<Account | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -82,44 +83,25 @@ export default function Navbar() {
   const isHomepage = pathname === "/";
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white max-lg:border-zinc-800 max-lg:bg-zinc-950">
+    <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white">
       <div className={`mx-auto flex max-w-[1440px] items-center px-4 md:px-5 ${isHomepage ? "min-h-10 gap-2 max-lg:px-2" : "min-h-16 gap-3"}`}>
         {/* Logo */}
-        <Link href="/" className={`shrink-0 text-zinc-950 max-lg:text-white ${isHomepage ? "text-xs sm:text-2xl" : "text-xl sm:text-2xl"}`}>
-          <BrandMark textClassName="text-zinc-950 max-lg:text-white" />
+        <Link href="/" className={`shrink-0 text-zinc-950 ${isHomepage ? "text-xs sm:text-2xl" : "text-xl sm:text-2xl"}`}>
+          <BrandMark textClassName="text-zinc-950" />
         </Link>
 
-        {/* Search bar */}
-        <form action="/events" className="hidden min-w-0 flex-1 items-center rounded-full border border-zinc-300 bg-white shadow-sm lg:flex">
-          <div className="flex min-w-0 flex-1 items-center gap-3 border-r border-zinc-200 px-4 py-3 text-zinc-500">
-            <SearchIcon />
-            <input
-              name="q"
-              type="search"
-              placeholder="Search events"
-              className="w-full min-w-0 bg-transparent text-base font-medium outline-none placeholder:text-zinc-500"
-            />
-          </div>
-          <div className="flex w-56 items-center gap-3 px-4 py-3 text-zinc-500">
-            <LocationIcon />
-            <input
-              name="location"
-              type="search"
-              placeholder="Location"
-              className="w-full min-w-0 bg-transparent text-base font-medium outline-none placeholder:text-zinc-500"
-            />
-          </div>
-          <button
-            type="submit"
-            className="mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange-600 text-white transition hover:bg-orange-700"
-            aria-label="Search events"
-          >
-            <SearchIcon />
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={() => setMobileSearchOpen((open) => !open)}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-700 transition hover:border-orange-200 hover:text-orange-600 md:h-9 md:w-9"
+          aria-expanded={mobileSearchOpen}
+          aria-label="Search events"
+        >
+          <SearchIcon />
+        </button>
 
         {/* Desktop nav — same links regardless of auth state */}
-        <div className={`ml-auto items-center whitespace-nowrap font-bold text-zinc-700 max-lg:text-zinc-200 ${isHomepage ? "flex gap-1.5 text-[6px] md:gap-5 md:text-sm" : "hidden gap-5 text-sm md:flex"}`}>
+        <div className={`ml-auto items-center whitespace-nowrap font-bold text-zinc-700 ${isHomepage ? "flex gap-1 text-[5.5px] md:gap-5 md:text-sm" : "hidden gap-5 text-sm md:flex"}`}>
           <Link href="/" className="hover:text-orange-600">Home</Link>
           <Link href="/organizers" className={`${isHomepage ? "inline" : "hidden md:inline"} hover:text-orange-600`}>Organizers</Link>
           <Link href="/create-event" className={`${isHomepage ? "inline" : "hidden md:inline"} hover:text-orange-600`}>Create Event</Link>
@@ -187,13 +169,47 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setMenuOpen((open) => !open)}
-          className={`ml-auto rounded-xl border border-zinc-200 px-3 py-2 text-sm font-black text-zinc-800 max-lg:border-zinc-700 max-lg:text-white md:hidden ${isHomepage ? "hidden" : ""}`}
+          className={`ml-auto rounded-xl border border-zinc-200 px-3 py-2 text-sm font-black text-zinc-800 md:hidden ${isHomepage ? "hidden" : ""}`}
           aria-expanded={menuOpen}
           aria-label="Toggle navigation"
         >
           Menu
         </button>
       </div>
+
+      {mobileSearchOpen && (
+        <form action="/events" className="mx-auto grid max-w-5xl grid-cols-[1fr_1fr_auto] gap-2 border-t border-zinc-100 bg-white px-3 py-3 sm:px-5">
+          <label className="relative min-w-0">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+              <SearchIcon />
+            </span>
+            <input
+              name="q"
+              type="search"
+              placeholder="Search"
+              className="h-10 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-3 text-sm font-semibold outline-none focus:border-orange-500"
+            />
+          </label>
+          <label className="relative min-w-0">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+              <LocationIcon />
+            </span>
+            <input
+              name="location"
+              type="search"
+              placeholder="City"
+              className="h-10 w-full rounded-xl border border-zinc-200 bg-white pl-9 pr-3 text-sm font-semibold outline-none focus:border-orange-500"
+            />
+          </label>
+          <button
+            type="submit"
+            className="flex h-10 w-11 items-center justify-center rounded-xl bg-orange-600 text-white transition hover:bg-orange-700"
+            aria-label="Submit search"
+          >
+            <SearchIcon />
+          </button>
+        </form>
+      )}
 
       {/* Mobile menu */}
       {menuOpen && (

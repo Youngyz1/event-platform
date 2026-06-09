@@ -9,16 +9,21 @@
  */
 
 import { createSupabaseServer } from "@/lib/supabase-server";
+import {
+  HOMEPAGE_HERO_SETTING_KEYS,
+  getHomepageHeroSettings,
+} from "@/lib/homepage-hero";
 import HomepageFeaturedClient from "./HomepageFeaturedClient";
+import HomepageHeroClient from "./HomepageHeroClient";
 
 export const metadata = {
-  title: "Homepage Featured | Admin",
+  title: "Homepage | Admin",
 };
 
 export default async function AdminHomepagePage() {
   const supabase = await createSupabaseServer();
 
-  const [{ data: events }, { data: fundraisers }] = await Promise.all([
+  const [{ data: events }, { data: fundraisers }, { data: heroRows }] = await Promise.all([
     supabase
       .from("events")
       .select("id, title, slug, status, is_homepage_featured")
@@ -29,12 +34,19 @@ export default async function AdminHomepagePage() {
       .select("id, title, slug, is_homepage_featured")
       .order("created_at", { ascending: false })
       .limit(100),
+    supabase
+      .from("platform_settings")
+      .select("key, value")
+      .in("key", HOMEPAGE_HERO_SETTING_KEYS),
   ]);
 
   return (
-    <HomepageFeaturedClient
-      initialEvents={events ?? []}
-      initialFundraisers={fundraisers ?? []}
-    />
+    <div className="space-y-8 pb-16">
+      <HomepageHeroClient initialHero={getHomepageHeroSettings(heroRows)} />
+      <HomepageFeaturedClient
+        initialEvents={events ?? []}
+        initialFundraisers={fundraisers ?? []}
+      />
+    </div>
   );
 }
