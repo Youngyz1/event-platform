@@ -39,9 +39,7 @@ export default async function DashboardSettingsPage() {
     ...((profile?.preferences ?? {}) as Partial<Prefs>),
   };
 
-  const displayName = (user.user_metadata?.display_name as string | undefined)
-    ?? user.email?.split('@')[0]
-    ?? '';
+  const displayName = (user.user_metadata?.display_name as string | undefined) ?? '';
 
   return (
     <div className="space-y-6">

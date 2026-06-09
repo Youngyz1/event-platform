@@ -1,6 +1,6 @@
 /**
  * app/api/admin/users/route.ts
- * GET — returns all profiles joined with auth user emails.
+ * GET — returns all auth users joined with profile role/status.
  * Admin-only: checks isAdmin() before any DB operation.
  */
 
@@ -19,29 +19,59 @@ export async function GET() {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Fetch all profiles
-  const { data: profiles, error: profilesError } = await supabaseAdmin
-    .from('profiles')
-    .select('id, role, status, created_at')
-    .order('created_at', { ascending: false });
+  const [profilesResult, authUsersResult] = await Promise.all([
+    supabaseAdmin
+      .from('profiles')
+      .select('id, role, status, created_at'),
+    listAllAuthUsers(),
+  ]);
 
-  if (profilesError) {
-    return NextResponse.json({ error: profilesError.message }, { status: 500 });
+  if (profilesResult.error) {
+    return NextResponse.json({ error: profilesResult.error.message }, { status: 500 });
   }
 
-  // Fetch auth users to get emails (service role required)
-  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
-
-  if (authError) {
-    return NextResponse.json({ error: authError.message }, { status: 500 });
+  if (authUsersResult.error) {
+    return NextResponse.json({ error: authUsersResult.error }, { status: 500 });
   }
 
-  const emailMap = new Map(authData.users.map((u) => [u.id, u.email ?? '']));
+  const profileMap = new Map(
+    (profilesResult.data ?? []).map((profile) => [profile.id, profile])
+  );
 
-  const users = (profiles ?? []).map((p) => ({
-    ...p,
-    email: emailMap.get(p.id) ?? '',
-  }));
+  const users = authUsersResult.users
+    .map((authUser) => {
+      const profile = profileMap.get(authUser.id);
+
+      return {
+        id: authUser.id,
+        email: authUser.email ?? '',
+        role: profile?.role ?? 'user',
+        status: profile?.status ?? 'active',
+        created_at: profile?.created_at ?? authUser.created_at,
+      };
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return NextResponse.json({ users });
+}
+
+async function listAllAuthUsers() {
+  const perPage = 1000;
+  const users = [];
+  let page = 1;
+
+  while (true) {
+    const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+      page,
+      perPage,
+    });
+
+    if (error) return { users: [], error: error.message };
+
+    users.push(...(data.users ?? []));
+    if ((data.users ?? []).length < perPage) break;
+    page += 1;
+  }
+
+  return { users, error: null };
 }

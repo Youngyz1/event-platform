@@ -28,6 +28,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <div className="flex min-w-0 flex-1 flex-col gap-6">
           <nav className="flex items-center gap-2 overflow-x-auto rounded-2xl border border-zinc-200/80 bg-white px-4 py-3 text-xs font-black text-slate-700 shadow-sm lg:hidden">
             {[
+              ['Home',        '/'],
               ['Overview',    '/dashboard'],
               ['Events',      '/dashboard/events'],
               ['Fundraisers', '/dashboard/fundraisers'],

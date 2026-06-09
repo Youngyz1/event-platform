@@ -8,6 +8,7 @@
  */
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { ModalPricing } from '@/components/ui/modal-pricing';
 
@@ -61,6 +62,7 @@ export default function SettingsClient({
   organizer: OrganizerInfo;
   userId: string;
 }) {
+  const router = useRouter();
   const [displayName,   setDisplayName]   = useState(initialDisplayName);
   const [prefs,         setPrefs]         = useState<Prefs>(initialPrefs);
   const [savingAccount, setSavingAccount] = useState(false);
@@ -80,7 +82,10 @@ export default function SettingsClient({
     const { error: authError } = await supabase.auth.updateUser({ data: { display_name: displayName } });
     setSavingAccount(false);
     if (authError) setError(authError.message);
-    else showToast('Account settings saved.');
+    else {
+      showToast('Account settings saved.');
+      router.refresh();
+    }
   }
 
   async function savePrefs(e: React.FormEvent) {
@@ -118,7 +123,7 @@ export default function SettingsClient({
       {/* Section 1 — Account Settings */}
       <form onSubmit={saveAccount} className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="mb-5 text-base font-black tracking-tight text-zinc-950">Account Settings</h2>
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className="grid gap-5">
           <div>
             <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-zinc-500">Display Name</label>
             <input
@@ -126,15 +131,6 @@ export default function SettingsClient({
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm font-semibold outline-none focus:border-orange-500"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-black uppercase tracking-wide text-zinc-500">Email (read-only)</label>
-            <input
-              type="email"
-              value={initialEmail}
-              readOnly
-              className="w-full cursor-not-allowed rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-semibold text-zinc-500 outline-none"
             />
           </div>
         </div>

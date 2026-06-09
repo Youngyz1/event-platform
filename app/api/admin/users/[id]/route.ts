@@ -30,13 +30,25 @@ export async function PATCH(
     return NextResponse.json({ error: 'Invalid status value.' }, { status: 400 });
   }
 
-  const { error } = await supabaseAdmin
+  const { data: updatedProfile, error } = await supabaseAdmin
     .from('profiles')
     .update({ status })
-    .eq('id', id);
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!updatedProfile) {
+    const { error: insertError } = await supabaseAdmin
+      .from('profiles')
+      .insert({ id, status, role: 'user' });
+
+    if (insertError) {
+      return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true, id, status });

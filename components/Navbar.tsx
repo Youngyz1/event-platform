@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import BrandMark from "@/components/BrandMark";
 
+type Account = {
+  displayName: string;
+};
+
 function SearchIcon() {
   return (
     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
@@ -26,18 +30,29 @@ function LocationIcon() {
 
 export default function Navbar() {
   const router = useRouter();
-  const [email, setEmail] = useState<string | null>(null);
+  const [account, setAccount] = useState<Account | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  function accountFromUser(user: { email?: string | null; user_metadata?: Record<string, unknown> } | null | undefined) {
+    if (!user?.email) return null;
+
+    const displayName =
+      typeof user.user_metadata?.display_name === "string" && user.user_metadata.display_name.trim()
+        ? user.user_metadata.display_name.trim()
+        : "Account";
+
+    return { displayName };
+  }
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      setEmail(data.session?.user?.email ?? null);
+      setAccount(accountFromUser(data.session?.user));
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user?.email ?? null);
+      setAccount(accountFromUser(session?.user));
     });
 
     return () => listener.subscription.unsubscribe();
@@ -61,7 +76,8 @@ export default function Navbar() {
     router.refresh();
   }
 
-  const initials = email ? email[0].toUpperCase() : "";
+  const accountName = account?.displayName ?? "";
+  const initials = accountName ? accountName[0].toUpperCase() : "";
 
   return (
     <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white">
@@ -108,7 +124,7 @@ export default function Navbar() {
           <Link href="/my-tickets" className="hover:text-orange-600">My Tickets</Link>
           <Link href="/find-tickets" className="hover:text-orange-600">Find Tickets</Link>
 
-          {email ? (
+          {account ? (
             /* Logged in — avatar dropdown replaces Log in / Sign up */
             <div className="relative" ref={dropdownRef}>
               <button
@@ -118,7 +134,7 @@ export default function Navbar() {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-black text-orange-600">
                   {initials}
                 </span>
-                <span className="hidden xl:inline">{email.split("@")[0]}</span>
+                <span className="hidden max-w-32 truncate xl:inline">{accountName}</span>
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                 </svg>
@@ -126,7 +142,7 @@ export default function Navbar() {
 
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 rounded-2xl border border-zinc-200 bg-white py-2 shadow-lg">
-                  <p className="truncate px-4 py-2 text-xs text-zinc-400">{email}</p>
+                  <p className="truncate px-4 py-2 text-sm font-black text-zinc-800">{accountName}</p>
                   <div className="my-1 border-t border-zinc-100" />
                   <Link
                     href="/dashboard"
@@ -217,7 +233,7 @@ export default function Navbar() {
               ["Create Event", "/create-event"],
               ["My Tickets", "/my-tickets"],
               ["Find Tickets", "/find-tickets"],
-              ...(email ? [["Dashboard", "/dashboard"]] : []),
+              ...(account ? [["Dashboard", "/dashboard"]] : []),
             ].map(([label, href]) => (
               <Link
                 key={href}
@@ -229,7 +245,7 @@ export default function Navbar() {
               </Link>
             ))}
 
-            {email ? (
+            {account ? (
               <button
                 onClick={handleLogout}
                 className="rounded-xl bg-red-50 px-4 py-3 text-left font-black text-red-500"

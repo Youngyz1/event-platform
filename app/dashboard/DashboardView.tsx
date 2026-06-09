@@ -149,7 +149,7 @@ const panelClass = 'rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm
 const rowClass   = 'rounded-2xl bg-zinc-50/80 p-4 ring-1 ring-zinc-200/70';
 
 export default function DashboardView({
-  email,
+  displayName,
   error,
   analytics,
   events,
@@ -158,7 +158,7 @@ export default function DashboardView({
   organizers,
   ticketOrders,
 }: {
-  email?: string;
+  displayName?: string;
   error?: string;
   analytics: Analytics;
   events: EventItem[];
@@ -167,6 +167,8 @@ export default function DashboardView({
   organizers: Organizer[];
   ticketOrders: TicketOrder[];
 }) {
+  const accountLabel = displayName?.trim() || 'Account';
+
   return (
     <div className="space-y-8">
       {/* Page header */}
@@ -176,14 +178,14 @@ export default function DashboardView({
             <p className="text-xs font-black uppercase tracking-wide text-orange-600">Dashboard</p>
             <h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">Overview</h1>
             <p className="mt-2 text-sm font-medium text-zinc-500">
-              Welcome back{email ? `, ${email}` : ''}
+              Welcome back, {accountLabel}
             </p>
           </div>
           <div className="flex h-10 items-center gap-2 rounded-xl bg-zinc-50 px-3 text-sm font-black text-zinc-700 ring-1 ring-zinc-200">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-600 text-xs text-white">
-              {(email || 'U').charAt(0).toUpperCase()}
+              {accountLabel.charAt(0).toUpperCase()}
             </span>
-            <span className="max-w-28 truncate">{email || 'User'}</span>
+            <span className="max-w-28 truncate">{accountLabel}</span>
           </div>
         </div>
       </header>

@@ -8,7 +8,7 @@ export default async function Page() {
   if (!ctx) redirect('/login');
 
   const { user, organizer, organizerId } = ctx;
-  const email = user.email ?? '';
+  const displayName = (user.user_metadata?.display_name as string | undefined)?.trim() || 'Account';
 
   // Organizer data for the sidebar card on the overview page
   const safeOrganizers = organizer ? [organizer] : [];
@@ -17,7 +17,7 @@ export default async function Page() {
     // No organizer yet — render empty state without any DB queries
     return (
       <DashboardView
-        email={email}
+        displayName={displayName}
         analytics={{ totalRaised: 0, totalGoal: 0, overallProgress: 0, donationCount: 0, averageDonation: 0, ticketCount: 0, ticketRevenue: 0 }}
         events={[]}
         fundraisers={[]}
@@ -84,7 +84,7 @@ export default async function Page() {
 
   return (
     <DashboardView
-      email={email}
+      displayName={displayName}
       analytics={{ totalRaised, totalGoal, overallProgress, donationCount, averageDonation, ticketCount, ticketRevenue }}
       events={safeEvents}
       fundraisers={safeFundraisers}
