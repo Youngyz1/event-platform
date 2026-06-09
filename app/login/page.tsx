@@ -54,8 +54,14 @@ export default function LoginPage() {
         <p className="text-zinc-500 mb-8">Log in to your account.</p>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-5 py-4 rounded-2xl text-sm">
-            {error}
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
+            <p>{error}</p>
+            <Link
+              href={`/forgot-password${form.email ? `?email=${encodeURIComponent(form.email)}` : ""}`}
+              className="mt-2 inline-block font-black text-red-700 underline underline-offset-4"
+            >
+              Forgot your password?
+            </Link>
           </div>
         )}
 
@@ -74,7 +80,15 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block font-semibold mb-2">Password</label>
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <label className="block font-semibold">Password</label>
+              <Link
+                href={`/forgot-password${form.email ? `?email=${encodeURIComponent(form.email)}` : ""}`}
+                className="text-sm font-black text-orange-600 hover:text-orange-700"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <input
               name="password"
               value={form.password}
