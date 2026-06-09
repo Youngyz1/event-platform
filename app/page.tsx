@@ -149,59 +149,59 @@ export default async function HomePage() {
   }));
 
   return (
-    <main className="min-h-screen bg-white text-zinc-950">
+    <main className="min-h-screen bg-zinc-950 text-zinc-50 lg:bg-white lg:text-zinc-950">
       <MobileHomepageSearch />
 
-      <section className="bg-white px-3 pt-4 sm:px-6 sm:pt-6 lg:px-8">
+      <section className="bg-zinc-950 px-2 pt-3 sm:px-6 sm:pt-6 lg:bg-white lg:px-8">
         <div
-          className="relative mx-auto flex min-h-[330px] max-w-7xl items-center overflow-hidden rounded-b-lg rounded-t-sm bg-cover bg-center px-5 py-12 sm:min-h-[420px] sm:px-12 sm:py-16 lg:px-20"
+          className="relative mx-auto flex aspect-[16/7] max-w-7xl items-center overflow-hidden rounded-sm bg-cover bg-center px-4 py-4 sm:min-h-[420px] sm:px-12 sm:py-16 lg:rounded-b-lg lg:px-20"
           style={{
             backgroundImage:
               "url(https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1800&auto=format&fit=crop)",
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/45 to-black/10" />
-          <div className="relative max-w-3xl">
-            <p className="inline-flex bg-pink-200 px-3 py-1 text-sm font-black uppercase tracking-wide text-zinc-950">
+          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-black/5 sm:from-black/85 sm:via-black/45 sm:to-black/10" />
+          <div className="relative max-w-[92%] sm:max-w-3xl">
+            <p className="inline-flex bg-pink-200 px-2 py-1 text-[8px] font-black uppercase tracking-wide text-zinc-950 sm:px-3 sm:text-sm">
               Events • Fundraising • Sponsorships
             </p>
-            <h1 className="mt-3 max-w-4xl text-5xl font-black leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl">
-              <span className="box-decoration-clone bg-indigo-300 px-3 text-zinc-950">
+            <h1 className="mt-2 max-w-full text-[22px] font-black leading-[1.04] tracking-tight text-white sm:mt-3 sm:text-6xl lg:text-7xl">
+              <span className="whitespace-nowrap bg-indigo-300 px-2 text-zinc-950 sm:box-decoration-clone sm:px-3">
                 Sell Tickets. Raise Funds.
               </span>
               <br />
-              <span className="box-decoration-clone bg-pink-200 px-3 text-zinc-950">
+              <span className="whitespace-nowrap bg-pink-200 px-2 text-zinc-950 sm:box-decoration-clone sm:px-3">
                 Find Sponsors.
               </span>
             </h1>
             <Link
               href="/events"
-              className="mt-8 inline-flex rounded-full bg-white px-8 py-3 text-base font-black text-zinc-950 transition hover:bg-orange-50"
+              className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-[9px] font-black text-zinc-950 transition hover:bg-orange-50 sm:mt-8 sm:px-8 sm:py-3 sm:text-base"
             >
               Browse Events
             </Link>
           </div>
         </div>
 
-        <div className="mx-auto grid max-w-7xl grid-cols-4 gap-x-3 gap-y-8 py-9 sm:grid-cols-4 sm:gap-6 sm:py-12 lg:grid-cols-8">
+        <div className="mx-auto grid max-w-7xl grid-cols-4 gap-x-4 gap-y-6 py-8 sm:grid-cols-4 sm:gap-6 sm:py-12 lg:grid-cols-8">
           {categoryCards.map(({ name, icon: Icon }) => (
             <Link
               key={name}
               href={`/events?category=${encodeURIComponent(name)}`}
               className="group flex flex-col items-center text-center"
             >
-              <span className="flex h-16 w-16 items-center justify-center rounded-full border border-indigo-100 bg-white text-zinc-600 transition group-hover:border-orange-200 group-hover:text-orange-600 sm:h-24 sm:w-24">
-                <Icon className="h-6 w-6 sm:h-9 sm:w-9" strokeWidth={1.6} />
+              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-zinc-800 bg-zinc-950 text-zinc-500 transition group-hover:border-orange-200 group-hover:text-orange-600 sm:h-24 sm:w-24 sm:border-indigo-100 sm:bg-white sm:text-zinc-600">
+                <Icon className="h-5 w-5 sm:h-9 sm:w-9" strokeWidth={1.6} />
               </span>
-              <span className="mt-2 text-[11px] font-bold leading-tight text-zinc-950 sm:mt-3 sm:text-sm">{name}</span>
+              <span className="mt-2 text-[9px] font-bold leading-tight text-zinc-200 sm:mt-3 sm:text-sm sm:text-zinc-950">{name}</span>
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="bg-white py-12 sm:py-10">
-        <div className="mx-auto mb-8 flex max-w-7xl items-center justify-between px-4 sm:mb-5 sm:px-6 lg:px-8">
-          <p className="text-xs font-black uppercase tracking-widest text-orange-600">
+      <section className="bg-zinc-950 py-7 sm:bg-white sm:py-10">
+        <div className="mx-auto mb-3 flex max-w-7xl items-center justify-between px-3 sm:mb-5 sm:px-6 lg:px-8">
+          <p className="text-[9px] font-black uppercase tracking-widest text-orange-600 sm:text-xs">
             Featured This Week
           </p>
         </div>
@@ -209,14 +209,14 @@ export default async function HomePage() {
       </section>
 
       {/* ── TASK 1 — Events grid (deduplicated, max 6) ─────────────────────────── */}
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <section className="mx-auto max-w-7xl bg-zinc-950 px-3 py-10 sm:bg-transparent sm:px-6 sm:py-16 lg:px-8">
+        <div className="mb-5 flex flex-col justify-between gap-2 sm:mb-8 sm:flex-row sm:items-end sm:gap-4">
           <div>
-            <p className="text-sm font-black uppercase tracking-wide text-orange-600">Events</p>
-            <h2 className="mt-2 text-4xl font-black tracking-tight">Discover events</h2>
-            <p className="mt-2 text-zinc-600">Buy tickets, save events, and explore local organizers.</p>
+            <p className="text-[9px] font-black uppercase tracking-wide text-orange-600 sm:text-sm">Events</p>
+            <h2 className="mt-1 text-2xl font-black tracking-tight text-white sm:mt-2 sm:text-4xl sm:text-zinc-950">Discover events</h2>
+            <p className="mt-1 text-[10px] text-zinc-400 sm:mt-2 sm:text-base sm:text-zinc-600">Buy tickets, save events, and explore local organizers.</p>
           </div>
-          <Link href="/events" className="text-sm font-black text-orange-600 hover:text-orange-700">
+          <Link href="/events" className="text-[9px] font-black text-orange-600 hover:text-orange-700 sm:text-sm">
             View all events →
           </Link>
         </div>

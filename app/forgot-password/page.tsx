@@ -18,10 +18,10 @@ function ForgotPasswordForm() {
     setSuccess(false);
     setLoading(true);
 
-    const redirectTo =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/reset-password`
-        : undefined;
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (typeof window !== "undefined" ? window.location.origin : "");
+    const redirectTo = appUrl ? `${appUrl}/reset-password` : undefined;
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo,

@@ -102,7 +102,13 @@ export default function SettingsClient({
   }
 
   async function sendPasswordReset() {
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(initialEmail);
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (typeof window !== 'undefined' ? window.location.origin : '');
+    const redirectTo = appUrl ? `${appUrl}/reset-password` : undefined;
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(initialEmail, {
+      redirectTo,
+    });
     if (resetError) setError(resetError.message);
     else showToast('Password reset email sent — check your inbox.');
   }

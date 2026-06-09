@@ -73,11 +73,11 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
 
   return (
     <div className="relative w-full overflow-hidden group/featured-slider">
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-white to-transparent sm:w-20" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white to-transparent sm:w-20" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-zinc-950 to-transparent sm:w-20 sm:from-white" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-zinc-950 to-transparent sm:w-20 sm:from-white" />
 
       <div
-        className="flex w-max gap-4 px-4 py-1 group-hover/featured-slider:[animation-play-state:paused] sm:gap-5 sm:px-0"
+        className="flex w-max gap-3 px-3 py-1 group-hover/featured-slider:[animation-play-state:paused] sm:gap-5 sm:px-0"
         style={{ animation: "featured-slider-scroll 38s linear infinite" }}
       >
         {looped.map((item, index) => {
@@ -88,7 +88,7 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
               <Link
                 key={`${item.type}-${item.id}-${index}`}
                 href={`/events/${item.slug}`}
-                className="relative h-48 w-64 flex-shrink-0 overflow-hidden rounded-2xl shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72"
+                className="relative h-24 w-40 flex-shrink-0 overflow-hidden rounded-md shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72 sm:rounded-2xl"
               >
                 <img
                   src={imageUrl}
@@ -100,19 +100,19 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/45 to-zinc-950/10" />
-                <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-orange-500 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white">
-                  <Ticket className="h-3 w-3" />
+                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-orange-500 px-2 py-0.5 text-[6px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
+                  <Ticket className="h-2 w-2 sm:h-3 sm:w-3" />
                   Event
                 </span>
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <p className="mb-1 text-xs font-black uppercase tracking-wide text-orange-400">
+                <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4">
+                  <p className="mb-0.5 text-[7px] font-black uppercase tracking-wide text-orange-400 sm:mb-1 sm:text-xs">
                     {formatDate(item.date)}
                   </p>
-                  <h3 className="line-clamp-2 text-sm font-black leading-tight text-white">
+                  <h3 className="line-clamp-2 text-[8px] font-black leading-tight text-white sm:text-sm">
                     {item.title}
                   </h3>
                   {item.location && (
-                    <p className="mt-1 truncate text-xs text-zinc-300">{item.location}</p>
+                    <p className="mt-0.5 truncate text-[7px] text-zinc-300 sm:mt-1 sm:text-xs">{item.location}</p>
                   )}
                 </div>
               </Link>
@@ -125,7 +125,7 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
             <Link
               key={`${item.type}-${item.id}-${index}`}
               href={`/fundraisers/${item.slug}`}
-              className="relative h-48 w-64 flex-shrink-0 overflow-hidden rounded-2xl shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72"
+              className="relative h-24 w-40 flex-shrink-0 overflow-hidden rounded-md shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72 sm:rounded-2xl"
             >
               <img
                 src={imageUrl}
@@ -137,21 +137,21 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/50 to-zinc-950/10" />
-              <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-black uppercase tracking-wide text-white">
-                <Heart className="h-3 w-3" />
+              <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[6px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
+                <Heart className="h-2 w-2 sm:h-3 sm:w-3" />
                 Fundraise
               </span>
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <h3 className="mb-3 line-clamp-2 text-sm font-black leading-tight text-white">
+              <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4">
+                <h3 className="mb-1 line-clamp-2 text-[8px] font-black leading-tight text-white sm:mb-3 sm:text-sm">
                   {item.title}
                 </h3>
-                <div className="mb-2 h-1.5 w-full rounded-full bg-white/20">
+                <div className="mb-1 h-1 w-full rounded-full bg-white/20 sm:mb-2 sm:h-1.5">
                   <div
-                    className="h-1.5 rounded-full bg-emerald-400"
+                    className="h-1 rounded-full bg-emerald-400 sm:h-1.5"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <p className="text-xs font-bold text-white/85">
+                <p className="text-[7px] font-bold text-white/85 sm:text-xs">
                   {money(item.raised_amount)} raised of {money(item.goal_amount)} goal
                 </p>
               </div>

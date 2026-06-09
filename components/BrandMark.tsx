@@ -10,11 +10,11 @@ export default function BrandMark({
   textClassName = "",
 }: BrandMarkProps) {
   return (
-    <span className={`inline-flex items-center gap-2 ${className}`}>
+    <span className={`inline-flex items-center gap-1 sm:gap-2 ${className}`}>
       <svg
         aria-hidden="true"
         viewBox="0 0 32 32"
-        className="h-8 w-8 shrink-0"
+        className="h-5 w-5 shrink-0 sm:h-8 sm:w-8"
         fill="none"
       >
         <path

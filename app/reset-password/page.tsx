@@ -5,13 +5,16 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
+const invalidLinkMessage =
+  "This reset link is invalid or has expired. Please request a new one.";
+
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [checkingSession, setCheckingSession] = useState(true);
-  const [hasRecoverySession, setHasRecoverySession] = useState(false);
+  const [checkingLink, setCheckingLink] = useState(true);
+  const [linkVerified, setLinkVerified] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -19,37 +22,37 @@ function ResetPasswordForm() {
   useEffect(() => {
     let active = true;
 
-    async function prepareRecoverySession() {
-      const code = searchParams.get("code");
+    async function verifyRecoveryLink() {
+      const tokenHash = searchParams.get("token_hash");
+      const type = searchParams.get("type");
 
-      if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (!active) return;
-        if (exchangeError) {
-          setError(exchangeError.message);
-          setCheckingSession(false);
-          return;
-        }
+      if (!tokenHash || type !== "recovery") {
+        setError(invalidLinkMessage);
+        setCheckingLink(false);
+        return;
       }
 
-      const { data } = await supabase.auth.getSession();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: "recovery",
+      });
+
       if (!active) return;
-      setHasRecoverySession(Boolean(data.session));
-      setCheckingSession(false);
+
+      if (verifyError) {
+        setError(invalidLinkMessage);
+        setCheckingLink(false);
+        return;
+      }
+
+      setLinkVerified(true);
+      setCheckingLink(false);
     }
 
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" && session) {
-        setHasRecoverySession(true);
-        setCheckingSession(false);
-      }
-    });
-
-    prepareRecoverySession();
+    verifyRecoveryLink();
 
     return () => {
       active = false;
-      listener.subscription.unsubscribe();
     };
   }, [searchParams]);
 
@@ -79,7 +82,7 @@ function ResetPasswordForm() {
 
     setSuccess(true);
     await supabase.auth.signOut();
-    setTimeout(() => router.push("/login"), 1200);
+    setTimeout(() => router.push("/login?reset=success"), 1200);
   }
 
   return (
@@ -102,11 +105,11 @@ function ResetPasswordForm() {
           </div>
         )}
 
-        {checkingSession ? (
+        {checkingLink ? (
           <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-5 py-4 text-sm font-semibold text-zinc-500">
             Verifying reset link...
           </div>
-        ) : hasRecoverySession ? (
+        ) : linkVerified ? (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="mb-2 block font-semibold">New Password</label>
@@ -143,7 +146,7 @@ function ResetPasswordForm() {
         ) : (
           <div className="space-y-4">
             <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
-              This reset link is missing, expired, or already used. Request a fresh password reset link.
+              {invalidLinkMessage}
             </div>
             <Link
               href="/forgot-password"

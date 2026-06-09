@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -9,6 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   const [form, setForm] = useState({
     email: "",
@@ -18,6 +19,11 @@ export default function LoginPage() {
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setResetSuccess(params.get("reset") === "success");
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -62,6 +68,12 @@ export default function LoginPage() {
             >
               Forgot your password?
             </Link>
+          </div>
+        )}
+
+        {resetSuccess && (
+          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+            Password updated. You can now log in with your new password.
           </div>
         )}
 

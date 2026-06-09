@@ -151,7 +151,7 @@ export default async function TicketmasterEventPage({
               {event.name || "Untitled event"}
             </h1>
             <p className="mt-5 max-w-3xl text-base leading-7 text-zinc-100 sm:text-lg">
-              {event.info || event.pleaseNote || `View event details, date, venue, and ticket options for this ${category.toLowerCase()}.`}
+              {`View date, venue, and ticket options for this ${category.toLowerCase()}.`}
             </p>
           </div>
         </div>

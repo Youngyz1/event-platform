@@ -66,27 +66,27 @@ export default function MobileHomepageSearch() {
   const cityLabel = city.trim() || "you";
 
   return (
-    <section className="border-b border-zinc-100 bg-white px-4 py-4 lg:hidden">
+    <section className="border-b border-zinc-800 bg-zinc-950 px-5 py-2 lg:hidden">
       <div className="mx-auto max-w-xl">
-        <p className="mb-3 flex items-center gap-2 text-sm font-black text-zinc-950">
-          <LocateFixed className="h-4 w-4 text-orange-600" />
+        <p className="mb-2 flex items-center gap-2 text-[10px] font-black text-zinc-100">
+          <LocateFixed className="h-3 w-3 text-orange-600" />
           {status === "detecting" ? "Finding events near you..." : `Events near ${cityLabel}`}
         </p>
 
         <form onSubmit={submitSearch} className="grid grid-cols-[1fr_1fr_auto] gap-2">
           <label className="relative min-w-0">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-500" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               type="search"
               placeholder="Search"
-              className="h-11 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3 text-sm font-semibold outline-none focus:border-orange-500"
+              className="h-8 w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-8 pr-2 text-[10px] font-semibold text-white outline-none placeholder:text-zinc-400 focus:border-orange-500"
             />
           </label>
 
           <label className="relative min-w-0">
-            <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+            <MapPin className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-zinc-500" />
             <input
               value={city}
               onChange={(event) => {
@@ -95,16 +95,16 @@ export default function MobileHomepageSearch() {
               }}
               type="search"
               placeholder="City"
-              className="h-11 w-full rounded-2xl border border-zinc-200 bg-white pl-9 pr-3 text-sm font-semibold outline-none focus:border-orange-500"
+              className="h-8 w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-8 pr-2 text-[10px] font-semibold text-white outline-none placeholder:text-zinc-400 focus:border-orange-500"
             />
           </label>
 
           <button
             type="submit"
-            className="flex h-11 w-12 items-center justify-center rounded-2xl bg-orange-600 text-white shadow-sm transition hover:bg-orange-700"
+            className="flex h-8 w-9 items-center justify-center rounded-xl bg-orange-600 text-white shadow-sm transition hover:bg-orange-700"
             aria-label="Search events"
           >
-            <Search className="h-5 w-5" />
+            <Search className="h-4 w-4" />
           </button>
         </form>
       </div>

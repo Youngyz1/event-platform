@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import BrandMark from "@/components/BrandMark";
 
@@ -30,6 +30,7 @@ function LocationIcon() {
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [account, setAccount] = useState<Account | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -78,13 +79,14 @@ export default function Navbar() {
 
   const accountName = account?.displayName ?? "";
   const initials = accountName ? accountName[0].toUpperCase() : "";
+  const isHomepage = pathname === "/";
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white">
-      <div className="mx-auto flex min-h-16 max-w-[1440px] items-center gap-3 px-4 md:px-5">
+    <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white max-lg:border-zinc-800 max-lg:bg-zinc-950">
+      <div className={`mx-auto flex max-w-[1440px] items-center px-4 md:px-5 ${isHomepage ? "min-h-10 gap-2 max-lg:px-2" : "min-h-16 gap-3"}`}>
         {/* Logo */}
-        <Link href="/" className="shrink-0 text-xl text-zinc-950 sm:text-2xl">
-          <BrandMark textClassName="text-zinc-950" />
+        <Link href="/" className={`shrink-0 text-zinc-950 max-lg:text-white ${isHomepage ? "text-xs sm:text-2xl" : "text-xl sm:text-2xl"}`}>
+          <BrandMark textClassName="text-zinc-950 max-lg:text-white" />
         </Link>
 
         {/* Search bar */}
@@ -117,10 +119,10 @@ export default function Navbar() {
         </form>
 
         {/* Desktop nav — same links regardless of auth state */}
-        <div className="ml-auto hidden items-center gap-5 whitespace-nowrap text-sm font-bold text-zinc-700 md:flex">
+        <div className={`ml-auto items-center whitespace-nowrap font-bold text-zinc-700 max-lg:text-zinc-200 ${isHomepage ? "flex gap-1.5 text-[6px] md:gap-5 md:text-sm" : "hidden gap-5 text-sm md:flex"}`}>
           <Link href="/" className="hover:text-orange-600">Home</Link>
-          <Link href="/organizers" className="hidden hover:text-orange-600 md:inline">Organizers</Link>
-          <Link href="/create-event" className="hidden hover:text-orange-600 md:inline">Create Event</Link>
+          <Link href="/organizers" className={`${isHomepage ? "inline" : "hidden md:inline"} hover:text-orange-600`}>Organizers</Link>
+          <Link href="/create-event" className={`${isHomepage ? "inline" : "hidden md:inline"} hover:text-orange-600`}>Create Event</Link>
           <Link href="/my-tickets" className="hover:text-orange-600">My Tickets</Link>
           <Link href="/find-tickets" className="hover:text-orange-600">Find Tickets</Link>
 
@@ -173,7 +175,7 @@ export default function Navbar() {
               <Link href="/login" className="hover:text-orange-600">Log in</Link>
               <Link
                 href="/signup"
-                className="rounded-full bg-orange-600 px-4 py-2 font-black text-white transition hover:bg-orange-700"
+                className={`rounded-full bg-orange-600 font-black text-white transition hover:bg-orange-700 ${isHomepage ? "px-1.5 py-1 text-[6px] md:px-4 md:py-2 md:text-sm" : "px-4 py-2"}`}
               >
                 Sign up
               </Link>
@@ -185,7 +187,7 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setMenuOpen((open) => !open)}
-          className="ml-auto rounded-xl border border-zinc-200 px-3 py-2 text-sm font-black text-zinc-800 md:hidden"
+          className={`ml-auto rounded-xl border border-zinc-200 px-3 py-2 text-sm font-black text-zinc-800 max-lg:border-zinc-700 max-lg:text-white md:hidden ${isHomepage ? "hidden" : ""}`}
           aria-expanded={menuOpen}
           aria-label="Toggle navigation"
         >
