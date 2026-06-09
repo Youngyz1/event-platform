@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-
 import Footer from "@/components/Footer";
+import { CallToAction } from "@/components/ui/call-to-action";
 
 export default async function OrganizersDirectoryPage() {
   // Fetch all organizers
@@ -149,6 +149,17 @@ export default async function OrganizersDirectoryPage() {
               </Link>
             </div>
           )}
+        </section>
+
+        {/* CTA banner — below the grid */}
+        <section className="pb-16 px-6 flex justify-center">
+          <CallToAction
+            headline="Ready to host your next big event?"
+            subtext="Create events, run fundraisers, and grow your audience — all in one platform."
+            ctaLabel="Become an Organizer"
+            ctaHref="/create-organizer"
+            memberCount="1,200+ organizers"
+          />
         </section>
       </div>
 

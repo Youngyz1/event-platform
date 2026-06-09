@@ -22,6 +22,7 @@ export default function Footer() {
         <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 text-sm font-semibold text-violet-100">
 
           <Link href="/about" className="hover:text-orange-300">About</Link>
+          <Link href="/platform" className="hover:text-orange-300">Platform</Link>
           <Link href="/events" className="hover:text-orange-300">Events</Link>
           <Link href="/fundraisers" className="hover:text-orange-300">Fundraisers</Link>
           <Link href="/create-event" className="hover:text-orange-300">Create Event</Link>

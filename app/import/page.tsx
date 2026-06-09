@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { supabase } from "@/lib/supabase";
 
@@ -205,8 +205,25 @@ function exampleCsv(mode: ImportMode) {
 }
 
 export default function ImportPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-screen items-center justify-center bg-zinc-50">
+          <p className="text-lg font-semibold text-zinc-500">Loading import tools...</p>
+        </main>
+      }
+    >
+      <ImportClient />
+    </Suspense>
+  );
+}
+
+function ImportClient() {
   const router = useRouter();
-  const [mode, setMode] = useState<ImportMode>("events");
+  const searchParams = useSearchParams();
+  const requestedMode = searchParams.get("mode") === "fundraisers" ? "fundraisers" : "events";
+  const requestedUrl = searchParams.get("url") || "";
+  const [mode, setMode] = useState<ImportMode>(requestedMode);
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [organizerId, setOrganizerId] = useState("");
   const [useImportedOrganizer, setUseImportedOrganizer] = useState(true);
@@ -215,8 +232,16 @@ export default function ImportPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [sourceUrl, setSourceUrl] = useState("");
+  const [sourceUrl, setSourceUrl] = useState(requestedUrl);
   const [urlLoading, setUrlLoading] = useState(false);
+
+  useEffect(() => {
+    setMode(requestedMode);
+    setSourceUrl(requestedUrl);
+    setPreviewRows([]);
+    setError("");
+    setMessage("");
+  }, [requestedMode, requestedUrl]);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -471,6 +496,10 @@ export default function ImportPage() {
   }
 
   async function importFundraisers(userId: string) {
+    if (!organizerId) {
+      throw new Error("Create or select an organizer profile before importing fundraisers.");
+    }
+
     const slugs = validRows.map((row) => generateSlug(row.data.title));
     const { data: existingFundraisers } = await supabase
       .from("fundraisers")
@@ -490,6 +519,7 @@ export default function ImportPage() {
       banner: row.data.banner || "",
       video_url: row.data.video_url || null,
       user_id: userId,
+      organizer_id: organizerId,
       source_url: row.data.source_url || null,
     }));
 
@@ -683,7 +713,7 @@ export default function ImportPage() {
               </div>
               <button
                 onClick={handleImport}
-                disabled={loading || validRows.length === 0 || (mode === "events" && !useImportedOrganizer && !organizerId)}
+                disabled={loading || validRows.length === 0 || (mode === "events" && !useImportedOrganizer && !organizerId) || (mode === "fundraisers" && !organizerId)}
                 className="rounded-xl bg-orange-600 px-6 py-4 text-base font-black text-white transition hover:bg-orange-700 disabled:bg-orange-300"
               >
                 {loading ? "Importing..." : `Import ${validRows.length} ${mode}`}

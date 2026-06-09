@@ -2,11 +2,18 @@
 import FundraiserCard from "@/components/FundraiserCard";
 import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Fundraising Campaigns | EventBrithe",
+  description:
+    "Support causes, communities, and events. Donate to campaigns making a difference.",
+};
 
 export default async function FundraisersPage() {
   const { data: fundraisers } = await supabase
     .from("fundraisers")
-    .select("*")
+    .select("id, title, slug, goal, raised, banner")
     .order("created_at", { ascending: false });
 
   return (
@@ -23,7 +30,7 @@ export default async function FundraisersPage() {
         </div>
 
         {fundraisers && fundraisers.length > 0 ? (
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {fundraisers.map((fundraiser) => (
               <FundraiserCard
                 key={fundraiser.id}

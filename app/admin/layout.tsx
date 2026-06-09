@@ -9,13 +9,14 @@ import { requireAdmin } from '@/lib/auth';
 import { ReactNode } from 'react';
 
 const adminLinks = [
-  ['Overview',     '/admin'],
-  ['Users',        '/admin/users'],
-  ['Organizers',   '/admin/organizers'],
-  ['Events',       '/admin/events'],
-  ['Fundraisers',  '/admin/fundraisers'],
-  ['Payments',     '/admin/payments'],
-  ['Settings',     '/admin/settings'],
+  ['Overview',          '/admin'],
+  ['Users',             '/admin/users'],
+  ['Organizers',        '/admin/organizers'],
+  ['Events',            '/admin/events'],
+  ['Fundraisers',       '/admin/fundraisers'],
+  ['Payments',          '/admin/payments'],
+  ['Homepage Featured', '/admin/homepage'],
+  ['Settings',          '/admin/settings'],
 ] as const;
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {

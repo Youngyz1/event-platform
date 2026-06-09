@@ -4,6 +4,12 @@ import Footer from "@/components/Footer";
 import MapSection from "@/components/MapSection";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Browse Events | EventBrithe",
+  description: "Find local events near you. Buy tickets instantly.",
+};
 
 export default async function EventsPage({
   searchParams,
@@ -39,15 +45,15 @@ export default async function EventsPage({
 
   const { data: supabaseEvents } = await eventsQuery;
 
-  // ── 2. Eventbrite events (only when location is provided) ───────────
-  type EventbriteEvent = {
+  // ── 2. External events from Ticketmaster when any search filter is provided ─
+  type ExternalEvent = {
     id: string;
     title: string;
     event_date?: string | null;
     city?: string | null;
     banner?: string | null;
     url: string;
-    source: "eventbrite";
+    source: "ticketmaster";
   };
 
   type LocalEvent = {
@@ -64,23 +70,25 @@ export default async function EventsPage({
     source: "local";
   };
 
-  let eventbriteEvents: EventbriteEvent[] = [];
+  let externalEvents: ExternalEvent[] = [];
 
-  if (location) {
+  if (query || location || category || date) {
     try {
-      const ebParams = new URLSearchParams({ location });
+      const ebParams = new URLSearchParams();
       if (query) ebParams.set("q", query);
+      if (location) ebParams.set("location", location);
+      if (category) ebParams.set("category", category);
       if (date) ebParams.set("date", date);
 
-      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
       const res = await fetch(
         `${baseUrl}/api/eventbrite?${ebParams.toString()}`,
         { next: { revalidate: 300 } }
       );
-      const data = (await res.json()) as { events?: EventbriteEvent[] };
-      eventbriteEvents = data.events || [];
+      const data = (await res.json()) as { events?: ExternalEvent[] };
+      externalEvents = data.events || [];
     } catch (e) {
-      console.error("Failed to fetch Eventbrite events:", e);
+      console.error("Failed to fetch external events:", e);
     }
   }
 
@@ -99,7 +107,14 @@ export default async function EventsPage({
     source: "local",
   }));
 
-  const allEvents: Array<LocalEvent | EventbriteEvent> = [...supabaseNormalized, ...eventbriteEvents];
+  const seenEventKeys = new Set<string>();
+  const allEvents: Array<LocalEvent | ExternalEvent> = [...supabaseNormalized, ...externalEvents]
+    .filter((event) => {
+      const key = `${event.title.toLowerCase().trim()}-${event.event_date || ""}`;
+      if (seenEventKeys.has(key)) return false;
+      seenEventKeys.add(key);
+      return true;
+    });
 
   const hasFilters = !!(query || location || category || date);
   const buildQuery = (extra: Record<string, string>) => {
@@ -162,12 +177,11 @@ export default async function EventsPage({
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm text-zinc-500 font-semibold">
             {allEvents.length} event{allEvents.length !== 1 ? "s" : ""} found
-            {hasFilters && " for your search"}
-            {location && eventbriteEvents.length > 0 && (
-              <span className="ml-2 text-orange-500">
-                (includes {eventbriteEvents.length} from Eventbrite)
-              </span>
-            )}
+            {hasFilters && externalEvents.length > 0
+              ? " across EventBrithe and partner listings"
+              : hasFilters
+                ? " for your search"
+                : ""}
           </p>
           <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-xl p-1 shadow-sm">
             <Link
@@ -200,15 +214,12 @@ export default async function EventsPage({
         {view === "list" && (
           <>
             {allEvents.length > 0 ? (
-              <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {allEvents.map((event) =>
-                  event.source === "eventbrite" ? (
-                    // Eventbrite events open in a new tab
-                    <a
+                  event.source === "ticketmaster" ? (
+                    <Link
                       key={event.id}
-                      href={event.url ?? "#"}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                      href={`/external-events/ticketmaster/${encodeURIComponent(event.id.replace(/^tm_/, ""))}`}
                       className="block"
                     >
                       <EventCard
@@ -226,9 +237,8 @@ export default async function EventsPage({
                           event.banner ||
                           "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop"
                         }
-                        badge="Eventbrite"
                       />
-                    </a>
+                    </Link>
                   ) : (
                     <EventCard
                       key={event.id}
@@ -255,7 +265,7 @@ export default async function EventsPage({
                 <p className="text-4xl mb-4">🎭</p>
                 <h2 className="text-2xl font-black">No events found.</h2>
                 <p className="mt-2 text-zinc-500">
-                  Try searching with a city name to pull Eventbrite listings.
+                  Try another keyword, category, date, or city.
                 </p>
                 <Link
                   href="/create-event"

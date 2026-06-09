@@ -57,7 +57,7 @@ export default async function DashboardFundraisersPage() {
           <h1 className="mt-1 text-3xl font-black tracking-tight">Fundraisers</h1>
           <p className="mt-1 text-sm font-medium text-zinc-500">Your campaigns, donations, and progress.</p>
         </div>
-        <Link href="/create-fundraiser" className="shrink-0 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-700">
+        <Link href="/dashboard/fundraisers/new" className="shrink-0 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-700">
           + Start Fundraiser
         </Link>
       </header>
@@ -126,7 +126,7 @@ function EmptyState() {
     <div className="flex flex-col items-center gap-5 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/60 px-8 py-20 text-center">
       <p className="text-2xl font-black text-zinc-950">No fundraisers yet</p>
       <p className="text-sm font-medium text-zinc-500">Start a campaign to begin collecting donations.</p>
-      <Link href="/create-fundraiser" className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-black text-white hover:bg-emerald-700">
+      <Link href="/dashboard/fundraisers/new" className="rounded-xl bg-emerald-600 px-6 py-3 text-sm font-black text-white hover:bg-emerald-700">
         Start Fundraiser
       </Link>
     </div>

@@ -18,20 +18,27 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const location = searchParams.get("location");
   const query = searchParams.get("q");
+  const category = searchParams.get("category");
   const date = searchParams.get("date");
 
-  if (!location) {
-    return NextResponse.json({ error: "Missing location" }, { status: 400 });
+  if (!location && !query && !category && !date) {
+    return NextResponse.json({ events: [] });
   }
 
   const params = new URLSearchParams({
     apikey: process.env.TICKETMASTER_API_KEY!,
-    city: location.split(",")[0].trim(), // "Jersey City, NJ" → "Jersey City"
     size: "20",
     sort: "date,asc",
   });
 
-  if (query) params.set("keyword", query);
+  if (location) {
+    params.set("city", location.split(",")[0].trim()); // "Jersey City, NJ" → "Jersey City"
+  } else {
+    params.set("countryCode", "US");
+  }
+
+  const keyword = [query, category].filter(Boolean).join(" ");
+  if (keyword) params.set("keyword", keyword);
   if (date) {
     params.set("startDateTime", `${date}T00:00:00Z`);
     params.set("endDateTime", `${date}T23:59:59Z`);
@@ -59,7 +66,7 @@ export async function GET(request: NextRequest) {
       event_date: e.dates?.start?.localDate
         ? `${e.dates.start.localDate}T${e.dates.start.localTime || "00:00:00"}`
         : null,
-      city: e._embedded?.venues?.[0]?.city?.name || location,
+      city: e._embedded?.venues?.[0]?.city?.name || location || null,
       venue: e._embedded?.venues?.[0]?.name || null,
       banner:
         e.images?.find((img: RawImage) => img.ratio === "16_9" && (img.width ?? 0) > 500)?.url ||

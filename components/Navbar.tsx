@@ -72,10 +72,11 @@ export default function Navbar() {
         </Link>
 
         {/* Search bar */}
-        <div className="hidden min-w-0 flex-1 items-center rounded-full border border-zinc-300 bg-white shadow-sm lg:flex">
+        <form action="/events" className="hidden min-w-0 flex-1 items-center rounded-full border border-zinc-300 bg-white shadow-sm lg:flex">
           <div className="flex min-w-0 flex-1 items-center gap-3 border-r border-zinc-200 px-4 py-3 text-zinc-500">
             <SearchIcon />
             <input
+              name="q"
               type="search"
               placeholder="Search events"
               className="w-full min-w-0 bg-transparent text-base font-medium outline-none placeholder:text-zinc-500"
@@ -84,12 +85,20 @@ export default function Navbar() {
           <div className="flex w-56 items-center gap-3 px-4 py-3 text-zinc-500">
             <LocationIcon />
             <input
+              name="location"
               type="search"
               placeholder="Location"
               className="w-full min-w-0 bg-transparent text-base font-medium outline-none placeholder:text-zinc-500"
             />
           </div>
-        </div>
+          <button
+            type="submit"
+            className="mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange-600 text-white transition hover:bg-orange-700"
+            aria-label="Search events"
+          >
+            <SearchIcon />
+          </button>
+        </form>
 
         {/* Desktop nav — same links regardless of auth state */}
         <div className="ml-auto hidden items-center gap-5 whitespace-nowrap text-sm font-bold text-zinc-700 md:flex">

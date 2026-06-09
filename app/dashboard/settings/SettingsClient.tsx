@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { ModalPricing } from '@/components/ui/modal-pricing';
 
 export type Prefs = {
   notify_ticket_purchase: boolean;
@@ -186,6 +187,17 @@ export default function SettingsClient({
           </button>
         </div>
       </form>
+
+      {/* Section 2.5 — Plan */}
+      <div className="rounded-2xl border border-orange-200/80 bg-gradient-to-br from-orange-50 to-white p-5 shadow-sm sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-black tracking-tight text-zinc-950">Your Plan</h2>
+            <p className="mt-1 text-sm text-zinc-500">Upgrade to unlock unlimited events, fundraisers, and advanced analytics.</p>
+          </div>
+          <ModalPricing triggerLabel="Upgrade Plan" onConfirm={(id) => console.log('Plan selected:', id)} />
+        </div>
+      </div>
 
       {/* Section 3 — Organizer Profile Quick Link */}
       <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">

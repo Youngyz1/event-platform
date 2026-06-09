@@ -72,7 +72,7 @@ export default async function DashboardEventsPage() {
           <h1 className="mt-1 text-3xl font-black tracking-tight">Events</h1>
           <p className="mt-1 text-sm font-medium text-zinc-500">All your events, tickets sold, and revenue.</p>
         </div>
-        <Link href="/create-event" className="shrink-0 rounded-xl bg-orange-600 px-5 py-3 text-sm font-black text-white hover:bg-orange-700">
+        <Link href="/dashboard/events/new" className="shrink-0 rounded-xl bg-orange-600 px-5 py-3 text-sm font-black text-white hover:bg-orange-700">
           + Create Event
         </Link>
       </header>
@@ -151,7 +151,7 @@ function EmptyState() {
     <div className="flex flex-col items-center gap-5 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/60 px-8 py-20 text-center">
       <p className="text-2xl font-black text-zinc-950">No events yet</p>
       <p className="text-sm font-medium text-zinc-500">Create your first event to start selling tickets.</p>
-      <Link href="/create-event" className="rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white hover:bg-orange-700">
+      <Link href="/dashboard/events/new" className="rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white hover:bg-orange-700">
         Create Event
       </Link>
     </div>
