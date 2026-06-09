@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import EventCard from "@/components/EventCard";
 import Footer from "@/components/Footer";
+import MobileHomepageSearch from "@/components/MobileHomepageSearch";
 import { supabase } from "@/lib/supabase";
 import FeaturedSlider, { type FeaturedSliderItem } from "@/components/FeaturedSlider";
 import AboutUsSection from "@/components/ui/about-us-section";
@@ -149,10 +150,11 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen bg-white text-zinc-950">
+      <MobileHomepageSearch />
 
-      <section className="bg-white px-4 pt-6 sm:px-6 lg:px-8">
+      <section className="bg-white px-3 pt-4 sm:px-6 sm:pt-6 lg:px-8">
         <div
-          className="relative mx-auto flex min-h-[360px] max-w-7xl items-center overflow-hidden rounded-b-lg rounded-t-sm bg-cover bg-center px-6 py-16 sm:min-h-[420px] sm:px-12 lg:px-20"
+          className="relative mx-auto flex min-h-[330px] max-w-7xl items-center overflow-hidden rounded-b-lg rounded-t-sm bg-cover bg-center px-5 py-12 sm:min-h-[420px] sm:px-12 sm:py-16 lg:px-20"
           style={{
             backgroundImage:
               "url(https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1800&auto=format&fit=crop)",
@@ -181,24 +183,24 @@ export default async function HomePage() {
           </div>
         </div>
 
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 py-12 sm:grid-cols-4 lg:grid-cols-8">
+        <div className="mx-auto grid max-w-7xl grid-cols-4 gap-x-3 gap-y-8 py-9 sm:grid-cols-4 sm:gap-6 sm:py-12 lg:grid-cols-8">
           {categoryCards.map(({ name, icon: Icon }) => (
             <Link
               key={name}
               href={`/events?category=${encodeURIComponent(name)}`}
               className="group flex flex-col items-center text-center"
             >
-              <span className="flex h-24 w-24 items-center justify-center rounded-full border border-indigo-100 bg-white text-zinc-600 transition group-hover:border-orange-200 group-hover:text-orange-600">
-                <Icon className="h-9 w-9" strokeWidth={1.6} />
+              <span className="flex h-16 w-16 items-center justify-center rounded-full border border-indigo-100 bg-white text-zinc-600 transition group-hover:border-orange-200 group-hover:text-orange-600 sm:h-24 sm:w-24">
+                <Icon className="h-6 w-6 sm:h-9 sm:w-9" strokeWidth={1.6} />
               </span>
-              <span className="mt-3 text-sm font-bold text-zinc-950">{name}</span>
+              <span className="mt-2 text-[11px] font-bold leading-tight text-zinc-950 sm:mt-3 sm:text-sm">{name}</span>
             </Link>
           ))}
         </div>
       </section>
 
-      <section className="py-10 bg-white">
-        <div className="mx-auto max-w-7xl px-4 mb-5 sm:px-6 lg:px-8 flex items-center justify-between">
+      <section className="bg-white py-12 sm:py-10">
+        <div className="mx-auto mb-8 flex max-w-7xl items-center justify-between px-4 sm:mb-5 sm:px-6 lg:px-8">
           <p className="text-xs font-black uppercase tracking-widest text-orange-600">
             Featured This Week
           </p>
@@ -220,7 +222,7 @@ export default async function HomePage() {
         </div>
 
         {events.length > 0 ? (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {events.map((event) => (
               <EventCard
                 key={event.id}
@@ -238,6 +240,7 @@ export default async function HomePage() {
                   event.banner ||
                   "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop"
                 }
+                variant="homepage"
               />
             ))}
           </div>

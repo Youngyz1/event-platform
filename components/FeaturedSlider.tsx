@@ -73,11 +73,11 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
 
   return (
     <div className="relative w-full overflow-hidden group/featured-slider">
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-20 bg-gradient-to-r from-white to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-20 bg-gradient-to-l from-white to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-white to-transparent sm:w-20" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-white to-transparent sm:w-20" />
 
       <div
-        className="flex w-max gap-5 group-hover/featured-slider:[animation-play-state:paused]"
+        className="flex w-max gap-4 px-4 py-1 group-hover/featured-slider:[animation-play-state:paused] sm:gap-5 sm:px-0"
         style={{ animation: "featured-slider-scroll 38s linear infinite" }}
       >
         {looped.map((item, index) => {
@@ -88,7 +88,7 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
               <Link
                 key={`${item.type}-${item.id}-${index}`}
                 href={`/events/${item.slug}`}
-                className="relative h-52 w-72 flex-shrink-0 overflow-hidden rounded-2xl shadow-md transition-shadow hover:shadow-xl"
+                className="relative h-48 w-64 flex-shrink-0 overflow-hidden rounded-2xl shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72"
               >
                 <img
                   src={imageUrl}
@@ -125,7 +125,7 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
             <Link
               key={`${item.type}-${item.id}-${index}`}
               href={`/fundraisers/${item.slug}`}
-              className="relative h-52 w-72 flex-shrink-0 overflow-hidden rounded-2xl shadow-md transition-shadow hover:shadow-xl"
+              className="relative h-48 w-64 flex-shrink-0 overflow-hidden rounded-2xl shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72"
             >
               <img
                 src={imageUrl}

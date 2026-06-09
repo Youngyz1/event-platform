@@ -7,12 +7,23 @@ type EventCardProps = {
   image: string;
   slug: string | null;
   badge?: string;
+  variant?: "default" | "homepage";
 };
 
-export default function EventCard({ title, date, location, image, slug, badge }: EventCardProps) {
+export default function EventCard({ title, date, location, image, slug, badge, variant = "default" }: EventCardProps) {
+  const imageClass =
+    variant === "homepage"
+      ? "relative h-40 w-full bg-zinc-100 sm:h-56"
+      : "relative h-36 w-full bg-zinc-100 sm:h-56";
+  const bodyClass = variant === "homepage" ? "p-3 sm:p-5" : "px-1 py-3 sm:p-5";
+  const titleClass =
+    variant === "homepage"
+      ? "mt-1 text-[15px] font-black leading-snug text-zinc-950 sm:mt-2 sm:text-xl"
+      : "mt-1 text-lg font-black leading-snug text-zinc-950 sm:mt-2 sm:text-xl";
+
   const card = (
     <div className="overflow-hidden rounded-xl bg-white transition hover:shadow-lg sm:rounded-2xl sm:border sm:border-zinc-200">
-      <div className="relative h-36 w-full bg-zinc-100 sm:h-56">
+      <div className={imageClass}>
         <img
           src={image}
           alt={title}
@@ -26,10 +37,10 @@ export default function EventCard({ title, date, location, image, slug, badge }:
           </span>
         )}
       </div>
-      <div className="px-1 py-3 sm:p-5">
-        <p className="text-sm font-bold text-orange-600">{date}</p>
-        <h3 className="mt-1 text-lg font-black leading-snug text-zinc-950 sm:mt-2 sm:text-xl">{title}</h3>
-        <p className="mt-1 text-sm font-semibold text-zinc-600 sm:mt-2 sm:text-base">{location}</p>
+      <div className={bodyClass}>
+        <p className="text-xs font-bold text-orange-600 sm:text-sm">{date}</p>
+        <h3 className={titleClass}>{title}</h3>
+        <p className="mt-1 text-xs font-semibold text-zinc-600 sm:mt-2 sm:text-base">{location}</p>
       </div>
     </div>
   );
