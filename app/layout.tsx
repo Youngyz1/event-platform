@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import NavbarWrapper from "@/components/NavbarWrapper";
+import { getSiteUrl } from "@/lib/site-url";
 
 const font = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -11,8 +12,14 @@ const font = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getSiteUrl()),
+  applicationName: "EventBrithe",
   title: "EventBrithe",
   description: "Discover events, fundraisers, and community gatherings near you.",
+  openGraph: {
+    siteName: "EventBrithe",
+    type: "website",
+  },
 };
 
 export default function RootLayout({

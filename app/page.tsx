@@ -4,6 +4,7 @@ import EventCard from "@/components/EventCard";
 import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { getSiteUrl } from "@/lib/site-url";
 import {
   HOMEPAGE_HERO_SETTING_KEYS,
   getHomepageHeroSettings,
@@ -24,19 +25,57 @@ import {
 
 export const dynamic = "force-dynamic";
 
-// ── TASK 5 — Page metadata ───────────────────────────────────────────────────
-export const metadata: Metadata = {
-  title: "EventBrithe — Buy Tickets, Run Events & Fundraise",
-  description:
-    "Discover local events, buy tickets, and support fundraising campaigns on EventBrithe. The all-in-one platform for attendees, organizers, and donors.",
-  openGraph: {
-    title: "EventBrithe — Buy Tickets, Run Events & Fundraise",
-    description: "Discover events, buy tickets, support causes.",
-    type: "website",
-  },
-};
+const siteUrl = getSiteUrl();
+const homeTitle = "EventBrithe — Buy Tickets, Run Events & Fundraise";
+const homeDescription = "Discover events, buy tickets, support causes.";
 
-// ────────────────────────────────────────────────────────────────────────────
+async function getHeroForMetadata() {
+  try {
+    const supabaseAdmin = createSupabaseAdmin();
+    const { data } = await supabaseAdmin
+      .from("platform_settings")
+      .select("key, value")
+      .in("key", HOMEPAGE_HERO_SETTING_KEYS);
+
+    return getHomepageHeroSettings(data);
+  } catch {
+    return getHomepageHeroSettings(null);
+  }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const hero = await getHeroForMetadata();
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title: homeTitle,
+    description: homeDescription,
+    alternates: {
+      canonical: "/",
+    },
+    openGraph: {
+      title: homeTitle,
+      description: homeDescription,
+      url: "/",
+      siteName: "EventBrithe",
+      type: "website",
+      images: [
+        {
+          url: hero.imageUrl,
+          width: 1200,
+          height: 630,
+          alt: "EventBrithe — Buy Tickets, Run Events & Fundraise",
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: homeTitle,
+      description: homeDescription,
+      images: [hero.imageUrl],
+    },
+  };
+}
 
 const categoryCards = [
   { name: "Music", icon: Mic },
