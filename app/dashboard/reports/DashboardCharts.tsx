@@ -18,8 +18,8 @@ export type TopEvent   = { title: string; revenue: number };
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
-      <h2 className="mb-5 text-sm font-black uppercase tracking-wide text-zinc-500">{title}</h2>
+    <div className="rounded-xl border border-zinc-200/80 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-6">
+      <h2 className="mb-3 text-[10px] font-black uppercase tracking-wide text-zinc-500 sm:mb-5 sm:text-sm">{title}</h2>
       {children}
     </div>
   );
@@ -43,59 +43,65 @@ const tooltipStyle = {
 export function TicketsChart({ data }: { data: DailyPoint[] }) {
   if (!data.length) return <EmptyChart message="No ticket sales in the last 30 days." />;
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-        <CartesianGrid {...gridProps} vertical={false} />
-        <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
-        <YAxis tick={tickStyle} tickLine={false} axisLine={false} allowDecimals={false} />
-        <Tooltip {...tooltipStyle} formatter={(v: unknown) => [Number(v), "Tickets"]} />
-        <Line
-          type="monotone"
-          dataKey="value"
-          stroke="#f97316"
-          strokeWidth={2.5}
-          dot={false}
-          activeDot={{ r: 4, fill: "#f97316" }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="h-44 sm:h-56">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <CartesianGrid {...gridProps} vertical={false} />
+          <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
+          <YAxis tick={tickStyle} tickLine={false} axisLine={false} allowDecimals={false} />
+          <Tooltip {...tooltipStyle} formatter={(v: unknown) => [Number(v), "Tickets"]} />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#f97316"
+            strokeWidth={2.5}
+            dot={false}
+            activeDot={{ r: 4, fill: "#f97316" }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
 export function RevenueChart({ data }: { data: DailyPoint[] }) {
   if (!data.length) return <EmptyChart message="No revenue data in the last 30 days." />;
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-        <CartesianGrid {...gridProps} vertical={false} />
-        <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
-        <YAxis tick={tickStyle} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-        <Tooltip {...tooltipStyle} formatter={(v: unknown) => [`$${Number(v).toFixed(2)}`, "Revenue"]} />
-        <Bar dataKey="value" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={32} />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="h-44 sm:h-56">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <CartesianGrid {...gridProps} vertical={false} />
+          <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
+          <YAxis tick={tickStyle} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+          <Tooltip {...tooltipStyle} formatter={(v: unknown) => [`$${Number(v).toFixed(2)}`, "Revenue"]} />
+          <Bar dataKey="value" fill="#f97316" radius={[6, 6, 0, 0]} maxBarSize={32} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
 export function DonationsChart({ data }: { data: DailyPoint[] }) {
   if (!data.length) return <EmptyChart message="No donations in the last 30 days." />;
   return (
-    <ResponsiveContainer width="100%" height={220}>
-      <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-        <CartesianGrid {...gridProps} vertical={false} />
-        <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
-        <YAxis tick={tickStyle} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
-        <Tooltip {...tooltipStyle} formatter={(v: unknown) => [`$${Number(v).toFixed(2)}`, "Donations"]} />
-        <Line
-          type="monotone"
-          dataKey="value"
-          stroke="#10b981"
-          strokeWidth={2.5}
-          dot={false}
-          activeDot={{ r: 4, fill: "#10b981" }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="h-44 sm:h-56">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <CartesianGrid {...gridProps} vertical={false} />
+          <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
+          <YAxis tick={tickStyle} tickLine={false} axisLine={false} tickFormatter={(v) => `$${v}`} />
+          <Tooltip {...tooltipStyle} formatter={(v: unknown) => [`$${Number(v).toFixed(2)}`, "Donations"]} />
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke="#10b981"
+            strokeWidth={2.5}
+            dot={false}
+            activeDot={{ r: 4, fill: "#10b981" }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -144,8 +150,8 @@ export function ChartsGrid({
   topEvents:  TopEvent[];
 }) {
   return (
-    <div className="space-y-6">
-      <div className="grid gap-6 xl:grid-cols-2">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
         <ChartCard title="Tickets Sold — Last 30 Days">
           <TicketsChart data={tickets} />
         </ChartCard>
@@ -153,7 +159,7 @@ export function ChartsGrid({
           <RevenueChart data={revenue} />
         </ChartCard>
       </div>
-      <div className="grid gap-6 xl:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
         <ChartCard title="Donations — Last 30 Days">
           <DonationsChart data={donations} />
         </ChartCard>

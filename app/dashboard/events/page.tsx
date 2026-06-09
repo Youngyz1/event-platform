@@ -65,19 +65,19 @@ export default async function DashboardEventsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col justify-between gap-4 rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:px-6">
+    <div className="space-y-4 sm:space-y-6">
+      <header className="flex items-center justify-between gap-3 rounded-xl border border-zinc-200/80 bg-white px-4 py-3 shadow-sm sm:rounded-2xl sm:px-6 sm:py-4">
         <div>
-          <p className="text-xs font-black uppercase tracking-wide text-orange-600">Dashboard</p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight">Events</h1>
-          <p className="mt-1 text-sm font-medium text-zinc-500">All your events, tickets sold, and revenue.</p>
+          <p className="text-[10px] font-black uppercase tracking-wide text-orange-600 sm:text-xs">Dashboard</p>
+          <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Events</h1>
+          <p className="mt-1 text-xs font-medium text-zinc-500 sm:text-sm">All your events, tickets sold, and revenue.</p>
         </div>
-        <Link href="/dashboard/events/new" className="shrink-0 rounded-xl bg-orange-600 px-5 py-3 text-sm font-black text-white hover:bg-orange-700">
+        <Link href="/dashboard/events/new" className="shrink-0 rounded-lg bg-orange-600 px-3 py-2 text-xs font-black text-white hover:bg-orange-700 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm">
           + Create Event
         </Link>
       </header>
 
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <div className="rounded-xl border border-zinc-200/80 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-6">
         {rows.length === 0 ? (
           <EmptyState />
         ) : (
@@ -148,10 +148,10 @@ export default async function DashboardEventsPage() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center gap-5 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/60 px-8 py-20 text-center">
-      <p className="text-2xl font-black text-zinc-950">No events yet</p>
-      <p className="text-sm font-medium text-zinc-500">Create your first event to start selling tickets.</p>
-      <Link href="/dashboard/events/new" className="rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white hover:bg-orange-700">
+    <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/60 px-6 py-14 text-center sm:rounded-2xl sm:px-8 sm:py-20">
+      <p className="text-xl font-black text-zinc-950 sm:text-2xl">No events yet</p>
+      <p className="text-xs font-medium text-zinc-500 sm:text-sm">Create your first event to start selling tickets.</p>
+      <Link href="/dashboard/events/new" className="rounded-lg bg-orange-600 px-5 py-2.5 text-xs font-black text-white hover:bg-orange-700 sm:rounded-xl sm:px-6 sm:py-3 sm:text-sm">
         Create Event
       </Link>
     </div>

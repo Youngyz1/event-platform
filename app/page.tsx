@@ -211,17 +211,17 @@ export default async function HomePage() {
             backgroundImage: `url("${hero.imageUrl.replaceAll('"', "")}")`,
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-black/5 sm:from-black/85 sm:via-black/45 sm:to-black/10" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10 sm:from-black/85 sm:via-black/48 sm:to-black/15" />
           <div className="relative max-w-[92%] sm:max-w-3xl">
-            <p className="inline-flex bg-pink-200 px-2 py-1 text-[8px] font-black uppercase tracking-wide text-zinc-950 sm:px-3 sm:text-sm">
+            <p className="text-[8px] font-black uppercase tracking-wide text-white drop-shadow sm:text-sm">
               {hero.eyebrow}
             </p>
             <h1 className="mt-2 max-w-full text-[22px] font-black leading-[1.04] tracking-tight text-white sm:mt-3 sm:text-6xl lg:text-7xl">
-              <span className="whitespace-nowrap bg-indigo-300 px-2 text-zinc-950 sm:box-decoration-clone sm:px-3">
+              <span className="whitespace-nowrap drop-shadow-[0_3px_12px_rgba(0,0,0,0.65)]">
                 {hero.headlineLine1}
               </span>
               <br />
-              <span className="whitespace-nowrap bg-pink-200 px-2 text-zinc-950 sm:box-decoration-clone sm:px-3">
+              <span className="whitespace-nowrap drop-shadow-[0_3px_12px_rgba(0,0,0,0.65)]">
                 {hero.headlineLine2}
               </span>
             </h1>

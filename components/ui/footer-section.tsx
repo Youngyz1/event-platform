@@ -62,37 +62,39 @@ function Footerdemo() {
   }
 
   return (
-    <footer className="relative border-t border-zinc-200 bg-white text-zinc-950 transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white">
-      <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 lg:px-8">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+    <footer className="relative border-t border-zinc-900 bg-zinc-950 text-white transition-colors duration-300">
+      <div className="mx-auto max-w-7xl px-6 py-12 sm:px-8 md:px-10 lg:px-8">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-16">
           <div>
-            <BrandMark textClassName="text-zinc-950 dark:text-white" />
-            <h2 className="mt-6 text-3xl font-bold tracking-tight">
+            <BrandMark textClassName="text-white" />
+            <h2 className="mt-7 text-3xl font-bold tracking-tight sm:text-4xl lg:text-3xl">
               Stay connected
             </h2>
-            <p className="mb-6 mt-3 text-sm leading-6 text-zinc-600 dark:text-zinc-400">
+            <p className="mb-8 mt-4 max-w-xs text-base leading-7 text-zinc-400 sm:text-lg lg:text-base">
               Get event launches, fundraiser updates, and platform news.
             </p>
             <form onSubmit={handleSubscribe} className="relative">
               <Input
                 type="email"
                 placeholder="Enter your email"
-                className="h-11 rounded-full pr-12"
+                className="h-14 rounded-full border-zinc-800 bg-zinc-950 px-5 pr-16 text-base font-semibold text-white placeholder:text-zinc-500 focus-visible:ring-orange-600"
               />
               <Button
                 type="submit"
                 size="icon"
-                className="absolute right-1 top-1 h-9 w-9 rounded-full bg-orange-600 text-white transition-transform hover:scale-105 hover:bg-orange-700"
+                className="absolute right-1.5 top-1.5 h-11 w-11 rounded-full bg-orange-600 text-white transition-transform hover:scale-105 hover:bg-orange-700"
               >
-                <Send className="h-4 w-4" />
+                <Send className="h-5 w-5" />
                 <span className="sr-only">Subscribe</span>
               </Button>
             </form>
           </div>
 
           <div>
-            <h3 className="mb-4 text-lg font-semibold">Quick links</h3>
-            <nav className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
+            <h3 className="mb-5 text-2xl font-semibold tracking-tight lg:text-xl">
+              Quick links
+            </h3>
+            <nav className="space-y-3 text-base text-zinc-400 sm:text-lg lg:text-base">
               {quickLinks.map(([label, href]) => (
                 <Link
                   key={href}
@@ -106,8 +108,10 @@ function Footerdemo() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-lg font-semibold">Contact us</h3>
-            <address className="space-y-2 text-sm not-italic text-zinc-600 dark:text-zinc-400">
+            <h3 className="mb-5 text-2xl font-semibold tracking-tight lg:text-xl">
+              Contact us
+            </h3>
+            <address className="max-w-xs space-y-3 text-base leading-7 text-zinc-400 not-italic sm:text-lg lg:text-base">
               <p>EventBrithe Support</p>
               <p>Events, fundraising & community commerce.</p>
               <p>
@@ -123,8 +127,10 @@ function Footerdemo() {
           </div>
 
           <div>
-            <h3 className="mb-4 text-lg font-semibold">Follow us</h3>
-            <div className="mb-6 flex space-x-3">
+            <h3 className="mb-6 text-2xl font-semibold tracking-tight lg:text-xl">
+              Follow us
+            </h3>
+            <div className="mb-8 flex flex-wrap gap-4">
               <TooltipProvider>
                 {socialLinks.map(([label, Icon]) => (
                   <Tooltip key={label}>
@@ -132,9 +138,9 @@ function Footerdemo() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="rounded-full border-zinc-200 bg-white text-zinc-700 hover:border-orange-200 hover:text-orange-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
+                        className="h-12 w-12 rounded-full border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-orange-500 hover:bg-zinc-900 hover:text-orange-500"
                       >
-                        <Icon className="h-4 w-4" />
+                        <Icon className="h-5 w-5" />
                         <span className="sr-only">{label}</span>
                       </Button>
                     </TooltipTrigger>
@@ -145,14 +151,15 @@ function Footerdemo() {
                 ))}
               </TooltipProvider>
             </div>
-            <div className="flex items-center space-x-2">
-              <Sun className="h-4 w-4" />
+            <div className="flex items-center space-x-3">
+              <Sun className="h-5 w-5 text-white" />
               <Switch
                 id="dark-mode"
                 checked={isDarkMode}
                 onCheckedChange={setIsDarkMode}
+                className="data-[state=checked]:bg-orange-600"
               />
-              <Moon className="h-4 w-4" />
+              <Moon className="h-5 w-5 text-white" />
               <Label htmlFor="dark-mode" className="sr-only">
                 Toggle dark mode
               </Label>
@@ -160,8 +167,8 @@ function Footerdemo() {
           </div>
         </div>
 
-        <div className="mt-12 flex items-center justify-center border-t border-zinc-200 pt-8 text-center dark:border-zinc-800">
-          <p className="text-sm text-zinc-500">
+        <div className="mt-12 flex items-center justify-center border-t border-zinc-800 pt-8 text-center lg:mt-16">
+          <p className="text-base text-zinc-500">
             © 2026 EventBrithe. All rights reserved.
           </p>
         </div>
