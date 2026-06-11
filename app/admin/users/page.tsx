@@ -6,12 +6,16 @@
  */
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 type UserRow = {
   id: string;
+  full_name: string;
   email: string;
   role: string;
   status: string;
+  organizer_count: number;
+  event_count: number;
   created_at: string;
 };
 
@@ -63,6 +67,7 @@ export default function AdminUsersPage() {
 
   const filtered = users.filter(
     (u) =>
+      u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
       u.email?.toLowerCase().includes(search.toLowerCase()) ||
       u.role?.toLowerCase().includes(search.toLowerCase())
   );
@@ -84,7 +89,7 @@ export default function AdminUsersPage() {
       <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
         <input
           type="search"
-          placeholder="Search by email or role…"
+          placeholder="Search by name, email, or role…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="mb-5 w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none focus:border-violet-500"
@@ -96,19 +101,27 @@ export default function AdminUsersPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
+            <table className="w-full min-w-[920px] text-left text-sm">
               <thead className="border-b border-zinc-200 text-xs font-black uppercase tracking-wide text-zinc-400">
                 <tr>
+                  <th className="py-3 pr-4">Full Name</th>
                   <th className="py-3 pr-4">Email</th>
                   <th className="py-3 pr-4">Role</th>
                   <th className="py-3 pr-4">Status</th>
+                  <th className="py-3 pr-4">Organizers</th>
+                  <th className="py-3 pr-4">Events</th>
                   <th className="py-3 pr-4">Joined</th>
                   <th className="py-3">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {filtered.map((u) => (
-                  <tr key={u.id}>
+                  <tr key={u.id} className="hover:bg-zinc-50/70">
+                    <td className="py-3 pr-4">
+                      <Link href={`/admin/users/${u.id}`} className="font-black text-zinc-900 hover:text-violet-700 hover:underline">
+                        {u.full_name || 'User'}
+                      </Link>
+                    </td>
                     <td className="py-3 pr-4 font-semibold text-zinc-800">{u.email}</td>
                     <td className="py-3 pr-4">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-black uppercase ${roleBadge(u.role)}`}>
@@ -120,33 +133,40 @@ export default function AdminUsersPage() {
                         {u.status}
                       </span>
                     </td>
+                    <td className="py-3 pr-4 font-black text-zinc-900">{u.organizer_count ?? 0}</td>
+                    <td className="py-3 pr-4 font-black text-zinc-900">{u.event_count ?? 0}</td>
                     <td className="py-3 pr-4 text-zinc-500">
                       {new Date(u.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </td>
                     <td className="py-3">
-                      {u.status === 'active' ? (
-                        <button
-                          disabled={working === u.id}
-                          onClick={() => updateUser(u.id, 'suspended')}
-                          className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-black text-red-600 hover:bg-red-50 disabled:opacity-50"
-                        >
-                          {working === u.id ? '…' : 'Suspend'}
-                        </button>
-                      ) : (
-                        <button
-                          disabled={working === u.id}
-                          onClick={() => updateUser(u.id, 'active')}
-                          className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
-                        >
-                          {working === u.id ? '…' : 'Reactivate'}
-                        </button>
-                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <Link href={`/admin/users/${u.id}`} className="rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-xs font-black text-violet-700 hover:bg-violet-50">
+                          View
+                        </Link>
+                        {u.status === 'active' ? (
+                          <button
+                            disabled={working === u.id}
+                            onClick={() => updateUser(u.id, 'suspended')}
+                            className="rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-black text-red-600 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            {working === u.id ? '…' : 'Suspend'}
+                          </button>
+                        ) : (
+                          <button
+                            disabled={working === u.id}
+                            onClick={() => updateUser(u.id, 'active')}
+                            className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                          >
+                            {working === u.id ? '…' : 'Reactivate'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="py-10 text-center text-sm text-zinc-400">No users found.</td>
+                    <td colSpan={8} className="py-10 text-center text-sm text-zinc-400">No users found.</td>
                   </tr>
                 )}
               </tbody>
