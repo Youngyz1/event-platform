@@ -26,6 +26,12 @@ type GalleryItem = {
   caption: string;
 };
 
+type OrganizerProfile = {
+  id: string;
+  name: string;
+  photo?: string | null;
+};
+
 function generateSlug(title: string) {
   return title
     .toLowerCase()
@@ -49,6 +55,7 @@ export default function CreateFundraiserPage() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [uploadProgress, setUploadProgress] = useState("");
   const [visibility, setVisibility] = useState("public");
+  const [organizers, setOrganizers] = useState<OrganizerProfile[]>([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -56,6 +63,7 @@ export default function CreateFundraiserPage() {
     story: "",
     goal: "",
     raised: "",
+    organizer_id: "",
     organizer: "",
     banner: "",
     category: "Charity",
@@ -68,12 +76,42 @@ export default function CreateFundraiserPage() {
   ]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!data.session) {
         router.push("/login");
         return;
       }
       setEmail(data.session.user.email || "");
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", data.session.user.id)
+        .maybeSingle();
+      if (profile?.status === "suspended") {
+        router.push("/login?suspended=1");
+        return;
+      }
+      const { data: organizerProfiles, error: organizerError } = await supabase
+        .from("organizers")
+        .select("id, name, photo")
+        .eq("user_id", data.session.user.id)
+        .order("created_at", { ascending: true });
+
+      if (organizerError) {
+        setError(organizerError.message);
+      }
+
+      const profiles = organizerProfiles ?? [];
+      const requestedOrganizerId = new URLSearchParams(window.location.search).get("organizer");
+      const selectedOrganizer =
+        profiles.find((organizer) => organizer.id === requestedOrganizerId) ??
+        profiles[0];
+      setOrganizers(profiles);
+      setForm((current) => ({
+        ...current,
+        organizer_id: current.organizer_id || selectedOrganizer?.id || "",
+        organizer: current.organizer || selectedOrganizer?.name || "",
+      }));
       setChecking(false);
     });
   }, [router]);
@@ -86,6 +124,15 @@ export default function CreateFundraiserPage() {
 
   function handleChange(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
     setNotice("");
+    if (event.target.name === "organizer_id") {
+      const selectedOrganizer = organizers.find((organizer) => organizer.id === event.target.value);
+      setForm({
+        ...form,
+        organizer_id: event.target.value,
+        organizer: selectedOrganizer?.name || "",
+      });
+      return;
+    }
     setForm({ ...form, [event.target.name]: event.target.value });
   }
 
@@ -138,6 +185,28 @@ export default function CreateFundraiserPage() {
       router.push("/login");
       return;
     }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    if (profile?.status === "suspended") {
+      router.push("/login?suspended=1");
+      return;
+    }
+
+    if (!form.organizer_id) {
+      setError("Choose an organizer profile before launching this fundraiser.");
+      setLoading(false);
+      return;
+    }
+
+    const selectedOrganizer = organizers.find((organizer) => organizer.id === form.organizer_id);
+    if (!selectedOrganizer) {
+      setError("Choose an organizer profile that belongs to your account.");
+      setLoading(false);
+      return;
+    }
 
     let video_url = null;
     if (videoFile) {
@@ -168,6 +237,7 @@ export default function CreateFundraiserPage() {
         goal: Number(form.goal),
         raised: Number(form.raised) || 0,
         organizer: form.organizer,
+        organizer_id: form.organizer_id,
         banner: form.banner,
         video_url,
         user_id: session.user.id,
@@ -337,8 +407,17 @@ export default function CreateFundraiserPage() {
                   <input name="title" value={form.title} onChange={handleChange} required type="text" placeholder="Support Education for Underprivileged Children" className={greenInputClass} />
                 </CreatorField>
 
-                <CreatorField label="Organized By">
-                  <input name="organizer" value={form.organizer} onChange={handleChange} type="text" placeholder="Community Future Initiative" className={greenInputClass} />
+                <CreatorField label="Organizer Profile">
+                  <select name="organizer_id" value={form.organizer_id} onChange={handleChange} required disabled={organizers.length === 0} className={greenInputClass}>
+                    {organizers.length === 0
+                      ? <option value="">No organizer profiles yet</option>
+                      : organizers.map((organizer) => <option key={organizer.id} value={organizer.id}>{organizer.name}</option>)}
+                  </select>
+                  {organizers.length === 0 && (
+                    <Link href="/create-organizer" className="mt-2 inline-block text-sm font-black text-emerald-700 hover:text-emerald-800">
+                      Create an organizer profile
+                    </Link>
+                  )}
                 </CreatorField>
 
                 <CreatorField label="Short Description" hint={`${form.short_description.length}/160`}>

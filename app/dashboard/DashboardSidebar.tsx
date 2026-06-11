@@ -19,6 +19,7 @@ const links: SidebarLink[] = [
   { label: "Overview",          href: "/dashboard",            exact: true },
   { label: "Events",            href: "/dashboard/events" },
   { label: "Fundraisers",       href: "/dashboard/fundraisers" },
+  { label: "Organizers",        href: "/dashboard/organizers" },
   { label: "Donations",         href: "/dashboard/donations" },
   { label: "Attendees",         href: "/dashboard/attendees" },
   { label: "Reports",           href: "/dashboard/reports" },

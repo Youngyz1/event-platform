@@ -29,30 +29,27 @@ const visibilityBadge: Record<string, string> = {
 export default async function DashboardEventsPage() {
   const ctx = await getDashboardContext();
   if (!ctx) redirect('/login');
-  const { organizerId } = ctx;
+  const { organizerIds } = ctx;
 
-  if (!organizerId) {
+  if (organizerIds.length === 0) {
     return <EmptyState />;
   }
 
-  // ── Both queries run in parallel ─────────────────────────────────────────────
-  const [eventsResult, ordersResult] = await Promise.all([
-    supabaseAdmin
-      .from('events')
-      .select('id, title, slug, event_date, status, visibility, is_featured')
-      .eq('organizer_id', organizerId)
-      .order('created_at', { ascending: false }),
-
-    // Filter ticket_orders by the organizer's events via a join
-    supabaseAdmin
-      .from('ticket_orders')
-      .select('event_id, quantity, total_amount')
-      .eq('status', 'valid')
-      // Supabase lets us filter via a foreign-key relation column
-      .filter('events.organizer_id', 'eq', organizerId),
-  ]);
+  const eventsResult = await supabaseAdmin
+    .from('events')
+    .select('id, title, slug, event_date, status, visibility, is_featured')
+    .in('organizer_id', organizerIds)
+    .order('created_at', { ascending: false });
 
   const rows = eventsResult.data ?? [];
+  const eventIds = rows.map((event) => event.id);
+  const ordersResult = eventIds.length > 0
+    ? await supabaseAdmin
+        .from('ticket_orders')
+        .select('event_id, quantity, total_amount')
+        .eq('status', 'valid')
+        .in('event_id', eventIds)
+    : { data: [] };
 
   // Build ticket map from flat orders list
   const ticketMap: Record<string, { count: number; revenue: number }> = {};

@@ -101,6 +101,15 @@ export default function CreateEventPage() {
       }
 
       setEmail(data.session.user.email || "");
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", data.session.user.id)
+        .maybeSingle();
+      if (profile?.status === "suspended") {
+        router.push("/login?suspended=1");
+        return;
+      }
 
       const { data: organizerProfiles, error: organizerError } = await supabase
         .from("organizers")
@@ -111,10 +120,15 @@ export default function CreateEventPage() {
       if (organizerError) setError(organizerError.message);
 
       const profiles = organizerProfiles ?? [];
+      const requestedOrganizerId = new URLSearchParams(window.location.search).get("organizer");
+      const selectedOrganizerId =
+        requestedOrganizerId && profiles.some((organizer) => organizer.id === requestedOrganizerId)
+          ? requestedOrganizerId
+          : profiles[0]?.id || "";
       setOrganizers(profiles);
       setForm((current) => ({
         ...current,
-        organizer_id: current.organizer_id || profiles[0]?.id || "",
+        organizer_id: current.organizer_id || selectedOrganizerId,
       }));
       setChecking(false);
     });
@@ -156,6 +170,15 @@ export default function CreateEventPage() {
 
     if (!session) {
       router.push("/login");
+      return;
+    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    if (profile?.status === "suspended") {
+      router.push("/login?suspended=1");
       return;
     }
 

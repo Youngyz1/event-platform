@@ -18,22 +18,38 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const [{ data: events }, { data: fundraisers }, { data: organizers }] = await Promise.all([
-    supabaseAdmin
-      .from("events")
-      .select("id, title, slug, category, event_date, city")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
-    supabaseAdmin
-      .from("fundraisers")
-      .select("id, title, slug, goal, raised")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
-    supabaseAdmin
-      .from("organizers")
-      .select("id, name, bio, photo")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("status")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.status === "suspended") {
+    return NextResponse.json({ error: "Your account is suspended." }, { status: 403 });
+  }
+
+  const { data: organizers } = await supabaseAdmin
+    .from("organizers")
+    .select("id, name, bio, photo")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const organizerIds = (organizers || []).map((organizer) => organizer.id);
+
+  const [{ data: events }, { data: fundraisers }] = await Promise.all([
+    organizerIds.length > 0
+      ? supabaseAdmin
+          .from("events")
+          .select("id, title, slug, category, event_date, city")
+          .in("organizer_id", organizerIds)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
+    organizerIds.length > 0
+      ? supabaseAdmin
+          .from("fundraisers")
+          .select("id, title, slug, goal, raised")
+          .in("organizer_id", organizerIds)
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: [] }),
   ]);
 
   const fundraiserIds = (fundraisers || []).map((fundraiser) => fundraiser.id);

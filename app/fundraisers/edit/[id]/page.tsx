@@ -14,6 +14,11 @@ type GalleryItem = {
   caption: string;
 };
 
+type OrganizerProfile = {
+  id: string;
+  name: string;
+};
+
 const inputClass =
   "w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-green-500";
 
@@ -25,8 +30,10 @@ export default function EditFundraiserPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [slug, setSlug] = useState("");
+  const [organizers, setOrganizers] = useState<OrganizerProfile[]>([]);
   const [form, setForm] = useState({
     title: "",
+    organizer_id: "",
     organizer: "",
     goal: "",
     raised: "",
@@ -51,23 +58,60 @@ export default function EditFundraiserPage() {
         return;
       }
 
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      if (profile?.status === "suspended") {
+        router.push("/login?suspended=1");
+        return;
+      }
+
+      const { data: organizerProfiles, error: organizerError } = await supabase
+        .from("organizers")
+        .select("id, name")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: true });
+
+      if (organizerError) {
+        setError(organizerError.message);
+        setChecking(false);
+        return;
+      }
+
+      const ownedOrganizers = organizerProfiles ?? [];
+      setOrganizers(ownedOrganizers);
+      const ownedOrganizerIds = ownedOrganizers.map((organizer) => organizer.id);
+
       const { data: fundraiser, error: fundraiserError } = await supabase
         .from("fundraisers")
         .select("*")
         .eq("id", fundraiserId)
-        .eq("user_id", session.user.id)
         .single();
 
-      if (fundraiserError || !fundraiser) {
+      if (
+        fundraiserError ||
+        !fundraiser ||
+        (
+          fundraiser.user_id !== session.user.id &&
+          !ownedOrganizerIds.includes(fundraiser.organizer_id)
+        )
+      ) {
         setError("Fundraiser not found or you do not have access.");
         setChecking(false);
         return;
       }
 
+      const selectedOrganizer =
+        ownedOrganizers.find((organizer) => organizer.id === fundraiser.organizer_id) ??
+        ownedOrganizers[0];
+
       setSlug(fundraiser.slug || "");
       setForm({
         title: fundraiser.title || "",
-        organizer: fundraiser.organizer || "",
+        organizer_id: selectedOrganizer?.id || "",
+        organizer: selectedOrganizer?.name || fundraiser.organizer || "",
         goal: fundraiser.goal?.toString() || "",
         raised: fundraiser.raised?.toString() || "",
         banner: fundraiser.banner || "",
@@ -101,6 +145,15 @@ export default function EditFundraiserPage() {
   }, [fundraiserId, router]);
 
   function update(field: string, value: string) {
+    if (field === "organizer_id") {
+      const selectedOrganizer = organizers.find((organizer) => organizer.id === value);
+      setForm((current) => ({
+        ...current,
+        organizer_id: value,
+        organizer: selectedOrganizer?.name || current.organizer,
+      }));
+      return;
+    }
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -133,12 +186,18 @@ export default function EditFundraiserPage() {
 
     try {
       const nextSlug = generateSlug(form.title);
+      const selectedOrganizer = organizers.find((organizer) => organizer.id === form.organizer_id);
+      if (!selectedOrganizer) {
+        throw new Error("Choose an organizer profile that belongs to your account.");
+      }
+
       const { error: updateError } = await supabase
         .from("fundraisers")
         .update({
           title: form.title,
           slug: nextSlug,
-          organizer: form.organizer,
+          organizer: selectedOrganizer.name,
+          organizer_id: selectedOrganizer.id,
           goal: Number(form.goal),
           raised: Number(form.raised) || 0,
           banner: form.banner,
@@ -198,7 +257,17 @@ export default function EditFundraiserPage() {
 
         <form onSubmit={handleSubmit} className="space-y-7 rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
           <input value={form.title} onChange={(event) => update("title", event.target.value)} required placeholder="Fundraiser title" className={inputClass} />
-          <input value={form.organizer} onChange={(event) => update("organizer", event.target.value)} placeholder="Organizer name" className={inputClass} />
+          <select value={form.organizer_id} onChange={(event) => update("organizer_id", event.target.value)} required className={inputClass}>
+            {organizers.length === 0 ? (
+              <option value="">No organizer profiles yet</option>
+            ) : (
+              organizers.map((organizer) => (
+                <option key={organizer.id} value={organizer.id}>
+                  {organizer.name}
+                </option>
+              ))
+            )}
+          </select>
           <div className="grid gap-5 md:grid-cols-2">
             <input value={form.goal} onChange={(event) => update("goal", event.target.value)} required type="number" min="1" placeholder="Goal" className={inputClass} />
             <input value={form.raised} onChange={(event) => update("raised", event.target.value)} type="number" min="0" placeholder="Raised so far" className={inputClass} />

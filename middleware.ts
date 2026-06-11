@@ -7,8 +7,8 @@
  *   /admin/*     → redirect to /    if not authenticated
  *                  (role check happens inside the admin layout via requireAdmin())
  *
- * We deliberately keep this fast and simple: only check session existence here.
- * Role/permission checks run in the page or layout server component, not here.
+ * This checks session existence and blocks suspended profiles from protected
+ * areas. Admin role checks still run in the admin layout/server helpers.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -57,6 +57,19 @@ export async function middleware(req: NextRequest) {
     const loginUrl = req.nextUrl.clone();
     loginUrl.pathname = '/login';
     loginUrl.searchParams.set('redirect', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('status')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profile?.status === 'suspended') {
+    const loginUrl = req.nextUrl.clone();
+    loginUrl.pathname = '/login';
+    loginUrl.searchParams.set('suspended', '1');
     return NextResponse.redirect(loginUrl);
   }
 

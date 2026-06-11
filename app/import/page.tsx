@@ -250,6 +250,16 @@ function ImportClient() {
         return;
       }
 
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", data.session.user.id)
+        .maybeSingle();
+      if (profile?.status === "suspended") {
+        router.push("/login?suspended=1");
+        return;
+      }
+
       const { data: profiles, error: organizerError } = await supabase
         .from("organizers")
         .select("id, name")
@@ -549,6 +559,16 @@ function ImportClient() {
 
       if (!session) {
         router.push("/login");
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      if (profile?.status === "suspended") {
+        router.push("/login?suspended=1");
         return;
       }
 

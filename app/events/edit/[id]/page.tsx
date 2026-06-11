@@ -58,12 +58,37 @@ export default function EditEventPage() {
         return;
       }
 
-      const [{ data: event, error: eventError }, { data: organizerRows }] = await Promise.all([
-        supabase.from("events").select("*").eq("id", eventId).eq("user_id", session.user.id).single(),
-        supabase.from("organizers").select("id, name").eq("user_id", session.user.id).order("created_at", { ascending: false }),
-      ]);
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      if (profile?.status === "suspended") {
+        router.push("/login?suspended=1");
+        return;
+      }
 
-      if (eventError || !event) {
+      const { data: organizerRows } = await supabase
+        .from("organizers")
+        .select("id, name")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false });
+
+      const ownedOrganizerIds = (organizerRows ?? []).map((organizer) => organizer.id);
+      const { data: event, error: eventError } = await supabase
+        .from("events")
+        .select("*")
+        .eq("id", eventId)
+        .single();
+
+      if (
+        eventError ||
+        !event ||
+        (
+          event.user_id !== session.user.id &&
+          !ownedOrganizerIds.includes(event.organizer_id)
+        )
+      ) {
         setError("Event not found or you do not have access.");
         setChecking(false);
         return;
@@ -125,6 +150,10 @@ export default function EditEventPage() {
     setError("");
 
     try {
+      if (!organizers.some((organizer) => organizer.id === form.organizer_id)) {
+        throw new Error("Choose an organizer profile that belongs to your account.");
+      }
+
       const nextSlug = generateSlug(form.title);
       const { error: updateError } = await supabase
         .from("events")

@@ -30,7 +30,7 @@ export default async function DashboardReportsPage() {
   const ctx = await getDashboardContext();
   if (!ctx) redirect("/login");
 
-  const { organizerId } = ctx;
+  const { organizerIds } = ctx;
 
   // Dates
   const since = new Date();
@@ -38,41 +38,47 @@ export default async function DashboardReportsPage() {
   const sinceISO  = since.toISOString();
   const dateRange = buildDateRange(30);
 
-  if (!organizerId) {
+  if (organizerIds.length === 0) {
     return <EmptyReports />;
   }
 
-  // ── All four data sources fetched in parallel ────────────────────────────────
-  const [eventsResult, fundraisersResult, ordersResult, donationRowsResult] =
-    await Promise.all([
-      supabaseAdmin
-        .from("events")
-        .select("id, title")
-        .eq("organizer_id", organizerId),
+  const [eventsResult, fundraisersResult] = await Promise.all([
+    supabaseAdmin
+      .from("events")
+      .select("id, title")
+      .in("organizer_id", organizerIds),
 
-      supabaseAdmin
-        .from("fundraisers")
-        .select("id")
-        .eq("organizer_id", organizerId),
-
-      // ticket_orders filtered via foreign-key join — no event IDs needed first
-      supabaseAdmin
-        .from("ticket_orders")
-        .select("event_id, quantity, total_amount, created_at")
-        .eq("status", "valid")
-        .filter("events.organizer_id", "eq", organizerId)
-        .gte("created_at", sinceISO),
-
-      // donations filtered via foreign-key join — no fundraiser IDs needed first
-      supabaseAdmin
-        .from("donations")
-        .select("amount, created_at")
-        .eq("status", "succeeded")
-        .filter("fundraisers.organizer_id", "eq", organizerId)
-        .gte("created_at", sinceISO),
-    ]);
+    supabaseAdmin
+      .from("fundraisers")
+      .select("id")
+      .in("organizer_id", organizerIds),
+  ]);
 
   const events       = eventsResult.data       ?? [];
+  const fundraisers  = fundraisersResult.data  ?? [];
+  const eventIds     = events.map((event) => event.id);
+  const fundraiserIds = fundraisers.map((fundraiser) => fundraiser.id);
+
+  const [ordersResult, donationRowsResult] = await Promise.all([
+    eventIds.length > 0
+      ? supabaseAdmin
+          .from("ticket_orders")
+          .select("event_id, quantity, total_amount, created_at")
+          .eq("status", "valid")
+          .in("event_id", eventIds)
+          .gte("created_at", sinceISO)
+      : Promise.resolve({ data: [] }),
+
+    fundraiserIds.length > 0
+      ? supabaseAdmin
+          .from("donations")
+          .select("amount, created_at")
+          .eq("status", "succeeded")
+          .in("fundraiser_id", fundraiserIds)
+          .gte("created_at", sinceISO)
+      : Promise.resolve({ data: [] }),
+  ]);
+
   const orders       = ordersResult.data        ?? [];
   const donationRows = donationRowsResult.data  ?? [];
   const eventMap     = Object.fromEntries(events.map((e) => [e.id, e.title as string]));

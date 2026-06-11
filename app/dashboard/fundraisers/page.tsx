@@ -14,30 +14,27 @@ function money(n: number) {
 export default async function DashboardFundraisersPage() {
   const ctx = await getDashboardContext();
   if (!ctx) redirect('/login');
-  const { organizerId } = ctx;
+  const { organizerIds } = ctx;
 
-  if (!organizerId) {
+  if (organizerIds.length === 0) {
     return <EmptyState />;
   }
 
-  // ── fundraisers + donations run in parallel ───────────────────────────────────
-  // We can join donations to fundraisers via organizer_id in one query each
-  const [fundraisersResult, donationsResult] = await Promise.all([
-    supabaseAdmin
-      .from('fundraisers')
-      .select('id, title, slug, goal, raised, is_featured')
-      .eq('organizer_id', organizerId)
-      .order('created_at', { ascending: false }),
-
-    // Donations filtered via fundraiser organizer — avoids fetching fundraiser IDs first
-    supabaseAdmin
-      .from('donations')
-      .select('fundraiser_id, amount')
-      .eq('status', 'succeeded')
-      .filter('fundraisers.organizer_id', 'eq', organizerId),
-  ]);
+  const fundraisersResult = await supabaseAdmin
+    .from('fundraisers')
+    .select('id, title, slug, goal, raised, is_featured')
+    .in('organizer_id', organizerIds)
+    .order('created_at', { ascending: false });
 
   const rows = fundraisersResult.data ?? [];
+  const fundraiserIds = rows.map((fundraiser) => fundraiser.id);
+  const donationsResult = fundraiserIds.length > 0
+    ? await supabaseAdmin
+        .from('donations')
+        .select('fundraiser_id, amount')
+        .eq('status', 'succeeded')
+        .in('fundraiser_id', fundraiserIds)
+    : { data: [] };
 
   // Build donor stats map
   const donorMap: Record<string, { total: number; count: number }> = {};

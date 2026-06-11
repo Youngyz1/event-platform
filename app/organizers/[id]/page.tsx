@@ -129,6 +129,11 @@ export default function OrganizerProfilePage() {
         return;
       }
 
+      if (["rejected", "suspended"].includes(org.status ?? "") && !owner) {
+        router.push("/404");
+        return;
+      }
+
       setOrganizer(org);
       setIsOwner(owner);
 

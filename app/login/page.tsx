@@ -10,6 +10,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [suspendedNotice, setSuspendedNotice] = useState(false);
 
   const [form, setForm] = useState({
     email: "",
@@ -23,6 +24,7 @@ export default function LoginPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setResetSuccess(params.get("reset") === "success");
+    setSuspendedNotice(params.get("suspended") === "1");
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -46,6 +48,21 @@ export default function LoginPage() {
       setError("Please verify your email before logging in.");
       setLoading(false);
       return;
+    }
+
+    if (data.user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (profile?.status === "suspended") {
+        await supabase.auth.signOut();
+        setError("Your account is suspended. Please contact support for help.");
+        setLoading(false);
+        return;
+      }
     }
 
     router.push("/");
@@ -74,6 +91,12 @@ export default function LoginPage() {
         {resetSuccess && (
           <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
             Password updated. You can now log in with your new password.
+          </div>
+        )}
+
+        {suspendedNotice && !error && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
+            Your account is suspended. Please contact support for help.
           </div>
         )}
 

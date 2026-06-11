@@ -9,6 +9,7 @@ export default async function OrganizersDirectoryPage() {
     .from("organizers")
     .select("*")
     .eq("visibility", "public")
+    .in("status", ["pending", "verified"])
     .order("name", { ascending: true });
 
   return (

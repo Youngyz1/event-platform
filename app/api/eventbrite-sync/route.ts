@@ -348,6 +348,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "You must be logged in to sync Eventbrite." }, { status: 401 });
     }
 
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.status === "suspended") {
+      return NextResponse.json({ error: "Your account is suspended." }, { status: 403 });
+    }
+
     let query = supabase
       .from("eventbrite_sources")
       .select("*")

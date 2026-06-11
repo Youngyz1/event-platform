@@ -20,12 +20,13 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <DashboardSidebar />
 
         <div className="flex min-w-0 flex-1 flex-col gap-4 sm:gap-6">
-          <nav className="grid grid-cols-8 items-center rounded-xl border border-zinc-200/80 bg-white px-1.5 py-2 text-center text-[7px] font-black text-slate-700 shadow-sm sm:flex sm:gap-2 sm:overflow-x-auto sm:rounded-2xl sm:px-4 sm:py-3 sm:text-xs lg:hidden">
+          <nav className="grid grid-cols-9 items-center rounded-xl border border-zinc-200/80 bg-white px-1.5 py-2 text-center text-[7px] font-black text-slate-700 shadow-sm sm:flex sm:gap-2 sm:overflow-x-auto sm:rounded-2xl sm:px-4 sm:py-3 sm:text-xs lg:hidden">
             {[
               ['Home',        '/'],
               ['Overview',    '/dashboard'],
               ['Events',      '/dashboard/events'],
               ['Fundraisers', '/dashboard/fundraisers'],
+              ['Organizers',  '/dashboard/organizers'],
               ['Donations',   '/dashboard/donations'],
               ['Attendees',   '/dashboard/attendees'],
               ['Reports',     '/dashboard/reports'],

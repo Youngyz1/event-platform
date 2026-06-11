@@ -221,9 +221,28 @@ async function fetchGoFundMeFundraiser(source: SourceRow) {
   };
 }
 
+async function getPrimaryOrganizerId(userId: string) {
+  const supabase = await createSupabaseServer();
+  const { data, error } = await supabase
+    .from("organizers")
+    .select("id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+  return data?.id as string | undefined;
+}
+
 async function syncSource(source: SourceRow, userId: string) {
   const supabase = await createSupabaseServer();
   const fundraiser = await fetchGoFundMeFundraiser(source);
+  const organizerId = await getPrimaryOrganizerId(userId);
+  if (!organizerId) {
+    throw new Error("Create an organizer profile before syncing GoFundMe fundraisers.");
+  }
+
   const slug = `${slugify(fundraiser.title)}-${source.id.slice(0, 8)}`;
 
   const payload = {
@@ -236,6 +255,7 @@ async function syncSource(source: SourceRow, userId: string) {
     banner: fundraiser.banner || "",
     video_url: null,
     user_id: userId,
+    organizer_id: organizerId,
     source_url: source.source_url,
     gofundme_source_id: source.id,
   };
@@ -253,6 +273,7 @@ async function syncSource(source: SourceRow, userId: string) {
         goal: payload.goal,
         raised: payload.raised,
         organizer: payload.organizer,
+        organizer_id: payload.organizer_id,
         banner: payload.banner,
       })
       .eq("id", localFundraiserId)
@@ -278,6 +299,7 @@ async function syncSource(source: SourceRow, userId: string) {
           goal: payload.goal,
           raised: payload.raised,
           organizer: payload.organizer,
+          organizer_id: payload.organizer_id,
           banner: payload.banner,
         })
         .eq("id", localFundraiserId)
@@ -332,6 +354,15 @@ export async function POST(req: NextRequest) {
 
     if (!user) {
       return NextResponse.json({ error: "You must be logged in to sync GoFundMe." }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profile?.status === "suspended") {
+      return NextResponse.json({ error: "Your account is suspended." }, { status: 403 });
     }
 
     let query = supabase

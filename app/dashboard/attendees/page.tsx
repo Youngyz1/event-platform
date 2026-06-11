@@ -25,28 +25,26 @@ const statusBadge: Record<string, string> = {
 export default async function DashboardAttendeesPage() {
   const ctx = await getDashboardContext();
   if (!ctx) redirect("/login");
-  const { organizerId } = ctx;
+  const { organizerIds } = ctx;
 
-  // events + orders fetched in parallel after single organizer lookup
-  const [eventsResult, ordersResult] = await Promise.all([
-    organizerId
-      ? supabaseAdmin
-          .from("events")
-          .select("id, title")
-          .eq("organizer_id", organizerId)
-      : Promise.resolve({ data: [] }),
-
-    organizerId
-      ? supabaseAdmin
-          .from("ticket_orders")
-          .select("id, event_id, buyer_name, buyer_email, quantity, total_amount, status, created_at")
-          .filter("events.organizer_id", "eq", organizerId)
-          .order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] }),
-  ]);
+  const eventsResult = organizerIds.length > 0
+    ? await supabaseAdmin
+        .from("events")
+        .select("id, title")
+        .in("organizer_id", organizerIds)
+    : { data: [] };
 
   const events   = eventsResult.data  ?? [];
   const eventMap = Object.fromEntries(events.map((e) => [e.id, e.title as string]));
+  const eventIds = events.map((event) => event.id);
+  const ordersResult = eventIds.length > 0
+    ? await supabaseAdmin
+        .from("ticket_orders")
+        .select("id, event_id, buyer_name, buyer_email, quantity, total_amount, status, created_at")
+        .in("event_id", eventIds)
+        .order("created_at", { ascending: false })
+    : { data: [] };
+
   const rows     = ordersResult.data  ?? [];
 
   return (

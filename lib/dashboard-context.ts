@@ -21,12 +21,14 @@ const supabaseAdmin = createClient(
 
 export type DashboardContext = {
   user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
-  organizer: { id: string; name: string } | null;
+  organizers: { id: string; name: string; bio?: string | null; photo?: string | null }[];
+  organizer: { id: string; name: string; bio?: string | null; photo?: string | null } | null;
+  organizerIds: string[];
   organizerId: string | null;
 };
 
 /**
- * Returns the current user and their organizer profile.
+ * Returns the current user and all organizer profiles owned by them.
  * Cached per-request by React — safe to call from both layout and page
  * without duplicating DB queries.
  */
@@ -34,16 +36,21 @@ export const getDashboardContext = cache(async (): Promise<DashboardContext | nu
   const user = await getCurrentUser();
   if (!user) return null;
 
-  const { data: organizer } = await supabaseAdmin
+  const { data: organizers } = await supabaseAdmin
     .from('organizers')
-    .select('id, name')
+    .select('id, name, bio, photo')
     .eq('user_id', user.id)
-    .maybeSingle();
+    .order('created_at', { ascending: true });
+
+  const safeOrganizers = organizers ?? [];
+  const primaryOrganizer = safeOrganizers[0] ?? null;
 
   return {
     user,
-    organizer: organizer ?? null,
-    organizerId: organizer?.id ?? null,
+    organizers: safeOrganizers,
+    organizer: primaryOrganizer,
+    organizerIds: safeOrganizers.map((organizer) => organizer.id),
+    organizerId: primaryOrganizer?.id ?? null,
   };
 });
 

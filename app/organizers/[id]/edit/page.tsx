@@ -47,6 +47,16 @@ export default function EditOrganizerPage() {
         return;
       }
 
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", session.user.id)
+        .maybeSingle();
+      if (profile?.status === "suspended") {
+        router.push("/login?suspended=1");
+        return;
+      }
+
       const { data: organizer, error: organizerError } = await supabase
         .from("organizers")
         .select("*")
