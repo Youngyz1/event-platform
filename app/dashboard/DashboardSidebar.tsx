@@ -25,12 +25,7 @@ const links: SidebarLink[] = [
   { label: "Settings",          href: "/dashboard/settings" },
 ];
 
-type Props = {
-  organizerHref: string;
-  organizerLabel: string;
-};
-
-export default function DashboardSidebar({ organizerHref, organizerLabel }: Props) {
+export default function DashboardSidebar() {
   const pathname = usePathname();
 
   function isActive(link: SidebarLink) {
@@ -80,19 +75,6 @@ export default function DashboardSidebar({ organizerHref, organizerLabel }: Prop
             {link.label}
           </Link>
         ))}
-
-        {/* Organizer Profile — dynamic label */}
-        <Link
-          href={organizerHref}
-          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition ${
-            pathname.startsWith("/organizers") || pathname === "/create-organizer"
-              ? "bg-orange-600/20 text-white ring-1 ring-orange-400/20"
-              : "hover:bg-white/10 hover:text-white"
-          }`}
-        >
-          <span className="h-1.5 w-1.5 rounded-full bg-current" />
-          {organizerLabel}
-        </Link>
       </nav>
 
       {/* Help link at bottom */}

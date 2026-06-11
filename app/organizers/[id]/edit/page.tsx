@@ -13,6 +13,7 @@ type OrganizerForm = {
   facebook: string;
   twitter: string;
   website: string;
+  visibility: "public" | "private";
 };
 
 export default function EditOrganizerPage() {
@@ -32,6 +33,7 @@ export default function EditOrganizerPage() {
     facebook: "",
     twitter: "",
     website: "",
+    visibility: "public",
   });
 
   useEffect(() => {
@@ -66,6 +68,7 @@ export default function EditOrganizerPage() {
         facebook: organizer.facebook || "",
         twitter: organizer.twitter || "",
         website: organizer.website || "",
+        visibility: organizer.visibility || "public",
       });
       setChecking(false);
     }
@@ -108,6 +111,7 @@ export default function EditOrganizerPage() {
           facebook: form.facebook,
           twitter: form.twitter,
           website: form.website,
+          visibility: form.visibility,
         })
         .eq("id", organizerId);
 
@@ -135,7 +139,7 @@ export default function EditOrganizerPage() {
           <div>
             <p className="text-sm font-black uppercase tracking-wide text-orange-600">Organizer</p>
             <h1 className="mt-2 text-5xl font-black">Edit Organizer</h1>
-            <p className="mt-3 text-zinc-600">Update imported organizers with your photos, story, links, and profile details.</p>
+            <p className="mt-3 text-zinc-600">Update the public organizer profile people see on your events and fundraisers.</p>
           </div>
           <Link href={`/organizers/${organizerId}`} className="font-black text-orange-600 hover:text-orange-700">
             View profile
@@ -146,14 +150,41 @@ export default function EditOrganizerPage() {
 
         <form onSubmit={handleSubmit} className="space-y-7 rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
           <label className="block">
-            <span className="mb-2 block font-bold">Organizer Name</span>
+            <span className="mb-2 block font-bold">Company / Organization</span>
             <input value={form.name} onChange={(event) => update("name", event.target.value)} required className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
           </label>
 
           <label className="block">
-            <span className="mb-2 block font-bold">Bio / About</span>
+            <span className="mb-2 block font-bold">Organizer Bio / About</span>
             <textarea value={form.bio} onChange={(event) => update("bio", event.target.value)} rows={6} className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
           </label>
+
+          <fieldset className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+            <legend className="text-base font-black text-zinc-950">Profile Visibility</legend>
+            <p className="mt-1 text-sm font-semibold text-zinc-500">
+              Choose whether people can discover and view this organizer profile.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {[
+                ["public", "Public", "People can browse and follow this organizer."],
+                ["private", "Private", "Only you can view and edit this organizer profile."],
+              ].map(([value, label, detail]) => (
+                <label key={value} className="flex cursor-pointer gap-3 rounded-xl border border-zinc-200 bg-white p-4">
+                  <input
+                    type="radio"
+                    name="visibility"
+                    checked={form.visibility === value}
+                    onChange={() => update("visibility", value as OrganizerForm["visibility"])}
+                    className="mt-1 accent-orange-600"
+                  />
+                  <span>
+                    <span className="block text-sm font-black text-zinc-950">{label}</span>
+                    <span className="mt-1 block text-xs font-semibold leading-5 text-zinc-500">{detail}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
 
           <div className="grid gap-5 md:grid-cols-2">
             <label className="block">
@@ -168,10 +199,13 @@ export default function EditOrganizerPage() {
             </label>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-3">
-            <input value={form.website} onChange={(event) => update("website", event.target.value)} placeholder="Website URL" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-            <input value={form.facebook} onChange={(event) => update("facebook", event.target.value)} placeholder="Facebook URL" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-            <input value={form.twitter} onChange={(event) => update("twitter", event.target.value)} placeholder="Twitter/X URL" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
+          <div>
+            <h2 className="mb-3 text-base font-black text-zinc-950">Social Media Links</h2>
+            <div className="grid gap-5 md:grid-cols-3">
+              <input value={form.website} onChange={(event) => update("website", event.target.value)} placeholder="Website URL" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
+              <input value={form.facebook} onChange={(event) => update("facebook", event.target.value)} placeholder="Facebook URL" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
+              <input value={form.twitter} onChange={(event) => update("twitter", event.target.value)} placeholder="Twitter/X URL" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
+            </div>
           </div>
 
           <button disabled={saving} className="w-full rounded-2xl bg-orange-500 py-5 text-lg font-black text-white transition hover:bg-orange-600 disabled:bg-orange-300">

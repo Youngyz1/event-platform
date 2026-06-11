@@ -19,6 +19,7 @@ type FormState = {
   facebook: string;
   twitter:  string;
   website:  string;
+  visibility: "public" | "private";
 };
 
 export default function CreateOrganizerPage() {
@@ -41,6 +42,7 @@ export default function CreateOrganizerPage() {
     facebook: "",
     twitter:  "",
     website:  "",
+    visibility: "public",
   });
 
   // On mount: get session, then check for existing organizer profile
@@ -54,7 +56,7 @@ export default function CreateOrganizerPage() {
 
       const { data: org } = await supabase
         .from("organizers")
-        .select("id, name, bio, facebook, twitter, website, photo, banner")
+        .select("id, name, bio, facebook, twitter, website, photo, banner, visibility")
         .eq("user_id", session.user.id)
         .maybeSingle();
 
@@ -66,6 +68,7 @@ export default function CreateOrganizerPage() {
           facebook: org.facebook ?? "",
           twitter:  org.twitter  ?? "",
           website:  org.website  ?? "",
+          visibility: org.visibility ?? "public",
         });
         setExistingPhoto(org.photo   ?? null);
         setExistingBanner(org.banner ?? null);
@@ -83,6 +86,10 @@ export default function CreateOrganizerPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  function setVisibility(visibility: FormState["visibility"]) {
+    setForm((prev) => ({ ...prev, visibility }));
   }
 
   function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -135,6 +142,7 @@ export default function CreateOrganizerPage() {
       facebook: form.facebook,
       twitter:  form.twitter,
       website:  form.website,
+      visibility: form.visibility,
       photo,
       banner,
       user_id:  session.user.id,
@@ -194,8 +202,8 @@ export default function CreateOrganizerPage() {
           </h1>
           <p className="mt-4 text-lg text-zinc-600">
             {isEditing
-              ? "Update your public organizer page."
-              : "Set up your public organizer page."}
+              ? "Update your public organizer profile, visibility, images, and public links."
+              : "Set up the public organizer profile people will see on your events and fundraisers."}
           </p>
         </div>
 
@@ -271,7 +279,7 @@ export default function CreateOrganizerPage() {
 
           {/* NAME */}
           <div>
-            <label className="mb-3 block font-semibold">Organizer Name</label>
+            <label className="mb-3 block font-semibold">Company / Organization</label>
             <input
               name="name"
               value={form.name}
@@ -285,7 +293,7 @@ export default function CreateOrganizerPage() {
 
           {/* BIO */}
           <div>
-            <label className="mb-3 block font-semibold">Bio</label>
+            <label className="mb-3 block font-semibold">Organizer Bio</label>
             <textarea
               name="bio"
               value={form.bio}
@@ -296,9 +304,37 @@ export default function CreateOrganizerPage() {
             />
           </div>
 
+          {/* VISIBILITY */}
+          <fieldset className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <legend className="text-lg font-black text-zinc-950">Profile Visibility</legend>
+            <p className="mt-1 text-sm font-semibold text-zinc-500">
+              Choose whether this organizer profile should be public or private.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {[
+                ["public", "Public", "People can browse this organizer and follow updates."],
+                ["private", "Private", "Only you can view and edit this organizer profile."],
+              ].map(([value, label, detail]) => (
+                <label key={value} className="flex cursor-pointer gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                  <input
+                    type="radio"
+                    name="visibility"
+                    checked={form.visibility === value}
+                    onChange={() => setVisibility(value as FormState["visibility"])}
+                    className="mt-1 accent-orange-600"
+                  />
+                  <span>
+                    <span className="block text-sm font-black text-zinc-950">{label}</span>
+                    <span className="mt-1 block text-xs font-semibold leading-5 text-zinc-500">{detail}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
           {/* SOCIAL */}
           <div className="space-y-4">
-            <label className="block font-semibold">Social Links</label>
+            <label className="block font-semibold">Website & Social Media Links</label>
             <input
               name="facebook"
               value={form.facebook}

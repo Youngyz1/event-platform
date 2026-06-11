@@ -12,7 +12,7 @@
 
 import { redirect } from 'next/navigation';
 import { getDashboardContext, supabaseAdmin } from '@/lib/dashboard-context';
-import SettingsClient, { type Prefs } from './SettingsClient';
+import SettingsClient, { defaultAccountInfo, type AccountInfo, type Prefs } from './SettingsClient';
 
 const defaultPrefs: Prefs = {
   notify_ticket_purchase: true,
@@ -30,7 +30,7 @@ export default async function DashboardSettingsPage() {
   // (organizer already loaded by getDashboardContext — no extra query needed)
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('preferences')
+    .select('preferences, account_info, profile_photo')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -40,6 +40,10 @@ export default async function DashboardSettingsPage() {
   };
 
   const displayName = (user.user_metadata?.display_name as string | undefined) ?? '';
+  const accountInfo: AccountInfo = {
+    ...defaultAccountInfo,
+    ...((profile?.account_info ?? {}) as Partial<AccountInfo>),
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -54,6 +58,8 @@ export default async function DashboardSettingsPage() {
       <SettingsClient
         initialEmail={user.email ?? ''}
         initialDisplayName={displayName}
+        initialProfilePhoto={profile?.profile_photo ?? ''}
+        initialAccountInfo={accountInfo}
         initialPrefs={prefs}
         organizer={organizer}
         userId={user.id}

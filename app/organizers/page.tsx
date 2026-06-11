@@ -8,6 +8,7 @@ export default async function OrganizersDirectoryPage() {
   const { data: organizers, error } = await supabase
     .from("organizers")
     .select("*")
+    .eq("visibility", "public")
     .order("name", { ascending: true });
 
   return (

@@ -18,6 +18,7 @@ type Organizer = {
   website: string | null;
   user_id: string;
   status: string | null;
+  visibility?: "public" | "private" | null;
 };
 
 type Event = {
@@ -91,9 +92,13 @@ export default function OrganizerProfilePage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followError, setFollowError] = useState("");
   const [followerCount, setFollowerCount] = useState(0);
+  const [attendeeCount, setAttendeeCount] = useState(0);
   const [isOwner, setIsOwner] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isPrivate, setIsPrivate] = useState(false);
 
   useEffect(() => {
     const organizerId = params?.id as string;
@@ -117,8 +122,15 @@ export default function OrganizerProfilePage() {
         return;
       }
 
+      const owner = session?.user?.id === org.user_id;
+      if ((org.visibility ?? "public") === "private" && !owner) {
+        setIsPrivate(true);
+        setLoading(false);
+        return;
+      }
+
       setOrganizer(org);
-      setIsOwner(session?.user?.id === org.user_id);
+      setIsOwner(owner);
 
       const { data: evts } = await supabase
         .from("events")
@@ -127,6 +139,19 @@ export default function OrganizerProfilePage() {
         .order("event_date", { ascending: true });
 
       setEvents(evts ?? []);
+
+      if (evts && evts.length > 0) {
+        const eventIds = evts.map((event) => event.id);
+        const { data: orders } = await supabase
+          .from("ticket_orders")
+          .select("quantity")
+          .in("event_id", eventIds)
+          .in("status", ["valid", "used"]);
+
+        setAttendeeCount(
+          (orders ?? []).reduce((sum, order) => sum + Number(order.quantity ?? 1), 0)
+        );
+      }
 
       const { count } = await supabase
         .from("organizer_follows")
@@ -153,32 +178,54 @@ export default function OrganizerProfilePage() {
   }, [params?.id, router]);
 
   async function toggleFollow() {
-    if (!currentUserId || !organizer) {
+    if (!organizer || followLoading) return;
+
+    setFollowLoading(true);
+    setFollowError("");
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      setFollowLoading(false);
       router.push("/login");
       return;
     }
+
+    setCurrentUserId(user.id);
 
     if (isFollowing) {
       const { error } = await supabase
         .from("organizer_follows")
         .delete()
         .eq("organizer_id", organizer.id)
-        .eq("user_id", currentUserId);
+        .eq("user_id", user.id);
 
       if (!error) {
         setIsFollowing(false);
         setFollowerCount((count) => Math.max(0, count - 1));
+      } else {
+        setFollowError(error.message);
       }
     } else {
       const { error } = await supabase
         .from("organizer_follows")
-        .insert({ organizer_id: organizer.id, user_id: currentUserId });
+        .upsert(
+          { organizer_id: organizer.id, user_id: user.id },
+          { onConflict: "organizer_id,user_id", ignoreDuplicates: true }
+        );
 
       if (!error) {
         setIsFollowing(true);
         setFollowerCount((count) => count + 1);
+      } else {
+        setFollowError(error.message);
       }
     }
+
+    setFollowLoading(false);
   }
 
   async function shareProfile() {
@@ -199,6 +246,23 @@ export default function OrganizerProfilePage() {
     );
   }
 
+  if (isPrivate) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 text-center">
+        <div className="max-w-md rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
+          <p className="text-sm font-black uppercase tracking-wide text-orange-600">Private organizer</p>
+          <h1 className="mt-3 text-3xl font-black text-zinc-950">This organizer profile is private.</h1>
+          <p className="mt-3 text-zinc-600">
+            The organizer has chosen not to show this profile publicly.
+          </p>
+          <Link href="/organizers" className="mt-6 inline-flex rounded-2xl bg-orange-500 px-5 py-3 text-sm font-black text-white hover:bg-orange-600">
+            Browse organizers
+          </Link>
+        </div>
+      </main>
+    );
+  }
+
   if (!organizer) return null;
 
   return (
@@ -206,7 +270,7 @@ export default function OrganizerProfilePage() {
        
 
       <section className="border-b border-zinc-200 bg-white">
-        <div className="relative h-[180px] w-full overflow-hidden bg-zinc-900 sm:h-[300px] md:h-[360px]">
+        <div className="relative h-[150px] w-full overflow-hidden bg-zinc-900 sm:h-[220px] md:h-[260px]">
           {organizer.banner ? (
             <img src={organizer.banner} alt="" fetchPriority="high" decoding="async" className="h-full w-full object-cover" />
           ) : (
@@ -217,50 +281,50 @@ export default function OrganizerProfilePage() {
           {isOwner && (
             <Link
               href={`/organizers/${organizer.id}/edit`}
-              className="absolute bottom-4 right-4 rounded-lg bg-black/70 px-4 py-2 text-sm font-bold text-white backdrop-blur transition hover:bg-black sm:bottom-5 sm:right-6 sm:rounded-xl sm:px-5 sm:py-3 sm:text-base"
+              className="absolute bottom-3 right-3 rounded-lg bg-black/75 px-3 py-2 text-xs font-bold text-white backdrop-blur transition hover:bg-black sm:bottom-5 sm:right-6 sm:px-4 sm:text-sm"
             >
               Edit profile
             </Link>
           )}
         </div>
 
-        <div className="mx-auto grid max-w-6xl gap-6 px-3 py-6 sm:gap-10 sm:px-6 sm:py-12 lg:grid-cols-[1fr_340px]">
+        <div className="relative z-10 mx-auto grid max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[1fr_260px] lg:gap-12 lg:py-8">
           <div className="min-w-0">
-            <div className="flex gap-4 sm:gap-7 md:items-start">
-              <div className="-mt-16 h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl border-4 border-white bg-zinc-900 shadow-xl sm:-mt-28 sm:h-44 sm:w-44 md:h-48 md:w-48">
+            <div className="flex flex-col gap-5 sm:flex-row sm:gap-8 sm:items-start">
+              <div className="relative z-20 -mt-20 h-32 w-32 flex-shrink-0 overflow-hidden rounded-full border-4 border-white bg-zinc-900 shadow-xl sm:-mt-24 sm:h-44 sm:w-44">
                 {organizer.photo ? (
                   <img src={organizer.photo} alt={organizer.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-3xl font-black text-white sm:text-6xl">
+                  <div className="flex h-full w-full items-center justify-center text-4xl font-black text-white sm:text-6xl">
                     {organizer.name.charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-orange-600 sm:mb-3 sm:text-sm">
+                <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-orange-600 sm:text-xs">
                   Organizer
                 </p>
-                <h1 className="inline-flex flex-wrap items-center gap-2 text-2xl font-black leading-tight text-zinc-950 sm:gap-3 sm:text-4xl md:text-5xl">
+                <h1 className="inline-flex flex-wrap items-center gap-2 text-3xl font-black leading-tight text-zinc-950 sm:gap-3 sm:text-4xl">
                   {organizer.name}
                   <VerifiedBadge verified={organizer.status === 'verified'} />
                 </h1>
 
-                <div className="mt-5 grid max-w-2xl grid-cols-4 gap-2 sm:mt-8 sm:gap-y-6">
+                <div className="mt-5 grid max-w-2xl grid-cols-4 divide-x divide-zinc-200 text-left">
                   {[
                     { label: "followers", value: formatCount(followerCount) },
                     { label: "hosting", value: events.length > 0 ? "active" : "new" },
                     { label: "total events", value: formatCount(events.length) },
-                    { label: "upcoming", value: formatCount(upcomingEvents.length) },
+                    { label: "total attendees", value: formatCount(attendeeCount) },
                   ].map((stat) => (
-                    <div key={stat.label} className="min-w-0 pr-1 sm:pr-5">
-                      <p className="truncate text-[9px] font-semibold text-zinc-500 sm:text-sm">{stat.label}</p>
-                      <p className="mt-1 text-base font-black text-zinc-950 sm:mt-2 sm:text-2xl">{stat.value}</p>
+                    <div key={stat.label} className="min-w-0 px-2 first:pl-0 sm:px-5">
+                      <p className="truncate text-[9px] font-semibold lowercase text-zinc-500 sm:text-sm">{stat.label}</p>
+                      <p className="mt-1 text-base font-black text-zinc-950 sm:text-lg">{stat.value}</p>
                     </div>
                   ))}
                 </div>
 
-                <p className="mt-5 max-w-3xl text-sm leading-6 text-zinc-700 sm:mt-8 sm:text-lg sm:leading-8">
+                <p className="mt-6 max-w-3xl text-sm leading-6 text-zinc-600 sm:text-lg sm:leading-8">
                   {organizer.bio || "Follow this organizer to stay in the loop for future events and announcements."}
                 </p>
 
@@ -268,7 +332,7 @@ export default function OrganizerProfilePage() {
                   Read more
                 </button>
 
-                <div className="mt-5 flex flex-wrap gap-2 sm:mt-8 sm:gap-3">
+                <div className="mt-6 flex flex-wrap gap-2 sm:gap-3">
                   {organizer.website && (
                     <a
                       href={organizer.website}
@@ -307,55 +371,47 @@ export default function OrganizerProfilePage() {
             </div>
           </div>
 
-          <aside className="space-y-4 sm:space-y-5">
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-6">
+          <aside className="space-y-3 sm:space-y-4 lg:pt-4">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
               <button
                 onClick={toggleFollow}
-                className={`w-full rounded-lg px-5 py-3 text-base font-black transition sm:px-6 sm:py-4 sm:text-lg ${
+                disabled={followLoading}
+                className={`w-full rounded-lg px-5 py-3 text-base font-black transition ${
                   isFollowing
                     ? "border-2 border-zinc-200 bg-white text-zinc-950 hover:bg-zinc-50"
                     : "bg-orange-500 text-white hover:bg-orange-600"
-                }`}
+                } disabled:cursor-not-allowed disabled:opacity-60`}
               >
-                {isFollowing ? "Following" : "Follow"}
+                {followLoading ? "Saving..." : isFollowing ? "Following" : "Follow"}
               </button>
-            </div>
-
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-6">
-              <h2 className="text-xl font-black text-zinc-950 sm:text-2xl">Contact the organizer</h2>
-              <div className="mt-4 space-y-2 text-sm text-zinc-700 sm:mt-5 sm:space-y-3 sm:text-base">
-                <p className="font-bold text-zinc-950">Frequently asked questions</p>
-                <p>Can I get a refund?</p>
-                <p>How do I update my ticket information?</p>
-                <p>Where are my tickets?</p>
-              </div>
-              <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-zinc-200 bg-white px-5 py-3 text-sm font-black text-zinc-950 transition hover:bg-zinc-50 sm:mt-6 sm:py-4 sm:text-base">
+              {followError && (
+                <p className="mt-3 rounded-xl bg-red-50 px-3 py-2 text-xs font-bold leading-5 text-red-700">
+                  {followError}
+                </p>
+              )}
+              <button className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-zinc-200 bg-white px-5 py-3 text-sm font-black text-zinc-950 transition hover:bg-zinc-50">
                 <MailIcon />
                 Contact
               </button>
-            </div>
-
-            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-6">
-              <h2 className="text-xl font-black text-zinc-950 sm:text-2xl">Share</h2>
               <button
                 onClick={shareProfile}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-zinc-200 bg-white px-5 py-3 text-sm font-black text-zinc-950 transition hover:bg-zinc-50 sm:mt-5 sm:py-4 sm:text-base"
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-white px-5 py-3 text-sm font-black text-blue-600 transition hover:bg-blue-50"
               >
                 <LinkIcon />
-                Copy URL
+                Share
               </button>
             </div>
           </aside>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-3 py-6 sm:px-6 sm:py-12">
-        <div className="mb-6 border-b-2 border-zinc-200 sm:mb-8">
-          <div className="flex gap-5">
-            {(["upcoming", "past"] as const).map((tab) => (
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
+        <div className="mb-6 border-b border-zinc-200 sm:mb-8">
+          <div className="flex gap-5 overflow-x-auto">
+            {(["upcoming", "past", "collections"] as const).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => tab !== "collections" && setActiveTab(tab)}
                 className={`-mb-0.5 border-b-2 px-4 py-3 text-base font-black capitalize transition sm:px-7 sm:py-4 sm:text-xl ${
                   activeTab === tab
                     ? "border-blue-600 text-blue-700"
@@ -376,14 +432,14 @@ export default function OrganizerProfilePage() {
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {displayedEvents.map((event) => (
               <div
                 key={event.id}
-                className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl sm:rounded-2xl"
+                className="overflow-hidden bg-white transition hover:-translate-y-1"
               >
                 <Link href={`/events/${event.slug}`} className="group block">
-                  <div className="h-40 overflow-hidden bg-zinc-200 sm:h-48">
+                  <div className="h-36 overflow-hidden rounded-lg bg-zinc-200 sm:h-40">
                     {event.banner ? (
                       <img
                         src={event.banner}
@@ -398,17 +454,17 @@ export default function OrganizerProfilePage() {
                       </div>
                     )}
                   </div>
-                  <div className="p-4 sm:p-5">
-                    <p className="text-xs font-black uppercase tracking-wide text-orange-600 sm:text-sm">
+                  <div className="py-3">
+                    <p className="text-xs font-bold text-zinc-700">
                       {formatEventDate(event.event_date)}
                     </p>
-                    <h3 className="mt-2 text-xl font-black leading-tight text-zinc-950 sm:mt-3 sm:text-2xl">
+                    <h3 className="mt-2 text-lg font-black leading-tight text-zinc-900">
                       {event.title}
                     </h3>
-                    <p className="mt-2 text-base text-zinc-600 sm:mt-3 sm:text-lg">
+                    <p className="mt-2 text-sm font-semibold text-zinc-600">
                       {event.city || event.venue || "Location TBA"}
                     </p>
-                    <p className="mt-3 text-sm font-bold text-zinc-900 sm:mt-4 sm:text-base">
+                    <p className="mt-3 text-sm font-bold text-zinc-900">
                       {event.category || "Event"}
                     </p>
                   </div>
