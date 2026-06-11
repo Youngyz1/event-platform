@@ -62,22 +62,22 @@ function Footerdemo() {
   }
 
   return (
-    <footer className="relative border-t border-zinc-900 bg-zinc-950 text-white transition-colors duration-300">
+    <footer className="relative border-t border-zinc-200 bg-white text-zinc-950 transition-colors duration-300 dark:border-zinc-900 dark:bg-zinc-950 dark:text-white">
       <div className="mx-auto max-w-7xl px-6 py-12 sm:px-8 md:px-10 lg:px-8">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-16">
           <div>
-            <BrandMark textClassName="text-white" />
+            <BrandMark textClassName="text-zinc-950 dark:text-white" />
             <h2 className="mt-7 text-3xl font-bold tracking-tight sm:text-4xl lg:text-3xl">
               Stay connected
             </h2>
-            <p className="mb-8 mt-4 max-w-xs text-base leading-7 text-zinc-400 sm:text-lg lg:text-base">
+            <p className="mb-8 mt-4 max-w-xs text-base leading-7 text-zinc-600 sm:text-lg lg:text-base dark:text-zinc-400">
               Get event launches, fundraiser updates, and platform news.
             </p>
             <form onSubmit={handleSubscribe} className="relative">
               <Input
                 type="email"
                 placeholder="Enter your email"
-                className="h-14 rounded-full border-zinc-800 bg-zinc-950 px-5 pr-16 text-base font-semibold text-white placeholder:text-zinc-500 focus-visible:ring-orange-600"
+                className="h-14 rounded-full border-zinc-200 bg-white px-5 pr-16 text-base font-semibold text-zinc-950 placeholder:text-zinc-500 focus-visible:ring-orange-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
               />
               <Button
                 type="submit"
@@ -94,7 +94,7 @@ function Footerdemo() {
             <h3 className="mb-5 text-2xl font-semibold tracking-tight lg:text-xl">
               Quick links
             </h3>
-            <nav className="space-y-3 text-base text-zinc-400 sm:text-lg lg:text-base">
+            <nav className="space-y-3 text-base text-zinc-600 sm:text-lg lg:text-base dark:text-zinc-400">
               {quickLinks.map(([label, href]) => (
                 <Link
                   key={href}
@@ -111,7 +111,7 @@ function Footerdemo() {
             <h3 className="mb-5 text-2xl font-semibold tracking-tight lg:text-xl">
               Contact us
             </h3>
-            <address className="max-w-xs space-y-3 text-base leading-7 text-zinc-400 not-italic sm:text-lg lg:text-base">
+            <address className="max-w-xs space-y-3 text-base leading-7 text-zinc-600 not-italic sm:text-lg lg:text-base dark:text-zinc-400">
               <p>EventBrithe Support</p>
               <p>Events, fundraising & community commerce.</p>
               <p>
@@ -138,7 +138,7 @@ function Footerdemo() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-12 w-12 rounded-full border-zinc-800 bg-zinc-950 text-zinc-300 hover:border-orange-500 hover:bg-zinc-900 hover:text-orange-500"
+                        className="h-12 w-12 rounded-full border-zinc-200 bg-white text-zinc-700 hover:border-orange-500 hover:bg-orange-50 hover:text-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
                       >
                         <Icon className="h-5 w-5" />
                         <span className="sr-only">{label}</span>
@@ -152,14 +152,14 @@ function Footerdemo() {
               </TooltipProvider>
             </div>
             <div className="flex items-center space-x-3">
-              <Sun className="h-5 w-5 text-white" />
+              <Sun className="h-5 w-5 text-zinc-700 dark:text-white" />
               <Switch
                 id="dark-mode"
                 checked={isDarkMode}
                 onCheckedChange={setIsDarkMode}
                 className="data-[state=checked]:bg-orange-600"
               />
-              <Moon className="h-5 w-5 text-white" />
+              <Moon className="h-5 w-5 text-zinc-700 dark:text-white" />
               <Label htmlFor="dark-mode" className="sr-only">
                 Toggle dark mode
               </Label>
@@ -167,7 +167,7 @@ function Footerdemo() {
           </div>
         </div>
 
-        <div className="mt-12 flex items-center justify-center border-t border-zinc-800 pt-8 text-center lg:mt-16">
+        <div className="mt-12 flex items-center justify-center border-t border-zinc-200 pt-8 text-center lg:mt-16 dark:border-zinc-800">
           <p className="text-base text-zinc-500">
             © 2026 EventBrithe. All rights reserved.
           </p>

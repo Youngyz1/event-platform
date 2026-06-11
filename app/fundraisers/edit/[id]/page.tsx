@@ -9,6 +9,14 @@ function generateSlug(title: string) {
   return title.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
 }
 
+type GalleryItem = {
+  image_url: string;
+  caption: string;
+};
+
+const inputClass =
+  "w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-green-500";
+
 export default function EditFundraiserPage() {
   const params = useParams();
   const router = useRouter();
@@ -26,6 +34,11 @@ export default function EditFundraiserPage() {
     video_url: "",
     story: "",
   });
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([
+    { image_url: "", caption: "" },
+    { image_url: "", caption: "" },
+    { image_url: "", caption: "" },
+  ]);
 
   useEffect(() => {
     async function load() {
@@ -61,6 +74,26 @@ export default function EditFundraiserPage() {
         video_url: fundraiser.video_url || "",
         story: fundraiser.story || "",
       });
+
+      const { data: media } = await supabase
+        .from("fundraiser_media")
+        .select("image_url, caption, sort_order")
+        .eq("fundraiser_id", fundraiserId)
+        .order("sort_order", { ascending: true });
+
+      const loadedMedia =
+        media && media.length > 0
+          ? media.map((item) => ({
+              image_url: item.image_url || "",
+              caption: item.caption || "",
+            }))
+          : [
+              { image_url: fundraiser.banner || "", caption: fundraiser.title || "" },
+              { image_url: "", caption: "" },
+              { image_url: "", caption: "" },
+            ];
+
+      setGalleryItems(loadedMedia);
       setChecking(false);
     }
 
@@ -69,6 +102,28 @@ export default function EditFundraiserPage() {
 
   function update(field: string, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
+  }
+
+  function updateGalleryItem(index: number, field: keyof GalleryItem, value: string) {
+    setGalleryItems((items) =>
+      items.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item
+      )
+    );
+  }
+
+  function addGalleryItem() {
+    setGalleryItems((items) => [...items, { image_url: "", caption: "" }]);
+  }
+
+  function removeGalleryItem(index: number) {
+    setGalleryItems((items) =>
+      items.length > 1 ? items.filter((_, itemIndex) => itemIndex !== index) : items
+    );
+  }
+
+  function cleanGalleryItems() {
+    return galleryItems.filter((item) => item.image_url.trim().startsWith("http"));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -93,6 +148,28 @@ export default function EditFundraiserPage() {
         .eq("id", fundraiserId);
 
       if (updateError) throw new Error(updateError.message);
+
+      const mediaItems = cleanGalleryItems();
+      const { error: deleteMediaError } = await supabase
+        .from("fundraiser_media")
+        .delete()
+        .eq("fundraiser_id", fundraiserId);
+
+      if (deleteMediaError) throw new Error(deleteMediaError.message);
+
+      if (mediaItems.length > 0) {
+        const { error: mediaError } = await supabase.from("fundraiser_media").insert(
+          mediaItems.map((item, index) => ({
+            fundraiser_id: fundraiserId,
+            image_url: item.image_url.trim(),
+            caption: item.caption.trim() || form.title,
+            sort_order: index,
+          }))
+        );
+
+        if (mediaError) throw new Error(mediaError.message);
+      }
+
       router.push(`/fundraisers/${nextSlug}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Could not update fundraiser.");
@@ -120,15 +197,64 @@ export default function EditFundraiserPage() {
         {error && <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 font-semibold text-red-700">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-7 rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
-          <input value={form.title} onChange={(event) => update("title", event.target.value)} required placeholder="Fundraiser title" className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-green-500" />
-          <input value={form.organizer} onChange={(event) => update("organizer", event.target.value)} placeholder="Organizer name" className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-green-500" />
+          <input value={form.title} onChange={(event) => update("title", event.target.value)} required placeholder="Fundraiser title" className={inputClass} />
+          <input value={form.organizer} onChange={(event) => update("organizer", event.target.value)} placeholder="Organizer name" className={inputClass} />
           <div className="grid gap-5 md:grid-cols-2">
-            <input value={form.goal} onChange={(event) => update("goal", event.target.value)} required type="number" min="1" placeholder="Goal" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-green-500" />
-            <input value={form.raised} onChange={(event) => update("raised", event.target.value)} type="number" min="0" placeholder="Raised so far" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-green-500" />
+            <input value={form.goal} onChange={(event) => update("goal", event.target.value)} required type="number" min="1" placeholder="Goal" className={inputClass} />
+            <input value={form.raised} onChange={(event) => update("raised", event.target.value)} type="number" min="0" placeholder="Raised so far" className={inputClass} />
           </div>
-          <input value={form.banner} onChange={(event) => update("banner", event.target.value)} placeholder="Banner image URL" className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-green-500" />
-          <input value={form.video_url} onChange={(event) => update("video_url", event.target.value)} placeholder="Campaign video URL" className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-green-500" />
-          <textarea value={form.story} onChange={(event) => update("story", event.target.value)} required rows={10} placeholder="Campaign story" className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-green-500" />
+          <input value={form.banner} onChange={(event) => update("banner", event.target.value)} placeholder="Banner image URL" className={inputClass} />
+          <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+            <div className="mb-4">
+              <h2 className="text-lg font-black text-zinc-950">Banner Carousel Photos</h2>
+              <p className="mt-1 text-sm font-semibold leading-6 text-zinc-500">
+                Add as many photos as you need. These appear at the top of the fundraiser and can each have a caption.
+              </p>
+            </div>
+            <div className="space-y-4">
+              {galleryItems.map((item, index) => (
+                <div key={index} className="rounded-2xl border border-zinc-200 bg-white p-4">
+                  <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-500">Photo {index + 1} URL</span>
+                      <input
+                        value={item.image_url}
+                        onChange={(event) => updateGalleryItem(index, "image_url", event.target.value)}
+                        placeholder="https://..."
+                        className={inputClass}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-500">Caption</span>
+                      <input
+                        value={item.caption}
+                        onChange={(event) => updateGalleryItem(index, "caption", event.target.value)}
+                        placeholder="Caption for this photo"
+                        className={inputClass}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => removeGalleryItem(index)}
+                      disabled={galleryItems.length === 1}
+                      className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-black text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addGalleryItem}
+              className="mt-4 rounded-xl border border-green-200 bg-green-50 px-4 py-2.5 text-sm font-black text-green-700 hover:bg-green-100"
+            >
+              Add another photo
+            </button>
+          </div>
+          <input value={form.video_url} onChange={(event) => update("video_url", event.target.value)} placeholder="Campaign video URL" className={inputClass} />
+          <textarea value={form.story} onChange={(event) => update("story", event.target.value)} required rows={10} placeholder="Campaign story" className={inputClass} />
 
           <button disabled={saving} className="w-full rounded-2xl bg-green-500 py-5 text-lg font-black text-white transition hover:bg-green-600 disabled:bg-green-300">
             {saving ? "Saving..." : "Save Fundraiser"}

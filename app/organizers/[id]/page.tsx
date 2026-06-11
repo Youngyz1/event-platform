@@ -206,7 +206,7 @@ export default function OrganizerProfilePage() {
        
 
       <section className="border-b border-zinc-200 bg-white">
-        <div className="relative h-[300px] w-full overflow-hidden bg-zinc-900 md:h-[360px]">
+        <div className="relative h-[180px] w-full overflow-hidden bg-zinc-900 sm:h-[300px] md:h-[360px]">
           {organizer.banner ? (
             <img src={organizer.banner} alt="" fetchPriority="high" decoding="async" className="h-full w-full object-cover" />
           ) : (
@@ -217,65 +217,65 @@ export default function OrganizerProfilePage() {
           {isOwner && (
             <Link
               href={`/organizers/${organizer.id}/edit`}
-              className="absolute bottom-5 right-6 rounded-xl bg-black/70 px-5 py-3 text-base font-bold text-white backdrop-blur transition hover:bg-black"
+              className="absolute bottom-4 right-4 rounded-lg bg-black/70 px-4 py-2 text-sm font-bold text-white backdrop-blur transition hover:bg-black sm:bottom-5 sm:right-6 sm:rounded-xl sm:px-5 sm:py-3 sm:text-base"
             >
               Edit profile
             </Link>
           )}
         </div>
 
-        <div className="mx-auto grid max-w-6xl gap-10 px-6 py-12 lg:grid-cols-[1fr_340px]">
+        <div className="mx-auto grid max-w-6xl gap-6 px-3 py-6 sm:gap-10 sm:px-6 sm:py-12 lg:grid-cols-[1fr_340px]">
           <div className="min-w-0">
-            <div className="flex flex-col gap-7 md:flex-row md:items-start">
-              <div className="-mt-28 h-44 w-44 flex-shrink-0 overflow-hidden rounded-xl border-4 border-white bg-zinc-900 shadow-xl md:h-48 md:w-48">
+            <div className="flex gap-4 sm:gap-7 md:items-start">
+              <div className="-mt-16 h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl border-4 border-white bg-zinc-900 shadow-xl sm:-mt-28 sm:h-44 sm:w-44 md:h-48 md:w-48">
                 {organizer.photo ? (
                   <img src={organizer.photo} alt={organizer.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-6xl font-black text-white">
+                  <div className="flex h-full w-full items-center justify-center text-3xl font-black text-white sm:text-6xl">
                     {organizer.name.charAt(0).toUpperCase()}
                   </div>
                 )}
               </div>
 
               <div className="min-w-0 flex-1">
-                <p className="mb-3 text-sm font-black uppercase tracking-wide text-orange-600">
+                <p className="mb-1 text-[10px] font-black uppercase tracking-wide text-orange-600 sm:mb-3 sm:text-sm">
                   Organizer
                 </p>
-                <h1 className="inline-flex flex-wrap items-center gap-3 text-4xl font-black leading-tight text-zinc-950 md:text-5xl">
+                <h1 className="inline-flex flex-wrap items-center gap-2 text-2xl font-black leading-tight text-zinc-950 sm:gap-3 sm:text-4xl md:text-5xl">
                   {organizer.name}
                   <VerifiedBadge verified={organizer.status === 'verified'} />
                 </h1>
 
-                <div className="mt-8 grid max-w-2xl grid-cols-2 gap-y-6 sm:grid-cols-4">
+                <div className="mt-5 grid max-w-2xl grid-cols-4 gap-2 sm:mt-8 sm:gap-y-6">
                   {[
                     { label: "followers", value: formatCount(followerCount) },
                     { label: "hosting", value: events.length > 0 ? "active" : "new" },
                     { label: "total events", value: formatCount(events.length) },
                     { label: "upcoming", value: formatCount(upcomingEvents.length) },
                   ].map((stat) => (
-                    <div key={stat.label} className="pr-5">
-                      <p className="text-sm font-semibold text-zinc-500">{stat.label}</p>
-                      <p className="mt-2 text-2xl font-black text-zinc-950">{stat.value}</p>
+                    <div key={stat.label} className="min-w-0 pr-1 sm:pr-5">
+                      <p className="truncate text-[9px] font-semibold text-zinc-500 sm:text-sm">{stat.label}</p>
+                      <p className="mt-1 text-base font-black text-zinc-950 sm:mt-2 sm:text-2xl">{stat.value}</p>
                     </div>
                   ))}
                 </div>
 
-                <p className="mt-8 max-w-3xl text-lg leading-8 text-zinc-700">
+                <p className="mt-5 max-w-3xl text-sm leading-6 text-zinc-700 sm:mt-8 sm:text-lg sm:leading-8">
                   {organizer.bio || "Follow this organizer to stay in the loop for future events and announcements."}
                 </p>
 
-                <button className="mt-5 text-base font-black text-orange-700 hover:text-orange-800">
+                <button className="mt-4 text-sm font-black text-orange-700 hover:text-orange-800 sm:mt-5 sm:text-base">
                   Read more
                 </button>
 
-                <div className="mt-8 flex flex-wrap gap-3">
+                <div className="mt-5 flex flex-wrap gap-2 sm:mt-8 sm:gap-3">
                   {organizer.website && (
                     <a
                       href={organizer.website}
                       target="_blank"
                       rel="noopener noreferrer"
                       title="Website"
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-white text-zinc-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 sm:h-11 sm:w-11"
                     >
                       <WebsiteIcon />
                     </a>
@@ -286,7 +286,7 @@ export default function OrganizerProfilePage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       title="Facebook"
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-300 bg-white text-lg font-black text-zinc-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-white text-lg font-black text-zinc-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 sm:h-11 sm:w-11"
                     >
                       f
                     </a>
@@ -297,7 +297,7 @@ export default function OrganizerProfilePage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       title="Twitter / X"
-                      className="flex h-11 w-11 items-center justify-center rounded-full border border-zinc-300 bg-white text-base font-black text-zinc-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600"
+                      className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-300 bg-white text-base font-black text-zinc-700 transition hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 sm:h-11 sm:w-11"
                     >
                       X
                     </a>
@@ -307,11 +307,11 @@ export default function OrganizerProfilePage() {
             </div>
           </div>
 
-          <aside className="space-y-5">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <aside className="space-y-4 sm:space-y-5">
+            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-6">
               <button
                 onClick={toggleFollow}
-                className={`w-full rounded-lg px-6 py-4 text-lg font-black transition ${
+                className={`w-full rounded-lg px-5 py-3 text-base font-black transition sm:px-6 sm:py-4 sm:text-lg ${
                   isFollowing
                     ? "border-2 border-zinc-200 bg-white text-zinc-950 hover:bg-zinc-50"
                     : "bg-orange-500 text-white hover:bg-orange-600"
@@ -321,25 +321,25 @@ export default function OrganizerProfilePage() {
               </button>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <h2 className="text-2xl font-black text-zinc-950">Contact the organizer</h2>
-              <div className="mt-5 space-y-3 text-base text-zinc-700">
+            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-6">
+              <h2 className="text-xl font-black text-zinc-950 sm:text-2xl">Contact the organizer</h2>
+              <div className="mt-4 space-y-2 text-sm text-zinc-700 sm:mt-5 sm:space-y-3 sm:text-base">
                 <p className="font-bold text-zinc-950">Frequently asked questions</p>
                 <p>Can I get a refund?</p>
                 <p>How do I update my ticket information?</p>
                 <p>Where are my tickets?</p>
               </div>
-              <button className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-zinc-200 bg-white px-5 py-4 text-base font-black text-zinc-950 transition hover:bg-zinc-50">
+              <button className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-zinc-200 bg-white px-5 py-3 text-sm font-black text-zinc-950 transition hover:bg-zinc-50 sm:mt-6 sm:py-4 sm:text-base">
                 <MailIcon />
                 Contact
               </button>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
-              <h2 className="text-2xl font-black text-zinc-950">Share</h2>
+            <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-6">
+              <h2 className="text-xl font-black text-zinc-950 sm:text-2xl">Share</h2>
               <button
                 onClick={shareProfile}
-                className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-zinc-200 bg-white px-5 py-4 text-base font-black text-zinc-950 transition hover:bg-zinc-50"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-zinc-200 bg-white px-5 py-3 text-sm font-black text-zinc-950 transition hover:bg-zinc-50 sm:mt-5 sm:py-4 sm:text-base"
               >
                 <LinkIcon />
                 Copy URL
@@ -349,14 +349,14 @@ export default function OrganizerProfilePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-12">
-        <div className="mb-8 border-b-2 border-zinc-200">
+      <section className="mx-auto max-w-6xl px-3 py-6 sm:px-6 sm:py-12">
+        <div className="mb-6 border-b-2 border-zinc-200 sm:mb-8">
           <div className="flex gap-5">
             {(["upcoming", "past"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`-mb-0.5 border-b-2 px-7 py-4 text-xl font-black capitalize transition ${
+                className={`-mb-0.5 border-b-2 px-4 py-3 text-base font-black capitalize transition sm:px-7 sm:py-4 sm:text-xl ${
                   activeTab === tab
                     ? "border-blue-600 text-blue-700"
                     : "border-transparent text-zinc-500 hover:text-zinc-900"
@@ -369,21 +369,21 @@ export default function OrganizerProfilePage() {
         </div>
 
         {displayedEvents.length === 0 ? (
-          <div className="rounded-2xl border border-zinc-200 bg-white px-8 py-20 text-center">
-            <h2 className="text-3xl font-black text-zinc-950">No {activeTab} events yet.</h2>
-            <p className="mt-3 text-lg text-zinc-500">
+          <div className="rounded-xl border border-zinc-200 bg-white px-6 py-14 text-center sm:rounded-2xl sm:px-8 sm:py-20">
+            <h2 className="text-2xl font-black text-zinc-950 sm:text-3xl">No {activeTab} events yet.</h2>
+            <p className="mt-3 text-base text-zinc-500 sm:text-lg">
               Events from this organizer will show here.
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
             {displayedEvents.map((event) => (
               <div
                 key={event.id}
-                className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
+                className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl sm:rounded-2xl"
               >
                 <Link href={`/events/${event.slug}`} className="group block">
-                  <div className="h-48 overflow-hidden bg-zinc-200">
+                  <div className="h-40 overflow-hidden bg-zinc-200 sm:h-48">
                     {event.banner ? (
                       <img
                         src={event.banner}
@@ -398,23 +398,23 @@ export default function OrganizerProfilePage() {
                       </div>
                     )}
                   </div>
-                  <div className="p-5">
-                    <p className="text-sm font-black uppercase tracking-wide text-orange-600">
+                  <div className="p-4 sm:p-5">
+                    <p className="text-xs font-black uppercase tracking-wide text-orange-600 sm:text-sm">
                       {formatEventDate(event.event_date)}
                     </p>
-                    <h3 className="mt-3 text-2xl font-black leading-tight text-zinc-950">
+                    <h3 className="mt-2 text-xl font-black leading-tight text-zinc-950 sm:mt-3 sm:text-2xl">
                       {event.title}
                     </h3>
-                    <p className="mt-3 text-lg text-zinc-600">
+                    <p className="mt-2 text-base text-zinc-600 sm:mt-3 sm:text-lg">
                       {event.city || event.venue || "Location TBA"}
                     </p>
-                    <p className="mt-4 text-base font-bold text-zinc-900">
+                    <p className="mt-3 text-sm font-bold text-zinc-900 sm:mt-4 sm:text-base">
                       {event.category || "Event"}
                     </p>
                   </div>
                 </Link>
                 {isOwner && (
-                  <div className="border-t border-zinc-100 px-5 py-4">
+                  <div className="border-t border-zinc-100 px-4 py-3 sm:px-5 sm:py-4">
                     <Link
                       href={`/events/edit/${event.id}`}
                       className="inline-flex rounded-xl border border-orange-200 px-4 py-2 text-sm font-black text-orange-600 transition hover:bg-orange-50"

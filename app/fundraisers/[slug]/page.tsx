@@ -4,6 +4,12 @@ import DonateButton from "./DonateButton";
 import CommentsSection from "@/components/CommentsSection";
 import { recordDonationFromStripeSessionId } from "@/lib/donations";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
+import FundraiserMediaCarousel, {
+  type FundraiserMediaItem,
+} from "@/components/FundraiserMediaCarousel";
+import FundraiserFloatingActions, {
+  ShareFundraiserButton,
+} from "./FundraiserActions";
 
 function paragraphs(value: string | null | undefined) {
   return (value || "")
@@ -41,6 +47,12 @@ export default async function FundraiserPage({
     .order("created_at", { ascending: false })
     .limit(4);
 
+  const { data: mediaRows } = await supabase
+    .from("fundraiser_media")
+    .select("id, image_url, caption, sort_order")
+    .eq("fundraiser_id", fundraiser.id)
+    .order("sort_order", { ascending: true });
+
   const progress = fundraiser.goal
     ? Math.min(Math.round((fundraiser.raised / fundraiser.goal) * 100), 100)
     : 0;
@@ -54,49 +66,52 @@ export default async function FundraiserPage({
     { amount: 50, text: "moves the campaign closer to its next milestone" },
     { amount: 100, text: "creates a stronger push toward the full goal" },
   ];
+  const carouselItems: FundraiserMediaItem[] =
+    mediaRows && mediaRows.length > 0
+      ? mediaRows
+      : [
+          {
+            image_url:
+              fundraiser.banner ||
+              "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1600&auto=format&fit=crop",
+            caption: fundraiser.title,
+          },
+        ];
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-950">
+    <main className="min-h-screen bg-zinc-50 pb-24 text-zinc-950 md:pb-0">
 
       {/* HERO */}
       <section className="bg-white">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-3">
+        <div className="mx-auto grid max-w-7xl gap-6 px-3 py-6 sm:gap-10 sm:px-6 sm:py-14 lg:grid-cols-3">
 
           {/* LEFT CONTENT */}
           <div className="lg:col-span-2">
-            <div className="overflow-hidden rounded-3xl">
-              <img
-                src={fundraiser.banner || "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1600&auto=format&fit=crop"}
-                alt={fundraiser.title}
-                fetchPriority="high"
-                decoding="async"
-                className="h-[340px] w-full object-cover sm:h-[440px] lg:h-[520px]"
-              />
-            </div>
+            <FundraiserMediaCarousel items={carouselItems} title={fundraiser.title} />
 
-            <div className="mt-10">
-              <p className="mb-3 w-fit rounded-full bg-green-100 px-4 py-2 text-sm font-black uppercase tracking-wide text-green-700">
+            <div className="mt-6 sm:mt-10">
+              <p className="mb-3 w-fit rounded-full bg-green-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wide text-green-700 sm:px-4 sm:py-2 sm:text-sm">
                 Community Fundraiser
               </p>
-              <h1 className="text-4xl font-black leading-tight sm:text-5xl md:text-6xl">
+              <h1 className="text-3xl font-black leading-tight sm:text-5xl md:text-6xl">
                 {fundraiser.title}
               </h1>
-              <p className="mt-6 max-w-3xl text-xl leading-8 text-zinc-600">
+              <p className="mt-4 max-w-3xl text-base leading-7 text-zinc-600 sm:mt-6 sm:text-xl sm:leading-8">
                 {storyParagraphs[0] || `Support ${organizerName} and help this campaign reach its goal.`}
               </p>
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-                  <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Raised</p>
-                  <h3 className="mt-2 text-2xl font-black">${fundraiser.raised?.toLocaleString() ?? 0}</h3>
+              <div className="mt-6 grid grid-cols-3 gap-2 sm:mt-8 sm:gap-4">
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:rounded-2xl sm:p-5">
+                  <p className="text-[9px] font-black uppercase tracking-wide text-zinc-500 sm:text-sm">Raised</p>
+                  <h3 className="mt-1 text-lg font-black sm:mt-2 sm:text-2xl">${fundraiser.raised?.toLocaleString() ?? 0}</h3>
                 </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-                  <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Goal</p>
-                  <h3 className="mt-2 text-2xl font-black">${fundraiser.goal?.toLocaleString() ?? 0}</h3>
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:rounded-2xl sm:p-5">
+                  <p className="text-[9px] font-black uppercase tracking-wide text-zinc-500 sm:text-sm">Goal</p>
+                  <h3 className="mt-1 text-lg font-black sm:mt-2 sm:text-2xl">${fundraiser.goal?.toLocaleString() ?? 0}</h3>
                 </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-                  <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Still Needed</p>
-                  <h3 className="mt-2 text-2xl font-black">${remaining.toLocaleString()}</h3>
+                <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:rounded-2xl sm:p-5">
+                  <p className="text-[9px] font-black uppercase tracking-wide text-zinc-500 sm:text-sm">Needed</p>
+                  <h3 className="mt-1 text-lg font-black sm:mt-2 sm:text-2xl">${remaining.toLocaleString()}</h3>
                 </div>
               </div>
             </div>
@@ -104,10 +119,10 @@ export default async function FundraiserPage({
 
           {/* DONATION SIDEBAR */}
           <div>
-            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8 lg:sticky lg:top-24">
+            <div id="donate" className="scroll-mt-24 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-8 lg:sticky lg:top-24">
 
               <p className="text-zinc-500 mb-2">Raised so far</p>
-              <h2 className="text-5xl font-black">
+              <h2 className="text-4xl font-black sm:text-5xl">
                 ${fundraiser.raised?.toLocaleString() ?? 0}
               </h2>
               {fundraiser.goal && (
@@ -133,6 +148,11 @@ export default async function FundraiserPage({
                 </p>
               </div>
 
+              <ShareFundraiserButton
+                title={fundraiser.title}
+                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-base font-black text-zinc-800 transition hover:bg-zinc-50"
+              />
+
               <div className="mt-8">
                 <DonateButton
                   fundraiserTitle={fundraiser.title}
@@ -147,16 +167,16 @@ export default async function FundraiserPage({
       </section>
 
       {/* STORY + VIDEO */}
-      <section className="max-w-7xl mx-auto px-4 py-10 sm:px-6">
-        <div className="grid lg:grid-cols-3 gap-10">
+      <section className="mx-auto max-w-7xl px-3 py-6 sm:px-6 sm:py-10">
+        <div className="grid gap-6 sm:gap-10 lg:grid-cols-3">
 
           {/* LEFT */}
-          <div className="lg:col-span-2 space-y-10">
+          <div className="space-y-6 sm:space-y-10 lg:col-span-2">
 
             {/* VIDEO */}
             {fundraiser.video_url && (
-              <div className="bg-white border border-zinc-200 rounded-3xl p-6">
-                <h2 className="text-2xl font-black mb-4">Campaign Video</h2>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-6">
+                <h2 className="mb-4 text-xl font-black sm:text-2xl">Campaign Video</h2>
                 <video
                   src={fundraiser.video_url}
                   controls
@@ -166,9 +186,9 @@ export default async function FundraiserPage({
             )}
 
             {/* STORY */}
-            <div className="bg-white border border-zinc-200 rounded-3xl p-10">
-              <h2 className="text-3xl font-black mb-6">Our Story</h2>
-              <div className="space-y-5 text-lg leading-relaxed text-zinc-700">
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-10">
+              <h2 className="mb-4 text-2xl font-black sm:mb-6 sm:text-3xl">Our Story</h2>
+              <div className="space-y-4 text-base leading-relaxed text-zinc-700 sm:space-y-5 sm:text-lg">
                 {storyParagraphs.length > 0 ? (
                   storyParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
                 ) : (
@@ -177,9 +197,9 @@ export default async function FundraiserPage({
               </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-3xl border border-zinc-200 bg-white p-8">
-                <h2 className="text-2xl font-black">Why This Matters</h2>
+            <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-8">
+                <h2 className="text-xl font-black sm:text-2xl">Why This Matters</h2>
                 <ul className="mt-5 space-y-4 text-zinc-700">
                   <li className="flex gap-3">
                     <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-green-500" />
@@ -196,8 +216,8 @@ export default async function FundraiserPage({
                 </ul>
               </div>
 
-              <div className="rounded-3xl border border-zinc-200 bg-white p-8">
-                <h2 className="text-2xl font-black">Donation Impact</h2>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-8">
+                <h2 className="text-xl font-black sm:text-2xl">Donation Impact</h2>
                 <div className="mt-5 space-y-4">
                   {impactAmounts.map((item) => (
                     <div key={item.amount} className="rounded-2xl bg-zinc-50 p-4">
@@ -219,11 +239,11 @@ export default async function FundraiserPage({
           </div>
 
           {/* RIGHT */}
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
 
             {fundraiser.organizer && (
-              <div className="bg-white border border-zinc-200 rounded-3xl p-8">
-                <h2 className="text-2xl font-black mb-6">Organizer</h2>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-8">
+                <h2 className="mb-5 text-xl font-black sm:mb-6 sm:text-2xl">Organizer</h2>
                 <div className="flex items-center gap-4">
                   <div className="w-16 h-16 rounded-full bg-green-500" />
                   <div>
@@ -237,8 +257,8 @@ export default async function FundraiserPage({
               </div>
             )}
 
-            <div className="rounded-3xl border border-zinc-200 bg-white p-8">
-              <h2 className="text-2xl font-black">Trust & Transparency</h2>
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-8">
+              <h2 className="text-xl font-black sm:text-2xl">Trust & Transparency</h2>
               <div className="mt-5 space-y-4 text-zinc-700">
                 <p><span className="font-black text-zinc-950">Organizer:</span> {organizerName}</p>
                 <p><span className="font-black text-zinc-950">Goal:</span> ${fundraiser.goal?.toLocaleString() ?? 0}</p>
@@ -247,8 +267,8 @@ export default async function FundraiserPage({
             </div>
 
             {donations && donations.length > 0 && (
-              <div className="bg-white border border-zinc-200 rounded-3xl p-8">
-                <h2 className="text-2xl font-black mb-6">Recent Donors</h2>
+              <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-8">
+                <h2 className="mb-5 text-xl font-black sm:mb-6 sm:text-2xl">Recent Donors</h2>
                 <div className="space-y-5">
                   {donations.map((donation) => (
                     <div key={donation.id} className="flex items-center justify-between">
@@ -267,8 +287,8 @@ export default async function FundraiserPage({
               </div>
             )}
 
-            <div className="rounded-3xl border border-zinc-200 bg-white p-8">
-              <h2 className="text-2xl font-black">FAQ</h2>
+            <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-8">
+              <h2 className="text-xl font-black sm:text-2xl">FAQ</h2>
               <div className="mt-5 divide-y divide-zinc-200">
                 {[
                   ["How much should I donate?", "Choose an amount that feels right. Presets are available, and custom amounts are supported."],
@@ -287,6 +307,8 @@ export default async function FundraiserPage({
 
         </div>
       </section>
+
+      <FundraiserFloatingActions title={fundraiser.title} />
 
     </main>
   );
