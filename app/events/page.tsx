@@ -1,6 +1,7 @@
 
 import EventCard from "@/components/EventCard";
 import MapSection from "@/components/MapSection";
+import EventsHeaderControls from "@/app/events/EventsHeaderControls";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import type { Metadata } from "next";
@@ -10,17 +11,44 @@ export const metadata: Metadata = {
   description: "Find local events near you. Buy tickets instantly.",
 };
 
+function formatDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getWeekendRange() {
+  const now = new Date();
+  const day = now.getDay();
+  const daysUntilSaturday = day === 0 ? -1 : (6 - day + 7) % 7;
+  const saturday = new Date(now);
+  saturday.setHours(0, 0, 0, 0);
+  saturday.setDate(now.getDate() + daysUntilSaturday);
+
+  const sunday = new Date(saturday);
+  sunday.setDate(saturday.getDate() + 1);
+  sunday.setHours(23, 59, 59, 999);
+
+  return {
+    start: formatDateKey(saturday),
+    end: formatDateKey(sunday),
+    dates: [formatDateKey(saturday), formatDateKey(sunday)],
+  };
+}
+
 export default async function EventsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; location?: string; category?: string; date?: string; view?: string }>;
+  searchParams: Promise<{ q?: string; location?: string; category?: string; view?: string; when?: string }>;
 }) {
   const filters = await searchParams;
   const query = filters.q?.trim();
   const location = filters.location?.trim();
   const category = filters.category?.trim();
-  const date = filters.date?.trim();
   const view = filters.view || "list";
+  const activeWhen = filters.when === "weekend" ? "weekend" : "all";
+  const weekendRange = activeWhen === "weekend" ? getWeekendRange() : null;
 
   // FIXED: only show public, approved events on the public listing page
   let eventsQuery = supabase
@@ -36,10 +64,10 @@ export default async function EventsPage({
     eventsQuery = eventsQuery.or(
       `city.ilike.%${location}%,venue.ilike.%${location}%`
     );
-  if (date) {
+  if (weekendRange) {
     eventsQuery = eventsQuery
-      .gte("event_date", `${date}T00:00:00`)
-      .lte("event_date", `${date}T23:59:59`);
+      .gte("event_date", `${weekendRange.start}T00:00:00`)
+      .lte("event_date", `${weekendRange.end}T23:59:59`);
   }
 
   const { data: supabaseEvents } = await eventsQuery;
@@ -71,21 +99,27 @@ export default async function EventsPage({
 
   let externalEvents: ExternalEvent[] = [];
 
-  if (query || location || category || date) {
+  if (query || location || category || weekendRange) {
     try {
-      const ebParams = new URLSearchParams();
-      if (query) ebParams.set("q", query);
-      if (location) ebParams.set("location", location);
-      if (category) ebParams.set("category", category);
-      if (date) ebParams.set("date", date);
-
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-      const res = await fetch(
-        `${baseUrl}/api/eventbrite?${ebParams.toString()}`,
-        { next: { revalidate: 300 } }
+      const datesToFetch = weekendRange?.dates ?? [null];
+      const responses = await Promise.all(
+        datesToFetch.map(async (eventDate) => {
+          const ebParams = new URLSearchParams();
+          if (query) ebParams.set("q", query);
+          if (location) ebParams.set("location", location);
+          if (category) ebParams.set("category", category);
+          if (eventDate) ebParams.set("date", eventDate);
+
+          const res = await fetch(
+            `${baseUrl}/api/eventbrite?${ebParams.toString()}`,
+            { next: { revalidate: 300 } }
+          );
+          const data = (await res.json()) as { events?: ExternalEvent[] };
+          return data.events || [];
+        })
       );
-      const data = (await res.json()) as { events?: ExternalEvent[] };
-      externalEvents = data.events || [];
+      externalEvents = responses.flat();
     } catch (e) {
       console.error("Failed to fetch external events:", e);
     }
@@ -115,13 +149,12 @@ export default async function EventsPage({
       return true;
     });
 
-  const hasFilters = !!(query || location || category || date);
   const buildQuery = (extra: Record<string, string>) => {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (location) params.set("location", location);
     if (category) params.set("category", category);
-    if (date) params.set("date", date);
+    if (activeWhen === "weekend") params.set("when", "weekend");
     Object.entries(extra).forEach(([k, v]) => params.set(k, v));
     return `/events?${params.toString()}`;
   };
@@ -131,24 +164,10 @@ export default async function EventsPage({
        
 
       <section className="mx-auto max-w-7xl px-6 py-14">
-        <div className="mb-8">
-          <p className="text-sm font-black uppercase tracking-wide text-orange-600">Events</p>
-          <h1 className="mt-2 text-5xl font-black">Browse Events</h1>
-          <p className="mt-4 max-w-2xl text-lg text-zinc-600">
-            Find local events, imported Eventbrite listings, and community gatherings.
-          </p>
-        </div>
+        <EventsHeaderControls location={location || ""} activeWhen={activeWhen} />
 
         {/* View Toggle */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-sm text-zinc-500 font-semibold">
-            {allEvents.length} event{allEvents.length !== 1 ? "s" : ""} found
-            {hasFilters && externalEvents.length > 0
-              ? " across EventBrithe and partner listings"
-              : hasFilters
-                ? " for your search"
-                : ""}
-          </p>
+        <div className="mb-6 flex items-center justify-end">
           <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-xl p-1 shadow-sm">
             <Link
               href={buildQuery({ view: "list" })}

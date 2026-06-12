@@ -1,15 +1,14 @@
 import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
-import DonateButton from "./DonateButton";
-import CommentsSection from "@/components/CommentsSection";
+import SupportMessages from "@/components/SupportMessages";
 import { recordDonationFromStripeSessionId } from "@/lib/donations";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import FundraiserMediaCarousel, {
   type FundraiserMediaItem,
 } from "@/components/FundraiserMediaCarousel";
-import FundraiserFloatingActions, {
-  ShareFundraiserButton,
-} from "./FundraiserActions";
+import FundraiserFloatingActions from "./FundraiserActions";
+import FundraiserSidebar from "@/components/FundraiserSidebar";
+import DonationProtectedBadge from "@/components/DonationProtectedBadge";
 
 function paragraphs(value: string | null | undefined) {
   return (value || "")
@@ -28,8 +27,34 @@ export default async function FundraiserPage({
   const { slug } = await params;
   const query = searchParams ? await searchParams : {};
 
-  if (query.success === "true" && query.session_id) {
-    await recordDonationFromStripeSessionId(query.session_id);
+  // Record donation and extract donor context for the support message form
+  let donorName = "";
+  let donorEmail = "";
+  let donorAmount: number | undefined = undefined;
+  const stripeSessionId = query.session_id || "";
+
+  if (query.success === "true" && stripeSessionId) {
+    const result = await recordDonationFromStripeSessionId(stripeSessionId);
+    // Pull donor details from the donations table so we can pre-fill the form
+    if (result.fundraiserId) {
+      const { createClient } = await import("@supabase/supabase-js");
+      const adminClient = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { data: donationRow } = await adminClient
+        .from("donations")
+        .select("donor_name, donor_email, amount")
+        .eq("fundraiser_id", result.fundraiserId)
+        .eq("payment_intent_id", stripeSessionId)
+        .eq("status", "succeeded")
+        .maybeSingle();
+      if (donationRow) {
+        donorName = donationRow.donor_name || "";
+        donorEmail = donationRow.donor_email || "";
+        donorAmount = Number(donationRow.amount ?? 0);
+      }
+    }
   }
 
   const { data: fundraiser } = await supabase
@@ -40,12 +65,13 @@ export default async function FundraiserPage({
 
   if (!fundraiser) return notFound();
 
-  const { data: donations } = await supabase
+  const { data: donations, count: donationCount } = await supabase
     .from("donations")
-    .select("*")
+    .select("id, donor_name, amount, created_at", { count: "exact" })
     .eq("fundraiser_id", fundraiser.id)
+    .eq("status", "succeeded")
     .order("created_at", { ascending: false })
-    .limit(4);
+    .limit(10);
 
   const { data: mediaRows } = await supabase
     .from("fundraiser_media")
@@ -53,19 +79,14 @@ export default async function FundraiserPage({
     .eq("fundraiser_id", fundraiser.id)
     .order("sort_order", { ascending: true });
 
-  const progress = fundraiser.goal
-    ? Math.min(Math.round((fundraiser.raised / fundraiser.goal) * 100), 100)
-    : 0;
-
-  const donationCount = donations?.length ?? 0;
   const storyParagraphs = paragraphs(fundraiser.story);
-  const remaining = Math.max((fundraiser.goal ?? 0) - (fundraiser.raised ?? 0), 0);
   const organizerName = fundraiser.organizer || "Campaign organizer";
   const impactAmounts = [
     { amount: 25, text: "helps cover immediate campaign needs" },
     { amount: 50, text: "moves the campaign closer to its next milestone" },
     { amount: 100, text: "creates a stronger push toward the full goal" },
   ];
+  const totalDonationCount = donationCount ?? donations?.length ?? 0;
   const carouselItems: FundraiserMediaItem[] =
     mediaRows && mediaRows.length > 0
       ? mediaRows
@@ -111,56 +132,28 @@ export default async function FundraiserPage({
                 </div>
                 <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 sm:rounded-2xl sm:p-5">
                   <p className="text-[9px] font-black uppercase tracking-wide text-zinc-500 sm:text-sm">Needed</p>
-                  <h3 className="mt-1 text-lg font-black sm:mt-2 sm:text-2xl">${remaining.toLocaleString()}</h3>
+                  <h3 className="mt-1 text-lg font-black sm:mt-2 sm:text-2xl">${Math.max((fundraiser.goal ?? 0) - (fundraiser.raised ?? 0), 0).toLocaleString()}</h3>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* DONATION SIDEBAR */}
+          {/* NEW SIDEBAR */}
           <div>
-            <div id="donate" className="scroll-mt-24 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:rounded-3xl sm:p-8 lg:sticky lg:top-24">
-
-              <p className="text-zinc-500 mb-2">Raised so far</p>
-              <h2 className="text-4xl font-black sm:text-5xl">
-                ${fundraiser.raised?.toLocaleString() ?? 0}
-              </h2>
-              {fundraiser.goal && (
-                <p className="text-zinc-500 mt-2">
-                  Goal: ${fundraiser.goal?.toLocaleString()}
-                </p>
-              )}
-
-              <div className="w-full h-4 bg-zinc-200 rounded-full overflow-hidden mt-6">
-                <div
-                  className="bg-green-500 h-full transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-
-              <p className="text-sm text-zinc-500 mt-3">
-                {donationCount} recent donation{donationCount !== 1 ? "s" : ""} shown
-              </p>
-
-              <div className="mt-6 rounded-2xl bg-green-50 p-4">
-                <p className="text-sm font-bold leading-6 text-green-800">
-                  Your donation helps this campaign move from story to outcome. Every contribution adds momentum.
-                </p>
-              </div>
-
-              <ShareFundraiserButton
-                title={fundraiser.title}
-                className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-5 py-4 text-base font-black text-zinc-800 transition hover:bg-zinc-50"
-              />
-
-              <div className="mt-8">
-                <DonateButton
-                  fundraiserTitle={fundraiser.title}
-                  fundraiserSlug={fundraiser.slug}
-                />
-              </div>
-
-            </div>
+            <FundraiserSidebar
+              fundraiserId={fundraiser.id}
+              fundraiserSlug={fundraiser.slug}
+              fundraiserTitle={fundraiser.title}
+              initialRaised={fundraiser.raised ?? 0}
+              initialGoal={fundraiser.goal ?? 0}
+              initialDonations={(donations ?? []).map((d) => ({
+                id: d.id,
+                donor_name: d.donor_name ?? null,
+                amount: Number(d.amount ?? 0),
+                created_at: d.created_at,
+              }))}
+              initialTotalCount={totalDonationCount}
+            />
           </div>
 
         </div>
@@ -185,16 +178,9 @@ export default async function FundraiserPage({
               </div>
             )}
 
-            {/* STORY */}
-            <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-10">
-              <h2 className="mb-4 text-2xl font-black sm:mb-6 sm:text-3xl">Our Story</h2>
-              <div className="space-y-4 text-base leading-relaxed text-zinc-700 sm:space-y-5 sm:text-lg">
-                {storyParagraphs.length > 0 ? (
-                  storyParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
-                ) : (
-                  <p>No story provided yet. The organizer can add more background, who this helps, and why support is needed now.</p>
-                )}
-              </div>
+            {/* DONATION PROTECTED BADGE */}
+            <div>
+              <DonationProtectedBadge />
             </div>
 
             <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
@@ -229,11 +215,12 @@ export default async function FundraiserPage({
               </div>
             </div>
 
-            <CommentsSection
-              targetType="fundraiser"
-              targetId={fundraiser.id}
-              title="Comments"
-              accent="green"
+            <SupportMessages
+              fundraiserId={fundraiser.id}
+              donorName={donorName}
+              donorEmail={donorEmail}
+              donorAmount={donorAmount}
+              stripeSessionId={stripeSessionId}
             />
 
           </div>
@@ -262,30 +249,11 @@ export default async function FundraiserPage({
               <div className="mt-5 space-y-4 text-zinc-700">
                 <p><span className="font-black text-zinc-950">Organizer:</span> {organizerName}</p>
                 <p><span className="font-black text-zinc-950">Goal:</span> ${fundraiser.goal?.toLocaleString() ?? 0}</p>
-                <p><span className="font-black text-zinc-950">Progress:</span> {progress}% funded</p>
+                <p><span className="font-black text-zinc-950">Progress:</span> {fundraiser.goal ? Math.min(Math.round(((fundraiser.raised ?? 0) / fundraiser.goal) * 100), 100) : 0}% funded</p>
               </div>
             </div>
 
-            {donations && donations.length > 0 && (
-              <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-8">
-                <h2 className="mb-5 text-xl font-black sm:mb-6 sm:text-2xl">Recent Donors</h2>
-                <div className="space-y-5">
-                  {donations.map((donation) => (
-                    <div key={donation.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-zinc-200" />
-                        <p className="font-medium">
-                          {donation.donor_name || "Anonymous"}
-                        </p>
-                      </div>
-                      <p className="font-bold text-green-600">
-                        ${donation.amount}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+
 
             <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:rounded-3xl sm:p-8">
               <h2 className="text-xl font-black sm:text-2xl">FAQ</h2>

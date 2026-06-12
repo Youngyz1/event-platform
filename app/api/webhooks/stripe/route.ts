@@ -27,6 +27,38 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid signature." }, { status: 400 });
   }
 
+  // ── Inline donation via PaymentIntent (new inline checkout flow) ──────────
+  if (event.type === "payment_intent.succeeded") {
+    const pi = event.data.object as Stripe.PaymentIntent;
+    const meta = pi.metadata || {};
+
+    if (meta.kind === "donation" && meta.fundraiser_id) {
+      const { data: existing } = await supabaseAdmin
+        .from("donations")
+        .select("id")
+        .eq("payment_intent_id", pi.id)
+        .maybeSingle();
+
+      if (!existing) {
+        const donationAmount = Number(meta.donation_amount) || pi.amount / 100;
+        await supabaseAdmin.from("donations").insert({
+          fundraiser_id: meta.fundraiser_id,
+          donor_name: meta.donor_name || "Anonymous",
+          donor_email: meta.donor_email || null,
+          amount: donationAmount,
+          currency: pi.currency?.toUpperCase() || "USD",
+          status: "succeeded",
+          payment_intent_id: pi.id,
+        });
+
+        // Recalculate raised total
+        const { recalculateFundraiserRaised } = await import("@/lib/donations");
+        await recalculateFundraiserRaised(meta.fundraiser_id);
+      }
+    }
+    return NextResponse.json({ received: true });
+  }
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
     const meta = session.metadata || {};
@@ -35,6 +67,7 @@ export async function POST(req: NextRequest) {
       await recordDonationFromSession(session);
       return NextResponse.json({ received: true });
     }
+
 
     const {
       qr_code, event_id, ticket_id, seat_id, seat_label,

@@ -2,7 +2,6 @@ import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import TicketCheckout from "./TicketCheckout";
 import VenueMapClient from "@/components/VenueMapClient";
-import CommentsSection from "@/components/CommentsSection";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 
@@ -245,14 +244,7 @@ export default async function EventPage({
               </div>
             </div>
 
-            <div className="mt-12">
-              <CommentsSection
-                targetType="event"
-                targetId={event.id}
-                title="Event Comments"
-                accent="orange"
-              />
-            </div>
+
 
             {/* Venue Map */}
             {event.latitude && event.longitude && (
