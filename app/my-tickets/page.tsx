@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
-import Footer from "@/components/Footer";
 
 type Order = {
   id: string;
@@ -124,7 +123,6 @@ export default function MyTicketsPage() {
         )}
       </section>
 
-      <Footer />
     </main>
   );
 }

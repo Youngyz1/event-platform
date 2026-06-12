@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import EventCard from "@/components/EventCard";
-import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSiteUrl } from "@/lib/site-url";
@@ -315,7 +314,6 @@ export default async function HomePage() {
       {/* ── About Us section ──────────────────────────────────────────────────── */}
       <AboutUsSection />
 
-      <Footer />
     </main>
   );
 }

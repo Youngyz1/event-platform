@@ -1,6 +1,5 @@
 
 import FundraiserCard from "@/components/FundraiserCard";
-import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
 import type { Metadata } from "next";
 
@@ -50,7 +49,6 @@ export default async function FundraisersPage() {
         )}
       </section>
 
-      <Footer />
     </main>
   );
 }

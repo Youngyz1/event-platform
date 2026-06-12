@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import NavbarWrapper from "@/components/NavbarWrapper";
+import Footer from "@/components/Footer";
 import { getSiteUrl } from "@/lib/site-url";
 
 const font = Plus_Jakarta_Sans({
@@ -37,7 +38,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <NavbarWrapper />
-        {children}
+        <div className="flex-1">
+          {children}
+        </div>
+        <Footer />
       </body>
     </html>
   );

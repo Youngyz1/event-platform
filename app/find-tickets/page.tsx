@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 
-import Footer from "@/components/Footer";
 
 type Order = {
   id: string;
@@ -191,7 +190,6 @@ export default function FindTicketsPage() {
         </div>
       </section>
 
-      <Footer />
     </main>
   );
 }

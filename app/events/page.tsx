@@ -1,6 +1,5 @@
 
 import EventCard from "@/components/EventCard";
-import Footer from "@/components/Footer";
 import MapSection from "@/components/MapSection";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -140,39 +139,6 @@ export default async function EventsPage({
           </p>
         </div>
 
-        {/* Search Form */}
-        <form
-          action="/events"
-          className="mb-8 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm"
-        >
-          <div className="grid gap-4 md:grid-cols-4">
-            <input
-              name="q"
-              defaultValue={query}
-              type="text"
-              placeholder="Search events"
-              className="rounded-xl border border-zinc-200 px-4 py-3 outline-none focus:border-orange-500"
-            />
-            <input
-              name="location"
-              defaultValue={location}
-              type="text"
-              placeholder="City (e.g. Riverside, CA)"
-              className="rounded-xl border border-zinc-200 px-4 py-3 outline-none focus:border-orange-500"
-            />
-            <input
-              name="date"
-              defaultValue={date}
-              type="date"
-              className="rounded-xl border border-zinc-200 px-4 py-3 outline-none focus:border-orange-500"
-            />
-            <button className="rounded-xl bg-orange-500 font-bold text-white transition hover:bg-orange-600">
-              Search
-            </button>
-          </div>
-          <input type="hidden" name="view" value={view} />
-        </form>
-
         {/* View Toggle */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-sm text-zinc-500 font-semibold">
@@ -299,7 +265,6 @@ export default async function EventsPage({
         )}
       </section>
 
-      <Footer />
     </main>
   );
 }
