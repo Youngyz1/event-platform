@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
-import CommentsSection from "@/components/CommentsSection";
 import DonationProtectedBadge from "@/components/DonationProtectedBadge";
+import DonorNameWithPopup from "@/components/DonorNameWithPopup";
 import FundraiserMediaSlider, {
   type FundraiserMediaSlide,
 } from "@/components/FundraiserMediaSlider";
@@ -9,6 +9,8 @@ import FundraiserShare from "@/components/FundraiserShare";
 import FundraiserStory from "@/components/FundraiserStory";
 import { supabase } from "@/lib/supabase";
 import { recordDonationFromStripeSessionId } from "@/lib/donations";
+import { createClient } from "@supabase/supabase-js";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ShareFundraiserButton } from "./FundraiserActions";
 
@@ -18,6 +20,7 @@ const FALLBACK_IMAGE =
 type DonationRow = {
   id: string;
   donor_name: string | null;
+  donor_email: string | null;
   amount: number | string | null;
   created_at: string;
 };
@@ -69,6 +72,76 @@ function timeAgo(value: string) {
   if (days < 1) return "today";
   if (days === 1) return "yesterday";
   return `${days} days ago`;
+}
+
+/**
+ * For each donor email, look up the auth user via getUserByEmail,
+ * then find a matching organizer by user_id.
+ * Returns a Map<email, organizerId> for donors who have an organizer profile.
+ */
+async function getDonorOrganizerMap(
+  donations: DonationRow[]
+): Promise<Map<string, string>> {
+  const emails = Array.from(
+    new Set(
+      donations
+        .map((d) => d.donor_email?.trim().toLowerCase())
+        .filter((e): e is string => Boolean(e))
+    )
+  );
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (emails.length === 0 || !url || !serviceKey) {
+    return new Map<string, string>();
+  }
+
+  try {
+    const supabaseAdmin = createClient(url, serviceKey, {
+      auth: { persistSession: false },
+    });
+
+    // Resolve each email → auth user id
+    const userIdByEmail = new Map<string, string>();
+    await Promise.all(
+      emails.map(async (email) => {
+        const { data, error } =
+          await supabaseAdmin.auth.admin.getUserByEmail(email);
+        if (!error && data?.user?.id) {
+          userIdByEmail.set(email, data.user.id);
+        }
+      })
+    );
+
+    const userIds = Array.from(new Set(userIdByEmail.values()));
+    if (userIds.length === 0) return new Map<string, string>();
+
+    // Find organizers whose user_id matches one of those auth ids
+    const { data: organizers } = await supabaseAdmin
+      .from("organizers")
+      .select("id, user_id, status, visibility")
+      .in("user_id", userIds)
+      .eq("visibility", "public");
+
+    const organizerIdByUserId = new Map(
+      (organizers ?? [])
+        .filter(
+          (o) => !["rejected", "suspended"].includes(o.status ?? "")
+        )
+        .map((o) => [o.user_id as string, o.id as string])
+    );
+
+    // Build email → organizer id map
+    const result = new Map<string, string>();
+    for (const [email, userId] of userIdByEmail.entries()) {
+      const orgId = organizerIdByUserId.get(userId);
+      if (orgId) result.set(email, orgId);
+    }
+    return result;
+  } catch {
+    return new Map<string, string>();
+  }
 }
 
 function OrganizerAvatar({ name }: { name: string }) {
@@ -161,7 +234,7 @@ export default async function FundraiserPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("donations")
-      .select("id, donor_name, amount, created_at", { count: "exact" })
+      .select("id, donor_name, donor_email, amount, created_at", { count: "exact" })
       .eq("fundraiser_id", fundraiser.id)
       .eq("status", "completed")
       .order("created_at", { ascending: false })
@@ -191,6 +264,7 @@ export default async function FundraiserPage({
       : [{ url: coverImage, type: "image" }];
   const updates = (updatesResult.data ?? []) as UpdateRow[];
   const recentDonors = (donationsResult.data ?? []) as DonationRow[];
+  const organizerIdByDonorEmail = await getDonorOrganizerMap(recentDonors);
   const donationCount = donationsResult.count ?? recentDonors.length;
   const raised = Number(fundraiser.raised_amount ?? fundraiser.raised ?? 0);
   const goal = Number(fundraiser.goal_amount ?? fundraiser.goal ?? 0);
@@ -219,7 +293,16 @@ export default async function FundraiserPage({
                 <OrganizerAvatar name={organizerName} />
                 <p className="text-sm text-zinc-600">
                   Organised by{" "}
-                  <span className="font-bold text-zinc-950">{organizerName}</span>
+                  {organizer?.id ? (
+                    <Link
+                      href={`/organizers/${organizer.id}`}
+                      className="font-bold text-zinc-950 hover:underline"
+                    >
+                      {organizerName}
+                    </Link>
+                  ) : (
+                    <span className="font-bold text-zinc-950">{organizerName}</span>
+                  )}
                 </p>
               </div>
               <DonationProtectedBadge />
@@ -263,15 +346,6 @@ export default async function FundraiserPage({
           )}
 
           <FundraiserShare title={fundraiser.title} imageUrl={coverImage} />
-
-          <section>
-            <CommentsSection
-              targetType="fundraiser"
-              targetId={fundraiser.id}
-              title="Words of Support"
-              accent="green"
-            />
-          </section>
         </div>
 
         <aside className="lg:col-span-1">
@@ -311,16 +385,38 @@ export default async function FundraiserPage({
               ) : (
                 <ul className="mt-4 space-y-4">
                   {recentDonors.map((donation) => {
-                    const donorName = donation.donor_name || "Anonymous";
+                    const donorName = donation.donor_name;
+                    const donorEmail = donation.donor_email?.trim().toLowerCase();
+                    const organizerId = donorEmail
+                      ? organizerIdByDonorEmail.get(donorEmail)
+                      : undefined;
                     const amount = Number(donation.amount ?? 0);
+                    const displayName = donorName || "Anonymous";
 
                     return (
                       <li key={donation.id} className="flex items-center gap-3">
-                        <OrganizerAvatar name={donorName} />
+                        <OrganizerAvatar name={displayName} />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-zinc-950">
-                            {donorName}
-                          </p>
+                          {/* null donor_name → Anonymous, not clickable */}
+                          {!donorName ? (
+                            <p className="truncate text-sm font-bold text-zinc-950">
+                              Anonymous
+                            </p>
+                          ) : organizerId ? (
+                            /* Has an organizer profile → link to /organizers/[id] */
+                            <Link
+                              href={`/organizers/${organizerId}`}
+                              className="block max-w-full truncate text-sm font-bold text-zinc-950 hover:underline"
+                            >
+                              {donorName}
+                            </Link>
+                          ) : (
+                            /* Named but no organizer → popup */
+                            <DonorNameWithPopup
+                              name={donorName}
+                              fundraiserTitle={fundraiser.title}
+                            />
+                          )}
                           <p className="text-xs text-zinc-500">
                             {money(amount)} · {timeAgo(donation.created_at)}
                           </p>

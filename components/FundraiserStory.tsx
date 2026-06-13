@@ -14,7 +14,6 @@ export default function FundraiserStory({
 
   return (
     <section className="border-b border-zinc-200 pb-8">
-      <h2 className="text-2xl font-bold text-zinc-950">Campaign story</h2>
       <div className="mt-4 space-y-4 text-base leading-7 text-zinc-700">
         {(visible || "No story has been added yet.")
           .split(/\n{2,}/)

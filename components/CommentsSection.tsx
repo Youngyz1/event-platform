@@ -16,6 +16,7 @@ type CommentsSectionProps = {
   targetId: string;
   title?: string;
   accent?: "orange" | "green";
+  commentsOnly?: boolean;
 };
 
 const accentClasses = {
@@ -163,6 +164,7 @@ export default function CommentsSection({
   targetId,
   title = "Comments",
   accent = "orange",
+  commentsOnly = false,
 }: CommentsSectionProps) {
   const styles = accentClasses[accent];
   const [comments, setComments] = useState<CommentItem[]>([]);
@@ -266,65 +268,66 @@ export default function CommentsSection({
       <h2 className="mt-2 text-3xl font-black">{title}</h2>
       <p className="mt-3 text-zinc-600">{helperText}</p>
 
-      {/* Gate or Comment Form */}
-      {!verifiedEmail ? (
-        <GatePrompt
-          targetType={targetType}
-          targetId={targetId}
-          accent={accent}
-          onVerified={(email, name) => {
-            setVerifiedEmail(email);
-            setVerifiedName(name);
-          }}
-        />
-      ) : (
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          {/* Verified badge */}
-          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black ${styles.badge}`}>
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-            </svg>
-            Commenting as {verifiedName || verifiedEmail}
+      {!commentsOnly && (
+        !verifiedEmail ? (
+          <GatePrompt
+            targetType={targetType}
+            targetId={targetId}
+            accent={accent}
+            onVerified={(email, name) => {
+              setVerifiedEmail(email);
+              setVerifiedName(name);
+            }}
+          />
+        ) : (
+          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+            {/* Verified badge */}
+            <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-black ${styles.badge}`}>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+              </svg>
+              Commenting as {verifiedName || verifiedEmail}
+              <button
+                type="button"
+                onClick={() => { setVerifiedEmail(null); setVerifiedName(""); }}
+                className="ml-1 opacity-50 hover:opacity-100 transition"
+                title="Switch email"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div>
+              <textarea
+                value={body}
+                onChange={(event) => setBody(event.target.value)}
+                maxLength={1000}
+                required
+                rows={4}
+                placeholder="Write a public comment"
+                className={`w-full resize-none rounded-2xl border border-zinc-300 px-4 py-3 outline-none ${styles.ring}`}
+              />
+              <div className="mt-2 flex items-center justify-between gap-3 text-sm text-zinc-500">
+                <span>Comments appear publicly on this page.</span>
+                <span>{body.length}/1000</span>
+              </div>
+            </div>
+
+            {submitError && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+                {submitError}
+              </div>
+            )}
+
             <button
-              type="button"
-              onClick={() => { setVerifiedEmail(null); setVerifiedName(""); }}
-              className="ml-1 opacity-50 hover:opacity-100 transition"
-              title="Switch email"
+              type="submit"
+              disabled={submitting}
+              className={`rounded-full px-6 py-3 font-black text-white transition ${styles.button}`}
             >
-              ✕
+              {submitting ? "Posting..." : "Post Comment"}
             </button>
-          </div>
-
-          <div>
-            <textarea
-              value={body}
-              onChange={(event) => setBody(event.target.value)}
-              maxLength={1000}
-              required
-              rows={4}
-              placeholder="Write a public comment"
-              className={`w-full resize-none rounded-2xl border border-zinc-300 px-4 py-3 outline-none ${styles.ring}`}
-            />
-            <div className="mt-2 flex items-center justify-between gap-3 text-sm text-zinc-500">
-              <span>Comments appear publicly on this page.</span>
-              <span>{body.length}/1000</span>
-            </div>
-          </div>
-
-          {submitError && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {submitError}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className={`rounded-full px-6 py-3 font-black text-white transition ${styles.button}`}
-          >
-            {submitting ? "Posting..." : "Post Comment"}
-          </button>
-        </form>
+          </form>
+        )
       )}
 
       {/* Comment list */}
@@ -335,7 +338,7 @@ export default function CommentsSection({
           <div className="rounded-2xl bg-red-50 p-5 text-sm text-red-600">{error}</div>
         ) : comments.length === 0 ? (
           <div className="rounded-2xl bg-zinc-50 p-5 text-zinc-500">
-            No comments yet. Be the first to start the conversation.
+            {commentsOnly ? "No comments yet" : "No comments yet. Be the first to start the conversation."}
           </div>
         ) : (
           comments.map((comment) => {
