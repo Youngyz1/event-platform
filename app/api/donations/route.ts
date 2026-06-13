@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     .from("donations")
     .select("id, donor_name, donor_email, amount, created_at")
     .eq("fundraiser_id", fundraiserId)
-    .eq("status", "succeeded")
+    .eq("status", "completed")
     .order("created_at", { ascending: false })
     .limit(limit);
 
@@ -60,12 +60,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // --- Query total count of succeeded donations ---
+  // --- Query total count of completed donations ---
   const { count, error: countError } = await supabaseAdmin
     .from("donations")
     .select("id", { count: "exact", head: true })
     .eq("fundraiser_id", fundraiserId)
-    .eq("status", "succeeded");
+    .eq("status", "completed");
 
   if (countError) {
     console.error("[donations GET] count query error:", countError);
@@ -91,9 +91,12 @@ export async function GET(request: NextRequest) {
   }
 
   // --- Strip donor_email from public response (privacy) ---
-  const publicDonations = (donations ?? []).map(
-    ({ donor_email: _stripped, ...rest }) => rest
-  );
+  const publicDonations = (donations ?? []).map((donation) => ({
+    id: donation.id,
+    donor_name: donation.donor_name,
+    amount: donation.amount,
+    created_at: donation.created_at,
+  }));
 
   return NextResponse.json({
     donations: publicDonations,

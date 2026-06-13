@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
       fundraiserTitle,
       donorName,
       donorEmail,
+      message,
       anonymous = false,
       saveCard = false,
     } = await req.json();
@@ -77,6 +78,7 @@ export async function POST(req: NextRequest) {
         fundraiser_title: fundraiser.title || fundraiserTitle || "",
         donor_name: anonymous ? "Anonymous" : (normalizedDonorName || "Anonymous"),
         donor_email: normalizedDonorEmail,
+        message: message || "",
         donation_amount: String(donationAmount),
         tip_amount: String(tipAmount),
         anonymous: String(anonymous),

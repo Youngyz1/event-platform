@@ -40,14 +40,14 @@ export async function POST(req: NextRequest) {
         .maybeSingle();
 
       if (!existing) {
-        const donationAmount = Number(meta.donation_amount) || pi.amount / 100;
         await supabaseAdmin.from("donations").insert({
           fundraiser_id: meta.fundraiser_id,
           donor_name: meta.donor_name || "Anonymous",
           donor_email: meta.donor_email || null,
-          amount: donationAmount,
+          message: meta.message || null,
+          amount: pi.amount / 100,
           currency: pi.currency?.toUpperCase() || "USD",
-          status: "succeeded",
+          status: "completed",
           payment_intent_id: pi.id,
         });
 

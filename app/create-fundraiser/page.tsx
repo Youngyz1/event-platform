@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -21,15 +21,16 @@ const FUNDRAISER_STEPS = [
 
 const campaignCategories = ["Charity", "Medical", "Education", "Church", "Community Projects"];
 
-type GalleryItem = {
-  image_url: string;
-  caption: string;
-};
-
 type OrganizerProfile = {
   id: string;
   name: string;
   photo?: string | null;
+};
+
+type SelectedPhoto = {
+  id: string;
+  file: File;
+  previewUrl: string;
 };
 
 function generateSlug(title: string) {
@@ -44,6 +45,15 @@ function money(value: string | number) {
   return `$${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
+function safeFileName(file: File) {
+  const cleanName = file.name
+    .toLowerCase()
+    .replace(/[^a-z0-9.]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return `${Date.now()}-${cleanName || "photo.jpg"}`;
+}
+
 export default function CreateFundraiserPage() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
@@ -53,9 +63,11 @@ export default function CreateFundraiserPage() {
   const [checking, setChecking] = useState(true);
   const [email, setEmail] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [photoFiles, setPhotoFiles] = useState<SelectedPhoto[]>([]);
   const [uploadProgress, setUploadProgress] = useState("");
   const [visibility, setVisibility] = useState("public");
   const [organizers, setOrganizers] = useState<OrganizerProfile[]>([]);
+  const photoFilesRef = useRef<SelectedPhoto[]>([]);
 
   const [form, setForm] = useState({
     title: "",
@@ -69,11 +81,16 @@ export default function CreateFundraiserPage() {
     category: "Charity",
     tags: "",
   });
-  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([
-    { image_url: "", caption: "" },
-    { image_url: "", caption: "" },
-    { image_url: "", caption: "" },
-  ]);
+
+  useEffect(() => {
+    photoFilesRef.current = photoFiles;
+  }, [photoFiles]);
+
+  useEffect(() => {
+    return () => {
+      photoFilesRef.current.forEach((photo) => URL.revokeObjectURL(photo.previewUrl));
+    };
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -136,31 +153,30 @@ export default function CreateFundraiserPage() {
     setForm({ ...form, [event.target.name]: event.target.value });
   }
 
-  function updateGalleryItem(index: number, field: keyof GalleryItem, value: string) {
+  function handlePhotoSelect(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []).slice(0, 8 - photoFiles.length);
+    const photos = files.map((file) => ({
+      id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+
     setNotice("");
-    setGalleryItems((items) =>
-      items.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [field]: value } : item
-      )
-    );
+    setPhotoFiles((current) => [...current, ...photos].slice(0, 8));
+    event.target.value = "";
   }
 
-  function addGalleryItem() {
-    setGalleryItems((items) => [...items, { image_url: "", caption: "" }]);
-  }
-
-  function removeGalleryItem(index: number) {
-    setGalleryItems((items) =>
-      items.length > 1 ? items.filter((_, itemIndex) => itemIndex !== index) : items
-    );
-  }
-
-  function cleanGalleryItems() {
-    return galleryItems.filter((item) => item.image_url.trim().startsWith("http"));
+  function removePhoto(id: string) {
+    setNotice("");
+    setPhotoFiles((current) => {
+      const removed = current.find((photo) => photo.id === id);
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return current.filter((photo) => photo.id !== id);
+    });
   }
 
   function saveDraft() {
-    localStorage.setItem("fundraiser-draft", JSON.stringify({ form, visibility, galleryItems }));
+    localStorage.setItem("fundraiser-draft", JSON.stringify({ form, visibility }));
     setNotice("Draft saved on this device.");
   }
 
@@ -238,7 +254,6 @@ export default function CreateFundraiserPage() {
         raised: Number(form.raised) || 0,
         organizer: form.organizer,
         organizer_id: form.organizer_id,
-        banner: form.banner,
         video_url,
         user_id: session.user.id,
       })
@@ -251,28 +266,54 @@ export default function CreateFundraiserPage() {
       return;
     }
 
-    const mediaItems = [
-      ...(form.banner.trim().startsWith("http")
-        ? [{ image_url: form.banner.trim(), caption: form.title }]
-        : []),
-      ...cleanGalleryItems(),
-    ].filter(
-      (item, index, items) =>
-        items.findIndex((candidate) => candidate.image_url === item.image_url) === index
-    );
+    const uploadedMedia: { url: string; position: number }[] = [];
 
-    if (mediaItems.length > 0) {
+    for (const [index, photo] of photoFiles.entries()) {
+      setUploadProgress(`Uploading photo ${index + 1} of ${photoFiles.length}...`);
+      const filePath = `fundraiser-media/${insertedFundraiser.id}/${safeFileName(photo.file)}`;
+      const { error: uploadError } = await supabase.storage
+        .from("fundraiser-media")
+        .upload(filePath, photo.file);
+
+      if (uploadError) {
+        setError("Photo upload failed: " + uploadError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from("fundraiser-media")
+        .getPublicUrl(filePath);
+
+      uploadedMedia.push({ url: urlData.publicUrl, position: index });
+    }
+
+    if (uploadedMedia.length > 0) {
       const { error: mediaError } = await supabase.from("fundraiser_media").insert(
-        mediaItems.map((item, index) => ({
+        uploadedMedia.map((item) => ({
           fundraiser_id: insertedFundraiser.id,
-          image_url: item.image_url.trim(),
-          caption: item.caption.trim() || form.title,
-          sort_order: index,
+          url: item.url,
+          type: "image",
+          position: item.position,
         }))
       );
 
       if (mediaError) {
-        console.error("Fundraiser media insert failed:", mediaError.message);
+        setError("Fundraiser media insert failed: " + mediaError.message);
+        setLoading(false);
+        return;
+      }
+
+      const firstImageUrl = uploadedMedia[0].url;
+      const { error: coverError } = await supabase
+        .from("fundraisers")
+        .update({ image_url: firstImageUrl, banner: firstImageUrl })
+        .eq("id", insertedFundraiser.id);
+
+      if (coverError) {
+        setError("Cover image update failed: " + coverError.message);
+        setLoading(false);
+        return;
       }
     }
 
@@ -310,8 +351,11 @@ export default function CreateFundraiserPage() {
 
       <CreatorPanel title="Preview">
         <div className="overflow-hidden rounded-xl bg-zinc-100">
-          {form.banner ? (
-            <div className="h-32 bg-cover bg-center" style={{ backgroundImage: `url(${form.banner})` }} />
+          {photoFiles[0] ? (
+            <div
+              className="h-32 bg-cover bg-center"
+              style={{ backgroundImage: `url(${photoFiles[0].previewUrl})` }}
+            />
           ) : (
             <div className="flex h-32 items-center justify-center text-zinc-400">
               <i className="ti ti-photo text-4xl" aria-hidden="true" />
@@ -426,60 +470,46 @@ export default function CreateFundraiserPage() {
               </div>
             </CreatorPanel>
 
-            <CreatorPanel title="Fundraiser Image">
+            <CreatorPanel title="Fundraiser Photos">
               <div className="grid gap-5">
-                <CreatorField label="Cover Image URL" hint="Use a wide image, ideally 1200 x 630.">
-                  <input name="banner" value={form.banner} onChange={handleChange} type="url" placeholder="https://..." className={greenInputClass} />
+                <CreatorField label="Add photos (up to 8)" hint="The first image becomes the fundraiser cover.">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handlePhotoSelect}
+                    disabled={photoFiles.length >= 8}
+                    className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm font-semibold"
+                  />
                 </CreatorField>
-                <div>
-                  <div className="mb-3">
-                    <p className="text-sm font-black text-zinc-950">Additional Banner Photos</p>
-                    <p className="mt-1 text-xs font-semibold leading-5 text-zinc-500">
-                      Add more carousel photos for the fundraiser banner. Each photo can have its own caption.
-                    </p>
-                  </div>
-                  <div className="space-y-4">
-                    {galleryItems.map((item, index) => (
-                      <div key={index} className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-                        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                          <CreatorField label={`Photo ${index + 1} URL`}>
-                            <input
-                              value={item.image_url}
-                              onChange={(event) => updateGalleryItem(index, "image_url", event.target.value)}
-                              type="url"
-                              placeholder="https://..."
-                              className={greenInputClass}
-                            />
-                          </CreatorField>
-                          <CreatorField label="Caption">
-                            <input
-                              value={item.caption}
-                              onChange={(event) => updateGalleryItem(index, "caption", event.target.value)}
-                              type="text"
-                              placeholder="Caption for this photo"
-                              className={greenInputClass}
-                            />
-                          </CreatorField>
-                          <button
-                            type="button"
-                            onClick={() => removeGalleryItem(index)}
-                            className="rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-black text-zinc-600 hover:bg-zinc-100 disabled:opacity-50"
-                            disabled={galleryItems.length === 1}
-                          >
-                            Remove
-                          </button>
-                        </div>
+
+                {photoFiles.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    {photoFiles.map((photo, index) => (
+                      <div key={photo.id} className="relative overflow-hidden rounded-xl border border-zinc-200 bg-zinc-100">
+                        <img
+                          src={photo.previewUrl}
+                          alt={`Fundraiser photo ${index + 1}`}
+                          className="aspect-square w-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(photo.id)}
+                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-sm font-black text-white transition hover:bg-black"
+                          aria-label={`Remove photo ${index + 1}`}
+                        >
+                          ×
+                        </button>
+                        {index === 0 && (
+                          <span className="absolute bottom-2 left-2 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-black uppercase text-white">
+                            Cover
+                          </span>
+                        )}
                       </div>
                     ))}
                   </div>
-                  <button
-                    type="button"
-                    onClick={addGalleryItem}
-                    className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-black text-emerald-700 hover:bg-emerald-100"
-                  >
-                    Add another photo
-                  </button>
-                </div>
+                )}
+
                 <CreatorField label="Campaign Video" hint="Optional. MP4, MOV, or AVI uploads are supported by your storage bucket.">
                   <input type="file" accept="video/*" onChange={(event) => setVideoFile(event.target.files?.[0] || null)} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm font-semibold" />
                 </CreatorField>
@@ -535,7 +565,7 @@ export default function CreateFundraiserPage() {
                 ["Category", form.category],
                 ["Goal", money(form.goal)],
                 ["Raised", money(form.raised)],
-                ["Gallery Photos", String(cleanGalleryItems().length)],
+                ["Photos", String(photoFiles.length)],
                 ["Visibility", visibility],
               ].map(([label, value]) => (
                 <div key={label} className="flex flex-col justify-between gap-1 rounded-xl bg-zinc-50 px-4 py-3 ring-1 ring-zinc-200 sm:flex-row">

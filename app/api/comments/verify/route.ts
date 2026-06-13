@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     .select("id")
     .eq("fundraiser_id", targetId)
     .ilike("donor_email", email)
-    .eq("status", "succeeded")
+    .in("status", ["completed", "succeeded"])
     .limit(1)
     .maybeSingle();
 

@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
         .from("donations")
         .select("donor_email, amount")
         .eq("fundraiser_id", targetId)
-        .eq("status", "succeeded")
+        .in("status", ["completed", "succeeded"])
         .in("donor_email", emails);
 
       // Build a map: email → amount (highest donation if multiple)
@@ -97,7 +97,12 @@ export async function GET(request: NextRequest) {
   }
 
   // Strip author_email from public response
-  const safeComments = comments.map(({ author_email: _e, ...rest }) => rest);
+  const safeComments = comments.map((comment) => ({
+    id: comment.id,
+    author_name: comment.author_name,
+    body: comment.body,
+    created_at: comment.created_at,
+  }));
   return NextResponse.json({ comments: safeComments });
 }
 
@@ -108,12 +113,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const targetType = cleanText(payload.targetType);
-  const targetId = cleanText(payload.targetId);
-  const authorName = cleanText(payload.authorName, "Anonymous").slice(0, 120) || "Anonymous";
+  const targetType = cleanText(payload.targetType || payload.type);
+  const targetId = cleanText(payload.targetId || payload.fundraiser_id);
+  const authorName = cleanText(payload.authorName || payload.author_name, "Anonymous").slice(0, 120) || "Anonymous";
   const authorEmail = cleanText(payload.authorEmail).slice(0, 255) || null;
   const body = cleanText(payload.body);
   const stripeSessionId = cleanText(payload.stripeSessionId);
+  const postDonationFlow = payload.type === "fundraiser" && Boolean(payload.fundraiser_id);
 
   if (!isTargetType(targetType) || !uuidPattern.test(targetId)) {
     return NextResponse.json({ error: "Invalid comment target." }, { status: 400 });
@@ -131,46 +137,60 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // ── Donation verification ────────────────────────────────────────────────
-  // Must supply a valid Stripe session ID that corresponds to a donation for this fundraiser.
-  if (!stripeSessionId) {
-    return NextResponse.json(
-      { error: "A valid donation session is required to leave a message." },
-      { status: 403 }
-    );
-  }
+  let verifiedDonation: { id?: string; amount?: number | null; donor_email?: string | null } | null = null;
 
-  const { data: donation } = await supabaseAdmin
-    .from("donations")
-    .select("id, amount, donor_email")
-    .eq("fundraiser_id", targetId)
-    .eq("payment_intent_id", stripeSessionId)
-    .eq("status", "succeeded")
-    .limit(1)
-    .maybeSingle();
+  if (!postDonationFlow) {
+    // ── Donation verification ────────────────────────────────────────────────
+    // Must supply a valid Stripe session ID that corresponds to a donation for this fundraiser.
+    if (!stripeSessionId) {
+      return NextResponse.json(
+        { error: "A valid donation session is required to leave a message." },
+        { status: 403 }
+      );
+    }
 
-  // payment_intent_id may store either the session ID or the payment intent ID.
-  // Fall back to checking if any succeeded donation exists for this email + fundraiser.
-  let verifiedDonation = donation;
-  if (!verifiedDonation && authorEmail) {
+    const { data: donation } = await supabaseAdmin
+      .from("donations")
+      .select("id, amount, donor_email")
+      .eq("fundraiser_id", targetId)
+      .eq("payment_intent_id", stripeSessionId)
+      .in("status", ["completed", "succeeded"])
+      .limit(1)
+      .maybeSingle();
+
+    // payment_intent_id may store either the session ID or the payment intent ID.
+    // Fall back to checking if any completed donation exists for this email + fundraiser.
+    verifiedDonation = donation;
+    if (!verifiedDonation && authorEmail) {
+      const { data: fallback } = await supabaseAdmin
+        .from("donations")
+        .select("id, amount, donor_email")
+        .eq("fundraiser_id", targetId)
+        .ilike("donor_email", authorEmail)
+        .in("status", ["completed", "succeeded"])
+        .limit(1)
+        .maybeSingle();
+      verifiedDonation = fallback;
+    }
+
+    if (!verifiedDonation) {
+      return NextResponse.json(
+        { error: "We could not verify your donation for this fundraiser." },
+        { status: 403 }
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+  } else if (authorEmail) {
     const { data: fallback } = await supabaseAdmin
       .from("donations")
       .select("id, amount, donor_email")
       .eq("fundraiser_id", targetId)
       .ilike("donor_email", authorEmail)
-      .eq("status", "succeeded")
+      .in("status", ["completed", "succeeded"])
       .limit(1)
       .maybeSingle();
     verifiedDonation = fallback;
   }
-
-  if (!verifiedDonation) {
-    return NextResponse.json(
-      { error: "We could not verify your donation for this fundraiser." },
-      { status: 403 }
-    );
-  }
-  // ─────────────────────────────────────────────────────────────────────────
 
   try {
     const exists = await targetExists(targetType, targetId);
@@ -188,7 +208,7 @@ export async function POST(request: NextRequest) {
       target_type: targetType,
       target_id: targetId,
       author_name: authorName,
-      author_email: authorEmail || verifiedDonation.donor_email || null,
+      author_email: authorEmail || verifiedDonation?.donor_email || null,
       body,
       status: "approved",
     })
@@ -202,8 +222,7 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     comment: {
       ...data,
-      donor_amount: Number(verifiedDonation.amount ?? 0),
+      donor_amount: Number(verifiedDonation?.amount ?? 0),
     }
   }, { status: 201 });
 }
-

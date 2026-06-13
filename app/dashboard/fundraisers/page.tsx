@@ -32,7 +32,13 @@ export default async function DashboardFundraisersPage() {
     ? await supabaseAdmin
         .from('donations')
         .select('fundraiser_id, amount')
-        .eq('status', 'succeeded')
+        .eq('status', 'completed')
+        .in('fundraiser_id', fundraiserIds)
+    : { data: [] };
+  const updatesResult = fundraiserIds.length > 0
+    ? await supabaseAdmin
+        .from('fundraiser_updates')
+        .select('fundraiser_id')
         .in('fundraiser_id', fundraiserIds)
     : { data: [] };
 
@@ -44,6 +50,11 @@ export default async function DashboardFundraisersPage() {
       total: prev.total + Number(d.amount ?? 0),
       count: prev.count + 1,
     };
+  }
+
+  const updateCountMap: Record<string, number> = {};
+  for (const update of updatesResult.data ?? []) {
+    updateCountMap[update.fundraiser_id] = (updateCountMap[update.fundraiser_id] ?? 0) + 1;
   }
 
   return (
@@ -69,6 +80,7 @@ export default async function DashboardFundraisersPage() {
               const raised = Math.max(fr.raised ?? 0, stats.total);
               const goal   = fr.goal ?? 0;
               const pct    = goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
+              const updateCount = updateCountMap[fr.id] ?? 0;
 
               return (
                 <div key={fr.id} className="rounded-xl border border-zinc-200/60 bg-zinc-50/60 p-4 sm:rounded-2xl sm:p-5">
@@ -105,6 +117,14 @@ export default async function DashboardFundraisersPage() {
                       )}
                       <Link href={`/fundraisers/edit/${fr.id}`} className="rounded-lg border border-emerald-200 bg-white px-3 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50">
                         Edit
+                      </Link>
+                      <Link href={`/dashboard/fundraisers/${fr.id}/updates`} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-violet-200 bg-white px-3 py-1.5 text-xs font-black text-violet-700 hover:bg-violet-50">
+                        Updates
+                        {updateCount > 0 && (
+                          <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] leading-none text-violet-700">
+                            {updateCount}
+                          </span>
+                        )}
                       </Link>
                     </div>
                   </div>
