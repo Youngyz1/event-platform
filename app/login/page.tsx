@@ -10,16 +10,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
-  const [resetSuccess, setResetSuccess] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    const params = new URLSearchParams(window.location.search);
-    return params.get("reset") === "success";
-  });
-  const [suspendedNotice, setSuspendedNotice] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    const params = new URLSearchParams(window.location.search);
-    return params.get("suspended") === "1";
-  });
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [suspendedNotice, setSuspendedNotice] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
 
@@ -32,7 +24,11 @@ export default function LoginPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
 
-  // URL params are read during initial render via lazy state initializers above
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setResetSuccess(params.get("reset") === "success");
+    setSuspendedNotice(params.get("suspended") === "1");
+  }, []);
 
   async function handleGoogleLogin() {
     setGoogleLoading(true);
@@ -98,13 +94,11 @@ export default function LoginPage() {
 
       {/* LEFT — Hero */}
       <div className="hidden lg:flex flex-1 bg-gradient-to-br from-slate-900 via-orange-900 to-orange-600 items-center justify-center p-12 relative overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-64 h-64 rounded-full bg-white blur-3xl" />
           <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-orange-300 blur-3xl" />
         </div>
         <div className="text-white max-w-lg relative z-10">
-          {/* Logo */}
           <div className="flex items-center gap-3 mb-12">
             <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
               <svg viewBox="0 0 32 32" className="h-6 w-6" fill="none">
@@ -131,7 +125,6 @@ export default function LoginPage() {
             community — all in one place.
           </p>
 
-          {/* Stats */}
           <div className="grid grid-cols-3 gap-6">
             <div>
               <p className="text-3xl font-black text-white">10K+</p>
