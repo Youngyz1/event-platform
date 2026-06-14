@@ -14,6 +14,7 @@ export default function DonationConfirmationPage() {
   const donorName = searchParams.get("donor_name") || "";
   const amount = searchParams.get("amount") || "0";
   const fundraiserHref = fundraiserSlug ? `/fundraisers/${fundraiserSlug}` : "/fundraisers";
+  const [name, setName] = useState(donorName);
   const [message, setMessage] = useState("");
   const [anonymous, setAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -69,7 +70,7 @@ export default function DonationConfirmationPage() {
       body: JSON.stringify({
         body,
         fundraiser_id: fundraiserId,
-        author_name: anonymous ? "Anonymous" : donorName || "Anonymous",
+        author_name: anonymous ? "Anonymous" : name.trim() || "Anonymous",
         type: "fundraiser",
       }),
     });
@@ -99,6 +100,22 @@ export default function DonationConfirmationPage() {
 
         <div>
           <h2 className="text-xl font-black">Leave a word of support (optional)</h2>
+
+          {/* Name field — pre-filled from donor_name URL param */}
+          <div className="mt-4">
+            <label className="block text-sm font-semibold text-zinc-700">
+              Your name
+            </label>
+            <input
+              type="text"
+              value={anonymous ? "Anonymous" : name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={anonymous}
+              placeholder="Your name"
+              className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm outline-none focus:border-emerald-500 disabled:bg-zinc-50 disabled:text-zinc-400"
+            />
+          </div>
+
           <textarea
             value={message}
             onChange={(event) => setMessage(event.target.value.slice(0, 200))}
@@ -112,7 +129,9 @@ export default function DonationConfirmationPage() {
               <input
                 type="checkbox"
                 checked={anonymous}
-                onChange={(event) => setAnonymous(event.target.checked)}
+                onChange={(event) => {
+                  setAnonymous(event.target.checked);
+                }}
                 className="accent-emerald-600"
               />
               Post anonymously
@@ -132,7 +151,7 @@ export default function DonationConfirmationPage() {
             disabled={submitting}
             className="mt-5 w-full rounded-lg bg-emerald-600 px-5 py-3.5 text-base font-black text-white transition hover:bg-emerald-700 disabled:bg-emerald-300"
           >
-            {submitting ? "Sharing..." : "Share your support"}
+            {submitting ? "Posting..." : "Post support"}
           </button>
 
           <Link

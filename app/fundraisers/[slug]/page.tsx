@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 
 import DonationProtectedBadge from "@/components/DonationProtectedBadge";
 import DonorNameWithPopup from "@/components/DonorNameWithPopup";
+import CommentsSection from "@/components/CommentsSection";
+import FundraiserCommentForm from "@/components/FundraiserCommentForm";
 import FundraiserMediaSlider, {
   type FundraiserMediaSlide,
 } from "@/components/FundraiserMediaSlider";
@@ -12,6 +14,7 @@ import { recordDonationFromStripeSessionId } from "@/lib/donations";
 import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Flag } from "lucide-react";
 import { ShareFundraiserButton } from "./FundraiserActions";
 
 const FALLBACK_IMAGE =
@@ -68,17 +71,26 @@ function timeAgo(value: string) {
   const days = Math.floor(
     (Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24)
   );
-
   if (days < 1) return "today";
   if (days === 1) return "yesterday";
   return `${days} days ago`;
 }
 
-/**
- * For each donor email, look up the auth user via getUserByEmail,
- * then find a matching organizer by user_id.
- * Returns a Map<email, organizerId> for donors who have an organizer profile.
- */
+function createdAgo(value: string) {
+  const secs = Math.floor((Date.now() - new Date(value).getTime()) / 1000);
+  if (secs < 60) return "just now";
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins} minute${mins !== 1 ? "s" : ""} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days !== 1 ? "s" : ""} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months !== 1 ? "s" : ""} ago`;
+  const years = Math.floor(months / 12);
+  return `${years} year${years !== 1 ? "s" : ""} ago`;
+}
+
 async function getDonorOrganizerMap(
   donations: DonationRow[]
 ): Promise<Map<string, string>> {
@@ -102,22 +114,24 @@ async function getDonorOrganizerMap(
       auth: { persistSession: false },
     });
 
-    // Resolve each email → auth user id
     const userIdByEmail = new Map<string, string>();
-    await Promise.all(
-      emails.map(async (email) => {
-        const { data, error } =
-          await supabaseAdmin.auth.admin.getUserByEmail(email);
-        if (!error && data?.user?.id) {
-          userIdByEmail.set(email, data.user.id);
-        }
-      })
-    );
+
+    const { data: authUsers, error: authUsersError } = await supabaseAdmin
+      .from("auth.users")
+      .select("id,email")
+      .in("email", emails);
+
+    if (authUsersError || !authUsers) return new Map<string, string>();
+
+    for (const user of authUsers) {
+      if (user.email && user.id) {
+        userIdByEmail.set(user.email.trim().toLowerCase(), user.id);
+      }
+    }
 
     const userIds = Array.from(new Set(userIdByEmail.values()));
     if (userIds.length === 0) return new Map<string, string>();
 
-    // Find organizers whose user_id matches one of those auth ids
     const { data: organizers } = await supabaseAdmin
       .from("organizers")
       .select("id, user_id, status, visibility")
@@ -132,7 +146,6 @@ async function getDonorOrganizerMap(
         .map((o) => [o.user_id as string, o.id as string])
     );
 
-    // Build email → organizer id map
     const result = new Map<string, string>();
     for (const [email, userId] of userIdByEmail.entries()) {
       const orgId = organizerIdByUserId.get(userId);
@@ -221,6 +234,7 @@ export default async function FundraiserPage({
     updatesResult,
     donationsResult,
     organizerResult,
+    commentsResult,
   ] = await Promise.all([
     supabase
       .from("fundraiser_media")
@@ -234,7 +248,9 @@ export default async function FundraiserPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("donations")
-      .select("id, donor_name, donor_email, amount, created_at", { count: "exact" })
+      .select("id, donor_name, donor_email, amount, created_at", {
+        count: "exact",
+      })
       .eq("fundraiser_id", fundraiser.id)
       .eq("status", "completed")
       .order("created_at", { ascending: false })
@@ -246,6 +262,12 @@ export default async function FundraiserPage({
           .eq("id", fundraiser.organizer_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
+    supabase
+      .from("comments")
+      .select("id", { count: "exact", head: true })
+      .eq("target_type", "fundraiser")
+      .eq("target_id", fundraiser.id)
+      .eq("status", "approved"),
   ]);
 
   const organizer = organizerResult.data as OrganizerRow | null;
@@ -275,6 +297,15 @@ export default async function FundraiserPage({
     fundraiser.story ||
     fundraiser.short_description ||
     "";
+  const commentCount = commentsResult.count ?? 0;
+  const beneficiaryName: string =
+    fundraiser.beneficiary ||
+    fundraiser.beneficiary_name ||
+    fundraiser.title ||
+    "This Cause";
+  const fundraiserCategory: string = fundraiser.category || "";
+  const fundraiserCreatedAt: string =
+    fundraiser.created_at || new Date().toISOString();
 
   return (
     <main className="min-h-screen bg-white pb-12 text-zinc-950">
@@ -301,7 +332,9 @@ export default async function FundraiserPage({
                       {organizerName}
                     </Link>
                   ) : (
-                    <span className="font-bold text-zinc-950">{organizerName}</span>
+                    <span className="font-bold text-zinc-950">
+                      {organizerName}
+                    </span>
                   )}
                 </p>
               </div>
@@ -318,16 +351,23 @@ export default async function FundraiserPage({
               </h2>
               <div className="mt-5 space-y-5">
                 {updates.map((update) => (
-                  <article key={update.id} className="rounded-lg border border-zinc-200 p-5">
+                  <article
+                    key={update.id}
+                    className="rounded-lg border border-zinc-200 p-5"
+                  >
                     <div className="flex gap-3">
                       <OrganizerAvatar name={organizerName} />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                          <span className="font-bold text-zinc-950">{organizerName}</span>
+                          <span className="font-bold text-zinc-950">
+                            {organizerName}
+                          </span>
                           <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-600">
                             Organiser
                           </span>
-                          <span className="text-zinc-500">{dateLabel(update.created_at)}</span>
+                          <span className="text-zinc-500">
+                            {dateLabel(update.created_at)}
+                          </span>
                         </div>
                         {update.title && (
                           <h3 className="mt-3 text-lg font-bold text-zinc-950">
@@ -346,6 +386,109 @@ export default async function FundraiserPage({
           )}
 
           <FundraiserShare title={fundraiser.title} imageUrl={coverImage} />
+
+          {/* ── Organiser & Beneficiary ─────────────────────────── */}
+          <section className="border-t border-zinc-200 pt-8">
+            <h2 className="text-lg font-black text-zinc-950">
+              Organiser and beneficiary
+            </h2>
+            <div className="mt-5 flex items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-black text-zinc-700">
+                  {initial(organizerName)}
+                </div>
+                <div className="min-w-0">
+                  {organizer?.id ? (
+                    <Link
+                      href={`/organizers/${organizer.id}`}
+                      className="block truncate text-sm font-black text-zinc-950 hover:underline"
+                    >
+                      {organizerName}
+                    </Link>
+                  ) : (
+                    <span className="block truncate text-sm font-black text-zinc-950">
+                      {organizerName}
+                    </span>
+                  )}
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-600">
+                      Organiser
+                    </span>
+                    {organizer?.id && (
+                      <a
+                        href={"mailto:support@eventbrithe.com?subject=Message%20for%20" + encodeURIComponent(organizer?.name || "")}
+                        className="rounded-full border border-zinc-300 px-3 py-0.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50"
+                      >
+                        Message
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 shrink-0 text-zinc-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                />
+              </svg>
+
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-black text-emerald-700">
+                  {initial(beneficiaryName)}
+                </div>
+                <div className="min-w-0">
+                  <span className="block truncate text-sm font-black text-zinc-950">
+                    {beneficiaryName}
+                  </span>
+                  <span className="mt-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                    Beneficiary
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs text-zinc-400">
+              Created {createdAgo(fundraiserCreatedAt)}
+              {fundraiserCategory ? ` · ${fundraiserCategory}` : ""}
+            </p>
+
+            <a
+              href={`mailto:support@eventbrithe.com?subject=Report%20fundraiser%3A%20${encodeURIComponent(fundraiser.title)}`}
+              className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 transition hover:text-red-500"
+            >
+              <Flag className="h-3.5 w-3.5" />
+              Report fundraiser
+            </a>
+          </section>
+
+          {/* ── Words of Support — always visible ───────────────── */}
+          <div className="border-t border-zinc-200 pt-8">
+            <h2 className="text-2xl font-bold text-zinc-950">
+              Words of Support{commentCount > 0 ? ` ${commentCount}` : ""}
+            </h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Leave encouragement or a message for this campaign.
+            </p>
+            <FundraiserCommentForm fundraiserId={fundraiser.id} />
+            {commentCount > 0 && (
+              <div className="mt-8">
+                <CommentsSection
+                  targetType="fundraiser"
+                  targetId={fundraiser.id}
+                  accent="green"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         <aside className="lg:col-span-1">
@@ -361,7 +504,8 @@ export default async function FundraiserPage({
                 of {money(goal)} goal
               </p>
               <p className="mt-3 text-sm font-bold text-zinc-700">
-                {donationCount.toLocaleString()} donation{donationCount === 1 ? "" : "s"}
+                {donationCount.toLocaleString()} donation
+                {donationCount === 1 ? "" : "s"}
               </p>
             </section>
 
@@ -379,14 +523,19 @@ export default async function FundraiserPage({
             </section>
 
             <section className="border-t border-zinc-200 pt-5">
-              <h2 className="text-base font-bold text-zinc-950">Recent donors</h2>
+              <h2 className="text-base font-bold text-zinc-950">
+                Recent donors
+              </h2>
               {recentDonors.length === 0 ? (
-                <p className="mt-4 text-sm text-zinc-500">No donations yet.</p>
+                <p className="mt-4 text-sm text-zinc-500">
+                  No donations yet.
+                </p>
               ) : (
                 <ul className="mt-4 space-y-4">
                   {recentDonors.map((donation) => {
                     const donorName = donation.donor_name;
-                    const donorEmail = donation.donor_email?.trim().toLowerCase();
+                    const donorEmail =
+                      donation.donor_email?.trim().toLowerCase();
                     const organizerId = donorEmail
                       ? organizerIdByDonorEmail.get(donorEmail)
                       : undefined;
@@ -394,16 +543,17 @@ export default async function FundraiserPage({
                     const displayName = donorName || "Anonymous";
 
                     return (
-                      <li key={donation.id} className="flex items-center gap-3">
+                      <li
+                        key={donation.id}
+                        className="flex items-center gap-3"
+                      >
                         <OrganizerAvatar name={displayName} />
                         <div className="min-w-0 flex-1">
-                          {/* null donor_name → Anonymous, not clickable */}
                           {!donorName ? (
                             <p className="truncate text-sm font-bold text-zinc-950">
                               Anonymous
                             </p>
                           ) : organizerId ? (
-                            /* Has an organizer profile → link to /organizers/[id] */
                             <Link
                               href={`/organizers/${organizerId}`}
                               className="block max-w-full truncate text-sm font-bold text-zinc-950 hover:underline"
@@ -411,7 +561,6 @@ export default async function FundraiserPage({
                               {donorName}
                             </Link>
                           ) : (
-                            /* Named but no organizer → popup */
                             <DonorNameWithPopup
                               name={donorName}
                               fundraiserTitle={fundraiser.title}
