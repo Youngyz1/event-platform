@@ -184,8 +184,17 @@ export default function EditEventPage() {
     }
   }
 
+  const isImported =
+    Boolean(form.source_organizer_name) ||
+    Boolean(form.source_organizer_url) ||
+    Boolean(form.source_organizer_description);
+
   if (checking) {
-    return <main className="flex min-h-screen items-center justify-center bg-zinc-50"><p className="text-lg font-semibold text-zinc-500">Loading event...</p></main>;
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <p className="text-lg font-semibold text-zinc-500">Loading event...</p>
+      </main>
+    );
   }
 
   return (
@@ -197,50 +206,155 @@ export default function EditEventPage() {
             <h1 className="mt-2 text-5xl font-black">Edit Event</h1>
             <p className="mt-3 text-zinc-600">Update imported or manually created event details.</p>
           </div>
-          {slug && <Link href={`/events/${slug}`} className="font-black text-orange-600 hover:text-orange-700">View event</Link>}
+          {slug && (
+            <Link href={`/events/${slug}`} className="font-black text-orange-600 hover:text-orange-700">
+              View event
+            </Link>
+          )}
         </div>
 
-        {error && <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 font-semibold text-red-700">{error}</div>}
+        {error && (
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 font-semibold text-red-700">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-7 rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
           <label className="block">
             <span className="mb-2 block font-bold">Organizer Profile</span>
-            <select value={form.organizer_id} onChange={(event) => update("organizer_id", event.target.value)} required className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500">
+            <select
+              value={form.organizer_id}
+              onChange={(event) => update("organizer_id", event.target.value)}
+              required
+              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+            >
               <option value="">Select organizer</option>
-              {organizers.map((organizer) => <option key={organizer.id} value={organizer.id}>{organizer.name}</option>)}
+              {organizers.map((organizer) => (
+                <option key={organizer.id} value={organizer.id}>
+                  {organizer.name}
+                </option>
+              ))}
             </select>
           </label>
 
-          <input value={form.title} onChange={(event) => update("title", event.target.value)} required placeholder="Event title" className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-          <div className="grid gap-5 md:grid-cols-2">
-            <input value={form.category} onChange={(event) => update("category", event.target.value)} placeholder="Category" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-            <input value={form.event_date} onChange={(event) => update("event_date", event.target.value)} type="datetime-local" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-            <input value={form.venue} onChange={(event) => update("venue", event.target.value)} placeholder="Venue" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-            <input value={form.city} onChange={(event) => update("city", event.target.value)} placeholder="City" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-          </div>
-          <input value={form.banner} onChange={(event) => update("banner", event.target.value)} placeholder="Banner image URL" className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-          <textarea value={form.description} onChange={(event) => update("description", event.target.value)} rows={8} placeholder="Event description" className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
+          <input
+            value={form.title}
+            onChange={(event) => update("title", event.target.value)}
+            required
+            placeholder="Event title"
+            className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+          />
 
-          <div className="rounded-2xl bg-orange-50 p-5">
-            <h2 className="text-xl font-black">Imported Organizer Details</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <input value={form.source_organizer_name} onChange={(event) => update("source_organizer_name", event.target.value)} placeholder="Source organizer name" className="rounded-2xl border border-orange-200 px-5 py-4 outline-none focus:border-orange-500" />
-              <input value={form.source_organizer_url} onChange={(event) => update("source_organizer_url", event.target.value)} placeholder="Source organizer URL" className="rounded-2xl border border-orange-200 px-5 py-4 outline-none focus:border-orange-500" />
-              <textarea value={form.source_organizer_description} onChange={(event) => update("source_organizer_description", event.target.value)} rows={3} placeholder="Source organizer bio" className="md:col-span-2 rounded-2xl border border-orange-200 px-5 py-4 outline-none focus:border-orange-500" />
-            </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <input
+              value={form.category}
+              onChange={(event) => update("category", event.target.value)}
+              placeholder="Category"
+              className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+            />
+            <input
+              value={form.event_date}
+              onChange={(event) => update("event_date", event.target.value)}
+              type="datetime-local"
+              className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+            />
+            <input
+              value={form.venue}
+              onChange={(event) => update("venue", event.target.value)}
+              placeholder="Venue"
+              className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+            />
+            <input
+              value={form.city}
+              onChange={(event) => update("city", event.target.value)}
+              placeholder="City"
+              className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+            />
           </div>
+
+          <input
+            value={form.banner}
+            onChange={(event) => update("banner", event.target.value)}
+            placeholder="Banner image URL"
+            className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+          />
+
+          <textarea
+            value={form.description}
+            onChange={(event) => update("description", event.target.value)}
+            rows={8}
+            placeholder="Event description"
+            className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+          />
+
+          {/* Only shown for imported events that have source organizer data */}
+          {isImported && (
+            <div className="rounded-2xl bg-orange-50 p-5">
+              <h2 className="text-xl font-black">Imported Organizer Details</h2>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <input
+                  value={form.source_organizer_name}
+                  onChange={(event) => update("source_organizer_name", event.target.value)}
+                  placeholder="Source organizer name"
+                  className="rounded-2xl border border-orange-200 px-5 py-4 outline-none focus:border-orange-500"
+                />
+                <input
+                  value={form.source_organizer_url}
+                  onChange={(event) => update("source_organizer_url", event.target.value)}
+                  placeholder="Source organizer URL"
+                  className="rounded-2xl border border-orange-200 px-5 py-4 outline-none focus:border-orange-500"
+                />
+                <textarea
+                  value={form.source_organizer_description}
+                  onChange={(event) => update("source_organizer_description", event.target.value)}
+                  rows={3}
+                  placeholder="Source organizer bio"
+                  className="md:col-span-2 rounded-2xl border border-orange-200 px-5 py-4 outline-none focus:border-orange-500"
+                />
+              </div>
+            </div>
+          )}
 
           <div>
             <h2 className="mb-4 text-xl font-black">Tickets</h2>
             <div className="grid gap-5 md:grid-cols-2">
-              <input value={form.ticket1_name} onChange={(event) => update("ticket1_name", event.target.value)} placeholder="Ticket name" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-              <input value={form.ticket1_price} onChange={(event) => update("ticket1_price", event.target.value)} type="number" min="0" step="0.01" placeholder="Price" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-              <input value={form.ticket2_name} onChange={(event) => update("ticket2_name", event.target.value)} placeholder="Second ticket name" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
-              <input value={form.ticket2_price} onChange={(event) => update("ticket2_price", event.target.value)} type="number" min="0" step="0.01" placeholder="Second price" className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500" />
+              <input
+                value={form.ticket1_name}
+                onChange={(event) => update("ticket1_name", event.target.value)}
+                placeholder="Ticket name"
+                className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+              />
+              <input
+                value={form.ticket1_price}
+                onChange={(event) => update("ticket1_price", event.target.value)}
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Price"
+                className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+              />
+              <input
+                value={form.ticket2_name}
+                onChange={(event) => update("ticket2_name", event.target.value)}
+                placeholder="Second ticket name"
+                className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+              />
+              <input
+                value={form.ticket2_price}
+                onChange={(event) => update("ticket2_price", event.target.value)}
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Second price"
+                className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+              />
             </div>
           </div>
 
-          <button disabled={saving} className="w-full rounded-2xl bg-orange-500 py-5 text-lg font-black text-white transition hover:bg-orange-600 disabled:bg-orange-300">
+          <button
+            disabled={saving}
+            className="w-full rounded-2xl bg-orange-500 py-5 text-lg font-black text-white transition hover:bg-orange-600 disabled:bg-orange-300"
+          >
             {saving ? "Saving..." : "Save Event"}
           </button>
         </form>
