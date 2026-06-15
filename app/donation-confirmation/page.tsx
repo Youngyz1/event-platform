@@ -3,17 +3,18 @@
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
-
+import { useMemo, useState, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 
-export default function DonationConfirmationPage() {
+function DonationConfirmationContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fundraiserSlug = searchParams.get("fundraiser_slug") || "";
   const donorName = searchParams.get("donor_name") || "";
   const amount = searchParams.get("amount") || "0";
-  const fundraiserHref = fundraiserSlug ? `/fundraisers/${fundraiserSlug}` : "/fundraisers";
+  const fundraiserHref = fundraiserSlug
+    ? `/fundraisers/${fundraiserSlug}`
+    : "/fundraisers";
   const [name, setName] = useState(donorName);
   const [message, setMessage] = useState("");
   const [anonymous, setAnonymous] = useState(false);
@@ -29,8 +30,12 @@ export default function DonationConfirmationPage() {
   }, [amount]);
 
   async function resolveFundraiserId() {
-    const storedId = window.localStorage.getItem("last_donation_fundraiser_id");
-    const storedSlug = window.localStorage.getItem("last_donation_fundraiser_slug");
+    const storedId = window.localStorage.getItem(
+      "last_donation_fundraiser_id"
+    );
+    const storedSlug = window.localStorage.getItem(
+      "last_donation_fundraiser_slug"
+    );
 
     if (storedId && (!storedSlug || storedSlug === fundraiserSlug)) {
       return storedId;
@@ -59,7 +64,9 @@ export default function DonationConfirmationPage() {
 
     const fundraiserId = await resolveFundraiserId();
     if (!fundraiserId) {
-      setError("We could not find this fundraiser. Please return to the campaign.");
+      setError(
+        "We could not find this fundraiser. Please return to the campaign."
+      );
       setSubmitting(false);
       return;
     }
@@ -91,7 +98,9 @@ export default function DonationConfirmationPage() {
         <div className="flex justify-center">
           <CheckCircle2 className="h-16 w-16 text-emerald-600" />
         </div>
-        <h1 className="mt-5 text-center text-3xl font-black">Thank you for your donation!</h1>
+        <h1 className="mt-5 text-center text-3xl font-black">
+          Thank you for your donation!
+        </h1>
         <p className="mt-3 text-center text-zinc-600">
           You donated {formattedAmount} to this campaign
         </p>
@@ -99,9 +108,10 @@ export default function DonationConfirmationPage() {
         <hr className="my-8 border-zinc-200" />
 
         <div>
-          <h2 className="text-xl font-black">Leave a word of support (optional)</h2>
+          <h2 className="text-xl font-black">
+            Leave a word of support (optional)
+          </h2>
 
-          {/* Name field — pre-filled from donor_name URL param */}
           <div className="mt-4">
             <label className="block text-sm font-semibold text-zinc-700">
               Your name
@@ -118,7 +128,9 @@ export default function DonationConfirmationPage() {
 
           <textarea
             value={message}
-            onChange={(event) => setMessage(event.target.value.slice(0, 200))}
+            onChange={(event) =>
+              setMessage(event.target.value.slice(0, 200))
+            }
             maxLength={200}
             rows={5}
             placeholder="Write a message of support..."
@@ -129,14 +141,14 @@ export default function DonationConfirmationPage() {
               <input
                 type="checkbox"
                 checked={anonymous}
-                onChange={(event) => {
-                  setAnonymous(event.target.checked);
-                }}
+                onChange={(event) => setAnonymous(event.target.checked)}
                 className="accent-emerald-600"
               />
               Post anonymously
             </label>
-            <span className="text-sm font-semibold text-zinc-500">{message.length}/200</span>
+            <span className="text-sm font-semibold text-zinc-500">
+              {message.length}/200
+            </span>
           </div>
 
           {error && (
@@ -163,5 +175,19 @@ export default function DonationConfirmationPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function DonationConfirmationPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+        </div>
+      }
+    >
+      <DonationConfirmationContent />
+    </Suspense>
   );
 }
