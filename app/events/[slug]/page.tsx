@@ -5,6 +5,26 @@ import VenueMapClient from "@/components/VenueMapClient";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import EventPageClient from "./EventPageClient";
+import AboutSection from "./AboutSection";
+
+/** Forward-geocode a free-text address via Nominatim (no API key needed). */
+async function geocodeAddress(
+  query: string
+): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "EventBrithe/1.0", "Accept-Language": "en" },
+      next: { revalidate: 86400 }, // cache 24 h per address
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch {
+    return null;
+  }
+}
 
 function paragraphs(value: string | null | undefined) {
   return (value || "")
@@ -30,7 +50,9 @@ export default async function EventPage({
 
   if (event.visibility === "private") {
     const supabaseServer = await createSupabaseServer();
-    const { data: { user } } = await supabaseServer.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseServer.auth.getUser();
     if (!user || user.id !== event.user_id) return notFound();
   }
 
@@ -47,6 +69,33 @@ export default async function EventPage({
     .select("*")
     .eq("event_id", event.id);
 
+  // Count organizer's events and fundraisers
+  const [
+    { count: organizerEventCount },
+    { count: organizerFundraiserCount },
+    { count: followerCount },
+  ] = await Promise.all([
+    organizer?.id
+      ? supabase
+          .from("events")
+          .select("id", { count: "exact", head: true })
+          .eq("organizer_id", organizer.id)
+          .eq("visibility", "public")
+      : Promise.resolve({ count: 0 }),
+    organizer?.id
+      ? supabase
+          .from("fundraisers")
+          .select("id", { count: "exact", head: true })
+          .eq("organizer_id", organizer.id)
+      : Promise.resolve({ count: 0 }),
+    organizer?.id
+      ? supabase
+          .from("organizer_follows")
+          .select("id", { count: "exact", head: true })
+          .eq("organizer_id", organizer.id)
+      : Promise.resolve({ count: 0 }),
+  ]);
+
   // More events from same organizer
   const { data: moreEvents } = organizer?.id
     ? await supabase
@@ -59,21 +108,54 @@ export default async function EventPage({
         .limit(4)
     : { data: [] };
 
-  const lowestPrice = tickets && tickets.length > 0
-    ? Math.min(...tickets.map((t) => t.price))
-    : null;
+  const lowestPrice =
+    tickets && tickets.length > 0
+      ? Math.min(...tickets.map((t) => t.price))
+      : null;
 
-  const primaryOrganizerName = event.source_organizer_name || organizer?.name || "";
-  const primaryOrganizerUrl = event.source_organizer_url || (organizer ? `/organizers/${organizer.id}` : "");
-  const primaryOrganizerDescription = event.source_organizer_description || organizer?.bio || "";
-  const primaryOrganizerPhoto = event.source_organizer_name ? "" : organizer?.photo || "";
+  const primaryOrganizerName =
+    event.source_organizer_name || organizer?.name || "";
+  const primaryOrganizerUrl =
+    event.source_organizer_url ||
+    (organizer ? `/organizers/${organizer.id}` : "");
+  const primaryOrganizerDescription =
+    event.source_organizer_description || organizer?.bio || "";
+  const primaryOrganizerPhoto = event.source_organizer_name
+    ? ""
+    : organizer?.photo || "";
   const descriptionParagraphs = paragraphs(event.description);
 
-  const ticketLabel = lowestPrice === null
-    ? "Tickets TBA"
-    : lowestPrice === 0
-      ? "Free"
-      : `$${Number(lowestPrice).toFixed(2)}`;
+  // ── Resolve map coordinates ──────────────────────────────────
+  // Use stored lat/lng if available; otherwise geocode from address fields.
+  let mapLat: number | null = event.latitude ?? null;
+  let mapLng: number | null = event.longitude ?? null;
+
+  if (!mapLat || !mapLng) {
+    const addressQuery = [
+      event.address,
+      event.venue,
+      event.city,
+      event.state,
+      event.country,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    if (addressQuery.trim()) {
+      const coords = await geocodeAddress(addressQuery);
+      if (coords) {
+        mapLat = coords.lat;
+        mapLng = coords.lng;
+      }
+    }
+  }
+
+  const ticketLabel =
+    lowestPrice === null
+      ? "Tickets TBA"
+      : lowestPrice === 0
+        ? "Free"
+        : `$${Number(lowestPrice).toFixed(2)}`;
 
   const formattedDate = event.event_date
     ? new Date(event.event_date).toLocaleString("en-US", {
@@ -86,16 +168,24 @@ export default async function EventPage({
     : "Date TBA";
 
   const hostingYears = organizer?.created_at
-    ? Math.max(1, Math.floor((Date.now() - new Date(organizer.created_at).getTime()) / (1000 * 60 * 60 * 24 * 365)))
+    ? Math.max(
+        1,
+        Math.floor(
+          (Date.now() - new Date(organizer.created_at).getTime()) /
+            (1000 * 60 * 60 * 24 * 365)
+        )
+      )
     : null;
 
   return (
     <main className="min-h-screen bg-white text-zinc-950">
-
       {/* ── Banner image ───────────────── */}
       <div className="w-full overflow-hidden" style={{ maxHeight: "100vw" }}>
         <img
-          src={event.banner || "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop"}
+          src={
+            event.banner ||
+            "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop"
+          }
           alt=""
           fetchPriority="high"
           decoding="async"
@@ -105,55 +195,87 @@ export default async function EventPage({
       </div>
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
-
         {/* ── Title + share/save row ────────────────────────── */}
         <div className="flex items-start justify-between gap-4 pt-6">
-          <div>
+          <div className="min-w-0 flex-1">
             {event.category && (
-              <p className="mb-2 text-sm font-bold uppercase tracking-wide text-orange-600">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-orange-600">
                 {event.category}
               </p>
             )}
-            <h1 className="text-3xl font-black leading-tight sm:text-4xl">{event.title}</h1>
+            <h1 className="text-2xl font-black leading-tight sm:text-3xl lg:text-4xl">
+              {event.title}
+            </h1>
             {primaryOrganizerName && (
               <p className="mt-2 text-sm text-zinc-500">
                 by{" "}
                 {primaryOrganizerUrl ? (
-                  <a href={primaryOrganizerUrl} className="font-bold text-zinc-800 hover:text-orange-600">
+                  <a
+                    href={primaryOrganizerUrl}
+                    className="font-bold text-zinc-800 hover:text-orange-600"
+                  >
                     {primaryOrganizerName}
                   </a>
                 ) : (
-                  <span className="font-bold text-zinc-800">{primaryOrganizerName}</span>
-                )}
-                {organizer && hostingYears && (
-                  <span className="text-zinc-400">
+                  <span className="font-bold text-zinc-800">
+                    {primaryOrganizerName}
                   </span>
                 )}
               </p>
             )}
           </div>
-          {/* Share + Save — client component */}
-          <EventPageClient eventTitle={event.title} eventSlug={event.slug} />
+          <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
+            <EventPageClient
+              eventTitle={event.title}
+              eventSlug={event.slug}
+            />
+          </div>
         </div>
 
         {/* ── Slim info row ─────────────────────────────────── */}
-        <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-zinc-100 pb-5 text-sm text-zinc-600">
+        <div className="mt-4 flex flex-col gap-2 border-b border-zinc-100 pb-5 text-sm text-zinc-600 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
           {event.event_date && (
             <span className="flex items-center gap-1.5">
-              <svg className="h-4 w-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <svg
+                className="h-4 w-4 text-zinc-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
               {formattedDate}
             </span>
           )}
           {(event.venue || event.city) && (
             <span className="flex items-center gap-1.5">
-              <svg className="h-4 w-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              <svg
+                className="h-4 w-4 text-zinc-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
               </svg>
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([event.venue, event.city].filter(Boolean).join(", "))}`}
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  [event.venue, event.city].filter(Boolean).join(", ")
+                )}`}
                 target="_blank"
                 rel="noreferrer"
                 className="hover:text-orange-600 hover:underline transition"
@@ -164,8 +286,18 @@ export default async function EventPage({
           )}
           {lowestPrice !== null && (
             <span className="flex items-center gap-1.5 font-bold text-zinc-800">
-              <svg className="h-4 w-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+              <svg
+                className="h-4 w-4 text-zinc-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+                />
               </svg>
               {ticketLabel}
             </span>
@@ -175,20 +307,13 @@ export default async function EventPage({
         {/* ── Main 2-col layout ─────────────────────────────── */}
         <div className="grid gap-10 py-10 lg:grid-cols-3 lg:gap-12">
           <div className="lg:col-span-2 space-y-10">
-
             {/* About */}
             <section>
               <h2 className="text-2xl font-black mb-4">About this event</h2>
-              <div className="space-y-4 leading-relaxed text-zinc-700">
-                {descriptionParagraphs.length > 0 ? (
-                  descriptionParagraphs.map((p) => <p key={p}>{p}</p>)
-                ) : (
-                  <p>Details are being finalized by the organizer.</p>
-                )}
-              </div>
+              <AboutSection paragraphs={descriptionParagraphs} />
             </section>
 
-            {/* Good to Know + Refund Policy — only show if event has these fields */}
+            {/* Good to Know + Refund Policy */}
             {(event.highlights || event.refund_policy) && (
               <section>
                 <h2 className="text-2xl font-black mb-4">Good to know</h2>
@@ -196,13 +321,17 @@ export default async function EventPage({
                   {event.highlights && (
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
                       <h3 className="font-black mb-3">Highlights</h3>
-                      <p className="text-sm text-zinc-600 whitespace-pre-wrap">{event.highlights}</p>
+                      <p className="text-sm text-zinc-600 whitespace-pre-wrap">
+                        {event.highlights}
+                      </p>
                     </div>
                   )}
                   {event.refund_policy && (
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
                       <h3 className="font-black mb-3">Refund Policy</h3>
-                      <p className="text-sm text-zinc-600 whitespace-pre-wrap">{event.refund_policy}</p>
+                      <p className="text-sm text-zinc-600 whitespace-pre-wrap">
+                        {event.refund_policy}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -211,7 +340,9 @@ export default async function EventPage({
 
             {/* Collapsible FAQ */}
             <section>
-              <h2 className="text-2xl font-black mb-4">Frequently asked questions</h2>
+              <h2 className="text-2xl font-black mb-4">
+                Frequently asked questions
+              </h2>
               <FaqSection organizerName={primaryOrganizerName} />
             </section>
 
@@ -223,48 +354,98 @@ export default async function EventPage({
                   <div className="flex items-start gap-4">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 font-black text-orange-700 text-lg">
                       {primaryOrganizerPhoto ? (
-                        <img src={primaryOrganizerPhoto} alt={primaryOrganizerName} loading="lazy" className="h-full w-full object-cover" />
+                        <img
+                          src={primaryOrganizerPhoto}
+                          alt={primaryOrganizerName}
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
                       ) : (
                         primaryOrganizerName.charAt(0).toUpperCase()
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-bold uppercase tracking-wide text-zinc-400 mb-0.5">
-                        {event.source_organizer_name ? "Organizer" : "Platform organizer"}
+                        {event.source_organizer_name
+                          ? "Organizer"
+                          : "Platform organizer"}
                       </p>
-                      {primaryOrganizerUrl ? (
-                        <a href={primaryOrganizerUrl} target={primaryOrganizerUrl.startsWith("http") ? "_blank" : undefined} rel={primaryOrganizerUrl.startsWith("http") ? "noreferrer" : undefined} className="inline-flex items-center gap-2 text-lg font-black text-zinc-950 hover:text-orange-600">
-                          {primaryOrganizerName}
-                          <VerifiedBadge verified={organizer?.status === "verified"} />
-                        </a>
-                      ) : (
-                        <span className="inline-flex items-center gap-2 text-lg font-black">
-                          {primaryOrganizerName}
-                          <VerifiedBadge verified={organizer?.status === "verified"} />
-                        </span>
-                      )}
-                      {organizer && (
-                        <div className="mt-2 flex gap-5 text-sm text-zinc-500">
-                          <span><strong className="text-zinc-800">{moreEvents?.length ?? 0}</strong> Events</span>
-                          {hostingYears && <span><strong className="text-zinc-800">{hostingYears}</strong> {hostingYears === 1 ? "year" : "years"} hosting</span>}
+                      <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <div>
+                          {primaryOrganizerUrl ? (
+                            <a
+                              href={primaryOrganizerUrl}
+                              target={
+                                primaryOrganizerUrl.startsWith("http")
+                                  ? "_blank"
+                                  : undefined
+                              }
+                              rel={
+                                primaryOrganizerUrl.startsWith("http")
+                                  ? "noreferrer"
+                                  : undefined
+                              }
+                              className="inline-flex items-center gap-2 text-lg font-black text-zinc-950 hover:text-orange-600"
+                            >
+                              {primaryOrganizerName}
+                              <VerifiedBadge
+                                verified={organizer?.status === "verified"}
+                              />
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center gap-2 text-lg font-black">
+                              {primaryOrganizerName}
+                              <VerifiedBadge
+                                verified={organizer?.status === "verified"}
+                              />
+                            </span>
+                          )}
+                          {organizer && (
+                            <div className="mt-1 flex gap-5 text-sm text-zinc-500">
+                              <span>
+                                <strong className="text-zinc-800">
+                                  {followerCount ?? 0}
+                                </strong>{" "}
+                                Followers
+                              </span>
+                              <span>
+                                <strong className="text-zinc-800">
+                                  {(organizerEventCount ?? 0) +
+                                    (organizerFundraiserCount ?? 0)}
+                                </strong>{" "}
+                                Events
+                              </span>
+                              {hostingYears && (
+                                <span>
+                                  <strong className="text-zinc-800">
+                                    {hostingYears}
+                                  </strong>{" "}
+                                  {hostingYears === 1 ? "year" : "years"}{" "}
+                                  hosting
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {organizer && (
-                        <div className="mt-4 flex gap-3">
-                          <a
-                            href={`mailto:support@eventbrithe.com?subject=Contact%20${encodeURIComponent(primaryOrganizerName)}`}
-                            className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-100 transition"
-                          >
-                            Contact
-                          </a>
-                          <a
-                            href={`/organizers/${organizer.id}`}
-                            className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-bold text-white hover:bg-orange-600 transition"
-                          >
-                            Follow
-                          </a>
-                        </div>
-                      )}
+                        {organizer && (
+                          <div className="flex gap-3 shrink-0">
+                            <a
+                              href={`mailto:support@eventbrithe.com?subject=Contact%20${encodeURIComponent(
+                                primaryOrganizerName
+                              )}`}
+                              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-100 transition"
+                            >
+                              Contact
+                            </a>
+                            <a
+                              href={`/organizers/${organizer.id}`}
+                              className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-bold text-white hover:bg-orange-600 transition"
+                            >
+                              Follow
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -272,24 +453,53 @@ export default async function EventPage({
             )}
 
             {/* Venue Map */}
-            {event.latitude && event.longitude && (
+            {(event.venue || event.city || event.address) && (
               <section>
                 <h2 className="text-2xl font-black mb-4">Venue location</h2>
                 <div className="rounded-2xl border border-zinc-200 overflow-hidden">
                   <div className="px-5 pt-5 pb-3">
-                    <p className="font-bold text-zinc-900">{event.venue || "Venue"}</p>
-                    {event.city && <p className="text-sm text-zinc-500">{event.city}</p>}
+                    <p className="font-bold text-zinc-900">
+                      {event.venue || "Venue"}
+                    </p>
+                    {event.address && (
+                      <p className="text-sm text-zinc-500">{event.address}</p>
+                    )}
+                    {event.city && (
+                      <p className="text-sm text-zinc-500">{event.city}</p>
+                    )}
                   </div>
-                  <VenueMapClient
-                    lat={event.latitude}
-                    lng={event.longitude}
-                    title={event.title}
-                    venue={event.venue}
-                    city={event.city}
-                  />
+                  {mapLat && mapLng ? (
+                    <VenueMapClient
+                      lat={mapLat}
+                      lng={mapLng}
+                      title={event.title}
+                      venue={event.venue}
+                      city={event.city}
+                    />
+                  ) : (
+                    /* No coordinates at all — show a Google Maps link instead */
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        [event.address, event.venue, event.city]
+                          .filter(Boolean)
+                          .join(", ")
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex h-40 items-center justify-center gap-2 bg-zinc-50 text-sm font-bold text-orange-600 hover:bg-orange-50 transition"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      View on Google Maps ↗
+                    </a>
+                  )}
                   {/* How to get there */}
                   <div className="border-t border-zinc-100 px-5 py-4">
-                    <p className="mb-3 text-sm font-bold text-zinc-500">How do you want to get there?</p>
+                    <p className="mb-3 text-sm font-bold text-zinc-500">
+                      How do you want to get there?
+                    </p>
                     <div className="flex flex-wrap gap-4">
                       {[
                         { label: "Driving", icon: "🚗" },
@@ -299,7 +509,15 @@ export default async function EventPage({
                       ].map(({ label, icon }) => (
                         <a
                           key={label}
-                          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([event.venue, event.city].filter(Boolean).join(", "))}&travelmode=${label === "Public transport" ? "transit" : label.toLowerCase()}`}
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                            [event.venue, event.city]
+                              .filter(Boolean)
+                              .join(", ")
+                          )}&travelmode=${
+                            label === "Public transport"
+                              ? "transit"
+                              : label.toLowerCase()
+                          }`}
                           target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-700 hover:border-orange-300 hover:text-orange-600 transition"
@@ -317,11 +535,23 @@ export default async function EventPage({
             {/* Report event */}
             <div className="flex justify-center pt-2 pb-4">
               <a
-                href={`mailto:support@eventbrithe.com?subject=Report%20event%3A%20${encodeURIComponent(event.title)}`}
+                href={`mailto:support@eventbrithe.com?subject=Report%20event%3A%20${encodeURIComponent(
+                  event.title
+                )}`}
                 className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-red-500 transition"
               >
-                <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                  />
                 </svg>
                 Report this event
               </a>
@@ -331,7 +561,8 @@ export default async function EventPage({
             {moreEvents && moreEvents.length > 0 && (
               <section>
                 <h2 className="text-2xl font-black mb-1">
-                  More events from {primaryOrganizerName || "this organizer"}
+                  More events from{" "}
+                  {primaryOrganizerName || "this organizer"}
                 </h2>
                 <p className="text-sm text-zinc-500 mb-5">
                   Discover more events you might love.
@@ -345,17 +576,29 @@ export default async function EventPage({
                     >
                       <div className="aspect-video w-full overflow-hidden bg-zinc-100">
                         <img
-                          src={e.banner || "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=800&auto=format&fit=crop"}
+                          src={
+                            e.banner ||
+                            "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=800&auto=format&fit=crop"
+                          }
                           alt={e.title}
                           loading="lazy"
                           className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
                         />
                       </div>
                       <div className="p-4">
-                        <p className="font-black text-zinc-950 line-clamp-2 group-hover:text-orange-600 transition">{e.title}</p>
+                        <p className="font-black text-zinc-950 line-clamp-2 group-hover:text-orange-600 transition">
+                          {e.title}
+                        </p>
                         {e.event_date && (
                           <p className="mt-1 text-xs text-zinc-500">
-                            {new Date(e.event_date).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                            {new Date(e.event_date).toLocaleDateString(
+                              "en-US",
+                              {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )}
                             {e.city ? ` · ${e.city}` : ""}
                           </p>
                         )}
@@ -365,7 +608,6 @@ export default async function EventPage({
                 </div>
               </section>
             )}
-
           </div>
 
           {/* Sidebar ticket checkout */}
@@ -392,18 +634,31 @@ export default async function EventPage({
           </a>
         </div>
       </div>
-
     </main>
   );
 }
 
 // ── Collapsible FAQ ──────────────────────────────────────
 function FaqSection({ organizerName }: { organizerName: string }) {
-  const faqs = [
-    ["How do I get my ticket?", "After checkout you will see your QR code ticket on screen. Download or screenshot it — you can also print it. Show the QR code to staff at the door."],
-    ["Can I share this event?", "Yes. Copy the page link and share it with friends or your community."],
-    ["Who should I contact about event details?", organizerName ? `Contact ${organizerName} using the organizer link when available.` : "Use the source or organizer information listed on this page."],
-    ["What is the refund policy?", "No refunds unless the event is cancelled by the organizer. Contact the organizer directly for special circumstances."],
+  const faqs: [string, string][] = [
+    [
+      "How do I get my ticket?",
+      "After checkout you will see your QR code ticket on screen. Download or screenshot it — you can also print it. Show the QR code to staff at the door.",
+    ],
+    [
+      "Can I share this event?",
+      "Yes. Copy the page link and share it with friends or your community.",
+    ],
+    [
+      "Who should I contact about event details?",
+      organizerName
+        ? `Contact ${organizerName} using the organizer link when available.`
+        : "Use the source or organizer information listed on this page.",
+    ],
+    [
+      "What is the refund policy?",
+      "No refunds unless the event is cancelled by the organizer. Contact the organizer directly for special circumstances.",
+    ],
   ];
 
   return (
@@ -415,15 +670,29 @@ function FaqSection({ organizerName }: { organizerName: string }) {
   );
 }
 
-// We need a client component for the accordion — inline it here as a server-safe pattern
-// by using a details/summary element (no JS needed)
-function FaqItem({ question, answer }: { question: string; answer: string }) {
+function FaqItem({
+  question,
+  answer,
+}: {
+  question: string;
+  answer: string;
+}) {
   return (
     <details className="group bg-white px-5 py-1">
       <summary className="flex cursor-pointer items-center justify-between gap-4 py-4 font-bold text-zinc-950 list-none">
         {question}
-        <svg className="h-4 w-4 shrink-0 text-zinc-400 transition group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        <svg
+          className="h-4 w-4 shrink-0 text-zinc-400 transition group-open:rotate-180"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 9l-7 7-7-7"
+          />
         </svg>
       </summary>
       <p className="pb-4 text-sm leading-relaxed text-zinc-600">{answer}</p>

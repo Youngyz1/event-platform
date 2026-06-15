@@ -25,13 +25,19 @@ export async function POST(req: NextRequest) {
       message,
       anonymous = false,
       saveCard = false,
+      currency = "usd",
+      // UUID generated client-side at the moment the user clicks "Proceed".
+      checkoutAttemptId,
     } = await req.json();
 
     const donationAmount = Number(amount);
     const tipAmount = Number(tip) || 0;
 
     if (!fundraiserSlug || !Number.isFinite(donationAmount) || donationAmount < 1) {
-      return NextResponse.json({ error: "Invalid donation details." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid donation details." },
+        { status: 400 }
+      );
     }
 
     const { data: fundraiser } = await supabaseAdmin
@@ -41,21 +47,30 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (!fundraiser) {
-      return NextResponse.json({ error: "Fundraiser not found." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Fundraiser not found." },
+        { status: 404 }
+      );
     }
 
     const totalCents = Math.round((donationAmount + tipAmount) * 100);
-
-    const normalizedDonorEmail =
+    const normalizedEmail =
       typeof donorEmail === "string" ? donorEmail.trim() : "";
-    const normalizedDonorName =
+    const normalizedName =
       typeof donorName === "string" ? donorName.trim() : "";
 
+    // Anonymous: hide the name from public donor feeds but keep it in Stripe
+    // for internal records / fraud prevention (per spec requirement).
+    const publicDonorName = anonymous
+      ? "Anonymous"
+      : normalizedName || "Anonymous";
+
+    // Optional: create a Stripe Customer so future payments are linked
     let customerId: string | undefined;
-    if (saveCard && normalizedDonorEmail) {
+    if (saveCard && normalizedEmail) {
       const customer = await stripe.customers.create({
-        email: normalizedDonorEmail,
-        name: anonymous ? undefined : normalizedDonorName || undefined,
+        email: normalizedEmail,
+        name: normalizedName || undefined,
         metadata: {
           kind: "donor",
           fundraiser_id: fundraiser.id,
@@ -65,29 +80,48 @@ export async function POST(req: NextRequest) {
       customerId = customer.id;
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalCents,
-      currency: "usd",
-      automatic_payment_methods: { enabled: true },
-      customer: customerId,
-      setup_future_usage: saveCard ? "off_session" : undefined,
-      metadata: {
-        kind: "donation",
-        fundraiser_id: fundraiser.id,
-        fundraiser_slug: fundraiser.slug,
-        fundraiser_title: fundraiser.title || fundraiserTitle || "",
-        donor_name: anonymous ? "Anonymous" : (normalizedDonorName || "Anonymous"),
-        donor_email: normalizedDonorEmail,
-        message: message || "",
-        donation_amount: String(donationAmount),
-        tip_amount: String(tipAmount),
-        anonymous: String(anonymous),
-        save_card: String(Boolean(saveCard)),
-      },
-    });
+    // Idempotency key: same fundraiser + donor + amount combination
+    const idempotencyKey =
+      checkoutAttemptId && typeof checkoutAttemptId === "string"
+        ? `donation-intent-${checkoutAttemptId}`
+        : `donation-${fundraiser.id}-${normalizedEmail || "guest"}-${totalCents}-${Date.now()}`;
 
-    return NextResponse.json({ clientSecret: paymentIntent.client_secret });
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: totalCents,
+        currency: currency.toLowerCase(),
+        automatic_payment_methods: { enabled: true },
+        customer: customerId,
+        setup_future_usage: saveCard ? "off_session" : undefined,
+        ...(normalizedEmail ? { receipt_email: normalizedEmail } : {}),
+        metadata: {
+          // Identifies this intent as a donation for the webhook
+          kind: "donation",
+          fundraiser_id: fundraiser.id,
+          fundraiser_slug: fundraiser.slug,
+          fundraiser_title: fundraiser.title || fundraiserTitle || "",
+          // Public name (shown on donor feed)
+          donor_name: publicDonorName,
+          // Full name always stored in Stripe for records (not shown publicly when anonymous)
+          donor_name_real: normalizedName || "",
+          donor_email: normalizedEmail,
+          message: message || "",
+          donation_amount: String(donationAmount),
+          tip_amount: String(tipAmount),
+          total_amount: String(((donationAmount + tipAmount))),
+          currency: currency.toLowerCase(),
+          anonymous: String(anonymous),
+          save_card: String(Boolean(saveCard)),
+        },
+      },
+      { idempotencyKey }
+    );
+
+    return NextResponse.json({
+      clientSecret: paymentIntent.client_secret,
+    });
   } catch (err: unknown) {
+    console.error("[donate/intent]", err);
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
