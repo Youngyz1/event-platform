@@ -60,7 +60,7 @@ export default function FundraiserCommentForm({
         maxLength={150}
         rows={4}
         placeholder="Leave a word of support..."
-        className="w-full resize-none rounded-lg border border-zinc-300 px-4 py-3 text-base md:text-sm outline-none focus:border-emerald-500"
+        className="w-full resize-none rounded-lg border border-zinc-300 bg-white px-4 py-3 text-base md:text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-emerald-500"
       />
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400">{message.length}/150</span>

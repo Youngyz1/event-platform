@@ -3,7 +3,7 @@
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState, Suspense } from "react";
+import { useMemo, useState, useEffect, Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 
 function DonationConfirmationContent() {
@@ -20,6 +20,10 @@ function DonationConfirmationContent() {
   const [anonymous, setAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
 
   const formattedAmount = useMemo(() => {
     return Number(amount || 0).toLocaleString("en-US", {
@@ -93,7 +97,7 @@ function DonationConfirmationContent() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 px-4 py-12 text-zinc-950">
+    <main className="min-h-screen bg-zinc-50 px-4 pt-6 pb-12 text-zinc-950">
       <section className="mx-auto max-w-xl rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex justify-center">
           <CheckCircle2 className="h-16 w-16 text-emerald-600" />
@@ -134,7 +138,7 @@ function DonationConfirmationContent() {
             maxLength={200}
             rows={5}
             placeholder="Write a message of support..."
-            className="mt-4 w-full resize-none rounded-lg border border-zinc-300 px-4 py-3 outline-none focus:border-emerald-500"
+            className="mt-4 w-full resize-none rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
           />
           <div className="mt-2 flex items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-sm font-semibold text-zinc-700">

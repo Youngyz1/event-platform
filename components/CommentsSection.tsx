@@ -305,7 +305,7 @@ export default function CommentsSection({
                 required
                 rows={4}
                 placeholder="Write a public comment"
-                className={`w-full resize-none rounded-2xl border border-zinc-300 px-4 py-3 outline-none ${styles.ring}`}
+                className={`w-full resize-none rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 placeholder-zinc-400 outline-none ${styles.ring}`}
               />
               <div className="mt-2 flex items-center justify-between gap-3 text-sm text-zinc-500">
                 <span>Comments appear publicly on this page.</span>

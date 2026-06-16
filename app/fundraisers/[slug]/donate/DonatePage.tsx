@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import {
@@ -58,6 +58,12 @@ export default function DonatePage({
   const [success, setSuccess] = useState(false);
   // UUID minted each time the user clicks "Proceed" — one per checkout attempt
   const [checkoutAttemptId, setCheckoutAttemptId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (success) {
+      window.scrollTo({ top: 0, behavior: "instant" });
+    }
+  }, [success]);
 
   // ─── Derived amounts ────────────────────────────────────────────────────────
 
@@ -301,7 +307,7 @@ export default function DonatePage({
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={2}
-          className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-base outline-none transition focus:border-green-500 resize-none"
+          className="w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-base text-zinc-900 placeholder-zinc-400 outline-none transition focus:border-green-500 resize-none"
         />
 
         <label className="flex cursor-pointer items-center gap-3">

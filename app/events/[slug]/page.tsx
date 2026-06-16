@@ -180,7 +180,20 @@ export default async function EventPage({
   return (
     <main className="min-h-screen bg-white text-zinc-950">
       {/* ── Banner image ───────────────── */}
-      <div className="w-full overflow-hidden">
+      <div className="w-full overflow-hidden md:relative md:flex md:h-[400px] md:items-center md:justify-center md:bg-zinc-950 lg:h-[450px]">
+        {/* Blurred background for desktop */}
+        <div className="hidden md:block absolute inset-0 select-none pointer-events-none opacity-40 blur-2xl">
+          <img
+            src={
+              event.banner ||
+              "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop"
+            }
+            alt=""
+            className="h-full w-full object-cover object-center"
+          />
+        </div>
+
+        {/* Main image */}
         <img
           src={
             event.banner ||
@@ -189,7 +202,7 @@ export default async function EventPage({
           alt=""
           fetchPriority="high"
           decoding="async"
-          className="aspect-video w-full object-cover sm:aspect-auto sm:max-h-[500px]"
+          className="aspect-video w-full object-cover sm:aspect-auto sm:max-h-[500px] md:relative md:z-10 md:h-full md:w-auto md:max-w-7xl md:object-contain md:object-center lg:max-h-[450px]"
         />
       </div>
 

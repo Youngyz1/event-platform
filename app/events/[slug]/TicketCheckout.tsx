@@ -95,6 +95,7 @@ export default function TicketCheckout({
       .catch(() => setLoadingSeats(false));
   }, [event.id]);
 
+
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   function formatPrice(price: number) {
@@ -228,26 +229,43 @@ export default function TicketCheckout({
 
   if (paid) {
     return (
-      <div className="rounded-3xl border border-zinc-200 bg-white p-6 text-center shadow-sm sm:p-8 lg:sticky lg:top-24">
-        <div className="text-5xl mb-4">🎉</div>
-        <h2 className="text-2xl font-black">Ticket Booked!</h2>
-        <p className="text-zinc-500 mt-2 text-sm">
-          Check your email for your ticket confirmation.
-        </p>
-        {qrCode && (
-          <a
-            href={`/ticket-confirmation?qr=${qrCode}&event=${event.slug}`}
-            className="mt-4 inline-block rounded-2xl bg-orange-500 px-6 py-3 text-sm font-black text-white transition hover:bg-orange-600"
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+        <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-8 text-center shadow-2xl relative">
+          {/* Close button in top-right */}
+          <button
+            onClick={() => {
+              window.location.href = `/events/${event.slug}`;
+            }}
+            className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-600 transition p-1 rounded-full hover:bg-zinc-100"
+            aria-label="Close modal"
           >
-            View Ticket →
-          </a>
-        )}
-        <a
-          href={`/events/${event.slug}`}
-          className="mt-3 block text-sm text-zinc-400 hover:text-zinc-600 transition"
-        >
-          Back to Event
-        </a>
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+
+          <div className="text-5xl mb-4">🎉</div>
+          <h2 className="text-2xl font-black text-zinc-950">Ticket Booked!</h2>
+          <p className="text-zinc-500 mt-2 text-sm">
+            Check your email for your ticket confirmation.
+          </p>
+          {qrCode && (
+            <a
+              href={`/ticket-confirmation?qr=${qrCode}&event=${event.slug}`}
+              className="mt-6 inline-block w-full rounded-2xl bg-orange-500 px-6 py-3.5 text-sm font-black text-white transition hover:bg-orange-600 shadow-md"
+            >
+              View Ticket →
+            </a>
+          )}
+          <button
+            onClick={() => {
+              window.location.href = `/events/${event.slug}`;
+            }}
+            className="mt-3 block w-full text-center text-sm font-bold text-zinc-500 hover:text-zinc-800 transition"
+          >
+            Back to Event
+          </button>
+        </div>
       </div>
     );
   }
