@@ -176,9 +176,9 @@ export default function DonatePage({
         <img
           src={banner}
           alt={fundraiserTitle}
-          className="h-16 w-24 shrink-0 rounded-xl object-cover"
+          className="h-16 w-20 shrink-0 rounded-xl object-cover sm:w-24"
         />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
             You&apos;re supporting
           </p>
@@ -229,7 +229,7 @@ export default function DonatePage({
               setClientSecret(null); // reset intent when amount changes
             }}
             placeholder="Other amount"
-            className="w-full rounded-xl border border-zinc-200 py-3 pl-8 pr-16 font-black outline-none transition focus:border-green-500"
+            className="w-full rounded-xl border border-zinc-200 py-3 pl-8 pr-16 text-base font-black outline-none transition focus:border-green-500"
           />
           <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-zinc-400">
             .00
@@ -285,14 +285,14 @@ export default function DonatePage({
             value={donorName}
             onChange={(e) => setDonorName(e.target.value)}
             disabled={anonymous}
-            className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-green-500 disabled:bg-zinc-50 disabled:text-zinc-400"
+            className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-base outline-none transition focus:border-green-500 disabled:bg-zinc-50 disabled:text-zinc-400"
           />
           <input
             type="email"
             placeholder="Email (optional)"
             value={donorEmail}
             onChange={(e) => setDonorEmail(e.target.value)}
-            className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-green-500"
+            className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-base outline-none transition focus:border-green-500"
           />
         </div>
 
@@ -301,7 +301,7 @@ export default function DonatePage({
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={2}
-          className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-sm outline-none transition focus:border-green-500 resize-none"
+          className="w-full rounded-xl border border-zinc-200 px-4 py-3 text-base outline-none transition focus:border-green-500 resize-none"
         />
 
         <label className="flex cursor-pointer items-center gap-3">

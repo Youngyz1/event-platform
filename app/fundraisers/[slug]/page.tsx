@@ -310,7 +310,8 @@ export default async function FundraiserPage({
   return (
     <main className="min-h-screen bg-white pb-12 text-zinc-950">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-3 lg:py-10">
-        <div className="space-y-8 lg:col-span-2">
+        {/* Main content column — goes second on mobile (below aside) */}
+        <div className="order-2 space-y-8 lg:order-1 lg:col-span-2">
           <header>
             <h1 className="text-3xl font-bold leading-tight text-zinc-950 sm:text-4xl">
               {fundraiser.title}
@@ -491,7 +492,8 @@ export default async function FundraiserPage({
           </div>
         </div>
 
-        <aside className="lg:col-span-1">
+        {/* Aside — appears first on mobile (top of page) */}
+        <aside className="order-1 lg:order-2 lg:col-span-1">
           <div className="space-y-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
             <section className="text-center">
               <div className="flex justify-center">

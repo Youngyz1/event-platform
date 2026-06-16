@@ -13,16 +13,16 @@ type EventCardProps = {
 export default function EventCard({ title, date, location, image, slug, badge, variant = "default" }: EventCardProps) {
   const imageClass =
     variant === "homepage"
-      ? "relative h-28 w-full bg-zinc-100 sm:h-56"
-      : "relative h-36 w-full bg-zinc-100 sm:h-56";
-  const bodyClass = variant === "homepage" ? "p-2 sm:p-5" : "px-1 py-3 sm:p-5";
+      ? "relative h-40 w-full bg-zinc-100 sm:h-56"
+      : "relative h-40 w-full bg-zinc-100 sm:h-56";
+  const bodyClass = variant === "homepage" ? "p-3 sm:p-5" : "px-2 py-3 sm:p-5";
   const titleClass =
     variant === "homepage"
-      ? "mt-1 text-xs font-black leading-snug text-zinc-950 sm:mt-2 sm:text-xl"
-      : "mt-1 text-lg font-black leading-snug text-zinc-950 sm:mt-2 sm:text-xl";
+      ? "mt-1 text-sm font-black leading-snug text-zinc-950 sm:mt-2 sm:text-xl"
+      : "mt-1 text-base font-black leading-snug text-zinc-950 sm:mt-2 sm:text-xl";
 
   const card = (
-    <div className="overflow-hidden rounded-xl bg-white transition hover:shadow-lg sm:rounded-2xl sm:border sm:border-zinc-200">
+    <div className="overflow-hidden rounded-xl border border-zinc-100 bg-white transition hover:shadow-lg sm:rounded-2xl sm:border-zinc-200">
       <div className={imageClass}>
         <img
           src={image}
@@ -38,9 +38,9 @@ export default function EventCard({ title, date, location, image, slug, badge, v
         )}
       </div>
       <div className={bodyClass}>
-        <p className="text-[10px] font-bold text-orange-600 sm:text-sm">{date}</p>
+        <p className="text-xs font-bold text-orange-600 sm:text-sm">{date}</p>
         <h3 className={titleClass}>{title}</h3>
-        <p className="mt-1 text-[10px] font-semibold text-zinc-600 sm:mt-2 sm:text-base">{location}</p>
+        <p className="mt-1 text-xs font-semibold text-zinc-600 sm:mt-2 sm:text-base">{location}</p>
       </div>
     </div>
   );

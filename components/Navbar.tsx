@@ -84,9 +84,9 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white">
-      <div className={`mx-auto flex max-w-[1440px] items-center px-4 md:px-5 ${isHomepage ? "min-h-10 gap-2 max-lg:px-2" : "min-h-16 gap-3"}`}>
+      <div className={`mx-auto flex max-w-[1440px] items-center gap-2 px-3 md:px-5 ${isHomepage ? "min-h-12" : "min-h-16"}`}>
         {/* Logo */}
-        <Link href="/" className={`shrink-0 text-zinc-950 ${isHomepage ? "text-xs sm:text-2xl" : "text-xl sm:text-2xl"}`}>
+        <Link href="/" className="shrink-0 text-zinc-950">
           <BrandMark textClassName="text-zinc-950" />
         </Link>
 
@@ -117,7 +117,9 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setMobileSearchOpen((open) => !open)}
-          className={`${mobileSearchOpen ? "hidden md:flex" : "flex"} ml-auto h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-700 transition hover:border-orange-200 hover:text-orange-600 md:ml-0 md:h-9 md:w-9`}
+          className={`${
+            mobileSearchOpen ? "hidden md:flex" : "flex"
+          } ml-auto h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-700 transition hover:border-orange-200 hover:text-orange-600 md:ml-0 md:h-9 md:w-9`}
           aria-expanded={mobileSearchOpen}
           aria-label="Search events"
         >
@@ -125,12 +127,12 @@ export default function Navbar() {
         </button>
 
         {/* Desktop nav — same links regardless of auth state */}
-        <div className={`ml-auto hidden items-center whitespace-nowrap font-bold text-zinc-700 md:flex ${isHomepage ? "gap-1 text-[5.5px] md:gap-5 md:text-sm" : "gap-5 text-sm"}`}>
+        <div className="ml-auto hidden items-center gap-5 whitespace-nowrap text-sm font-bold text-zinc-700 md:flex">
           <Link href="/" className="hover:text-orange-600">Home</Link>
-          <Link href="/organizers" className={`${isHomepage ? "inline" : "hidden md:inline"} hover:text-orange-600`}>Organizers</Link>
+          <Link href="/organizers" className="hover:text-orange-600">Organizers</Link>
           {account && (
             <>
-              <Link href="/create-event" className={`${isHomepage ? "inline" : "hidden md:inline"} hover:text-orange-600`}>Create Event</Link>
+              <Link href="/create-event" className="hover:text-orange-600">Create Event</Link>
               <Link href="/my-tickets" className="hover:text-orange-600">My Tickets</Link>
             </>
           )}
@@ -185,7 +187,7 @@ export default function Navbar() {
               <Link href="/login" className="hover:text-orange-600">Log in</Link>
               <Link
                 href="/signup"
-                className={`rounded-full bg-orange-600 font-black text-white transition hover:bg-orange-700 ${isHomepage ? "px-1.5 py-1 text-[6px] md:px-4 md:py-2 md:text-sm" : "px-4 py-2"}`}
+                className="rounded-full bg-orange-600 px-4 py-2 font-black text-white transition hover:bg-orange-700"
               >
                 Sign up
               </Link>
@@ -202,11 +204,11 @@ export default function Navbar() {
           </Link>
         )}
 
-        {/* Mobile menu button */}
+        {/* Mobile menu button — min 44×44 touch target */}
         <button
           type="button"
           onClick={() => setMenuOpen((open) => !open)}
-          className="rounded-xl border border-zinc-200 px-3 py-2 text-sm font-black text-zinc-800 md:hidden"
+          className="flex h-10 min-w-[44px] items-center justify-center rounded-xl border border-zinc-200 px-3 text-sm font-black text-zinc-800 md:hidden"
           aria-expanded={menuOpen}
           aria-label="Toggle navigation"
         >

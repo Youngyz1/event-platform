@@ -452,14 +452,14 @@ export default function TicketCheckout({
                   placeholder="Full name (optional)"
                   value={buyerName}
                   onChange={(e) => setBuyerName(e.target.value)}
-                  className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-500 transition"
+                  className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
                 />
                 <input
                   type="email"
                   placeholder="Email for ticket delivery (optional)"
                   value={buyerEmail}
                   onChange={(e) => setBuyerEmail(e.target.value)}
-                  className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-orange-500 transition"
+                  className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
                 />
                 <div className="flex gap-3">
                   <button

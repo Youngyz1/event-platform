@@ -57,20 +57,22 @@ export default function CheckoutShell({
         </div>
       </div>
 
-      {/* Content grid */}
-      <div className="mx-auto grid max-w-5xl gap-6 px-4 py-8 lg:grid-cols-[1fr_360px] lg:gap-10 lg:py-14">
-        {/* Left — form column */}
-        <div className="min-w-0 space-y-5">
-          {left}
-          {legalText && (
-            <p className="text-center text-xs leading-5 text-zinc-400">
-              {legalText}
-            </p>
-          )}
-        </div>
+      {/* Content grid — stacks as summary-first on mobile, side-by-side on lg */}
+      <div className="mx-auto max-w-5xl px-4 py-8 lg:py-14">
+        <div className="flex flex-col-reverse gap-6 lg:grid lg:grid-cols-[1fr_360px] lg:gap-10">
+          {/* Left — form column */}
+          <div className="min-w-0 space-y-5">
+            {left}
+            {legalText && (
+              <p className="text-center text-xs leading-5 text-zinc-400">
+                {legalText}
+              </p>
+            )}
+          </div>
 
-        {/* Right — summary column */}
-        <div className="h-fit space-y-4 lg:sticky lg:top-20">{right}</div>
+          {/* Right — summary column (renders first visually on mobile via flex-col-reverse) */}
+          <div className="h-fit space-y-4 lg:sticky lg:top-20">{right}</div>
+        </div>
       </div>
     </main>
   );

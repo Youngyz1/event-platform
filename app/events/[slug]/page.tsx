@@ -180,7 +180,7 @@ export default async function EventPage({
   return (
     <main className="min-h-screen bg-white text-zinc-950">
       {/* ── Banner image ───────────────── */}
-      <div className="w-full overflow-hidden" style={{ maxHeight: "100vw" }}>
+      <div className="w-full overflow-hidden">
         <img
           src={
             event.banner ||
@@ -189,8 +189,7 @@ export default async function EventPage({
           alt=""
           fetchPriority="high"
           decoding="async"
-          className="w-full h-auto block"
-          style={{ display: "block", maxHeight: "100vw" }}
+          className="aspect-video w-full object-cover sm:aspect-auto sm:max-h-[500px]"
         />
       </div>
 
@@ -304,9 +303,9 @@ export default async function EventPage({
           )}
         </div>
 
-        {/* ── Main 2-col layout ─────────────────────────────── */}
-        <div className="grid gap-10 py-10 lg:grid-cols-3 lg:gap-12">
-          <div className="lg:col-span-2 space-y-10">
+        {/* ── Main 2-col layout ───────────────────── */}
+        <div className="grid gap-8 pb-24 pt-8 lg:grid-cols-3 lg:gap-12 lg:pb-10">
+          <div className="space-y-8 lg:col-span-2">
             {/* About */}
             <section>
               <h2 className="text-2xl font-black mb-4">About this event</h2>
@@ -611,11 +610,13 @@ export default async function EventPage({
           </div>
 
           {/* Sidebar ticket checkout */}
-          <TicketCheckout
-            event={event}
-            tickets={tickets || []}
-            lowestPrice={lowestPrice}
-          />
+          <div id="tickets">
+            <TicketCheckout
+              event={event}
+              tickets={tickets || []}
+              lowestPrice={lowestPrice}
+            />
+          </div>
         </div>
       </div>
 

@@ -88,7 +88,7 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
               <Link
                 key={`${item.type}-${item.id}-${index}`}
                 href={`/events/${item.slug}`}
-                className="relative h-24 w-40 flex-shrink-0 overflow-hidden rounded-md shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72 sm:rounded-2xl"
+                className="relative h-44 w-64 flex-shrink-0 overflow-hidden rounded-xl shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72 sm:rounded-2xl"
               >
                 <img
                   src={imageUrl}
@@ -100,19 +100,19 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
                   }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/45 to-zinc-950/10" />
-                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-orange-500 px-2 py-0.5 text-[6px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
-                  <Ticket className="h-2 w-2 sm:h-3 sm:w-3" />
+                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-orange-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
+                  <Ticket className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   Event
                 </span>
-                <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4">
-                  <p className="mb-0.5 text-[7px] font-black uppercase tracking-wide text-orange-400 sm:mb-1 sm:text-xs">
+                <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
+                  <p className="mb-0.5 text-[10px] font-black uppercase tracking-wide text-orange-400 sm:mb-1 sm:text-xs">
                     {formatDate(item.date)}
                   </p>
-                  <h3 className="line-clamp-2 text-[8px] font-black leading-tight text-white sm:text-sm">
+                  <h3 className="line-clamp-2 text-xs font-black leading-tight text-white sm:text-sm">
                     {item.title}
                   </h3>
                   {item.location && (
-                    <p className="mt-0.5 truncate text-[7px] text-zinc-300 sm:mt-1 sm:text-xs">{item.location}</p>
+                    <p className="mt-0.5 truncate text-[10px] text-zinc-300 sm:mt-1 sm:text-xs">{item.location}</p>
                   )}
                 </div>
               </Link>
@@ -125,7 +125,7 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
             <Link
               key={`${item.type}-${item.id}-${index}`}
               href={`/fundraisers/${item.slug}`}
-              className="relative h-24 w-40 flex-shrink-0 overflow-hidden rounded-md shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72 sm:rounded-2xl"
+              className="relative h-44 w-64 flex-shrink-0 overflow-hidden rounded-xl shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72 sm:rounded-2xl"
             >
               <img
                 src={imageUrl}
@@ -137,12 +137,12 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
                 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/50 to-zinc-950/10" />
-              <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[6px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
-                <Heart className="h-2 w-2 sm:h-3 sm:w-3" />
+              <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
+                <Heart className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 Fundraise
               </span>
-              <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4">
-                <h3 className="mb-1 line-clamp-2 text-[8px] font-black leading-tight text-white sm:mb-3 sm:text-sm">
+              <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
+                <h3 className="mb-1 line-clamp-2 text-xs font-black leading-tight text-white sm:mb-3 sm:text-sm">
                   {item.title}
                 </h3>
                 <div className="mb-1 h-1 w-full rounded-full bg-white/20 sm:mb-2 sm:h-1.5">
@@ -151,7 +151,7 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
                     style={{ width: `${pct}%` }}
                   />
                 </div>
-                <p className="text-[7px] font-bold text-white/85 sm:text-xs">
+                <p className="text-[10px] font-bold text-white/85 sm:text-xs">
                   {money(item.raised_amount)} raised of {money(item.goal_amount)} goal
                 </p>
               </div>

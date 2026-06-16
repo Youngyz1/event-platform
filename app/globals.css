@@ -29,12 +29,25 @@
   --foreground: #ededed;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
   text-rendering: optimizeLegibility;
+  /* Prevent iOS Safari rubber-band horizontal scroll */
+  position: relative;
 }
 
 img,
