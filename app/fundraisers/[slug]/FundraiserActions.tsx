@@ -42,7 +42,7 @@ export function ShareFundraiserButton({
   );
 }
 
-export default function FundraiserFloatingActions({ title }: { title: string }) {
+export default function FundraiserFloatingActions({ title, slug }: { title: string; slug: string }) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 px-3 py-3 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur md:hidden">
       <div className="mx-auto flex max-w-md gap-3">
@@ -51,7 +51,7 @@ export default function FundraiserFloatingActions({ title }: { title: string }) 
           className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-black text-zinc-800 shadow-sm"
         />
         <a
-          href="#donate"
+          href={`/fundraisers/${slug}/donate`}
           className="flex flex-1 items-center justify-center rounded-2xl bg-green-500 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-green-600"
         >
           Donate

@@ -15,7 +15,7 @@ import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Flag } from "lucide-react";
-import { ShareFundraiserButton } from "./FundraiserActions";
+import FundraiserFloatingActions, { ShareFundraiserButton } from "./FundraiserActions";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1600&auto=format&fit=crop";
@@ -308,10 +308,10 @@ export default async function FundraiserPage({
     fundraiser.created_at || new Date().toISOString();
 
   return (
-    <main className="min-h-screen bg-white pb-12 text-zinc-950">
+    <main className="min-h-screen bg-white pb-24 text-zinc-950 lg:pb-12">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-3 lg:py-10">
-        {/* Main content column — goes second on mobile (below aside) */}
-        <div className="order-2 space-y-8 lg:order-1 lg:col-span-2">
+        {/* Main content column */}
+        <div className="space-y-8 lg:col-span-2">
           <header>
             <h1 className="text-3xl font-bold leading-tight text-zinc-950 sm:text-4xl">
               {fundraiser.title}
@@ -492,8 +492,8 @@ export default async function FundraiserPage({
           </div>
         </div>
 
-        {/* Aside — appears first on mobile (top of page) */}
-        <aside className="order-1 lg:order-2 lg:col-span-1">
+        {/* Aside */}
+        <aside className="lg:col-span-1">
           <div className="space-y-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
             <section className="text-center">
               <div className="flex justify-center">
@@ -581,6 +581,9 @@ export default async function FundraiserPage({
           </div>
         </aside>
       </div>
+
+      {/* Sticky bottom actions bar on mobile */}
+      <FundraiserFloatingActions title={fundraiser.title} slug={fundraiser.slug} />
     </main>
   );
 }
