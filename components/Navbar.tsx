@@ -87,7 +87,7 @@ export default function Navbar() {
       <div className={`mx-auto flex max-w-[1440px] items-center gap-2 px-3 md:px-5 ${isHomepage ? "min-h-12" : "min-h-16"}`}>
         {/* Logo */}
         <Link href="/" className="shrink-0 text-zinc-950">
-          <BrandMark textClassName="text-zinc-950" />
+          <BrandMark textClassName="hidden sm:inline text-zinc-950" />
         </Link>
 
         {mobileSearchOpen && (
@@ -195,14 +195,7 @@ export default function Navbar() {
           )}
         </div>
 
-        {!mobileSearchOpen && (
-          <Link
-            href="/find-tickets"
-            className="rounded-full border border-zinc-200 px-3 py-2 text-xs font-black text-zinc-800 md:hidden"
-          >
-            Find Tickets
-          </Link>
-        )}
+
 
         {/* Mobile menu button — min 44×44 touch target */}
         <button

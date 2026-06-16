@@ -133,7 +133,7 @@ export default function EventsHeaderControls({
     <div className="mb-6 space-y-5">
       <div className="relative max-w-full" ref={dropdownRef}>
         <div className="inline-flex flex-wrap items-baseline gap-x-2">
-          <span className="text-2xl font-black text-zinc-950 sm:text-3xl whitespace-nowrap">
+          <span className="text-2xl font-black text-zinc-950 sm:text-3xl">
             Browsing events in
           </span>
           <button
