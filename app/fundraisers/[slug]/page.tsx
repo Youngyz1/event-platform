@@ -311,9 +311,9 @@ export default async function FundraiserPage({
     <main className="min-h-screen bg-white pb-24 text-zinc-950 lg:pb-12">
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-3 lg:py-10">
         {/* Main content column */}
-        <div className="space-y-8 lg:col-span-2">
+        <div className="min-w-0 space-y-8 lg:col-span-2">
           <header>
-            <h1 className="text-3xl font-bold leading-tight text-zinc-950 sm:text-4xl">
+            <h1 className="text-3xl font-bold leading-tight text-zinc-950 sm:text-4xl break-words">
               {fundraiser.title}
             </h1>
           </header>
@@ -323,7 +323,7 @@ export default async function FundraiserPage({
             <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <OrganizerAvatar name={organizerName} />
-                <p className="text-sm text-zinc-600">
+                <p className="text-sm text-zinc-600 break-words">
                   Organised by{" "}
                   {organizer?.id ? (
                     <Link
@@ -347,7 +347,7 @@ export default async function FundraiserPage({
 
           {updates.length > 0 && (
             <section className="border-b border-zinc-200 pb-8">
-              <h2 className="text-2xl font-bold text-zinc-950">
+              <h2 className="text-2xl font-bold text-zinc-950 break-words">
                 Updates {updates.length}
               </h2>
               <div className="mt-5 space-y-5">
@@ -371,11 +371,11 @@ export default async function FundraiserPage({
                           </span>
                         </div>
                         {update.title && (
-                          <h3 className="mt-3 text-lg font-bold text-zinc-950">
+                          <h3 className="mt-3 text-lg font-bold text-zinc-950 break-words">
                             {update.title}
                           </h3>
                         )}
-                        <p className="mt-2 whitespace-pre-wrap leading-7 text-zinc-700">
+                        <p className="mt-2 whitespace-pre-wrap break-words leading-7 text-zinc-700">
                           {update.content}
                         </p>
                       </div>
@@ -390,10 +390,10 @@ export default async function FundraiserPage({
 
           {/* ── Organiser & Beneficiary ─────────────────────────── */}
           <section className="border-t border-zinc-200 pt-8">
-            <h2 className="text-lg font-black text-zinc-950">
+            <h2 className="text-lg font-black text-zinc-950 break-words">
               Organiser and beneficiary
             </h2>
-            <div className="mt-5 flex items-center gap-3">
+            <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-black text-zinc-700">
                   {initial(organizerName)}
@@ -429,7 +429,7 @@ export default async function FundraiserPage({
 
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 shrink-0 text-zinc-400"
+                className="h-5 w-5 shrink-0 text-zinc-400 rotate-90 sm:rotate-0"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -473,7 +473,7 @@ export default async function FundraiserPage({
 
           {/* ── Words of Support — always visible ───────────────── */}
           <div className="border-t border-zinc-200 pt-8">
-            <h2 className="text-2xl font-bold text-zinc-950">
+            <h2 className="text-2xl font-bold text-zinc-950 break-words">
               Words of Support{commentCount > 0 ? ` ${commentCount}` : ""}
             </h2>
             <p className="mt-1 text-sm text-zinc-500">
@@ -493,7 +493,7 @@ export default async function FundraiserPage({
         </div>
 
         {/* Aside */}
-        <aside className="lg:col-span-1">
+        <aside className="min-w-0 lg:col-span-1">
           <div className="space-y-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
             <section className="text-center">
               <div className="flex justify-center">

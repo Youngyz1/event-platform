@@ -111,7 +111,7 @@ export default function PaymentForm({
 
   const inputCls =
     "w-full rounded-[10px] border border-zinc-200 bg-white px-[14px] py-[11px] " +
-    "text-[14px] font-medium text-zinc-900 outline-none transition " +
+    "text-[16px] md:text-[14px] font-medium text-zinc-900 outline-none transition " +
     "placeholder:font-normal placeholder:text-zinc-400 " +
     "focus:border-current focus:shadow-[0_0_0_3px] focus:shadow-current/10 " +
     "disabled:cursor-not-allowed disabled:bg-zinc-50 disabled:text-zinc-400";

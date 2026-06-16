@@ -36,7 +36,7 @@ export default function FundraiserShare({
 
   return (
     <section className="border-b border-zinc-200 pb-8">
-      <h2 className="text-2xl font-bold text-zinc-950">Sharing helps more than you think</h2>
+      <h2 className="text-2xl font-bold text-zinc-950 break-words">Sharing helps more than you think</h2>
       <div className="mt-4 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
         <img
           src={imageUrl || FALLBACK_IMAGE}

@@ -46,13 +46,13 @@ export default function FundraiserCommentForm({
   }
 
   return (
-    <div className="mt-4 space-y-3">
+    <div className="mt-4 space-y-3 w-full max-w-full min-w-0">
       <input
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Your name (optional)"
-        className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm outline-none focus:border-emerald-500"
+        className="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-base md:text-sm outline-none focus:border-emerald-500"
       />
       <textarea
         value={message}
@@ -60,7 +60,7 @@ export default function FundraiserCommentForm({
         maxLength={150}
         rows={4}
         placeholder="Leave a word of support..."
-        className="w-full resize-none rounded-lg border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-emerald-500"
+        className="w-full resize-none rounded-lg border border-zinc-300 px-4 py-3 text-base md:text-sm outline-none focus:border-emerald-500"
       />
       <div className="flex items-center justify-between">
         <span className="text-xs text-zinc-400">{message.length}/150</span>

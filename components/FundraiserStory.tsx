@@ -20,7 +20,7 @@ export default function FundraiserStory({
           .map((paragraph) => paragraph.trim())
           .filter(Boolean)
           .map((paragraph) => (
-            <p key={paragraph} className="whitespace-pre-wrap">
+            <p key={paragraph} className="whitespace-pre-wrap break-words">
               {paragraph}
             </p>
           ))}
