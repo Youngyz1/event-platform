@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 
 type SupportMessage = {
   id: string;
@@ -8,6 +9,7 @@ type SupportMessage = {
   body: string;
   created_at: string;
   donor_amount?: number | null;
+  author_organizer_id?: string | null;
 };
 
 type SupportMessagesProps = {
@@ -37,20 +39,12 @@ function HeartIcon({ className }: { className?: string }) {
 
 export default function SupportMessages({
   fundraiserId,
-  donorName = "",
-  donorEmail = "",
-  donorAmount,
-  stripeSessionId = "",
-}: SupportMessagesProps) {
+}: {
+  fundraiserId: string;
+}) {
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [body, setBody] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const [submitted, setSubmitted] = useState(false);
   const mountedRef = useRef(false);
-
-  const canComment = Boolean(stripeSessionId);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -77,102 +71,10 @@ export default function SupportMessages({
     };
   }, [fundraiserId]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setSubmitError("");
-
-    if (body.trim().length < 2) {
-      setSubmitError("Please write a message before posting.");
-      return;
-    }
-
-    setSubmitting(true);
-    const res = await fetch("/api/comments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        targetType: "fundraiser",
-        targetId: fundraiserId,
-        authorName: donorName || "Anonymous",
-        authorEmail: donorEmail || null,
-        body: body.trim(),
-        stripeSessionId,
-      }),
-    });
-    const result = await res.json();
-
-    if (!mountedRef.current) return;
-
-    if (!res.ok) {
-      setSubmitError(result.error || "Could not post your message.");
-      setSubmitting(false);
-      return;
-    }
-
-    setMessages((prev) => [result.comment, ...prev]);
-    setBody("");
-    setSubmitted(true);
-    setSubmitting(false);
-  }
-
   return (
-    <section className="rounded-3xl border border-zinc-200 bg-white p-6 sm:p-8">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <HeartIcon className="h-6 w-6 text-green-500 shrink-0" />
-        <p className="text-sm font-black uppercase tracking-wide text-green-700">Community</p>
-      </div>
-      <h2 className="mt-2 text-3xl font-black">Words of Support</h2>
-      <p className="mt-3 text-zinc-600">Please donate to share words of support.</p>
-
-      {/* Post-donation message form */}
-      {canComment && !submitted && (
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div className="rounded-2xl border border-green-200 bg-green-50 p-4">
-            <p className="text-sm font-black text-green-800">
-              Thank you{donorName ? `, ${donorName}` : ""}!
-              {donorAmount ? ` Your $${donorAmount} donation` : " Your donation"} has been received.
-              Share a few words of support below.
-            </p>
-          </div>
-
-          <div>
-            <textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              maxLength={1000}
-              required
-              rows={4}
-              placeholder="Write a message of support…"
-              className="w-full resize-none rounded-2xl border border-zinc-300 px-4 py-3 outline-none focus:border-green-500"
-            />
-            <div className="mt-2 flex justify-end text-sm text-zinc-400">
-              {body.length}/1000
-            </div>
-          </div>
-
-          {submitError && (
-            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
-              {submitError}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="rounded-full bg-green-600 px-6 py-3 font-black text-white transition hover:bg-green-700 disabled:bg-green-300"
-          >
-            {submitting ? "Posting…" : "Share your support"}
-          </button>
-        </form>
-      )}
-
-      {/* Submitted confirmation */}
-      {submitted && (
-        <div className="mt-6 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 text-sm font-semibold text-green-800">
-          ✓ Your message has been posted. Thank you for your support!
-        </div>
-      )}
+    <section>
+      <h2 className="text-lg font-black text-zinc-950">Comments</h2>
+      <p className="mt-1 text-sm text-zinc-500">Please donate to comment.</p>
 
       {/* Messages list */}
       <div className="mt-8 space-y-4">
@@ -188,12 +90,21 @@ export default function SupportMessages({
             return (
               <article key={msg.id} className="rounded-2xl border border-zinc-200 p-5">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100 font-black text-green-700">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center font-black text-green-700">
                     {name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <h3 className="font-black">{name}</h3>
+                      {msg.author_organizer_id ? (
+                        <Link
+                          href={`/organizers/${msg.author_organizer_id}`}
+                          className="font-black text-zinc-950 hover:text-emerald-600 hover:underline transition"
+                        >
+                          {name}
+                        </Link>
+                      ) : (
+                        <h3 className="font-black text-zinc-950">{name}</h3>
+                      )}
                       {msg.donor_amount != null && msg.donor_amount > 0 && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-black text-green-700">
                           <HeartIcon className="h-3 w-3" />

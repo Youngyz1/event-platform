@@ -32,6 +32,7 @@ const quickLinks = [
   ["Create Event", "/create-event"],
   ["Start Fundraiser", "/create-fundraiser"],
   ["Privacy", "/privacy"],
+  ["Cookies", "/cookies"],
 ] as const;
 
 const socialLinks = [
@@ -63,38 +64,38 @@ function Footerdemo() {
 
   return (
     <footer className="relative border-t border-zinc-200 bg-white text-zinc-950 transition-colors duration-300 dark:border-zinc-900 dark:bg-zinc-950 dark:text-white">
-      <div className="mx-auto max-w-7xl px-6 py-12 sm:px-8 md:px-10 lg:px-8">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4 lg:gap-16">
+      <div className="mx-auto max-w-7xl px-6 py-8 sm:px-8 md:px-10 lg:px-8">
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 lg:gap-12">
           <div>
             <BrandMark textClassName="text-zinc-950 dark:text-white" />
-            <h2 className="mt-7 text-3xl font-bold tracking-tight sm:text-4xl lg:text-3xl">
+            <h2 className="mt-4 text-lg font-bold tracking-tight sm:text-xl lg:text-lg">
               Stay connected
             </h2>
-            <p className="mb-8 mt-4 max-w-xs text-base leading-7 text-zinc-600 sm:text-lg lg:text-base dark:text-zinc-400">
+            <p className="mb-4 mt-2 max-w-xs text-xs leading-5 text-zinc-600 sm:text-sm dark:text-zinc-400">
               Get event launches, fundraiser updates, and platform news.
             </p>
-            <form onSubmit={handleSubscribe} className="relative">
+            <form onSubmit={handleSubscribe} className="relative max-w-xs">
               <Input
                 type="email"
                 placeholder="Enter your email"
-                className="h-14 rounded-full border-zinc-200 bg-white px-5 pr-16 text-base font-semibold text-zinc-950 placeholder:text-zinc-500 focus-visible:ring-orange-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+                className="h-10 rounded-full border-zinc-200 bg-white px-4 pr-12 text-sm font-medium text-zinc-950 placeholder:text-zinc-500 focus-visible:ring-orange-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
               />
               <Button
                 type="submit"
                 size="icon"
-                className="absolute right-1.5 top-1.5 h-11 w-11 rounded-full bg-orange-600 text-white transition-transform hover:scale-105 hover:bg-orange-700"
+                className="absolute right-1 top-1 h-8 w-8 rounded-full bg-orange-600 text-white transition-transform hover:scale-105 hover:bg-orange-700"
               >
-                <Send className="h-5 w-5" />
+                <Send className="h-4 w-4" />
                 <span className="sr-only">Subscribe</span>
               </Button>
             </form>
           </div>
 
           <div>
-            <h3 className="mb-5 text-2xl font-semibold tracking-tight lg:text-xl">
+            <h3 className="mb-3 text-base font-bold tracking-tight lg:text-sm">
               Quick links
             </h3>
-            <nav className="space-y-3 text-base text-zinc-600 sm:text-lg lg:text-base dark:text-zinc-400">
+            <nav className="space-y-2 text-sm text-zinc-600 dark:text-zinc-400">
               {quickLinks.map(([label, href]) => (
                 <Link
                   key={href}
@@ -108,10 +109,10 @@ function Footerdemo() {
           </div>
 
           <div>
-            <h3 className="mb-5 text-2xl font-semibold tracking-tight lg:text-xl">
+            <h3 className="mb-3 text-base font-bold tracking-tight lg:text-sm">
               Contact us
             </h3>
-            <address className="max-w-xs space-y-3 text-base leading-7 text-zinc-600 not-italic sm:text-lg lg:text-base dark:text-zinc-400">
+            <address className="max-w-xs space-y-2 text-sm leading-6 text-zinc-600 not-italic dark:text-zinc-400">
               <p>EventBrithe Support</p>
               <p>Events, fundraising & community commerce.</p>
               <p>
@@ -127,10 +128,10 @@ function Footerdemo() {
           </div>
 
           <div>
-            <h3 className="mb-6 text-2xl font-semibold tracking-tight lg:text-xl">
+            <h3 className="mb-3 text-base font-bold tracking-tight lg:text-sm">
               Follow us
             </h3>
-            <div className="mb-8 flex flex-wrap gap-4">
+            <div className="mb-4 flex flex-wrap gap-2">
               <TooltipProvider>
                 {socialLinks.map(([label, Icon]) => (
                   <Tooltip key={label}>
@@ -138,9 +139,9 @@ function Footerdemo() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-12 w-12 rounded-full border-zinc-200 bg-white text-zinc-700 hover:border-orange-500 hover:bg-orange-50 hover:text-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                        className="h-9 w-9 rounded-full border-zinc-200 bg-white text-zinc-700 hover:border-orange-500 hover:bg-orange-50 hover:text-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
                       >
-                        <Icon className="h-5 w-5" />
+                        <Icon className="h-4 w-4" />
                         <span className="sr-only">{label}</span>
                       </Button>
                     </TooltipTrigger>
@@ -167,8 +168,8 @@ function Footerdemo() {
           </div>
         </div>
 
-        <div className="mt-12 flex items-center justify-center border-t border-zinc-200 pt-8 text-center lg:mt-16 dark:border-zinc-800">
-          <p className="text-base text-zinc-500">
+        <div className="mt-8 flex items-center justify-center border-t border-zinc-200 pt-6 text-center lg:mt-10 dark:border-zinc-800">
+          <p className="text-sm text-zinc-500">
             © 2026 EventBrithe. All rights reserved.
           </p>
         </div>

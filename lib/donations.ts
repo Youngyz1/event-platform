@@ -101,6 +101,16 @@ export async function recordDonationFromSession(
   const { error } = await supabaseAdmin.from("donations").insert(fullPayload);
 
   if (!error) {
+    if (meta.message && meta.message.trim()) {
+      await supabaseAdmin.from("comments").insert({
+        target_type: "fundraiser",
+        target_id: fundraiserId,
+        author_name: meta.donor_name || "Anonymous",
+        author_email: meta.donor_email || session.customer_email || null,
+        body: meta.message.trim(),
+        status: "approved",
+      });
+    }
     await recalculateFundraiserRaised(fundraiserId);
     return { inserted: true, fundraiserId, reason: "inserted" };
   }
@@ -118,6 +128,16 @@ export async function recordDonationFromSession(
   });
 
   if (!fallbackError) {
+    if (meta.message && meta.message.trim()) {
+      await supabaseAdmin.from("comments").insert({
+        target_type: "fundraiser",
+        target_id: fundraiserId,
+        author_name: meta.donor_name || "Anonymous",
+        author_email: meta.donor_email || session.customer_email || null,
+        body: meta.message.trim(),
+        status: "approved",
+      });
+    }
     await recalculateFundraiserRaised(fundraiserId);
     return { inserted: true, fundraiserId, reason: "inserted_without_currency" };
   }

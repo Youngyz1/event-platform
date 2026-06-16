@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import NavbarWrapper from "@/components/NavbarWrapper";
 import Footer from "@/components/Footer";
+import CookieConsent from "@/components/CookieConsent";
 import { getSiteUrl } from "@/lib/site-url";
 
 const font = Plus_Jakarta_Sans({
@@ -42,6 +43,7 @@ export default function RootLayout({
           {children}
         </div>
         <Footer />
+        <CookieConsent />
       </body>
     </html>
   );

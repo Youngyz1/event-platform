@@ -2,8 +2,7 @@ export const dynamic = "force-dynamic";
 
 import DonationProtectedBadge from "@/components/DonationProtectedBadge";
 import DonorNameWithPopup from "@/components/DonorNameWithPopup";
-import CommentsSection from "@/components/CommentsSection";
-import FundraiserCommentForm from "@/components/FundraiserCommentForm";
+import SupportMessages from "@/components/SupportMessages";
 import FundraiserMediaSlider, {
   type FundraiserMediaSlide,
 } from "@/components/FundraiserMediaSlider";
@@ -159,7 +158,7 @@ async function getDonorOrganizerMap(
 
 function OrganizerAvatar({ name }: { name: string }) {
   return (
-    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-black text-zinc-700">
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sm font-black text-zinc-700">
       {initial(name)}
     </div>
   );
@@ -273,6 +272,24 @@ export default async function FundraiserPage({
   const organizer = organizerResult.data as OrganizerRow | null;
   const organizerName =
     organizer?.name || fundraiser.organizer || "Campaign organizer";
+
+  // If no organizer_id was stored, try to resolve the organizer profile by
+  // matching the organizer name — same fallback pattern used for the beneficiary.
+  const { data: organizerByName } =
+    !organizer && organizerName && organizerName !== "Campaign organizer"
+      ? await supabase
+          .from("organizers")
+          .select("id")
+          .eq("name", organizerName)
+          .eq("visibility", "public")
+          .not("status", "in", "(rejected,suspended)")
+          .maybeSingle()
+      : { data: null };
+
+  // Single source-of-truth for the organizer profile link
+  const organizerProfileId: string | null =
+    organizer?.id ?? organizerByName?.id ?? null;
+
   const coverImage =
     fundraiser.image_url || fundraiser.banner || FALLBACK_IMAGE;
   const mediaRows = (mediaResult.data ?? []) as MediaRow[];
@@ -303,6 +320,17 @@ export default async function FundraiserPage({
     fundraiser.beneficiary_name ||
     fundraiser.title ||
     "This Cause";
+
+  const { data: beneficiaryOrganizer } = beneficiaryName
+    ? await supabase
+        .from("organizers")
+        .select("id")
+        .eq("name", beneficiaryName)
+        .eq("visibility", "public")
+        .not("status", "in", "(rejected,suspended)")
+        .maybeSingle()
+    : { data: null };
+
   const fundraiserCategory: string = fundraiser.category || "";
   const fundraiserCreatedAt: string =
     fundraiser.created_at || new Date().toISOString();
@@ -325,10 +353,10 @@ export default async function FundraiserPage({
                 <OrganizerAvatar name={organizerName} />
                 <p className="text-sm text-zinc-600 break-words">
                   Organised by{" "}
-                  {organizer?.id ? (
+                  {organizerProfileId ? (
                     <Link
-                      href={`/organizers/${organizer.id}`}
-                      className="font-bold text-zinc-950 hover:underline"
+                      href={`/organizers/${organizerProfileId}`}
+                      className="font-bold text-zinc-950 hover:text-emerald-600 hover:underline transition"
                     >
                       {organizerName}
                     </Link>
@@ -395,14 +423,14 @@ export default async function FundraiserPage({
             </h2>
             <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex min-w-0 flex-1 items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-sm font-black text-zinc-700">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sm font-black text-zinc-700">
                   {initial(organizerName)}
                 </div>
                 <div className="min-w-0">
-                  {organizer?.id ? (
+                  {organizerProfileId ? (
                     <Link
-                      href={`/organizers/${organizer.id}`}
-                      className="block truncate text-sm font-black text-zinc-950 hover:underline"
+                      href={`/organizers/${organizerProfileId}`}
+                      className="block truncate text-sm font-black text-zinc-950 hover:text-emerald-600 hover:underline transition"
                     >
                       {organizerName}
                     </Link>
@@ -415,9 +443,9 @@ export default async function FundraiserPage({
                     <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-600">
                       Organiser
                     </span>
-                    {organizer?.id && (
+                    {organizerProfileId && (
                       <a
-                        href={"mailto:support@eventbrithe.com?subject=Message%20for%20" + encodeURIComponent(organizer?.name || "")}
+                        href={"mailto:support@eventbrithe.com?subject=Message%20for%20" + encodeURIComponent(organizerName)}
                         className="rounded-full border border-zinc-300 px-3 py-0.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50"
                       >
                         Message
@@ -443,13 +471,22 @@ export default async function FundraiserPage({
               </svg>
 
               <div className="flex min-w-0 flex-1 items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-sm font-black text-emerald-700">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sm font-black text-emerald-700">
                   {initial(beneficiaryName)}
                 </div>
                 <div className="min-w-0">
-                  <span className="block truncate text-sm font-black text-zinc-950">
-                    {beneficiaryName}
-                  </span>
+                  {beneficiaryOrganizer?.id ? (
+                    <Link
+                      href={`/organizers/${beneficiaryOrganizer.id}`}
+                      className="block truncate text-sm font-black text-zinc-950 hover:text-emerald-600 hover:underline transition"
+                    >
+                      {beneficiaryName}
+                    </Link>
+                  ) : (
+                    <span className="block truncate text-sm font-black text-zinc-950">
+                      {beneficiaryName}
+                    </span>
+                  )}
                   <span className="mt-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">
                     Beneficiary
                   </span>
@@ -473,22 +510,7 @@ export default async function FundraiserPage({
 
           {/* ── Words of Support — always visible ───────────────── */}
           <div className="border-t border-zinc-200 pt-8">
-            <h2 className="text-2xl font-bold text-zinc-950 break-words">
-              Words of Support{commentCount > 0 ? ` ${commentCount}` : ""}
-            </h2>
-            <p className="mt-1 text-sm text-zinc-500">
-              Leave encouragement or a message for this campaign.
-            </p>
-            <FundraiserCommentForm fundraiserId={fundraiser.id} />
-            {commentCount > 0 && (
-              <div className="mt-8">
-                <CommentsSection
-                  targetType="fundraiser"
-                  targetId={fundraiser.id}
-                  accent="green"
-                />
-              </div>
-            )}
+            <SupportMessages fundraiserId={fundraiser.id} />
           </div>
         </div>
 

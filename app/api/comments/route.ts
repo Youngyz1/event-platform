@@ -58,51 +58,90 @@ export async function GET(request: NextRequest) {
   }
 
   const comments = data || [];
+  const emails = comments
+    .map((c) => c.author_email)
+    .filter((e): e is string => Boolean(e));
 
-  // For fundraiser comments, optionally enrich with donor amount
-  if (includeDonorAmounts && targetType === "fundraiser" && comments.length > 0) {
-    const emails = comments
-      .map((c) => c.author_email)
-      .filter((e): e is string => Boolean(e));
+  const amountByEmail = new Map<string, number>();
+  const organizerIdByEmail = new Map<string, string>();
 
-    if (emails.length > 0) {
-      const { data: donations } = await supabaseAdmin
-        .from("donations")
-        .select("donor_email, amount")
-        .eq("fundraiser_id", targetId)
-        .in("status", ["completed", "succeeded"])
-        .in("donor_email", emails);
+  if (emails.length > 0) {
+    const promises = [];
 
-      // Build a map: email → amount (highest donation if multiple)
-      const amountByEmail = new Map<string, number>();
-      for (const d of donations || []) {
-        const key = (d.donor_email || "").toLowerCase();
-        if (!amountByEmail.has(key) || (d.amount ?? 0) > (amountByEmail.get(key) ?? 0)) {
-          amountByEmail.set(key, Number(d.amount ?? 0));
-        }
-      }
-
-      const enriched = comments.map((c) => ({
-        id: c.id,
-        author_name: c.author_name,
-        body: c.body,
-        created_at: c.created_at,
-        donor_amount: c.author_email
-          ? (amountByEmail.get(c.author_email.toLowerCase()) ?? null)
-          : null,
-      }));
-
-      return NextResponse.json({ comments: enriched });
+    // 1. Fetch donation amounts if requested
+    if (includeDonorAmounts && targetType === "fundraiser") {
+      promises.push(
+        supabaseAdmin
+          .from("donations")
+          .select("donor_email, amount")
+          .eq("fundraiser_id", targetId)
+          .in("status", ["completed", "succeeded"])
+          .in("donor_email", emails)
+          .then(({ data: donations }) => {
+            for (const d of donations || []) {
+              const key = (d.donor_email || "").toLowerCase();
+              if (!amountByEmail.has(key) || Number(d.amount ?? 0) > (amountByEmail.get(key) ?? 0)) {
+                amountByEmail.set(key, Number(d.amount ?? 0));
+              }
+            }
+          })
+      );
     }
+
+    // 2. Fetch organizer profile mapping
+    promises.push(
+      (async () => {
+        const { data: authUsers } = await supabaseAdmin
+          .from("auth.users")
+          .select("id, email")
+          .in("email", emails);
+
+        const userIdByEmail = new Map<string, string>();
+        for (const u of authUsers || []) {
+          if (u.email && u.id) {
+            userIdByEmail.set(u.email.toLowerCase(), u.id);
+          }
+        }
+
+        const userIds = Array.from(userIdByEmail.values());
+        if (userIds.length > 0) {
+          const { data: organizers } = await supabaseAdmin
+            .from("organizers")
+            .select("id, user_id")
+            .in("user_id", userIds)
+            .eq("visibility", "public")
+            .not("status", "in", "(rejected,suspended)");
+
+          const organizerIdByUserId = new Map<string, string>();
+          for (const o of organizers || []) {
+            organizerIdByUserId.set(o.user_id, o.id);
+          }
+
+          for (const [email, userId] of userIdByEmail.entries()) {
+            const orgId = organizerIdByUserId.get(userId);
+            if (orgId) {
+              organizerIdByEmail.set(email, orgId);
+            }
+          }
+        }
+      })()
+    );
+
+    await Promise.all(promises);
   }
 
-  // Strip author_email from public response
-  const safeComments = comments.map((comment) => ({
-    id: comment.id,
-    author_name: comment.author_name,
-    body: comment.body,
-    created_at: comment.created_at,
-  }));
+  const safeComments = comments.map((comment) => {
+    const emailKey = comment.author_email?.toLowerCase();
+    return {
+      id: comment.id,
+      author_name: comment.author_name,
+      body: comment.body,
+      created_at: comment.created_at,
+      donor_amount: emailKey ? (amountByEmail.get(emailKey) ?? null) : null,
+      author_organizer_id: emailKey ? (organizerIdByEmail.get(emailKey) ?? null) : null,
+    };
+  });
+
   return NextResponse.json({ comments: safeComments });
 }
 

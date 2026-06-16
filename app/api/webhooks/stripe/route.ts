@@ -155,6 +155,19 @@ async function handlePaymentIntentSucceeded(
     if (insertError) {
       console.error("[webhook] donations insert error:", insertError.message);
     } else {
+      if (meta.message && meta.message.trim()) {
+        const { error: commentError } = await supabaseAdmin.from("comments").insert({
+          target_type: "fundraiser",
+          target_id: meta.fundraiser_id,
+          author_name: meta.donor_name || "Anonymous",
+          author_email: meta.donor_email || null,
+          body: meta.message.trim(),
+          status: "approved",
+        });
+        if (commentError) {
+          console.error("[webhook] comment insert error:", commentError.message);
+        }
+      }
       const { recalculateFundraiserRaised } = await import("@/lib/donations");
       await recalculateFundraiserRaised(meta.fundraiser_id);
     }

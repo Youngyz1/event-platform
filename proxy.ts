@@ -1,5 +1,5 @@
 /**
- * middleware.ts
+ * proxy.ts
  * Route protection using Supabase SSR session checking.
  *
  * Rules:
@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Only protect these two route prefixes.
@@ -47,7 +47,7 @@ export async function middleware(req: NextRequest) {
     }
   );
 
-  // getUser() is safe in middleware — it validates the JWT without a DB round-trip.
+  // getUser() is safe in middleware/proxy — it validates the JWT without a DB round-trip.
   const {
     data: { user },
   } = await supabase.auth.getUser();
