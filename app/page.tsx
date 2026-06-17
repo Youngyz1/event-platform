@@ -265,7 +265,6 @@ export default async function HomePage() {
           <div>
             <p className="text-[9px] font-black uppercase tracking-wide text-orange-600 sm:text-sm">Events</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950 sm:mt-2 sm:text-4xl">Discover events</h2>
-            <p className="mt-1 text-[10px] text-zinc-600 sm:mt-2 sm:text-base">Buy tickets, save events, and explore local organizers.</p>
           </div>
           <Link href="/events" className="text-[9px] font-black text-orange-600 hover:text-orange-700 sm:text-sm">
             View all events →

@@ -193,7 +193,7 @@ export default async function EventPage({
                       primaryOrganizerName.charAt(0).toUpperCase()
                     )}
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-black uppercase tracking-wide text-zinc-500">
                       {event.source_organizer_name ? "Organizer" : "Platform organizer"}
                     </p>
@@ -202,19 +202,19 @@ export default async function EventPage({
                         href={primaryOrganizerUrl}
                         target={primaryOrganizerUrl.startsWith("http") ? "_blank" : undefined}
                         rel={primaryOrganizerUrl.startsWith("http") ? "noreferrer" : undefined}
-                        className="inline-flex items-center gap-2 text-xl font-black text-zinc-950 hover:text-orange-600"
+                        className="flex flex-wrap items-center gap-2 break-words text-xl font-black text-zinc-950 hover:text-orange-600"
                       >
-                        {primaryOrganizerName}
+                        <span className="break-words">{primaryOrganizerName}</span>
                         <VerifiedBadge verified={organizer?.status === 'verified'} />
                       </a>
                     ) : (
-                      <h3 className="inline-flex items-center gap-2 text-xl font-black text-zinc-950">
-                        {primaryOrganizerName}
+                      <h3 className="flex flex-wrap items-center gap-2 text-xl font-black text-zinc-950">
+                        <span className="break-words">{primaryOrganizerName}</span>
                         <VerifiedBadge verified={organizer?.status === 'verified'} />
                       </h3>
                     )}
                     {primaryOrganizerDescription && (
-                      <p className="mt-2 text-zinc-600">{primaryOrganizerDescription}</p>
+                      <p className="mt-2 break-words text-zinc-600">{primaryOrganizerDescription}</p>
                     )}
                     {event.source_organizer_name && organizer && (
                       <p className="mt-3 text-sm font-semibold text-zinc-500">

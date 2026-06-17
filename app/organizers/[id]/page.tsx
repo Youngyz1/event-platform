@@ -241,12 +241,12 @@ export default function OrganizerProfilePage() {
                 <p className="mb-3 text-sm font-black uppercase tracking-wide text-orange-600">
                   Organizer
                 </p>
-                <h1 className="inline-flex flex-wrap items-center gap-3 text-4xl font-black leading-tight text-zinc-950 md:text-5xl">
-                  {organizer.name}
+                <h1 className="flex flex-wrap items-center gap-3 text-4xl font-black leading-tight text-zinc-950 md:text-5xl">
+                  <span className="break-words">{organizer.name}</span>
                   <VerifiedBadge verified={organizer.status === 'verified'} />
                 </h1>
 
-                <div className="mt-8 grid max-w-2xl grid-cols-2 gap-y-6 sm:grid-cols-4">
+                <div className="mt-8 grid grid-cols-2 gap-y-6 sm:grid-cols-4">
                   {[
                     { label: "followers", value: formatCount(followerCount) },
                     { label: "hosting", value: events.length > 0 ? "active" : "new" },
