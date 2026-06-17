@@ -96,17 +96,46 @@ export default async function EventPage({
       : Promise.resolve({ count: 0 }),
   ]);
 
-  // More events from same organizer
-  const { data: moreEvents } = organizer?.id
-    ? await supabase
-        .from("events")
-        .select("id, title, slug, banner, event_date, city, venue")
-        .eq("organizer_id", organizer.id)
-        .neq("id", event.id)
-        .eq("visibility", "public")
-        .order("event_date", { ascending: true })
-        .limit(4)
-    : { data: [] };
+  // More events from same organizer, falling back to any other public
+  // events happening within a 2-week window of this event's date.
+  let moreEvents: any[] = [];
+  let moreEventsSource: "organizer" | "related" | null = null;
+
+  if (organizer?.id) {
+    const { data } = await supabase
+      .from("events")
+      .select("id, title, slug, banner, event_date, city, venue")
+      .eq("organizer_id", organizer.id)
+      .neq("id", event.id)
+      .eq("visibility", "public")
+      .order("event_date", { ascending: true })
+      .limit(4);
+    moreEvents = data || [];
+    if (moreEvents.length > 0) moreEventsSource = "organizer";
+  }
+
+  if (moreEvents.length === 0 && event.event_date) {
+    const eventDate = new Date(event.event_date);
+    const windowStart = new Date(eventDate);
+    windowStart.setDate(windowStart.getDate() - 14);
+    const windowEnd = new Date(eventDate);
+    windowEnd.setDate(windowEnd.getDate() + 14);
+
+    const { data: related } = await supabase
+      .from("events")
+      .select("id, title, slug, banner, event_date, city, venue")
+      .neq("id", event.id)
+      .eq("visibility", "public")
+      .gte("event_date", windowStart.toISOString())
+      .lte("event_date", windowEnd.toISOString())
+      .order("event_date", { ascending: true })
+      .limit(4);
+
+    if (related && related.length > 0) {
+      moreEvents = related;
+      moreEventsSource = "related";
+    }
+  }
 
   const lowestPrice =
     tickets && tickets.length > 0
@@ -208,14 +237,14 @@ export default async function EventPage({
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* ── Title + share/save row ────────────────────────── */}
-        <div className="flex items-start justify-between gap-4 pt-6">
+        <div className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
             {event.category && (
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-orange-600">
                 {event.category}
               </p>
             )}
-            <h1 className="text-2xl font-black leading-tight sm:text-3xl lg:text-4xl">
+            <h1 className="text-xl font-black leading-tight sm:text-2xl lg:text-3xl">
               {event.title}
             </h1>
             {primaryOrganizerName && (
@@ -321,14 +350,14 @@ export default async function EventPage({
           <div className="space-y-8 lg:col-span-2">
             {/* About */}
             <section>
-              <h2 className="text-2xl font-black mb-4">About this event</h2>
+              <h2 className="text-xl font-black mb-4">About this event</h2>
               <AboutSection paragraphs={descriptionParagraphs} />
             </section>
 
             {/* Good to Know + Refund Policy */}
             {(event.highlights || event.refund_policy) && (
               <section>
-                <h2 className="text-2xl font-black mb-4">Good to know</h2>
+                <h2 className="text-xl font-black mb-4">Good to know</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {event.highlights && (
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
@@ -352,7 +381,7 @@ export default async function EventPage({
 
             {/* Collapsible FAQ */}
             <section>
-              <h2 className="text-2xl font-black mb-4">
+              <h2 className="text-xl font-black mb-4">
                 Frequently asked questions
               </h2>
               <FaqSection organizerName={primaryOrganizerName} />
@@ -361,10 +390,10 @@ export default async function EventPage({
             {/* Organizer */}
             {primaryOrganizerName && (
               <section>
-                <h2 className="text-2xl font-black mb-4">Organised by</h2>
+                <h2 className="text-xl font-black mb-4">Organised by</h2>
                 <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 font-black text-orange-700 text-lg">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 font-black text-orange-700 text-base">
                       {primaryOrganizerPhoto ? (
                         <img
                           src={primaryOrganizerPhoto}
@@ -397,7 +426,7 @@ export default async function EventPage({
                                   ? "noreferrer"
                                   : undefined
                               }
-                              className="inline-flex items-center gap-2 text-lg font-black text-zinc-950 hover:text-orange-600"
+                              className="inline-flex flex-wrap items-center gap-2 break-words text-base font-black text-zinc-950 hover:text-orange-600"
                             >
                               {primaryOrganizerName}
                               <VerifiedBadge
@@ -405,7 +434,7 @@ export default async function EventPage({
                               />
                             </a>
                           ) : (
-                            <span className="inline-flex items-center gap-2 text-lg font-black">
+                            <span className="inline-flex flex-wrap items-center gap-2 break-words text-base font-black">
                               {primaryOrganizerName}
                               <VerifiedBadge
                                 verified={organizer?.status === "verified"}
@@ -467,7 +496,7 @@ export default async function EventPage({
             {/* Venue Map */}
             {(event.venue || event.city || event.address) && (
               <section>
-                <h2 className="text-2xl font-black mb-4">Venue location</h2>
+                <h2 className="text-xl font-black mb-4">Venue location</h2>
                 <div className="rounded-2xl border border-zinc-200 overflow-hidden">
                   <div className="px-5 pt-5 pb-3">
                     <p className="font-bold text-zinc-900">
@@ -572,12 +601,15 @@ export default async function EventPage({
             {/* More events from organizer */}
             {moreEvents && moreEvents.length > 0 && (
               <section>
-                <h2 className="text-2xl font-black mb-1">
-                  More events from{" "}
-                  {primaryOrganizerName || "this organizer"}
+                <h2 className="text-xl font-black mb-1 break-words">
+                  {moreEventsSource === "organizer"
+                    ? <>More events from{" "}{primaryOrganizerName || "this organizer"}</>
+                    : "Events you might also like"}
                 </h2>
                 <p className="text-sm text-zinc-500 mb-5">
-                  Discover more events you might love.
+                  {moreEventsSource === "organizer"
+                    ? "Discover more events you might love."
+                    : "Other events happening around the same time."}
                 </p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   {moreEvents.map((e) => (
@@ -637,7 +669,7 @@ export default async function EventPage({
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-200 bg-white/95 backdrop-blur px-4 py-3 lg:hidden">
         <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
           <div>
-            <p className="text-lg font-black">{ticketLabel}</p>
+            <p className="text-base font-black">{ticketLabel}</p>
             <p className="text-xs text-zinc-500">{formattedDate}</p>
           </div>
           <a

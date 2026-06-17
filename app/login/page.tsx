@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
@@ -10,8 +10,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
-  const [resetSuccess, setResetSuccess] = useState(false);
-  const [suspendedNotice, setSuspendedNotice] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
 
@@ -20,15 +18,13 @@ export default function LoginPage() {
     password: "",
   });
 
+  const searchParams = useSearchParams();
+  const resetSuccess = searchParams.get("reset") === "success";
+  const suspendedNotice = searchParams.get("suspended") === "1";
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    setResetSuccess(params.get("reset") === "success");
-    setSuspendedNotice(params.get("suspended") === "1");
-  }, []);
 
   async function handleGoogleLogin() {
     setGoogleLoading(true);
