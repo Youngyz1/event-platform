@@ -30,7 +30,7 @@ export default async function DashboardReportsPage() {
   const ctx = await getDashboardContext();
   if (!ctx) redirect("/login");
 
-  const { organizerId } = ctx;
+  const { organizerIds } = ctx;
 
   // Dates
   const since = new Date();
@@ -38,41 +38,47 @@ export default async function DashboardReportsPage() {
   const sinceISO  = since.toISOString();
   const dateRange = buildDateRange(30);
 
-  if (!organizerId) {
+  if (organizerIds.length === 0) {
     return <EmptyReports />;
   }
 
-  // ── All four data sources fetched in parallel ────────────────────────────────
-  const [eventsResult, fundraisersResult, ordersResult, donationRowsResult] =
-    await Promise.all([
-      supabaseAdmin
-        .from("events")
-        .select("id, title")
-        .eq("organizer_id", organizerId),
+  const [eventsResult, fundraisersResult] = await Promise.all([
+    supabaseAdmin
+      .from("events")
+      .select("id, title")
+      .in("organizer_id", organizerIds),
 
-      supabaseAdmin
-        .from("fundraisers")
-        .select("id")
-        .eq("organizer_id", organizerId),
-
-      // ticket_orders filtered via foreign-key join — no event IDs needed first
-      supabaseAdmin
-        .from("ticket_orders")
-        .select("event_id, quantity, total_amount, created_at")
-        .eq("status", "valid")
-        .filter("events.organizer_id", "eq", organizerId)
-        .gte("created_at", sinceISO),
-
-      // donations filtered via foreign-key join — no fundraiser IDs needed first
-      supabaseAdmin
-        .from("donations")
-        .select("amount, created_at")
-        .eq("status", "succeeded")
-        .filter("fundraisers.organizer_id", "eq", organizerId)
-        .gte("created_at", sinceISO),
-    ]);
+    supabaseAdmin
+      .from("fundraisers")
+      .select("id")
+      .in("organizer_id", organizerIds),
+  ]);
 
   const events       = eventsResult.data       ?? [];
+  const fundraisers  = fundraisersResult.data  ?? [];
+  const eventIds     = events.map((event) => event.id);
+  const fundraiserIds = fundraisers.map((fundraiser) => fundraiser.id);
+
+  const [ordersResult, donationRowsResult] = await Promise.all([
+    eventIds.length > 0
+      ? supabaseAdmin
+          .from("ticket_orders")
+          .select("event_id, quantity, total_amount, created_at")
+          .eq("status", "valid")
+          .in("event_id", eventIds)
+          .gte("created_at", sinceISO)
+      : Promise.resolve({ data: [] }),
+
+    fundraiserIds.length > 0
+      ? supabaseAdmin
+          .from("donations")
+          .select("amount, created_at")
+          .eq("status", "succeeded")
+          .in("fundraiser_id", fundraiserIds)
+          .gte("created_at", sinceISO)
+      : Promise.resolve({ data: [] }),
+  ]);
+
   const orders       = ordersResult.data        ?? [];
   const donationRows = donationRowsResult.data  ?? [];
   const eventMap     = Object.fromEntries(events.map((e) => [e.id, e.title as string]));
@@ -114,23 +120,23 @@ export default async function DashboardReportsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-orange-600">Dashboard</p>
-        <h1 className="mt-1 text-3xl font-black tracking-tight">Reports</h1>
-        <p className="mt-1 text-sm font-medium text-zinc-500">Last 30 days — all data scoped to your organizer account.</p>
+    <div className="space-y-4 sm:space-y-6">
+      <header className="rounded-xl border border-zinc-200/80 bg-white px-4 py-3 shadow-sm sm:rounded-2xl sm:px-6 sm:py-4">
+        <p className="text-[10px] font-black uppercase tracking-wide text-orange-600 sm:text-xs">Dashboard</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Reports</h1>
+        <p className="mt-1 text-xs font-medium text-zinc-500 sm:text-sm">Last 30 days — all data scoped to your organizer account.</p>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {[
           { label: "Tickets Sold",   value: String(totalTickets), tone: "orange"  },
           { label: "Ticket Revenue", value: money(totalRevenue),  tone: "orange"  },
           { label: "Donations",      value: money(totalDonated),  tone: "emerald" },
         ].map(({ label, value, tone }) => (
-          <div key={label} className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm">
-            <p className={`text-xs font-black uppercase tracking-wide text-${tone}-600`}>{label}</p>
-            <p className="mt-2 text-3xl font-black tracking-tight text-zinc-950">{value}</p>
-            <p className="mt-1 text-xs font-semibold text-zinc-500">Last 30 days</p>
+          <div key={label} className="rounded-xl border border-zinc-200/80 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-5">
+            <p className={`text-[8px] font-black uppercase tracking-wide text-${tone}-600 sm:text-xs`}>{label}</p>
+            <p className="mt-1 text-xl font-black tracking-tight text-zinc-950 sm:mt-2 sm:text-3xl">{value}</p>
+            <p className="mt-1 text-[9px] font-semibold text-zinc-500 sm:text-xs">Last 30 days</p>
           </div>
         ))}
       </div>
@@ -142,13 +148,12 @@ export default async function DashboardReportsPage() {
 
 function EmptyReports() {
   return (
-    <div className="space-y-6">
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-orange-600">Dashboard</p>
-        <h1 className="mt-1 text-3xl font-black tracking-tight">Reports</h1>
-        <p className="mt-1 text-sm font-medium text-zinc-500">Create an organizer profile first to see your reports.</p>
+    <div className="space-y-4 sm:space-y-6">
+      <header className="rounded-xl border border-zinc-200/80 bg-white px-4 py-3 shadow-sm sm:rounded-2xl sm:px-6 sm:py-4">
+        <p className="text-[10px] font-black uppercase tracking-wide text-orange-600 sm:text-xs">Dashboard</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Reports</h1>
+        <p className="mt-1 text-xs font-medium text-zinc-500 sm:text-sm">Create an organizer profile first to see your reports.</p>
       </header>
     </div>
   );
 }
-

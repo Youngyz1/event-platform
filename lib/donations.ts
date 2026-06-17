@@ -54,7 +54,9 @@ export async function recalculateFundraiserRaised(fundraiserId: string) {
 
   const total = (data || []).reduce((sum, donation) => {
     const status = donation.status ?? "succeeded";
-    return status === "succeeded" ? sum + Number(donation.amount || 0) : sum;
+    return status === "completed" || status === "succeeded"
+      ? sum + Number(donation.amount || 0)
+      : sum;
   }, 0);
 
   const { error: updateError } = await supabaseAdmin
@@ -89,15 +91,26 @@ export async function recordDonationFromSession(
     fundraiser_id: fundraiserId,
     donor_name: meta.donor_name || "Anonymous",
     donor_email: meta.donor_email || session.customer_email || null,
+    message: meta.message || null,
     amount,
     currency: session.currency?.toUpperCase() || "USD",
-    status: "succeeded",
+    status: "completed",
     payment_intent_id: paymentIntentId,
   };
 
   const { error } = await supabaseAdmin.from("donations").insert(fullPayload);
 
   if (!error) {
+    if (meta.message && meta.message.trim()) {
+      await supabaseAdmin.from("comments").insert({
+        target_type: "fundraiser",
+        target_id: fundraiserId,
+        author_name: meta.donor_name || "Anonymous",
+        author_email: meta.donor_email || session.customer_email || null,
+        body: meta.message.trim(),
+        status: "approved",
+      });
+    }
     await recalculateFundraiserRaised(fundraiserId);
     return { inserted: true, fundraiserId, reason: "inserted" };
   }
@@ -108,12 +121,23 @@ export async function recordDonationFromSession(
     fundraiser_id: fullPayload.fundraiser_id,
     donor_name: fullPayload.donor_name,
     donor_email: fullPayload.donor_email,
+    message: fullPayload.message,
     amount: fullPayload.amount,
     status: fullPayload.status,
     payment_intent_id: fullPayload.payment_intent_id,
   });
 
   if (!fallbackError) {
+    if (meta.message && meta.message.trim()) {
+      await supabaseAdmin.from("comments").insert({
+        target_type: "fundraiser",
+        target_id: fundraiserId,
+        author_name: meta.donor_name || "Anonymous",
+        author_email: meta.donor_email || session.customer_email || null,
+        body: meta.message.trim(),
+        status: "approved",
+      });
+    }
     await recalculateFundraiserRaised(fundraiserId);
     return { inserted: true, fundraiserId, reason: "inserted_without_currency" };
   }

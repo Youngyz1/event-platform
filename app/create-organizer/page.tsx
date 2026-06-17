@@ -2,11 +2,8 @@
 
 /**
  * app/create-organizer/page.tsx
- * Create OR edit organizer profile.
- * On load: checks if the user already has an organizer profile.
- *   - If YES: pre-populates the form, submit does an UPDATE.
- *   - If NO:  blank form, submit does an INSERT.
- * Button text switches between "Create Organizer Profile" and "Update Profile".
+ * Creates a new organizer profile owned by the current user.
+ * Existing organizer profiles are edited from /organizers/[id]/edit.
  */
 
 import { useState, useEffect } from "react";
@@ -19,6 +16,7 @@ type FormState = {
   facebook: string;
   twitter:  string;
   website:  string;
+  visibility: "public" | "private";
 };
 
 export default function CreateOrganizerPage() {
@@ -27,13 +25,10 @@ export default function CreateOrganizerPage() {
   const [checking,      setChecking]      = useState(true);
   const [loading,       setLoading]       = useState(false);
   const [error,         setError]         = useState("");
-  const [existingId,    setExistingId]    = useState<string | null>(null); // null = new profile
   const [photoFile,     setPhotoFile]     = useState<File | null>(null);
   const [photoPreview,  setPhotoPreview]  = useState<string | null>(null);
   const [bannerFile,    setBannerFile]    = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(null);
-  const [existingPhoto,  setExistingPhoto]  = useState<string | null>(null);
-  const [existingBanner, setExistingBanner] = useState<string | null>(null);
 
   const [form, setForm] = useState<FormState>({
     name:     "",
@@ -41,9 +36,10 @@ export default function CreateOrganizerPage() {
     facebook: "",
     twitter:  "",
     website:  "",
+    visibility: "public",
   });
 
-  // On mount: get session, then check for existing organizer profile
+  // On mount: require an authenticated user.
   useEffect(() => {
     async function load() {
       const { data: { session } } = await supabase.auth.getSession();
@@ -51,29 +47,15 @@ export default function CreateOrganizerPage() {
         router.push("/login");
         return;
       }
-
-      const { data: org } = await supabase
-        .from("organizers")
-        .select("id, name, bio, facebook, twitter, website, photo, banner")
-        .eq("user_id", session.user.id)
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", session.user.id)
         .maybeSingle();
-
-      if (org) {
-        setExistingId(org.id);
-        setForm({
-          name:     org.name     ?? "",
-          bio:      org.bio      ?? "",
-          facebook: org.facebook ?? "",
-          twitter:  org.twitter  ?? "",
-          website:  org.website  ?? "",
-        });
-        setExistingPhoto(org.photo   ?? null);
-        setExistingBanner(org.banner ?? null);
-        // Show existing images as previews
-        if (org.photo)  setPhotoPreview(org.photo);
-        if (org.banner) setBannerPreview(org.banner);
+      if (profile?.status === "suspended") {
+        router.push("/login?suspended=1");
+        return;
       }
-
       setChecking(false);
     }
     load();
@@ -83,6 +65,10 @@ export default function CreateOrganizerPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  }
+
+  function setVisibility(visibility: FormState["visibility"]) {
+    setForm((prev) => ({ ...prev, visibility }));
   }
 
   function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
@@ -115,10 +101,18 @@ export default function CreateOrganizerPage() {
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { router.push("/login"); return; }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    if (profile?.status === "suspended") {
+      router.push("/login?suspended=1");
+      return;
+    }
 
-    // Upload new images only if the user chose new files
-    let photo:  string | null = existingPhoto;
-    let banner: string | null = existingBanner;
+    let photo:  string | null = null;
+    let banner: string | null = null;
 
     try {
       if (photoFile)  photo  = await uploadFile(photoFile,  "organizer-images",  "photo");
@@ -135,39 +129,24 @@ export default function CreateOrganizerPage() {
       facebook: form.facebook,
       twitter:  form.twitter,
       website:  form.website,
+      visibility: form.visibility,
       photo,
       banner,
       user_id:  session.user.id,
     };
 
-    if (existingId) {
-      // UPDATE existing profile
-      const { error: updateErr } = await supabase
-        .from("organizers")
-        .update(payload)
-        .eq("id", existingId);
+    const { data: newOrg, error: insertErr } = await supabase
+      .from("organizers")
+      .insert(payload)
+      .select()
+      .single();
 
-      if (updateErr) {
-        setError(updateErr.message);
-        setLoading(false);
-        return;
-      }
-      router.push(`/organizers/${existingId}`);
-    } else {
-      // INSERT new profile
-      const { data: newOrg, error: insertErr } = await supabase
-        .from("organizers")
-        .insert(payload)
-        .select()
-        .single();
-
-      if (insertErr) {
-        setError(insertErr.message);
-        setLoading(false);
-        return;
-      }
-      router.push(`/organizers/${newOrg.id}`);
+    if (insertErr) {
+      setError(insertErr.message);
+      setLoading(false);
+      return;
     }
+    router.push(`/organizers/${newOrg.id}`);
   }
 
   if (checking) {
@@ -178,8 +157,6 @@ export default function CreateOrganizerPage() {
     );
   }
 
-  const isEditing = Boolean(existingId);
-
   return (
     <main className="min-h-screen bg-zinc-50">
       <section className="mx-auto max-w-4xl px-6 py-20">
@@ -187,15 +164,13 @@ export default function CreateOrganizerPage() {
         {/* Header */}
         <div className="mb-12">
           <p className="mb-3 font-semibold text-orange-500">
-            {isEditing ? "Edit Profile" : "Organizer Setup"}
+            Organizer Setup
           </p>
           <h1 className="text-5xl font-black">
-            {isEditing ? "Update Organizer Profile" : "Create Organizer Profile"}
+            Create Organizer Profile
           </h1>
           <p className="mt-4 text-lg text-zinc-600">
-            {isEditing
-              ? "Update your public organizer page."
-              : "Set up your public organizer page."}
+            Set up the public organizer profile people will see on your events and fundraisers.
           </p>
         </div>
 
@@ -259,10 +234,10 @@ export default function CreateOrganizerPage() {
                   id="photo-upload"
                 />
                 <label
-                  htmlFor="photo-upload"
-                  className="cursor-pointer rounded-xl bg-zinc-100 px-5 py-3 font-semibold transition hover:bg-zinc-200"
-                >
-                  {isEditing ? "Change Photo" : "Upload Photo"}
+                htmlFor="photo-upload"
+                className="cursor-pointer rounded-xl bg-zinc-100 px-5 py-3 font-semibold transition hover:bg-zinc-200"
+              >
+                  Upload Photo
                 </label>
                 <p className="mt-2 text-sm text-zinc-400">JPG, PNG recommended</p>
               </div>
@@ -271,7 +246,7 @@ export default function CreateOrganizerPage() {
 
           {/* NAME */}
           <div>
-            <label className="mb-3 block font-semibold">Organizer Name</label>
+            <label className="mb-3 block font-semibold">Company / Organization</label>
             <input
               name="name"
               value={form.name}
@@ -285,7 +260,7 @@ export default function CreateOrganizerPage() {
 
           {/* BIO */}
           <div>
-            <label className="mb-3 block font-semibold">Bio</label>
+            <label className="mb-3 block font-semibold">Organizer Bio</label>
             <textarea
               name="bio"
               value={form.bio}
@@ -296,9 +271,37 @@ export default function CreateOrganizerPage() {
             />
           </div>
 
+          {/* VISIBILITY */}
+          <fieldset className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <legend className="text-lg font-black text-zinc-950">Profile Visibility</legend>
+            <p className="mt-1 text-sm font-semibold text-zinc-500">
+              Choose whether this organizer profile should be public or private.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {[
+                ["public", "Public", "People can browse this organizer and follow updates."],
+                ["private", "Private", "Only you can view and edit this organizer profile."],
+              ].map(([value, label, detail]) => (
+                <label key={value} className="flex cursor-pointer gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                  <input
+                    type="radio"
+                    name="visibility"
+                    checked={form.visibility === value}
+                    onChange={() => setVisibility(value as FormState["visibility"])}
+                    className="mt-1 accent-orange-600"
+                  />
+                  <span>
+                    <span className="block text-sm font-black text-zinc-950">{label}</span>
+                    <span className="mt-1 block text-xs font-semibold leading-5 text-zinc-500">{detail}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
           {/* SOCIAL */}
           <div className="space-y-4">
-            <label className="block font-semibold">Social Links</label>
+            <label className="block font-semibold">Website & Social Media Links</label>
             <input
               name="facebook"
               value={form.facebook}
@@ -332,18 +335,9 @@ export default function CreateOrganizerPage() {
               className="flex-1 rounded-2xl bg-orange-500 py-5 text-lg font-bold text-white transition hover:bg-orange-600 disabled:bg-orange-300"
             >
               {loading
-                ? isEditing ? "Updating…" : "Creating…"
-                : isEditing ? "Update Profile" : "Create Organizer Profile"}
+                ? "Creating…"
+                : "Create Organizer Profile"}
             </button>
-
-            {isEditing && (
-              <a
-                href={`/organizers/${existingId}`}
-                className="flex items-center justify-center rounded-2xl border border-zinc-200 bg-white px-8 text-sm font-black text-zinc-700 hover:bg-zinc-50"
-              >
-                Cancel
-              </a>
-            )}
           </div>
 
         </form>

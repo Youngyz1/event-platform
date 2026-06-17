@@ -14,7 +14,7 @@ export default function BrandMark({
       <svg
         aria-hidden="true"
         viewBox="0 0 32 32"
-        className="h-5 w-5 shrink-0 sm:h-8 sm:w-8"
+        className="h-7 w-7 shrink-0 sm:h-8 sm:w-8"
         fill="none"
       >
         <path

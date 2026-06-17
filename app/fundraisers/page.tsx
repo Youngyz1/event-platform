@@ -1,6 +1,5 @@
 
 import FundraiserCard from "@/components/FundraiserCard";
-import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
 import type { Metadata } from "next";
 
@@ -20,11 +19,11 @@ export default async function FundraisersPage() {
     <main className="min-h-screen bg-zinc-50 text-zinc-950">
        
 
-      <section className="mx-auto max-w-7xl px-6 py-14">
-        <div className="mb-10">
-          <p className="text-sm font-black uppercase tracking-wide text-green-600">Fundraisers</p>
-          <h1 className="mt-2 text-5xl font-black">Active Fundraisers</h1>
-          <p className="mt-4 max-w-2xl text-lg text-zinc-600">
+      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-14">
+        <div className="mb-8 sm:mb-10">
+          <p className="text-xs font-black uppercase tracking-wide text-green-600 sm:text-sm">Fundraisers</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-950 sm:text-5xl">Active Fundraisers</h1>
+          <p className="mt-3 max-w-2xl text-base text-zinc-600 sm:mt-4 sm:text-lg">
             Support community campaigns and local causes.
           </p>
         </div>
@@ -50,7 +49,6 @@ export default async function FundraisersPage() {
         )}
       </section>
 
-      <Footer />
     </main>
   );
 }

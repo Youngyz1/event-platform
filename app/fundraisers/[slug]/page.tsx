@@ -1,15 +1,209 @@
-import { supabase } from "@/lib/supabase";
-import { notFound } from "next/navigation";
-import DonateButton from "./DonateButton";
-import CommentsSection from "@/components/CommentsSection";
-import { recordDonationFromStripeSessionId } from "@/lib/donations";
-import VerifiedBadge from "@/components/ui/VerifiedBadge";
+export const dynamic = "force-dynamic";
 
-function paragraphs(value: string | null | undefined) {
-  return (value || "")
-    .split(/\n{2,}/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+import DonationProtectedBadge from "@/components/DonationProtectedBadge";
+import DonorNameWithPopup from "@/components/DonorNameWithPopup";
+import SupportMessages from "@/components/SupportMessages";
+import FundraiserMediaSlider, {
+  type FundraiserMediaSlide,
+} from "@/components/FundraiserMediaSlider";
+import FundraiserShare from "@/components/FundraiserShare";
+import FundraiserStory from "@/components/FundraiserStory";
+import { supabase } from "@/lib/supabase";
+import { recordDonationFromStripeSessionId } from "@/lib/donations";
+import { createClient } from "@supabase/supabase-js";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { Flag } from "lucide-react";
+import FundraiserFloatingActions, { ShareFundraiserButton } from "./FundraiserActions";
+
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1600&auto=format&fit=crop";
+
+type DonationRow = {
+  id: string;
+  donor_name: string | null;
+  donor_email: string | null;
+  amount: number | string | null;
+  created_at: string;
+};
+
+type UpdateRow = {
+  id: string;
+  organizer_id: string | null;
+  title: string | null;
+  content: string;
+  created_at: string;
+};
+
+type MediaRow = {
+  id: string | null;
+  url: string;
+  type: string | null;
+};
+
+type OrganizerRow = {
+  id: string;
+  name: string | null;
+};
+
+function money(value: number) {
+  return value.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
+}
+
+function initial(value: string) {
+  return (value.trim() || "A").charAt(0).toUpperCase();
+}
+
+function dateLabel(value: string) {
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function timeAgo(value: string) {
+  const days = Math.floor(
+    (Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24)
+  );
+  if (days < 1) return "today";
+  if (days === 1) return "yesterday";
+  return `${days} days ago`;
+}
+
+function createdAgo(value: string) {
+  const secs = Math.floor((Date.now() - new Date(value).getTime()) / 1000);
+  if (secs < 60) return "just now";
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins} minute${mins !== 1 ? "s" : ""} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours !== 1 ? "s" : ""} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days !== 1 ? "s" : ""} ago`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} month${months !== 1 ? "s" : ""} ago`;
+  const years = Math.floor(months / 12);
+  return `${years} year${years !== 1 ? "s" : ""} ago`;
+}
+
+async function getDonorOrganizerMap(
+  donations: DonationRow[]
+): Promise<Map<string, string>> {
+  const emails = Array.from(
+    new Set(
+      donations
+        .map((d) => d.donor_email?.trim().toLowerCase())
+        .filter((e): e is string => Boolean(e))
+    )
+  );
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (emails.length === 0 || !url || !serviceKey) {
+    return new Map<string, string>();
+  }
+
+  try {
+    const supabaseAdmin = createClient(url, serviceKey, {
+      auth: { persistSession: false },
+    });
+
+    const userIdByEmail = new Map<string, string>();
+
+    const { data: authUsers, error: authUsersError } = await supabaseAdmin
+      .from("auth.users")
+      .select("id,email")
+      .in("email", emails);
+
+    if (authUsersError || !authUsers) return new Map<string, string>();
+
+    for (const user of authUsers) {
+      if (user.email && user.id) {
+        userIdByEmail.set(user.email.trim().toLowerCase(), user.id);
+      }
+    }
+
+    const userIds = Array.from(new Set(userIdByEmail.values()));
+    if (userIds.length === 0) return new Map<string, string>();
+
+    const { data: organizers } = await supabaseAdmin
+      .from("organizers")
+      .select("id, user_id, status, visibility")
+      .in("user_id", userIds)
+      .eq("visibility", "public");
+
+    const organizerIdByUserId = new Map(
+      (organizers ?? [])
+        .filter(
+          (o) => !["rejected", "suspended"].includes(o.status ?? "")
+        )
+        .map((o) => [o.user_id as string, o.id as string])
+    );
+
+    const result = new Map<string, string>();
+    for (const [email, userId] of userIdByEmail.entries()) {
+      const orgId = organizerIdByUserId.get(userId);
+      if (orgId) result.set(email, orgId);
+    }
+    return result;
+  } catch {
+    return new Map<string, string>();
+  }
+}
+
+function OrganizerAvatar({ name }: { name: string }) {
+  return (
+    <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sm font-black text-zinc-700">
+      {initial(name)}
+    </div>
+  );
+}
+
+function ProgressRing({ percentage }: { percentage: number }) {
+  const radius = 40;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (percentage / 100) * circumference;
+
+  return (
+    <svg viewBox="0 0 100 100" className="h-28 w-28">
+      <circle
+        cx="50"
+        cy="50"
+        r="40"
+        stroke="#e5e7eb"
+        strokeWidth="8"
+        fill="none"
+      />
+      <circle
+        cx="50"
+        cy="50"
+        r="40"
+        stroke="#10b981"
+        strokeWidth="8"
+        fill="none"
+        strokeDasharray={circumference}
+        strokeDashoffset={offset}
+        strokeLinecap="round"
+        transform="rotate(-90 50 50)"
+      />
+      <text
+        x="50"
+        y="50"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize="16"
+        fontWeight="bold"
+        fill="#18181b"
+      >
+        {percentage}%
+      </text>
+    </svg>
+  );
 }
 
 export default async function FundraiserPage({
@@ -34,260 +228,384 @@ export default async function FundraiserPage({
 
   if (!fundraiser) return notFound();
 
-  const { data: donations } = await supabase
-    .from("donations")
-    .select("*")
-    .eq("fundraiser_id", fundraiser.id)
-    .order("created_at", { ascending: false })
-    .limit(4);
+  const [
+    mediaResult,
+    updatesResult,
+    donationsResult,
+    organizerResult,
+    commentsResult,
+  ] = await Promise.all([
+    supabase
+      .from("fundraiser_media")
+      .select("id, url, type, position")
+      .eq("fundraiser_id", fundraiser.id)
+      .order("position", { ascending: true }),
+    supabase
+      .from("fundraiser_updates")
+      .select("id, organizer_id, title, content, created_at")
+      .eq("fundraiser_id", fundraiser.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("donations")
+      .select("id, donor_name, donor_email, amount, created_at", {
+        count: "exact",
+      })
+      .eq("fundraiser_id", fundraiser.id)
+      .eq("status", "completed")
+      .order("created_at", { ascending: false })
+      .limit(5),
+    fundraiser.organizer_id
+      ? supabase
+          .from("organizers")
+          .select("id, name")
+          .eq("id", fundraiser.organizer_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from("comments")
+      .select("id", { count: "exact", head: true })
+      .eq("target_type", "fundraiser")
+      .eq("target_id", fundraiser.id)
+      .eq("status", "approved"),
+  ]);
 
-  const progress = fundraiser.goal
-    ? Math.min(Math.round((fundraiser.raised / fundraiser.goal) * 100), 100)
-    : 0;
+  const organizer = organizerResult.data as OrganizerRow | null;
+  const organizerName =
+    organizer?.name || fundraiser.organizer || "Campaign organizer";
 
-  const donationCount = donations?.length ?? 0;
-  const storyParagraphs = paragraphs(fundraiser.story);
-  const remaining = Math.max((fundraiser.goal ?? 0) - (fundraiser.raised ?? 0), 0);
-  const organizerName = fundraiser.organizer || "Campaign organizer";
-  const impactAmounts = [
-    { amount: 25, text: "helps cover immediate campaign needs" },
-    { amount: 50, text: "moves the campaign closer to its next milestone" },
-    { amount: 100, text: "creates a stronger push toward the full goal" },
-  ];
+  // If no organizer_id was stored, try to resolve the organizer profile by
+  // matching the organizer name — same fallback pattern used for the beneficiary.
+  const { data: organizerByName } =
+    !organizer && organizerName && organizerName !== "Campaign organizer"
+      ? await supabase
+          .from("organizers")
+          .select("id")
+          .eq("name", organizerName)
+          .eq("visibility", "public")
+          .not("status", "in", "(rejected,suspended)")
+          .maybeSingle()
+      : { data: null };
+
+  // Single source-of-truth for the organizer profile link
+  const organizerProfileId: string | null =
+    organizer?.id ?? organizerByName?.id ?? null;
+
+  const coverImage =
+    fundraiser.image_url || fundraiser.banner || FALLBACK_IMAGE;
+  const mediaRows = (mediaResult.data ?? []) as MediaRow[];
+  const media: FundraiserMediaSlide[] =
+    mediaRows.length > 0
+      ? mediaRows.map((item) => ({
+          id: item.id,
+          url: item.url,
+          type: item.type,
+        }))
+      : [{ url: coverImage, type: "image" }];
+  const updates = (updatesResult.data ?? []) as UpdateRow[];
+  const recentDonors = (donationsResult.data ?? []) as DonationRow[];
+  const organizerIdByDonorEmail = await getDonorOrganizerMap(recentDonors);
+  const donationCount = donationsResult.count ?? recentDonors.length;
+  const raised = Number(fundraiser.raised_amount ?? fundraiser.raised ?? 0);
+  const goal = Number(fundraiser.goal_amount ?? fundraiser.goal ?? 0);
+  const percentage =
+    goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
+  const description =
+    fundraiser.description ||
+    fundraiser.story ||
+    fundraiser.short_description ||
+    "";
+  const commentCount = commentsResult.count ?? 0;
+  const beneficiaryName: string =
+    fundraiser.beneficiary ||
+    fundraiser.beneficiary_name ||
+    fundraiser.title ||
+    "This Cause";
+
+  const { data: beneficiaryOrganizer } = beneficiaryName
+    ? await supabase
+        .from("organizers")
+        .select("id")
+        .eq("name", beneficiaryName)
+        .eq("visibility", "public")
+        .not("status", "in", "(rejected,suspended)")
+        .maybeSingle()
+    : { data: null };
+
+  const fundraiserCategory: string = fundraiser.category || "";
+  const fundraiserCreatedAt: string =
+    fundraiser.created_at || new Date().toISOString();
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-950">
+    <main className="min-h-screen bg-white pb-24 text-zinc-950 lg:pb-12">
+      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-3 lg:py-10">
+        {/* Main content column */}
+        <div className="min-w-0 space-y-8 lg:col-span-2">
+          <header>
+            <h1 className="text-3xl font-bold leading-tight text-zinc-950 sm:text-4xl break-words">
+              {fundraiser.title}
+            </h1>
+          </header>
 
-      {/* HERO */}
-      <section className="bg-white">
-        <div className="mx-auto grid max-w-7xl gap-10 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-3">
-
-          {/* LEFT CONTENT */}
-          <div className="lg:col-span-2">
-            <div className="overflow-hidden rounded-3xl">
-              <img
-                src={fundraiser.banner || "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1600&auto=format&fit=crop"}
-                alt={fundraiser.title}
-                fetchPriority="high"
-                decoding="async"
-                className="h-[340px] w-full object-cover sm:h-[440px] lg:h-[520px]"
-              />
-            </div>
-
-            <div className="mt-10">
-              <p className="mb-3 w-fit rounded-full bg-green-100 px-4 py-2 text-sm font-black uppercase tracking-wide text-green-700">
-                Community Fundraiser
-              </p>
-              <h1 className="text-4xl font-black leading-tight sm:text-5xl md:text-6xl">
-                {fundraiser.title}
-              </h1>
-              <p className="mt-6 max-w-3xl text-xl leading-8 text-zinc-600">
-                {storyParagraphs[0] || `Support ${organizerName} and help this campaign reach its goal.`}
-              </p>
-
-              <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-                  <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Raised</p>
-                  <h3 className="mt-2 text-2xl font-black">${fundraiser.raised?.toLocaleString() ?? 0}</h3>
-                </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-                  <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Goal</p>
-                  <h3 className="mt-2 text-2xl font-black">${fundraiser.goal?.toLocaleString() ?? 0}</h3>
-                </div>
-                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
-                  <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Still Needed</p>
-                  <h3 className="mt-2 text-2xl font-black">${remaining.toLocaleString()}</h3>
-                </div>
+          <section className="border-b border-zinc-200 pb-8">
+            <FundraiserMediaSlider media={media} title={fundraiser.title} />
+            <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <OrganizerAvatar name={organizerName} />
+                <p className="text-sm text-zinc-600 break-words">
+                  Organised by{" "}
+                  {organizerProfileId ? (
+                    <Link
+                      href={`/organizers/${organizerProfileId}`}
+                      className="font-bold text-zinc-950 hover:text-emerald-600 hover:underline transition"
+                    >
+                      {organizerName}
+                    </Link>
+                  ) : (
+                    <span className="font-bold text-zinc-950">
+                      {organizerName}
+                    </span>
+                  )}
+                </p>
               </div>
+              <DonationProtectedBadge />
             </div>
-          </div>
+          </section>
 
-          {/* DONATION SIDEBAR */}
-          <div>
-            <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm sm:p-8 lg:sticky lg:top-24">
+          <FundraiserStory description={description} />
 
-              <p className="text-zinc-500 mb-2">Raised so far</p>
-              <h2 className="text-5xl font-black">
-                ${fundraiser.raised?.toLocaleString() ?? 0}
+          {updates.length > 0 && (
+            <section className="border-b border-zinc-200 pb-8">
+              <h2 className="text-2xl font-bold text-zinc-950 break-words">
+                Updates {updates.length}
               </h2>
-              {fundraiser.goal && (
-                <p className="text-zinc-500 mt-2">
-                  Goal: ${fundraiser.goal?.toLocaleString()}
-                </p>
-              )}
-
-              <div className="w-full h-4 bg-zinc-200 rounded-full overflow-hidden mt-6">
-                <div
-                  className="bg-green-500 h-full transition-all"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-
-              <p className="text-sm text-zinc-500 mt-3">
-                {donationCount} recent donation{donationCount !== 1 ? "s" : ""} shown
-              </p>
-
-              <div className="mt-6 rounded-2xl bg-green-50 p-4">
-                <p className="text-sm font-bold leading-6 text-green-800">
-                  Your donation helps this campaign move from story to outcome. Every contribution adds momentum.
-                </p>
-              </div>
-
-              <div className="mt-8">
-                <DonateButton
-                  fundraiserTitle={fundraiser.title}
-                  fundraiserSlug={fundraiser.slug}
-                />
-              </div>
-
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* STORY + VIDEO */}
-      <section className="max-w-7xl mx-auto px-4 py-10 sm:px-6">
-        <div className="grid lg:grid-cols-3 gap-10">
-
-          {/* LEFT */}
-          <div className="lg:col-span-2 space-y-10">
-
-            {/* VIDEO */}
-            {fundraiser.video_url && (
-              <div className="bg-white border border-zinc-200 rounded-3xl p-6">
-                <h2 className="text-2xl font-black mb-4">Campaign Video</h2>
-                <video
-                  src={fundraiser.video_url}
-                  controls
-                  className="w-full rounded-2xl"
-                />
-              </div>
-            )}
-
-            {/* STORY */}
-            <div className="bg-white border border-zinc-200 rounded-3xl p-10">
-              <h2 className="text-3xl font-black mb-6">Our Story</h2>
-              <div className="space-y-5 text-lg leading-relaxed text-zinc-700">
-                {storyParagraphs.length > 0 ? (
-                  storyParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
-                ) : (
-                  <p>No story provided yet. The organizer can add more background, who this helps, and why support is needed now.</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-3xl border border-zinc-200 bg-white p-8">
-                <h2 className="text-2xl font-black">Why This Matters</h2>
-                <ul className="mt-5 space-y-4 text-zinc-700">
-                  <li className="flex gap-3">
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                    <span>It gives supporters a clear way to help right now.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                    <span>It helps the organizer build momentum toward the campaign goal.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                    <span>It keeps the campaign public, shareable, and easy to support.</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="rounded-3xl border border-zinc-200 bg-white p-8">
-                <h2 className="text-2xl font-black">Donation Impact</h2>
-                <div className="mt-5 space-y-4">
-                  {impactAmounts.map((item) => (
-                    <div key={item.amount} className="rounded-2xl bg-zinc-50 p-4">
-                      <p className="font-black text-green-700">${item.amount}</p>
-                      <p className="mt-1 text-zinc-600">{item.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <CommentsSection
-              targetType="fundraiser"
-              targetId={fundraiser.id}
-              title="Comments"
-              accent="green"
-            />
-
-          </div>
-
-          {/* RIGHT */}
-          <div className="space-y-8">
-
-            {fundraiser.organizer && (
-              <div className="bg-white border border-zinc-200 rounded-3xl p-8">
-                <h2 className="text-2xl font-black mb-6">Organizer</h2>
-                <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-green-500" />
-                  <div>
-                    <h3 className="inline-flex items-center gap-2 font-bold text-xl">
-                      {fundraiser.organizer}
-                      <VerifiedBadge verified={false} />
-                    </h3>
-                    <p className="text-zinc-500">Campaign organizer</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="rounded-3xl border border-zinc-200 bg-white p-8">
-              <h2 className="text-2xl font-black">Trust & Transparency</h2>
-              <div className="mt-5 space-y-4 text-zinc-700">
-                <p><span className="font-black text-zinc-950">Organizer:</span> {organizerName}</p>
-                <p><span className="font-black text-zinc-950">Goal:</span> ${fundraiser.goal?.toLocaleString() ?? 0}</p>
-                <p><span className="font-black text-zinc-950">Progress:</span> {progress}% funded</p>
-              </div>
-            </div>
-
-            {donations && donations.length > 0 && (
-              <div className="bg-white border border-zinc-200 rounded-3xl p-8">
-                <h2 className="text-2xl font-black mb-6">Recent Donors</h2>
-                <div className="space-y-5">
-                  {donations.map((donation) => (
-                    <div key={donation.id} className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-zinc-200" />
-                        <p className="font-medium">
-                          {donation.donor_name || "Anonymous"}
+              <div className="mt-5 space-y-5">
+                {updates.map((update) => (
+                  <article
+                    key={update.id}
+                    className="rounded-lg border border-zinc-200 p-5"
+                  >
+                    <div className="flex gap-3">
+                      <OrganizerAvatar name={organizerName} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                          <span className="font-bold text-zinc-950">
+                            {organizerName}
+                          </span>
+                          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-600">
+                            Organiser
+                          </span>
+                          <span className="text-zinc-500">
+                            {dateLabel(update.created_at)}
+                          </span>
+                        </div>
+                        {update.title && (
+                          <h3 className="mt-3 text-lg font-bold text-zinc-950 break-words">
+                            {update.title}
+                          </h3>
+                        )}
+                        <p className="mt-2 whitespace-pre-wrap break-words leading-7 text-zinc-700">
+                          {update.content}
                         </p>
                       </div>
-                      <p className="font-bold text-green-600">
-                        ${donation.amount}
-                      </p>
                     </div>
-                  ))}
+                  </article>
+                ))}
+              </div>
+            </section>
+          )}
+
+          <FundraiserShare title={fundraiser.title} imageUrl={coverImage} />
+
+          {/* ── Organiser & Beneficiary ─────────────────────────── */}
+          <section className="border-t border-zinc-200 pt-8">
+            <h2 className="text-lg font-black text-zinc-950 break-words">
+              Organiser and beneficiary
+            </h2>
+            <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sm font-black text-zinc-700">
+                  {initial(organizerName)}
+                </div>
+                <div className="min-w-0">
+                  {organizerProfileId ? (
+                    <Link
+                      href={`/organizers/${organizerProfileId}`}
+                      className="block truncate text-sm font-black text-zinc-950 hover:text-emerald-600 hover:underline transition"
+                    >
+                      {organizerName}
+                    </Link>
+                  ) : (
+                    <span className="block truncate text-sm font-black text-zinc-950">
+                      {organizerName}
+                    </span>
+                  )}
+                  <div className="mt-1 flex items-center gap-2">
+                    <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-600">
+                      Organiser
+                    </span>
+                    {organizerProfileId && (
+                      <a
+                        href={"mailto:support@eventbrithe.com?subject=Message%20for%20" + encodeURIComponent(organizerName)}
+                        className="rounded-full border border-zinc-300 px-3 py-0.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50"
+                      >
+                        Message
+                      </a>
+                    )}
+                  </div>
                 </div>
               </div>
-            )}
 
-            <div className="rounded-3xl border border-zinc-200 bg-white p-8">
-              <h2 className="text-2xl font-black">FAQ</h2>
-              <div className="mt-5 divide-y divide-zinc-200">
-                {[
-                  ["How much should I donate?", "Choose an amount that feels right. Presets are available, and custom amounts are supported."],
-                  ["Can I share this fundraiser?", "Yes. Sharing the campaign link can be just as helpful as donating."],
-                  ["Where does my support go?", `Support goes toward helping ${organizerName} reach the campaign goal shown on this page.`],
-                ].map(([question, answer]) => (
-                  <div key={question} className="py-4">
-                    <h3 className="font-black">{question}</h3>
-                    <p className="mt-2 text-zinc-600">{answer}</p>
-                  </div>
-                ))}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 shrink-0 text-zinc-400 rotate-90 sm:rotate-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                />
+              </svg>
+
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sm font-black text-emerald-700">
+                  {initial(beneficiaryName)}
+                </div>
+                <div className="min-w-0">
+                  {beneficiaryOrganizer?.id ? (
+                    <Link
+                      href={`/organizers/${beneficiaryOrganizer.id}`}
+                      className="block truncate text-sm font-black text-zinc-950 hover:text-emerald-600 hover:underline transition"
+                    >
+                      {beneficiaryName}
+                    </Link>
+                  ) : (
+                    <span className="block truncate text-sm font-black text-zinc-950">
+                      {beneficiaryName}
+                    </span>
+                  )}
+                  <span className="mt-1 inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                    Beneficiary
+                  </span>
+                </div>
               </div>
             </div>
 
+            <p className="mt-4 text-xs text-zinc-400">
+              Created {createdAgo(fundraiserCreatedAt)}
+              {fundraiserCategory ? ` · ${fundraiserCategory}` : ""}
+            </p>
+
+            <a
+              href={`mailto:support@eventbrithe.com?subject=Report%20fundraiser%3A%20${encodeURIComponent(fundraiser.title)}`}
+              className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 transition hover:text-red-500"
+            >
+              <Flag className="h-3.5 w-3.5" />
+              Report fundraiser
+            </a>
+          </section>
+
+          {/* ── Words of Support — always visible ───────────────── */}
+          <div className="border-t border-zinc-200 pt-8">
+            <SupportMessages fundraiserId={fundraiser.id} />
           </div>
-
         </div>
-      </section>
 
+        {/* Aside */}
+        <aside className="min-w-0 lg:col-span-1">
+          <div className="space-y-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
+            <section className="text-center">
+              <div className="flex justify-center">
+                <ProgressRing percentage={percentage} />
+              </div>
+              <p className="mt-4 text-3xl font-black text-zinc-950">
+                {money(raised)} raised
+              </p>
+              <p className="mt-1 text-sm font-medium text-zinc-500">
+                of {money(goal)} goal
+              </p>
+              <p className="mt-3 text-sm font-bold text-zinc-700">
+                {donationCount.toLocaleString()} donation
+                {donationCount === 1 ? "" : "s"}
+              </p>
+            </section>
+
+            <section className="space-y-3">
+              <a
+                href={`/fundraisers/${fundraiser.slug}/donate`}
+                className="flex w-full items-center justify-center rounded-lg bg-emerald-600 px-5 py-3.5 text-base font-black text-white transition hover:bg-emerald-700"
+              >
+                Donate now
+              </a>
+              <ShareFundraiserButton
+                title={fundraiser.title}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 px-5 py-3.5 text-base font-black text-white transition hover:bg-slate-900"
+              />
+            </section>
+
+            <section className="border-t border-zinc-200 pt-5">
+              <h2 className="text-base font-bold text-zinc-950">
+                Recent donors
+              </h2>
+              {recentDonors.length === 0 ? (
+                <p className="mt-4 text-sm text-zinc-500">
+                  No donations yet.
+                </p>
+              ) : (
+                <ul className="mt-4 space-y-4">
+                  {recentDonors.map((donation) => {
+                    const donorName = donation.donor_name;
+                    const donorEmail =
+                      donation.donor_email?.trim().toLowerCase();
+                    const organizerId = donorEmail
+                      ? organizerIdByDonorEmail.get(donorEmail)
+                      : undefined;
+                    const amount = Number(donation.amount ?? 0);
+                    const displayName = donorName || "Anonymous";
+
+                    return (
+                      <li
+                        key={donation.id}
+                        className="flex items-center gap-3"
+                      >
+                        <OrganizerAvatar name={displayName} />
+                        <div className="min-w-0 flex-1">
+                          {!donorName ? (
+                            <p className="truncate text-sm font-bold text-zinc-950">
+                              Anonymous
+                            </p>
+                          ) : organizerId ? (
+                            <Link
+                              href={`/organizers/${organizerId}`}
+                              className="block max-w-full truncate text-sm font-bold text-zinc-950 hover:underline"
+                            >
+                              {donorName}
+                            </Link>
+                          ) : (
+                            <DonorNameWithPopup
+                              name={donorName}
+                              fundraiserTitle={fundraiser.title}
+                            />
+                          )}
+                          <p className="text-xs text-zinc-500">
+                            {money(amount)} · {timeAgo(donation.created_at)}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          </div>
+        </aside>
+      </div>
+
+      {/* Sticky bottom actions bar on mobile */}
+      <FundraiserFloatingActions title={fundraiser.title} slug={fundraiser.slug} />
     </main>
   );
 }

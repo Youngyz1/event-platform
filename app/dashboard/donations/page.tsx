@@ -24,32 +24,28 @@ const statusBadge: Record<string, string> = {
 export default async function DashboardDonationsPage() {
   const ctx = await getDashboardContext();
   if (!ctx) redirect('/login');
-  const { organizerId } = ctx;
+  const { organizerIds } = ctx;
 
-  // ── fundraisers and donations fetched in parallel ────────────────────────────
-  // donations uses a join filter so we don't need fundraiser IDs first
-  const [fundraisersResult, donationsResult] = await Promise.all([
-    organizerId
-      ? supabaseAdmin
-          .from('fundraisers')
-          .select('id, title, slug')
-          .eq('organizer_id', organizerId)
-      : Promise.resolve({ data: [] }),
-
-    organizerId
-      ? supabaseAdmin
-          .from('donations')
-          .select('id, fundraiser_id, donor_name, donor_email, amount, status, created_at')
-          .filter('fundraisers.organizer_id', 'eq', organizerId)
-          .order('created_at', { ascending: false })
-          .limit(200)                       // reasonable cap — avoids fetching entire table
-      : Promise.resolve({ data: [] }),
-  ]);
+  const fundraisersResult = organizerIds.length > 0
+    ? await supabaseAdmin
+        .from('fundraisers')
+        .select('id, title, slug')
+        .in('organizer_id', organizerIds)
+    : { data: [] };
 
   const fundraisers = fundraisersResult.data ?? [];
+  const fundraiserIds = fundraisers.map((fundraiser) => fundraiser.id);
+  const donationsResult = fundraiserIds.length > 0
+    ? await supabaseAdmin
+        .from('donations')
+        .select('id, fundraiser_id, donor_name, donor_email, amount, status, created_at')
+        .in('fundraiser_id', fundraiserIds)
+        .order('created_at', { ascending: false })
+        .limit(200)
+    : { data: [] };
+
   const rows        = donationsResult.data   ?? [];
   const frMap       = Object.fromEntries(fundraisers.map((f) => [f.id, f]));
-  const frIds       = fundraisers.map((f) => f.id);
 
   // ── Stats computed from fetched rows ─────────────────────────────────────────
   const now        = new Date();
@@ -63,35 +59,35 @@ export default async function DashboardDonationsPage() {
     .reduce((s, d) => s + Number(d.amount ?? 0), 0);
 
   return (
-    <div className="space-y-6">
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-orange-600">Dashboard</p>
-        <h1 className="mt-1 text-3xl font-black tracking-tight">Donations</h1>
-        <p className="mt-1 text-sm font-medium text-zinc-500">All donations received across your fundraising campaigns.</p>
+    <div className="space-y-4 sm:space-y-6">
+      <header className="rounded-xl border border-zinc-200/80 bg-white px-4 py-3 shadow-sm sm:rounded-2xl sm:px-6 sm:py-4">
+        <p className="text-[10px] font-black uppercase tracking-wide text-orange-600 sm:text-xs">Dashboard</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Donations</h1>
+        <p className="mt-1 text-xs font-medium text-zinc-500 sm:text-sm">All donations received across your fundraising campaigns.</p>
       </header>
 
       {/* Summary stat cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {[
           { label: 'Total Donations', value: String(rows.length),    sub: 'across all campaigns', color: 'text-violet-600' },
           { label: 'Total Raised',    value: money(succeededAmount), sub: 'completed payments',   color: 'text-emerald-600' },
           { label: 'This Month',      value: money(thisMonth),       sub: `${now.toLocaleString('default', { month: 'long' })} ${now.getFullYear()}`, color: 'text-orange-600' },
         ].map(({ label, value, sub, color }) => (
-          <div key={label} className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm">
-            <p className={`text-xs font-black uppercase tracking-wide ${color}`}>{label}</p>
-            <p className="mt-2 text-3xl font-black tracking-tight text-zinc-950">{value}</p>
-            <p className="mt-1 text-xs font-semibold text-zinc-500">{sub}</p>
+          <div key={label} className="rounded-xl border border-zinc-200/80 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-5">
+            <p className={`text-[8px] font-black uppercase tracking-wide ${color} sm:text-xs`}>{label}</p>
+            <p className="mt-1 text-xl font-black tracking-tight text-zinc-950 sm:mt-2 sm:text-3xl">{value}</p>
+            <p className="mt-1 text-[9px] font-semibold leading-tight text-zinc-500 sm:text-xs">{sub}</p>
           </div>
         ))}
       </div>
 
       {/* Donations table */}
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <div className="rounded-xl border border-zinc-200/80 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-6">
         {rows.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50/60 px-8 py-20 text-center">
-            <p className="text-2xl font-black text-zinc-950">No donations yet</p>
-            <p className="text-sm font-medium text-zinc-500">
-              {frIds.length === 0
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/60 px-6 py-14 text-center sm:rounded-2xl sm:px-8 sm:py-20">
+            <p className="text-xl font-black text-zinc-950 sm:text-2xl">No donations yet</p>
+            <p className="text-xs font-medium text-zinc-500 sm:text-sm">
+              {fundraiserIds.length === 0
                 ? 'Create a fundraiser first, then donations will appear here.'
                 : 'Share your fundraiser links to start collecting donations.'}
             </p>

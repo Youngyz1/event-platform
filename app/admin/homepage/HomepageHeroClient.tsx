@@ -188,17 +188,17 @@ export default function HomepageHeroClient({ initialHero }: Props) {
               backgroundImage: `url("${hero.imageUrl.replaceAll('"', "")}")`,
             }}
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-black/10" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/10" />
             <div className="relative max-w-full">
-              <p className="inline-flex bg-pink-200 px-2 py-1 text-[9px] font-black uppercase tracking-wide text-zinc-950 sm:text-xs">
+              <p className="text-[9px] font-black uppercase tracking-wide text-white drop-shadow sm:text-xs">
                 {hero.eyebrow}
               </p>
               <h2 className="mt-3 text-3xl font-black leading-tight text-white sm:text-5xl">
-                <span className="box-decoration-clone bg-indigo-300 px-2 text-zinc-950">
+                <span className="drop-shadow-[0_3px_12px_rgba(0,0,0,0.65)]">
                   {hero.headlineLine1}
                 </span>
                 <br />
-                <span className="box-decoration-clone bg-pink-200 px-2 text-zinc-950">
+                <span className="drop-shadow-[0_3px_12px_rgba(0,0,0,0.65)]">
                   {hero.headlineLine2}
                 </span>
               </h2>

@@ -7,13 +7,10 @@ export default async function Page() {
   const ctx = await getDashboardContext();
   if (!ctx) redirect('/login');
 
-  const { user, organizer, organizerId } = ctx;
+  const { user, organizers, organizerIds } = ctx;
   const displayName = (user.user_metadata?.display_name as string | undefined)?.trim() || 'Account';
 
-  // Organizer data for the sidebar card on the overview page
-  const safeOrganizers = organizer ? [organizer] : [];
-
-  if (!organizerId) {
+  if (organizerIds.length === 0) {
     // No organizer yet — render empty state without any DB queries
     return (
       <DashboardView
@@ -22,7 +19,7 @@ export default async function Page() {
         events={[]}
         fundraisers={[]}
         donations={[]}
-        organizers={safeOrganizers}
+        organizers={organizers}
         ticketOrders={[]}
       />
     );
@@ -33,14 +30,14 @@ export default async function Page() {
     supabaseAdmin
       .from('events')
       .select('id, title, slug, event_date, category, city')
-      .eq('organizer_id', organizerId)
+      .in('organizer_id', organizerIds)
       .order('created_at', { ascending: false })
       .limit(5),
 
     supabaseAdmin
       .from('fundraisers')
       .select('id, title, raised, goal')
-      .eq('organizer_id', organizerId),
+      .in('organizer_id', organizerIds),
   ]);
 
   const safeEvents      = eventsResult.data      ?? [];
@@ -89,7 +86,7 @@ export default async function Page() {
       events={safeEvents}
       fundraisers={safeFundraisers}
       donations={safeDonations}
-      organizers={safeOrganizers}
+      organizers={organizers}
       ticketOrders={safeOrders}
     />
   );

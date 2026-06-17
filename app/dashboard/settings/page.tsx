@@ -12,7 +12,7 @@
 
 import { redirect } from 'next/navigation';
 import { getDashboardContext, supabaseAdmin } from '@/lib/dashboard-context';
-import SettingsClient, { type Prefs } from './SettingsClient';
+import SettingsClient, { defaultAccountInfo, type AccountInfo, type Prefs } from './SettingsClient';
 
 const defaultPrefs: Prefs = {
   notify_ticket_purchase: true,
@@ -30,7 +30,7 @@ export default async function DashboardSettingsPage() {
   // (organizer already loaded by getDashboardContext — no extra query needed)
   const { data: profile } = await supabaseAdmin
     .from('profiles')
-    .select('preferences')
+    .select('preferences, account_info, profile_photo')
     .eq('id', user.id)
     .maybeSingle();
 
@@ -40,20 +40,26 @@ export default async function DashboardSettingsPage() {
   };
 
   const displayName = (user.user_metadata?.display_name as string | undefined) ?? '';
+  const accountInfo: AccountInfo = {
+    ...defaultAccountInfo,
+    ...((profile?.account_info ?? {}) as Partial<AccountInfo>),
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Page header — rendered server-side, visible immediately */}
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-orange-600">Dashboard</p>
-        <h1 className="mt-1 text-3xl font-black tracking-tight">Settings</h1>
-        <p className="mt-1 text-sm font-medium text-zinc-500">Manage your account and notification preferences.</p>
+      <header className="rounded-xl border border-zinc-200/80 bg-white px-4 py-3 shadow-sm sm:rounded-2xl sm:px-6 sm:py-4">
+        <p className="text-[10px] font-black uppercase tracking-wide text-orange-600 sm:text-xs">Dashboard</p>
+        <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Settings</h1>
+        <p className="mt-1 text-xs font-medium text-zinc-500 sm:text-sm">Manage your account and notification preferences.</p>
       </header>
 
       {/* Interactive forms — client component with pre-loaded data */}
       <SettingsClient
         initialEmail={user.email ?? ''}
         initialDisplayName={displayName}
+        initialProfilePhoto={profile?.profile_photo ?? ''}
+        initialAccountInfo={accountInfo}
         initialPrefs={prefs}
         organizer={organizer}
         userId={user.id}

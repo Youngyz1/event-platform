@@ -50,13 +50,13 @@ export async function getCurrentUserProfile() {
 /** Returns true if the current user has role 'admin'. */
 export async function isAdmin(): Promise<boolean> {
   const profile = await getCurrentUserProfile();
-  return profile?.role === 'admin';
+  return profile?.role === 'admin' && profile.status === 'active';
 }
 
 /** Returns true if the current user has role 'organizer' or 'admin'. */
 export async function isOrganizer(): Promise<boolean> {
   const profile = await getCurrentUserProfile();
-  return profile?.role === 'organizer' || profile?.role === 'admin';
+  return profile?.status === 'active' && (profile.role === 'organizer' || profile.role === 'admin');
 }
 
 /**
@@ -77,8 +77,8 @@ export async function requireAdmin(): Promise<void> {
  * For use in Server Components / page.tsx only.
  */
 export async function requireAuth(): Promise<void> {
-  const user = await getCurrentUser();
-  if (!user) {
+  const profile = await getCurrentUserProfile();
+  if (!profile || profile.status !== 'active') {
     redirect('/login');
   }
 }

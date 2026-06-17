@@ -1,5 +1,4 @@
 
-import Footer from "@/components/Footer";
 import EventCard from "@/components/EventCard";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -179,7 +178,6 @@ export default async function ThingsToDoPage({
         </div>
       </section>
 
-      <Footer />
     </main>
   );
 }

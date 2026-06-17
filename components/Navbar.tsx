@@ -84,16 +84,42 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-zinc-200 bg-white">
-      <div className={`mx-auto flex max-w-[1440px] items-center px-4 md:px-5 ${isHomepage ? "min-h-10 gap-2 max-lg:px-2" : "min-h-16 gap-3"}`}>
+      <div className={`mx-auto flex max-w-[1440px] items-center gap-2 px-3 md:px-5 ${isHomepage ? "min-h-12" : "min-h-16"}`}>
         {/* Logo */}
-        <Link href="/" className={`shrink-0 text-zinc-950 ${isHomepage ? "text-xs sm:text-2xl" : "text-xl sm:text-2xl"}`}>
-          <BrandMark textClassName="text-zinc-950" />
+        <Link href="/" className="shrink-0 text-zinc-950">
+          <BrandMark textClassName="hidden sm:inline text-zinc-950" />
         </Link>
+
+        {mobileSearchOpen && (
+          <form action="/events" className="ml-auto flex min-w-0 flex-1 items-center gap-2 md:hidden">
+            <label className="relative min-w-0 flex-1">
+              <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-400">
+                <SearchIcon />
+              </span>
+              <input
+                name="q"
+                type="search"
+                autoFocus
+                placeholder="Search"
+                className="h-9 w-full rounded-full border border-zinc-200 bg-white pl-9 pr-3 text-sm font-semibold outline-none focus:border-orange-500"
+              />
+            </label>
+            <button
+              type="submit"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-600 text-white transition hover:bg-orange-700"
+              aria-label="Submit search"
+            >
+              <SearchIcon />
+            </button>
+          </form>
+        )}
 
         <button
           type="button"
           onClick={() => setMobileSearchOpen((open) => !open)}
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-700 transition hover:border-orange-200 hover:text-orange-600 md:h-9 md:w-9"
+          className={`${
+            mobileSearchOpen ? "hidden md:flex" : "flex"
+          } ml-auto h-10 w-10 shrink-0 items-center justify-center rounded-full border border-zinc-200 text-zinc-700 transition hover:border-orange-200 hover:text-orange-600 md:ml-0 md:h-9 md:w-9`}
           aria-expanded={mobileSearchOpen}
           aria-label="Search events"
         >
@@ -101,11 +127,15 @@ export default function Navbar() {
         </button>
 
         {/* Desktop nav — same links regardless of auth state */}
-        <div className={`ml-auto items-center whitespace-nowrap font-bold text-zinc-700 ${isHomepage ? "flex gap-1 text-[5.5px] md:gap-5 md:text-sm" : "hidden gap-5 text-sm md:flex"}`}>
+        <div className="ml-auto hidden items-center gap-5 whitespace-nowrap text-sm font-bold text-zinc-700 md:flex">
           <Link href="/" className="hover:text-orange-600">Home</Link>
-          <Link href="/organizers" className={`${isHomepage ? "inline" : "hidden md:inline"} hover:text-orange-600`}>Organizers</Link>
-          <Link href="/create-event" className={`${isHomepage ? "inline" : "hidden md:inline"} hover:text-orange-600`}>Create Event</Link>
-          <Link href="/my-tickets" className="hover:text-orange-600">My Tickets</Link>
+          <Link href="/organizers" className="hover:text-orange-600">Organizers</Link>
+          {account && (
+            <>
+              <Link href="/create-event" className="hover:text-orange-600">Create Event</Link>
+              <Link href="/my-tickets" className="hover:text-orange-600">My Tickets</Link>
+            </>
+          )}
           <Link href="/find-tickets" className="hover:text-orange-600">Find Tickets</Link>
 
           {account ? (
@@ -157,7 +187,7 @@ export default function Navbar() {
               <Link href="/login" className="hover:text-orange-600">Log in</Link>
               <Link
                 href="/signup"
-                className={`rounded-full bg-orange-600 font-black text-white transition hover:bg-orange-700 ${isHomepage ? "px-1.5 py-1 text-[6px] md:px-4 md:py-2 md:text-sm" : "px-4 py-2"}`}
+                className="rounded-full bg-orange-600 px-4 py-2 font-black text-white transition hover:bg-orange-700"
               >
                 Sign up
               </Link>
@@ -165,11 +195,13 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Mobile menu button */}
+
+
+        {/* Mobile menu button — min 44×44 touch target */}
         <button
           type="button"
           onClick={() => setMenuOpen((open) => !open)}
-          className={`ml-auto rounded-xl border border-zinc-200 px-3 py-2 text-sm font-black text-zinc-800 md:hidden ${isHomepage ? "hidden" : ""}`}
+          className="flex h-10 min-w-[44px] items-center justify-center rounded-xl border border-zinc-200 px-3 text-sm font-black text-zinc-800 md:hidden"
           aria-expanded={menuOpen}
           aria-label="Toggle navigation"
         >
@@ -178,7 +210,7 @@ export default function Navbar() {
       </div>
 
       {mobileSearchOpen && (
-        <form action="/events" className="mx-auto grid max-w-5xl grid-cols-[1fr_1fr_auto] gap-2 border-t border-zinc-100 bg-white px-3 py-3 sm:px-5">
+        <form action="/events" className="mx-auto hidden max-w-5xl grid-cols-[1fr_1fr_auto] gap-2 border-t border-zinc-100 bg-white px-3 py-3 sm:px-5 md:grid">
           <label className="relative min-w-0">
             <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
               <SearchIcon />
@@ -214,44 +246,18 @@ export default function Navbar() {
       {/* Mobile menu */}
       {menuOpen && (
         <div className="border-t border-zinc-200 bg-white px-4 py-4 md:hidden">
-          <form action="/events" className="grid gap-3">
-            <label className="relative block">
-              <input
-                name="q"
-                type="search"
-                placeholder="Search events"
-                className="w-full rounded-xl border border-zinc-200 px-10 py-3 outline-none focus:border-orange-500"
-              />
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
-                <SearchIcon />
-              </span>
-            </label>
-            <label className="relative block">
-              <input
-                name="location"
-                type="search"
-                placeholder="Location"
-                className="w-full rounded-xl border border-zinc-200 px-10 py-3 outline-none focus:border-orange-500"
-              />
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
-                <LocationIcon />
-              </span>
-            </label>
-            <button className="rounded-xl bg-orange-600 px-4 py-3 font-black text-white">
-              Search
-            </button>
-          </form>
-
-          <div className="mt-5 grid gap-3 text-base font-bold text-zinc-800">
+          <div className="grid gap-3 text-base font-bold text-zinc-800">
             {[
               ["Home", "/"],
               ["Events", "/events"],
               ["Fundraisers", "/fundraisers"],
               ["Organizers", "/organizers"],
-              ["Create Event", "/create-event"],
-              ["My Tickets", "/my-tickets"],
               ["Find Tickets", "/find-tickets"],
-              ...(account ? [["Dashboard", "/dashboard"]] : []),
+              ...(account ? [
+                ["Create Event", "/create-event"],
+                ["My Tickets", "/my-tickets"],
+                ["Dashboard", "/dashboard"],
+              ] : []),
             ].map(([label, href]) => (
               <Link
                 key={href}

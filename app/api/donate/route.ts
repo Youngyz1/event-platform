@@ -1,75 +1,29 @@
-import Stripe from "stripe";
+/**
+ * @deprecated  POST /api/donate
+ * ─────────────────────────────
+ * LEGACY — This endpoint previously created an off-platform Stripe Checkout
+ * Session and redirected the donor away from the site. It is no longer called
+ * by any page in the application.
+ *
+ * It is preserved here (returning 410 Gone) so that any cached external links
+ * receive a meaningful error instead of a 404, without breaking the build.
+ *
+ * The active donation flow is:
+ *   POST /api/donate/intent  →  returns { clientSecret }
+ *   Client renders <StripeProvider> + <PaymentForm> inline (no redirect)
+ *
+ * TODO: Delete this file entirely once confirmed no external integrations call it.
+ */
+
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-
-// Service role: bypasses RLS — admin operations only
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set — server misconfiguration.");
-}
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-export async function POST(req: NextRequest) {
-  try {
-    const { amount, fundraiserTitle, fundraiserSlug, donorName, donorEmail } = await req.json();
-    const safeAmount = Number(amount);
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin;
-
-    if (!process.env.STRIPE_SECRET_KEY) {
-      return NextResponse.json({ error: "Stripe is not configured." }, { status: 500 });
-    }
-
-    if (!fundraiserSlug || !Number.isFinite(safeAmount) || safeAmount < 1) {
-      return NextResponse.json({ error: "Invalid donation details." }, { status: 400 });
-    }
-
-    const { data: fundraiser } = await supabaseAdmin
-      .from("fundraisers")
-      .select("id, title, slug")
-      .eq("slug", fundraiserSlug)
-      .single();
-
-    if (!fundraiser) {
-      return NextResponse.json({ error: "Fundraiser not found." }, { status: 404 });
-    }
-
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      customer_email: donorEmail || undefined,
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: `Donation — ${fundraiser.title || fundraiserTitle}`,
-            },
-            unit_amount: Math.round(safeAmount * 100),
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "payment",
-      success_url: `${baseUrl}/fundraisers/${fundraiserSlug}?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/fundraisers/${fundraiserSlug}?cancelled=true`,
-      metadata: {
-        kind: "donation",
-        fundraiser_id: fundraiser.id,
-        fundraiser_slug: fundraiser.slug,
-        fundraiser_title: fundraiser.title || fundraiserTitle || "",
-        donor_name: donorName || "Anonymous",
-        donor_email: donorEmail || "",
-        amount: String(safeAmount),
-      },
-    });
-
-    return NextResponse.json({ url: session.url });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+export async function POST(_req: NextRequest) {
+  return NextResponse.json(
+    {
+      error:
+        "This endpoint is deprecated. Use POST /api/donate/intent for inline donations.",
+      migration: "/api/donate/intent",
+    },
+    { status: 410 }
+  );
 }

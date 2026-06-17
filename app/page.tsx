@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import EventCard from "@/components/EventCard";
-import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSiteUrl } from "@/lib/site-url";
@@ -204,47 +203,43 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen bg-white text-zinc-950">
-      <section className="bg-white px-2 pt-3 sm:px-6 sm:pt-6 lg:px-8">
+      <section className="bg-white px-3 pt-3 sm:px-6 sm:pt-6 lg:px-8">
         <div
-          className="relative mx-auto flex aspect-[16/7] max-w-7xl items-center overflow-hidden rounded-sm bg-cover bg-center px-4 py-4 sm:min-h-[420px] sm:px-12 sm:py-16 lg:aspect-[16/5] lg:rounded-b-lg lg:px-20"
+          className="relative mx-auto flex aspect-[4/3] max-w-7xl items-end overflow-hidden rounded-xl bg-cover bg-center px-4 py-6 sm:aspect-[16/7] sm:items-center sm:rounded-sm sm:px-12 sm:py-16 lg:aspect-[16/5] lg:rounded-b-lg lg:px-20"
           style={{
             backgroundImage: `url("${hero.imageUrl.replaceAll('"', "")}")`,
           }}
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/25 to-black/5 sm:from-black/85 sm:via-black/45 sm:to-black/10" />
-          <div className="relative max-w-[92%] sm:max-w-3xl">
-            <p className="inline-flex bg-pink-200 px-2 py-1 text-[8px] font-black uppercase tracking-wide text-zinc-950 sm:px-3 sm:text-sm">
+          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10 sm:from-black/85 sm:via-black/48 sm:to-black/15" />
+          <div className="relative w-full max-w-full sm:max-w-3xl">
+            <p className="text-xs font-black uppercase tracking-wide text-white drop-shadow sm:text-sm">
               {hero.eyebrow}
             </p>
-            <h1 className="mt-2 max-w-full text-[22px] font-black leading-[1.04] tracking-tight text-white sm:mt-3 sm:text-6xl lg:text-7xl">
-              <span className="whitespace-nowrap bg-indigo-300 px-2 text-zinc-950 sm:box-decoration-clone sm:px-3">
-                {hero.headlineLine1}
-              </span>
+            <h1 className="mt-2 max-w-full text-2xl font-black leading-[1.1] tracking-tight text-white drop-shadow-[0_3px_12px_rgba(0,0,0,0.65)] sm:mt-3 sm:text-6xl lg:text-7xl">
+              {hero.headlineLine1}
               <br />
-              <span className="whitespace-nowrap bg-pink-200 px-2 text-zinc-950 sm:box-decoration-clone sm:px-3">
-                {hero.headlineLine2}
-              </span>
+              {hero.headlineLine2}
             </h1>
             <Link
               href={hero.buttonHref}
-              className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-[9px] font-black text-zinc-950 transition hover:bg-orange-50 sm:mt-8 sm:px-8 sm:py-3 sm:text-base"
+              className="mt-4 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-black text-zinc-950 transition hover:bg-orange-50 sm:mt-8 sm:px-8 sm:py-3 sm:text-base"
             >
               {hero.buttonText}
             </Link>
           </div>
         </div>
 
-        <div className="mx-auto grid max-w-7xl grid-cols-4 gap-x-4 gap-y-6 py-8 sm:grid-cols-4 sm:gap-6 sm:py-12 lg:grid-cols-8">
+        <div className="mx-auto grid max-w-7xl grid-cols-4 gap-x-3 gap-y-5 py-8 sm:gap-6 sm:py-12 lg:grid-cols-8">
           {categoryCards.map(({ name, icon: Icon }) => (
             <Link
               key={name}
               href={`/events?category=${encodeURIComponent(name)}`}
               className="group flex flex-col items-center text-center"
             >
-              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-indigo-100 bg-white text-zinc-600 transition group-hover:border-orange-200 group-hover:text-orange-600 sm:h-24 sm:w-24">
-                <Icon className="h-5 w-5 sm:h-9 sm:w-9" strokeWidth={1.6} />
+              <span className="flex h-14 w-14 items-center justify-center rounded-full border border-indigo-100 bg-white text-zinc-600 transition group-hover:border-orange-200 group-hover:text-orange-600 sm:h-20 sm:w-20 lg:h-24 lg:w-24">
+                <Icon className="h-6 w-6 sm:h-8 sm:w-8 lg:h-9 lg:w-9" strokeWidth={1.6} />
               </span>
-              <span className="mt-2 text-[9px] font-bold leading-tight text-zinc-950 sm:mt-3 sm:text-sm">{name}</span>
+              <span className="mt-2 text-[11px] font-bold leading-tight text-zinc-950 sm:mt-3 sm:text-sm">{name}</span>
             </Link>
           ))}
         </div>
@@ -252,7 +247,7 @@ export default async function HomePage() {
 
       <section className="bg-white py-7 sm:py-10">
         <div className="mx-auto mb-3 flex max-w-7xl items-center justify-between px-3 sm:mb-5 sm:px-6 lg:px-8">
-          <p className="text-[9px] font-black uppercase tracking-widest text-orange-600 sm:text-xs">
+          <p className="text-xs font-black uppercase tracking-widest text-orange-600 sm:text-xs">
             Featured This Week
           </p>
         </div>
@@ -260,19 +255,19 @@ export default async function HomePage() {
       </section>
 
       {/* ── TASK 1 — Events grid (deduplicated, max 6) ─────────────────────────── */}
-      <section className="mx-auto max-w-7xl bg-white px-3 py-10 sm:px-6 sm:py-16 lg:px-8">
+      <section className="mx-auto max-w-7xl bg-white px-3 py-8 sm:px-6 sm:py-16 lg:px-8">
         <div className="mb-5 flex flex-col justify-between gap-2 sm:mb-8 sm:flex-row sm:items-end sm:gap-4">
           <div>
-            <p className="text-[9px] font-black uppercase tracking-wide text-orange-600 sm:text-sm">Events</p>
+            <p className="text-xs font-black uppercase tracking-wide text-orange-600 sm:text-sm">Events</p>
             <h2 className="mt-1 text-2xl font-black tracking-tight text-zinc-950 sm:mt-2 sm:text-4xl">Discover events</h2>
           </div>
-          <Link href="/events" className="text-[9px] font-black text-orange-600 hover:text-orange-700 sm:text-sm">
+          <Link href="/events" className="text-xs font-black text-orange-600 hover:text-orange-700 sm:text-sm">
             View all events →
           </Link>
         </div>
 
         {events.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
             {events.map((event) => (
               <EventCard
                 key={event.id}
@@ -314,7 +309,6 @@ export default async function HomePage() {
       {/* ── About Us section ──────────────────────────────────────────────────── */}
       <AboutUsSection />
 
-      <Footer />
     </main>
   );
 }

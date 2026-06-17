@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const targetType = searchParams.get("targetType");
   const targetId = searchParams.get("targetId") || "";
+  const includeDonorAmounts = searchParams.get("includeDonorAmounts") === "true";
 
   if (!isTargetType(targetType) || !uuidPattern.test(targetId)) {
     return NextResponse.json({ error: "Invalid comment target." }, { status: 400 });
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from("comments")
-    .select("id, author_name, body, created_at")
+    .select("id, author_name, author_email, body, created_at")
     .eq("target_type", targetType)
     .eq("target_id", targetId)
     .eq("status", "approved")
@@ -56,7 +57,92 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ comments: data || [] });
+  const comments = data || [];
+  const emails = comments
+    .map((c) => c.author_email)
+    .filter((e): e is string => Boolean(e));
+
+  const amountByEmail = new Map<string, number>();
+  const organizerIdByEmail = new Map<string, string>();
+
+  if (emails.length > 0) {
+    const promises = [];
+
+    // 1. Fetch donation amounts if requested
+    if (includeDonorAmounts && targetType === "fundraiser") {
+      promises.push(
+        supabaseAdmin
+          .from("donations")
+          .select("donor_email, amount")
+          .eq("fundraiser_id", targetId)
+          .in("status", ["completed", "succeeded"])
+          .in("donor_email", emails)
+          .then(({ data: donations }) => {
+            for (const d of donations || []) {
+              const key = (d.donor_email || "").toLowerCase();
+              if (!amountByEmail.has(key) || Number(d.amount ?? 0) > (amountByEmail.get(key) ?? 0)) {
+                amountByEmail.set(key, Number(d.amount ?? 0));
+              }
+            }
+          })
+      );
+    }
+
+    // 2. Fetch organizer profile mapping
+    promises.push(
+      (async () => {
+        const { data: authUsers } = await supabaseAdmin
+          .from("auth.users")
+          .select("id, email")
+          .in("email", emails);
+
+        const userIdByEmail = new Map<string, string>();
+        for (const u of authUsers || []) {
+          if (u.email && u.id) {
+            userIdByEmail.set(u.email.toLowerCase(), u.id);
+          }
+        }
+
+        const userIds = Array.from(userIdByEmail.values());
+        if (userIds.length > 0) {
+          const { data: organizers } = await supabaseAdmin
+            .from("organizers")
+            .select("id, user_id")
+            .in("user_id", userIds)
+            .eq("visibility", "public")
+            .not("status", "in", "(rejected,suspended)");
+
+          const organizerIdByUserId = new Map<string, string>();
+          for (const o of organizers || []) {
+            organizerIdByUserId.set(o.user_id, o.id);
+          }
+
+          for (const [email, userId] of userIdByEmail.entries()) {
+            const orgId = organizerIdByUserId.get(userId);
+            if (orgId) {
+              organizerIdByEmail.set(email, orgId);
+            }
+          }
+        }
+      })()
+    );
+
+    await Promise.all(promises);
+  }
+
+  const safeComments = comments.map((comment) => {
+    const emailKey = comment.author_email?.toLowerCase();
+    return {
+      id: comment.id,
+      author_name: comment.author_name,
+      body: comment.body,
+      created_at: comment.created_at,
+      donor_amount: emailKey ? (amountByEmail.get(emailKey) ?? null) : null,
+      author_organizer_id: emailKey ? (organizerIdByEmail.get(emailKey) ?? null) : null,
+    };
+  });
+
+  return NextResponse.json({ comments: safeComments });
 }
 
 export async function POST(request: NextRequest) {
@@ -66,31 +152,92 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const targetType = cleanText(payload.targetType);
-  const targetId = cleanText(payload.targetId);
-  const authorName = cleanText(payload.authorName, "Anonymous").slice(0, 120) || "Anonymous";
+  const targetType = cleanText(payload.targetType || payload.type);
+  const targetId = cleanText(payload.targetId || payload.fundraiser_id);
+  const authorName = cleanText(payload.authorName || payload.author_name, "Anonymous").slice(0, 120) || "Anonymous";
   const authorEmail = cleanText(payload.authorEmail).slice(0, 255) || null;
   const body = cleanText(payload.body);
+  const stripeSessionId = cleanText(payload.stripeSessionId);
+  const postDonationFlow = payload.type === "fundraiser" && Boolean(payload.fundraiser_id);
 
   if (!isTargetType(targetType) || !uuidPattern.test(targetId)) {
     return NextResponse.json({ error: "Invalid comment target." }, { status: 400 });
   }
 
+  // Comments are only allowed on fundraisers now
+  if (targetType !== "fundraiser") {
+    return NextResponse.json({ error: "Comments are not enabled for this type." }, { status: 403 });
+  }
+
   if (body.length < 2 || body.length > 1000) {
     return NextResponse.json(
-      { error: "Comments must be between 2 and 1000 characters." },
+      { error: "Message must be between 2 and 1000 characters." },
       { status: 400 }
     );
   }
 
+  let verifiedDonation: { id?: string; amount?: number | null; donor_email?: string | null } | null = null;
+
+  if (!postDonationFlow) {
+    // ── Donation verification ────────────────────────────────────────────────
+    // Must supply a valid Stripe session ID that corresponds to a donation for this fundraiser.
+    if (!stripeSessionId) {
+      return NextResponse.json(
+        { error: "A valid donation session is required to leave a message." },
+        { status: 403 }
+      );
+    }
+
+    const { data: donation } = await supabaseAdmin
+      .from("donations")
+      .select("id, amount, donor_email")
+      .eq("fundraiser_id", targetId)
+      .eq("payment_intent_id", stripeSessionId)
+      .in("status", ["completed", "succeeded"])
+      .limit(1)
+      .maybeSingle();
+
+    // payment_intent_id may store either the session ID or the payment intent ID.
+    // Fall back to checking if any completed donation exists for this email + fundraiser.
+    verifiedDonation = donation;
+    if (!verifiedDonation && authorEmail) {
+      const { data: fallback } = await supabaseAdmin
+        .from("donations")
+        .select("id, amount, donor_email")
+        .eq("fundraiser_id", targetId)
+        .ilike("donor_email", authorEmail)
+        .in("status", ["completed", "succeeded"])
+        .limit(1)
+        .maybeSingle();
+      verifiedDonation = fallback;
+    }
+
+    if (!verifiedDonation) {
+      return NextResponse.json(
+        { error: "We could not verify your donation for this fundraiser." },
+        { status: 403 }
+      );
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+  } else if (authorEmail) {
+    const { data: fallback } = await supabaseAdmin
+      .from("donations")
+      .select("id, amount, donor_email")
+      .eq("fundraiser_id", targetId)
+      .ilike("donor_email", authorEmail)
+      .in("status", ["completed", "succeeded"])
+      .limit(1)
+      .maybeSingle();
+    verifiedDonation = fallback;
+  }
+
   try {
     const exists = await targetExists(targetType, targetId);
-
     if (!exists) {
-      return NextResponse.json({ error: "This page no longer exists." }, { status: 404 });
+      return NextResponse.json({ error: "This fundraiser no longer exists." }, { status: 404 });
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to verify comment target.";
+    const message = error instanceof Error ? error.message : "Unable to verify fundraiser.";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 
@@ -100,7 +247,7 @@ export async function POST(request: NextRequest) {
       target_type: targetType,
       target_id: targetId,
       author_name: authorName,
-      author_email: authorEmail,
+      author_email: authorEmail || verifiedDonation?.donor_email || null,
       body,
       status: "approved",
     })
@@ -111,5 +258,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ comment: data }, { status: 201 });
+  return NextResponse.json({
+    comment: {
+      ...data,
+      donor_amount: Number(verifiedDonation?.amount ?? 0),
+    }
+  }, { status: 201 });
 }

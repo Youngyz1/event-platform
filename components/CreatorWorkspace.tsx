@@ -20,6 +20,17 @@ const sidebarItems: SidebarItem[] = [
   { label: "Settings", href: "/dashboard/settings" },
 ];
 
+const mobileDashboardItems: SidebarItem[] = [
+  { label: "Home", href: "/" },
+  { label: "Overview", href: "/dashboard" },
+  { label: "Events", href: "/dashboard/events" },
+  { label: "Fundraisers", href: "/dashboard/fundraisers" },
+  { label: "Donations", href: "/dashboard/donations" },
+  { label: "Attendees", href: "/dashboard/attendees" },
+  { label: "Reports", href: "/dashboard/reports" },
+  { label: "Settings", href: "/dashboard/settings" },
+];
+
 export function CreatorWorkspace({
   active,
   accent,
@@ -65,7 +76,7 @@ export function CreatorWorkspace({
 
   return (
     <main className="min-h-screen bg-zinc-100 text-zinc-950">
-      <div className="mx-auto flex max-w-[1500px] gap-5 px-4 py-5 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-[1500px] gap-5 px-3 py-4 sm:px-6 sm:py-5 lg:px-8">
         <aside className="sticky top-5 hidden h-[calc(100vh-2.5rem)] w-56 shrink-0 rounded-2xl bg-slate-950 p-4 text-white shadow-xl shadow-slate-950/15 lg:flex lg:flex-col">
           <Link href="/" className="mb-8 flex items-center gap-3 px-2">
             <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${theme.bg} text-lg font-black`}>E</span>
@@ -93,7 +104,20 @@ export function CreatorWorkspace({
           </Link>
         </aside>
 
-        <section className="min-w-0 flex-1 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          <nav className="grid grid-cols-8 items-center rounded-xl border border-zinc-200/80 bg-white px-1.5 py-2 text-center text-[7px] font-black text-slate-700 shadow-sm sm:flex sm:gap-2 sm:overflow-x-auto sm:rounded-2xl sm:px-4 sm:py-3 sm:text-xs lg:hidden">
+            {mobileDashboardItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="min-w-0 rounded-lg px-0.5 py-2 transition hover:bg-zinc-100 sm:shrink-0 sm:px-3"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+        <section className="min-w-0 flex-1 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm sm:rounded-2xl">
           <header className="border-b border-zinc-200 bg-white">
             <div className="flex flex-col gap-3 px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
               <div className="grid gap-3 sm:grid-cols-[1fr_220px] xl:w-[620px]">
@@ -169,6 +193,7 @@ export function CreatorWorkspace({
 
           <div className="border-t border-zinc-200 bg-white px-5 py-4">{footer}</div>
         </section>
+        </div>
       </div>
     </main>
   );

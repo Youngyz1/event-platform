@@ -1,6 +1,5 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import Footer from "@/components/Footer";
 import { CallToAction } from "@/components/ui/call-to-action";
 
 export default async function OrganizersDirectoryPage() {
@@ -8,6 +7,8 @@ export default async function OrganizersDirectoryPage() {
   const { data: organizers, error } = await supabase
     .from("organizers")
     .select("*")
+    .eq("visibility", "public")
+    .in("status", ["pending", "verified"])
     .order("name", { ascending: true });
 
   return (
@@ -163,7 +164,6 @@ export default async function OrganizersDirectoryPage() {
         </section>
       </div>
 
-      <Footer />
     </main>
   );
 }

@@ -6,7 +6,7 @@ export default async function NewDashboardFundraiserPage() {
   const ctx = await getDashboardContext();
   if (!ctx) redirect("/login");
 
-  if (!ctx.organizerId) {
+  if (ctx.organizerIds.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center shadow-sm">
         <p className="text-2xl font-black text-zinc-950">Create an organizer profile first</p>

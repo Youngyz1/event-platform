@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import Footer from "@/components/Footer";
 import { isAdmin } from "@/lib/auth";
 import { getDashboardContext } from "@/lib/dashboard-context";
 
@@ -254,7 +253,6 @@ export default async function TicketmasterEventPage({
         </div>
       </section>
 
-      <Footer />
     </main>
   );
 }

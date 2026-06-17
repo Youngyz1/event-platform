@@ -102,16 +102,16 @@ function StatCard({
   };
 
   return (
-    <div className="flex min-h-32 flex-col justify-between rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-200/60">
-      <div className="flex items-start justify-between gap-4">
-        <p className="text-xs font-bold uppercase tracking-wide text-zinc-500">{label}</p>
-        <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${iconClasses[tone]}`}>
+    <div className="flex min-h-28 flex-col justify-between rounded-xl border border-zinc-200/80 bg-white p-3 shadow-sm shadow-zinc-200/60 sm:min-h-32 sm:rounded-2xl sm:p-5">
+      <div className="flex items-start justify-between gap-3 sm:gap-4">
+        <p className="text-[9px] font-bold uppercase tracking-wide text-zinc-500 sm:text-xs">{label}</p>
+        <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black sm:h-8 sm:w-8 sm:text-sm ${iconClasses[tone]}`}>
           {icon}
         </span>
       </div>
       <div>
-        <p className="text-3xl font-black tracking-tight text-zinc-950">{value}</p>
-        <p className="mt-1 text-xs font-semibold text-zinc-500">{detail}</p>
+        <p className="text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">{value}</p>
+        <p className="mt-1 text-[10px] font-semibold leading-tight text-zinc-500 sm:text-xs">{detail}</p>
       </div>
     </div>
   );
@@ -145,8 +145,8 @@ function TextAction({ href, children }: { href: string; children: ReactNode }) {
   );
 }
 
-const panelClass = 'rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-200/60 sm:p-6';
-const rowClass   = 'rounded-2xl bg-zinc-50/80 p-4 ring-1 ring-zinc-200/70';
+const panelClass = 'rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm shadow-zinc-200/60 sm:rounded-2xl sm:p-6';
+const rowClass   = 'rounded-xl bg-zinc-50/80 p-3 ring-1 ring-zinc-200/70 sm:rounded-2xl sm:p-4';
 
 export default function DashboardView({
   displayName,
@@ -170,22 +170,22 @@ export default function DashboardView({
   const accountLabel = displayName?.trim() || 'Account';
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-8">
       {/* Page header */}
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm shadow-zinc-200/60 sm:px-6">
-        <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
+      <header className="rounded-xl border border-zinc-200/80 bg-white px-4 py-3 shadow-sm shadow-zinc-200/60 sm:rounded-2xl sm:px-6 sm:py-4">
+        <div className="flex items-center justify-between gap-3 sm:gap-5">
           <div>
-            <p className="text-xs font-black uppercase tracking-wide text-orange-600">Dashboard</p>
-            <h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">Overview</h1>
-            <p className="mt-2 text-sm font-medium text-zinc-500">
+            <p className="text-[10px] font-black uppercase tracking-wide text-orange-600 sm:text-xs">Dashboard</p>
+            <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-4xl">Overview</h1>
+            <p className="mt-1 text-xs font-medium text-zinc-500 sm:mt-2 sm:text-sm">
               Welcome back, {accountLabel}
             </p>
           </div>
-          <div className="flex h-10 items-center gap-2 rounded-xl bg-zinc-50 px-3 text-sm font-black text-zinc-700 ring-1 ring-zinc-200">
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-600 text-xs text-white">
+          <div className="flex h-9 min-w-0 items-center gap-2 rounded-xl bg-zinc-50 px-2 text-xs font-black text-zinc-700 ring-1 ring-zinc-200 sm:h-10 sm:px-3 sm:text-sm">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-orange-600 text-xs text-white">
               {accountLabel.charAt(0).toUpperCase()}
             </span>
-            <span className="max-w-28 truncate">{accountLabel}</span>
+            <span className="max-w-20 truncate sm:max-w-28">{accountLabel}</span>
           </div>
         </div>
       </header>
@@ -197,7 +197,7 @@ export default function DashboardView({
       )}
 
       {/* Stat cards */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <StatCard
           label="Fundraiser Raised"
           value={money(analytics.totalRaised)}
@@ -229,7 +229,7 @@ export default function DashboardView({
       </section>
 
       {/* Fundraiser performance + Donation summary */}
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <section className="grid gap-4 sm:gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className={panelClass}>
           <SectionHeader
             title="Fundraiser Performance"
@@ -238,11 +238,11 @@ export default function DashboardView({
           />
 
           {fundraisers.length === 0 ? (
-            <div className="mt-6 grid gap-6 rounded-2xl bg-zinc-50/80 p-6 text-center ring-1 ring-zinc-200/70 md:grid-cols-[180px_1fr] md:text-left">
-              <div className="mx-auto flex h-36 w-36 items-center justify-center rounded-full bg-emerald-50 ring-[14px] ring-emerald-100">
+            <div className="mt-5 grid grid-cols-[96px_1fr] gap-4 rounded-xl bg-zinc-50/80 p-4 text-left ring-1 ring-zinc-200/70 sm:mt-6 sm:gap-6 sm:rounded-2xl sm:p-6 md:grid-cols-[180px_1fr]">
+              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-emerald-50 ring-[10px] ring-emerald-100 sm:h-36 sm:w-36 sm:ring-[14px]">
                 <div>
-                  <p className="text-3xl font-black">0%</p>
-                  <p className="text-xs font-bold text-zinc-500">of goal</p>
+                  <p className="text-2xl font-black sm:text-3xl">0%</p>
+                  <p className="text-[10px] font-bold text-zinc-500 sm:text-xs">of goal</p>
                 </div>
               </div>
               <div className="flex flex-col justify-center">
@@ -357,7 +357,7 @@ export default function DashboardView({
       </section>
 
       {/* Organizer Profiles + Recent Ticket Orders */}
-      <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+      <section className="grid gap-4 sm:gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <div className={panelClass}>
           <SectionHeader
             title="Organizer Profiles"

@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Footer from "@/components/Footer";
 
 const packages = [
   {
@@ -64,7 +63,6 @@ export default function SponsorsPage() {
         </div>
       </section>
 
-      <Footer />
     </main>
   );
 }

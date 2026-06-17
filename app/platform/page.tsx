@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import Footer from "@/components/Footer";
 
 export const metadata: Metadata = {
   title: "One Platform for the Event Economy | EventBrithe",
@@ -147,7 +146,6 @@ export default function PlatformPage() {
         </div>
       </section>
 
-      <Footer />
     </main>
   );
 }
