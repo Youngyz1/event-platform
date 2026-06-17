@@ -2,9 +2,29 @@ import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import TicketCheckout from "./TicketCheckout";
 import VenueMapClient from "@/components/VenueMapClient";
-import CommentsSection from "@/components/CommentsSection";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
+import EventPageClient from "./EventPageClient";
+import AboutSection from "./AboutSection";
+
+/** Forward-geocode a free-text address via Nominatim (no API key needed). */
+async function geocodeAddress(
+  query: string
+): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": "EventBrithe/1.0", "Accept-Language": "en" },
+      next: { revalidate: 86400 }, // cache 24 h per address
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch {
+    return null;
+  }
+}
 
 function paragraphs(value: string | null | undefined) {
   return (value || "")
@@ -28,17 +48,18 @@ export default async function EventPage({
 
   if (!event) return notFound();
 
-  // FIXED: private events are only visible to their owner.
   if (event.visibility === "private") {
     const supabaseServer = await createSupabaseServer();
-    const { data: { user } } = await supabaseServer.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseServer.auth.getUser();
     if (!user || user.id !== event.user_id) return notFound();
   }
 
   const { data: organizer } = event.organizer_id
     ? await supabase
         .from("organizers")
-        .select("id, name, bio, photo, website, status")
+        .select("id, name, bio, photo, website, status, created_at")
         .eq("id", event.organizer_id)
         .single()
     : { data: null };
@@ -48,25 +69,93 @@ export default async function EventPage({
     .select("*")
     .eq("event_id", event.id);
 
-  const lowestPrice = tickets && tickets.length > 0
-    ? Math.min(...tickets.map((t) => t.price))
-    : null;
-  const primaryOrganizerName = event.source_organizer_name || organizer?.name || "";
-  const primaryOrganizerUrl = event.source_organizer_url || (organizer ? `/organizers/${organizer.id}` : "");
-  const primaryOrganizerDescription = event.source_organizer_description || organizer?.bio || "";
-  const primaryOrganizerPhoto = event.source_organizer_name ? "" : organizer?.photo || "";
+  // Count organizer's events and fundraisers
+  const [
+    { count: organizerEventCount },
+    { count: organizerFundraiserCount },
+    { count: followerCount },
+  ] = await Promise.all([
+    organizer?.id
+      ? supabase
+          .from("events")
+          .select("id", { count: "exact", head: true })
+          .eq("organizer_id", organizer.id)
+          .eq("visibility", "public")
+      : Promise.resolve({ count: 0 }),
+    organizer?.id
+      ? supabase
+          .from("fundraisers")
+          .select("id", { count: "exact", head: true })
+          .eq("organizer_id", organizer.id)
+      : Promise.resolve({ count: 0 }),
+    organizer?.id
+      ? supabase
+          .from("organizer_follows")
+          .select("id", { count: "exact", head: true })
+          .eq("organizer_id", organizer.id)
+      : Promise.resolve({ count: 0 }),
+  ]);
+
+  // More events from same organizer
+  const { data: moreEvents } = organizer?.id
+    ? await supabase
+        .from("events")
+        .select("id, title, slug, banner, event_date, city, venue")
+        .eq("organizer_id", organizer.id)
+        .neq("id", event.id)
+        .eq("visibility", "public")
+        .order("event_date", { ascending: true })
+        .limit(4)
+    : { data: [] };
+
+  const lowestPrice =
+    tickets && tickets.length > 0
+      ? Math.min(...tickets.map((t) => t.price))
+      : null;
+
+  const primaryOrganizerName =
+    event.source_organizer_name || organizer?.name || "";
+  const primaryOrganizerUrl =
+    event.source_organizer_url ||
+    (organizer ? `/organizers/${organizer.id}` : "");
+  const primaryOrganizerDescription =
+    event.source_organizer_description || organizer?.bio || "";
+  const primaryOrganizerPhoto = event.source_organizer_name
+    ? ""
+    : organizer?.photo || "";
   const descriptionParagraphs = paragraphs(event.description);
-  const eventCity = event.city || "the local area";
-  const ticketLabel = lowestPrice === null
-    ? "Tickets TBA"
-    : lowestPrice === 0
-      ? "Free entry"
-      : `From $${Number(lowestPrice).toFixed(2)}`;
-  const eventHighlights = [
-    event.category ? `${event.category} event` : "Community event",
-    event.venue || event.city ? `Hosted in ${[event.venue, event.city].filter(Boolean).join(", ")}` : "Venue details listed below",
-    ticketLabel,
-  ];
+
+  // ── Resolve map coordinates ──────────────────────────────────
+  // Use stored lat/lng if available; otherwise geocode from address fields.
+  let mapLat: number | null = event.latitude ?? null;
+  let mapLng: number | null = event.longitude ?? null;
+
+  if (!mapLat || !mapLng) {
+    const addressQuery = [
+      event.address,
+      event.venue,
+      event.city,
+      event.state,
+      event.country,
+    ]
+      .filter(Boolean)
+      .join(", ");
+
+    if (addressQuery.trim()) {
+      const coords = await geocodeAddress(addressQuery);
+      if (coords) {
+        mapLat = coords.lat;
+        mapLng = coords.lng;
+      }
+    }
+  }
+
+  const ticketLabel =
+    lowestPrice === null
+      ? "Tickets TBA"
+      : lowestPrice === 0
+        ? "Free"
+        : `$${Number(lowestPrice).toFixed(2)}`;
 
   const formattedDate = event.event_date
     ? new Date(event.event_date).toLocaleString("en-US", {
@@ -78,216 +167,549 @@ export default async function EventPage({
       })
     : "Date TBA";
 
-  return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-950">
+  const hostingYears = organizer?.created_at
+    ? Math.max(
+        1,
+        Math.floor(
+          (Date.now() - new Date(organizer.created_at).getTime()) /
+            (1000 * 60 * 60 * 24 * 365)
+        )
+      )
+    : null;
 
-      <section className="relative h-[560px] w-full overflow-hidden bg-zinc-950 md:h-[620px]">
+  return (
+    <main className="min-h-screen bg-white text-zinc-950">
+      {/* ── Banner image ───────────────── */}
+      <div className="w-full overflow-hidden md:relative md:flex md:h-[400px] md:items-center md:justify-center md:bg-zinc-950 lg:h-[450px]">
+        {/* Blurred background for desktop */}
+        <div className="hidden md:block absolute inset-0 select-none pointer-events-none opacity-40 blur-2xl">
+          <img
+            src={
+              event.banner ||
+              "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop"
+            }
+            alt=""
+            className="h-full w-full object-cover object-center"
+          />
+        </div>
+
+        {/* Main image */}
         <img
-          src={event.banner || "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop"}
-          alt={event.title}
+          src={
+            event.banner ||
+            "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop"
+          }
+          alt=""
           fetchPriority="high"
           decoding="async"
-          className="absolute inset-0 h-full w-full object-cover opacity-75"
+          className="aspect-video w-full object-cover sm:aspect-auto sm:max-h-[500px] md:relative md:z-10 md:h-full md:w-auto md:max-w-7xl md:object-contain md:object-center lg:max-h-[450px]"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/45 to-transparent" />
-        <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-end px-6 pb-16">
-          <div className="max-w-4xl">
-            <p className="mb-4 w-fit rounded-full bg-white px-4 py-2 text-sm font-black uppercase tracking-wide text-orange-600">
-              {event.category || "Event"}
-            </p>
-            <h1 className="text-4xl font-black leading-tight text-white sm:text-5xl lg:text-7xl">{event.title}</h1>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-zinc-100 sm:text-xl">
-              {descriptionParagraphs[0] || `Join ${primaryOrganizerName || "the organizer"} for a memorable event in ${eventCity}.`}
-            </p>
-            <div className="mt-8 grid gap-3 text-white sm:grid-cols-3">
-              {eventHighlights.map((highlight) => (
-                <div key={highlight} className="rounded-xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur">
-                  <p className="text-sm font-black">{highlight}</p>
-                </div>
-              ))}
-            </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        {/* ── Title + share/save row ────────────────────────── */}
+        <div className="flex items-start justify-between gap-4 pt-6">
+          <div className="min-w-0 flex-1">
+            {event.category && (
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-orange-600">
+                {event.category}
+              </p>
+            )}
+            <h1 className="text-2xl font-black leading-tight sm:text-3xl lg:text-4xl">
+              {event.title}
+            </h1>
+            {primaryOrganizerName && (
+              <p className="mt-2 text-sm text-zinc-500">
+                by{" "}
+                {primaryOrganizerUrl ? (
+                  <a
+                    href={primaryOrganizerUrl}
+                    className="font-bold text-zinc-800 hover:text-orange-600"
+                  >
+                    {primaryOrganizerName}
+                  </a>
+                ) : (
+                  <span className="font-bold text-zinc-800">
+                    {primaryOrganizerName}
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
+          <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
+            <EventPageClient
+              eventTitle={event.title}
+              eventSlug={event.slug}
+            />
           </div>
         </div>
-      </section>
 
-      <section className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:py-16">
-        <div className="grid gap-10 lg:grid-cols-3 lg:gap-12">
+        {/* ── Slim info row ─────────────────────────────────── */}
+        <div className="mt-4 flex flex-col gap-2 border-b border-zinc-100 pb-5 text-sm text-zinc-600 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-6 sm:gap-y-2">
+          {event.event_date && (
+            <span className="flex items-center gap-1.5">
+              <svg
+                className="h-4 w-4 text-zinc-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              {formattedDate}
+            </span>
+          )}
+          {(event.venue || event.city) && (
+            <span className="flex items-center gap-1.5">
+              <svg
+                className="h-4 w-4 text-zinc-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                  [event.venue, event.city].filter(Boolean).join(", ")
+                )}`}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-orange-600 hover:underline transition"
+              >
+                {[event.venue, event.city].filter(Boolean).join(" · ")}
+              </a>
+            </span>
+          )}
+          {lowestPrice !== null && (
+            <span className="flex items-center gap-1.5 font-bold text-zinc-800">
+              <svg
+                className="h-4 w-4 text-zinc-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"
+                />
+              </svg>
+              {ticketLabel}
+            </span>
+          )}
+        </div>
 
-          <div className="lg:col-span-2">
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-white rounded-2xl border border-zinc-200 p-6">
-                <p className="text-sm text-zinc-500 mb-2">Date</p>
-                <h3 className="text-xl font-bold">{formattedDate}</h3>
-              </div>
-              <div className="bg-white rounded-2xl border border-zinc-200 p-6">
-                <p className="text-sm text-zinc-500 mb-2">Venue</p>
-                <h3 className="text-xl font-bold">
-                  {event.venue}{event.city ? `, ${event.city}` : ""}
-                </h3>
-              </div>
-            </div>
+        {/* ── Main 2-col layout ───────────────────── */}
+        <div className="grid gap-8 pb-24 pt-8 lg:grid-cols-3 lg:gap-12 lg:pb-10">
+          <div className="space-y-8 lg:col-span-2">
+            {/* About */}
+            <section>
+              <h2 className="text-2xl font-black mb-4">About this event</h2>
+              <AboutSection paragraphs={descriptionParagraphs} />
+            </section>
 
-            <div className="mt-8 grid gap-6 md:grid-cols-3">
-              <div className="rounded-2xl border border-zinc-200 bg-white p-6">
-                <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Tickets</p>
-                <h3 className="mt-2 text-2xl font-black">{ticketLabel}</h3>
-              </div>
-              <div className="rounded-2xl border border-zinc-200 bg-white p-6">
-                <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Organizer</p>
-                <h3 className="mt-2 text-2xl font-black">{primaryOrganizerName || "Verified host"}</h3>
-              </div>
-              <div className="rounded-2xl border border-zinc-200 bg-white p-6">
-                <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Booking</p>
-                <h3 className="mt-2 text-2xl font-black">Secure checkout</h3>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-3xl border border-zinc-200 p-8 mt-12">
-              <h2 className="text-3xl font-black mb-6">About this event</h2>
-              <div className="space-y-5 text-lg leading-relaxed text-zinc-700">
-                {descriptionParagraphs.length > 0 ? (
-                  descriptionParagraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)
-                ) : (
-                  <p>Details are being finalized by the organizer. Check the date, venue, and ticket options before booking.</p>
-                )}
-              </div>
-            </div>
-
-            <div className="mt-12 grid gap-6 md:grid-cols-2">
-              <div className="rounded-3xl border border-zinc-200 bg-white p-8">
-                <h2 className="text-2xl font-black">Why Attend</h2>
-                <ul className="mt-5 space-y-4 text-zinc-700">
-                  <li className="flex gap-3">
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-orange-500" />
-                    <span>Meet people who are already interested in this kind of local experience.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-orange-500" />
-                    <span>Get the key event details in one place before you book.</span>
-                  </li>
-                  <li className="flex gap-3">
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-orange-500" />
-                    <span>Support organizers bringing more community events to {eventCity}.</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="rounded-3xl border border-zinc-200 bg-white p-8">
-                <h2 className="text-2xl font-black">Good To Know</h2>
-                <div className="mt-5 space-y-4 text-zinc-700">
-                  <p><span className="font-black text-zinc-950">Arrival:</span> Plan to arrive early so check-in is smooth.</p>
-                  <p><span className="font-black text-zinc-950">Tickets:</span> Choose your ticket type before checkout.</p>
-                  <p><span className="font-black text-zinc-950">Updates:</span> Organizer details and source links are shown when available.</p>
-                </div>
-              </div>
-            </div>
-
-            {primaryOrganizerName && (
-              <div className="bg-white rounded-3xl border border-zinc-200 p-8 mt-12">
-                <h2 className="text-3xl font-black mb-6">Organizer</h2>
-                <div className="flex gap-4">
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 font-black text-orange-700">
-                    {primaryOrganizerPhoto ? (
-                      <img src={primaryOrganizerPhoto} alt={primaryOrganizerName} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-                    ) : (
-                      primaryOrganizerName.charAt(0).toUpperCase()
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-black uppercase tracking-wide text-zinc-500">
-                      {event.source_organizer_name ? "Organizer" : "Platform organizer"}
-                    </p>
-                    {primaryOrganizerUrl ? (
-                      <a
-                        href={primaryOrganizerUrl}
-                        target={primaryOrganizerUrl.startsWith("http") ? "_blank" : undefined}
-                        rel={primaryOrganizerUrl.startsWith("http") ? "noreferrer" : undefined}
-                        className="flex flex-wrap items-center gap-2 break-words text-xl font-black text-zinc-950 hover:text-orange-600"
-                      >
-                        <span className="break-words">{primaryOrganizerName}</span>
-                        <VerifiedBadge verified={organizer?.status === 'verified'} />
-                      </a>
-                    ) : (
-                      <h3 className="flex flex-wrap items-center gap-2 text-xl font-black text-zinc-950">
-                        <span className="break-words">{primaryOrganizerName}</span>
-                        <VerifiedBadge verified={organizer?.status === 'verified'} />
-                      </h3>
-                    )}
-                    {primaryOrganizerDescription && (
-                      <p className="mt-2 break-words text-zinc-600">{primaryOrganizerDescription}</p>
-                    )}
-                    {event.source_organizer_name && organizer && (
-                      <p className="mt-3 text-sm font-semibold text-zinc-500">
-                        Local profile:{" "}
-                        <a href={`/organizers/${organizer.id}`} className="text-orange-600 hover:text-orange-700">
-                          {organizer.name}
-                        </a>
+            {/* Good to Know + Refund Policy */}
+            {(event.highlights || event.refund_policy) && (
+              <section>
+                <h2 className="text-2xl font-black mb-4">Good to know</h2>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {event.highlights && (
+                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                      <h3 className="font-black mb-3">Highlights</h3>
+                      <p className="text-sm text-zinc-600 whitespace-pre-wrap">
+                        {event.highlights}
                       </p>
-                    )}
-                  </div>
+                    </div>
+                  )}
+                  {event.refund_policy && (
+                    <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
+                      <h3 className="font-black mb-3">Refund Policy</h3>
+                      <p className="text-sm text-zinc-600 whitespace-pre-wrap">
+                        {event.refund_policy}
+                      </p>
+                    </div>
+                  )}
                 </div>
-              </div>
+              </section>
             )}
 
-            <div className="mt-12 rounded-3xl border border-zinc-200 bg-white p-8">
-              <h2 className="text-3xl font-black">Frequently Asked Questions</h2>
-              <div className="mt-6 divide-y divide-zinc-200">
-                {[
-                  ["How do I get my ticket?", "After checkout you will see your QR code ticket on screen. Download or screenshot it — you can also print it. Show the QR code to staff at the door."],
-                  ["Can I share this event?", "Yes. Copy the page link and share it with friends or your community."],
-                  ["Who should I contact about event details?", primaryOrganizerName ? `Contact ${primaryOrganizerName} using the organizer link when available.` : "Use the source or organizer information listed on this page."],
-                ].map(([question, answer]) => (
-                  <div key={question} className="py-5">
-                    <h3 className="font-black">{question}</h3>
-                    <p className="mt-2 text-zinc-600">{answer}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Collapsible FAQ */}
+            <section>
+              <h2 className="text-2xl font-black mb-4">
+                Frequently asked questions
+              </h2>
+              <FaqSection organizerName={primaryOrganizerName} />
+            </section>
 
-            <div className="mt-12">
-              <CommentsSection
-                targetType="event"
-                targetId={event.id}
-                title="Event Comments"
-                accent="orange"
-              />
-            </div>
+            {/* Organizer */}
+            {primaryOrganizerName && (
+              <section>
+                <h2 className="text-2xl font-black mb-4">Organised by</h2>
+                <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 font-black text-orange-700 text-lg">
+                      {primaryOrganizerPhoto ? (
+                        <img
+                          src={primaryOrganizerPhoto}
+                          alt={primaryOrganizerName}
+                          loading="lazy"
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        primaryOrganizerName.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-wide text-zinc-400 mb-0.5">
+                        {event.source_organizer_name
+                          ? "Organizer"
+                          : "Platform organizer"}
+                      </p>
+                      <div className="flex items-center justify-between gap-4 flex-wrap">
+                        <div>
+                          {primaryOrganizerUrl ? (
+                            <a
+                              href={primaryOrganizerUrl}
+                              target={
+                                primaryOrganizerUrl.startsWith("http")
+                                  ? "_blank"
+                                  : undefined
+                              }
+                              rel={
+                                primaryOrganizerUrl.startsWith("http")
+                                  ? "noreferrer"
+                                  : undefined
+                              }
+                              className="inline-flex items-center gap-2 text-lg font-black text-zinc-950 hover:text-orange-600"
+                            >
+                              {primaryOrganizerName}
+                              <VerifiedBadge
+                                verified={organizer?.status === "verified"}
+                              />
+                            </a>
+                          ) : (
+                            <span className="inline-flex items-center gap-2 text-lg font-black">
+                              {primaryOrganizerName}
+                              <VerifiedBadge
+                                verified={organizer?.status === "verified"}
+                              />
+                            </span>
+                          )}
+                          {organizer && (
+                            <div className="mt-1 flex gap-5 text-sm text-zinc-500">
+                              <span>
+                                <strong className="text-zinc-800">
+                                  {followerCount ?? 0}
+                                </strong>{" "}
+                                Followers
+                              </span>
+                              <span>
+                                <strong className="text-zinc-800">
+                                  {(organizerEventCount ?? 0) +
+                                    (organizerFundraiserCount ?? 0)}
+                                </strong>{" "}
+                                Events
+                              </span>
+                              {hostingYears && (
+                                <span>
+                                  <strong className="text-zinc-800">
+                                    {hostingYears}
+                                  </strong>{" "}
+                                  {hostingYears === 1 ? "year" : "years"}{" "}
+                                  hosting
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {organizer && (
+                          <div className="flex gap-3 shrink-0">
+                            <a
+                              href={`mailto:support@eventbrithe.com?subject=Contact%20${encodeURIComponent(
+                                primaryOrganizerName
+                              )}`}
+                              className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-100 transition"
+                            >
+                              Contact
+                            </a>
+                            <a
+                              href={`/organizers/${organizer.id}`}
+                              className="rounded-xl bg-orange-500 px-4 py-2 text-sm font-bold text-white hover:bg-orange-600 transition"
+                            >
+                              Follow
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
 
             {/* Venue Map */}
-            {event.latitude && event.longitude && (
-              <div className="bg-white rounded-3xl border border-zinc-200 p-8 mt-12">
-                <h2 className="text-3xl font-black mb-4">Venue Location</h2>
-                <div className="mb-4">
-                  <p className="font-semibold text-zinc-900">{event.venue || "Venue"}</p>
-                  {event.city && <p className="text-zinc-500 text-sm">{event.city}</p>}
+            {(event.venue || event.city || event.address) && (
+              <section>
+                <h2 className="text-2xl font-black mb-4">Venue location</h2>
+                <div className="rounded-2xl border border-zinc-200 overflow-hidden">
+                  <div className="px-5 pt-5 pb-3">
+                    <p className="font-bold text-zinc-900">
+                      {event.venue || "Venue"}
+                    </p>
+                    {event.address && (
+                      <p className="text-sm text-zinc-500">{event.address}</p>
+                    )}
+                    {event.city && (
+                      <p className="text-sm text-zinc-500">{event.city}</p>
+                    )}
+                  </div>
+                  {mapLat && mapLng ? (
+                    <VenueMapClient
+                      lat={mapLat}
+                      lng={mapLng}
+                      title={event.title}
+                      venue={event.venue}
+                      city={event.city}
+                    />
+                  ) : (
+                    /* No coordinates at all — show a Google Maps link instead */
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                        [event.address, event.venue, event.city]
+                          .filter(Boolean)
+                          .join(", ")
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex h-40 items-center justify-center gap-2 bg-zinc-50 text-sm font-bold text-orange-600 hover:bg-orange-50 transition"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      View on Google Maps ↗
+                    </a>
+                  )}
+                  {/* How to get there */}
+                  <div className="border-t border-zinc-100 px-5 py-4">
+                    <p className="mb-3 text-sm font-bold text-zinc-500">
+                      How do you want to get there?
+                    </p>
+                    <div className="flex flex-wrap gap-4">
+                      {[
+                        { label: "Driving", icon: "🚗" },
+                        { label: "Public transport", icon: "🚌" },
+                        { label: "Biking", icon: "🚲" },
+                        { label: "Walking", icon: "🚶" },
+                      ].map(({ label, icon }) => (
+                        <a
+                          key={label}
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+                            [event.venue, event.city]
+                              .filter(Boolean)
+                              .join(", ")
+                          )}&travelmode=${
+                            label === "Public transport"
+                              ? "transit"
+                              : label.toLowerCase()
+                          }`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2 rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold text-zinc-700 hover:border-orange-300 hover:text-orange-600 transition"
+                        >
+                          <span>{icon}</span>
+                          {label}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-                <VenueMapClient
-                  lat={event.latitude}
-                  lng={event.longitude}
-                  title={event.title}
-                  venue={event.venue}
-                  city={event.city}
-                />
-              </div>
+              </section>
             )}
 
-            {event.video_url && (
-              <div className="bg-white rounded-3xl border border-zinc-200 p-6 mt-12">
-                <h2 className="text-3xl font-black mb-4">Event Video</h2>
-                <video src={event.video_url} controls className="w-full rounded-2xl" />
-              </div>
+            {/* Report event */}
+            <div className="flex justify-center pt-2 pb-4">
+              <a
+                href={`mailto:support@eventbrithe.com?subject=Report%20event%3A%20${encodeURIComponent(
+                  event.title
+                )}`}
+                className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-red-500 transition"
+              >
+                <svg
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"
+                  />
+                </svg>
+                Report this event
+              </a>
+            </div>
+
+            {/* More events from organizer */}
+            {moreEvents && moreEvents.length > 0 && (
+              <section>
+                <h2 className="text-2xl font-black mb-1">
+                  More events from{" "}
+                  {primaryOrganizerName || "this organizer"}
+                </h2>
+                <p className="text-sm text-zinc-500 mb-5">
+                  Discover more events you might love.
+                </p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {moreEvents.map((e) => (
+                    <a
+                      key={e.id}
+                      href={`/events/${e.slug}`}
+                      className="group rounded-2xl border border-zinc-200 overflow-hidden hover:border-orange-300 transition"
+                    >
+                      <div className="aspect-video w-full overflow-hidden bg-zinc-100">
+                        <img
+                          src={
+                            e.banner ||
+                            "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=800&auto=format&fit=crop"
+                          }
+                          alt={e.title}
+                          loading="lazy"
+                          className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <p className="font-black text-zinc-950 line-clamp-2 group-hover:text-orange-600 transition">
+                          {e.title}
+                        </p>
+                        {e.event_date && (
+                          <p className="mt-1 text-xs text-zinc-500">
+                            {new Date(e.event_date).toLocaleDateString(
+                              "en-US",
+                              {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                              }
+                            )}
+                            {e.city ? ` · ${e.city}` : ""}
+                          </p>
+                        )}
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </section>
             )}
           </div>
 
-          <TicketCheckout
-            event={event}
-            tickets={tickets || []}
-            lowestPrice={lowestPrice}
-          />
-
+          {/* Sidebar ticket checkout */}
+          <div id="tickets">
+            <TicketCheckout
+              event={event}
+              tickets={tickets || []}
+              lowestPrice={lowestPrice}
+            />
+          </div>
         </div>
-      </section>
+      </div>
+
+      {/* ── Sticky bottom bar ─────────────────────────────── */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-zinc-200 bg-white/95 backdrop-blur px-4 py-3 lg:hidden">
+        <div className="mx-auto flex max-w-lg items-center justify-between gap-4">
+          <div>
+            <p className="text-lg font-black">{ticketLabel}</p>
+            <p className="text-xs text-zinc-500">{formattedDate}</p>
+          </div>
+          <a
+            href="#tickets"
+            className="rounded-xl bg-orange-500 px-6 py-3 text-sm font-black text-white hover:bg-orange-600 transition"
+          >
+            Reserve a spot
+          </a>
+        </div>
+      </div>
     </main>
+  );
+}
+
+// ── Collapsible FAQ ──────────────────────────────────────
+function FaqSection({ organizerName }: { organizerName: string }) {
+  const faqs: [string, string][] = [
+    [
+      "How do I get my ticket?",
+      "After checkout you will see your QR code ticket on screen. Download or screenshot it — you can also print it. Show the QR code to staff at the door.",
+    ],
+    [
+      "Can I share this event?",
+      "Yes. Copy the page link and share it with friends or your community.",
+    ],
+    [
+      "Who should I contact about event details?",
+      organizerName
+        ? `Contact ${organizerName} using the organizer link when available.`
+        : "Use the source or organizer information listed on this page.",
+    ],
+    [
+      "What is the refund policy?",
+      "No refunds unless the event is cancelled by the organizer. Contact the organizer directly for special circumstances.",
+    ],
+  ];
+
+  return (
+    <div className="divide-y divide-zinc-100 rounded-2xl border border-zinc-200 overflow-hidden">
+      {faqs.map(([question, answer]) => (
+        <FaqItem key={question} question={question} answer={answer} />
+      ))}
+    </div>
+  );
+}
+
+function FaqItem({
+  question,
+  answer,
+}: {
+  question: string;
+  answer: string;
+}) {
+  return (
+    <details className="group bg-white px-5 py-1">
+      <summary className="flex cursor-pointer items-center justify-between gap-4 py-4 font-bold text-zinc-950 list-none">
+        {question}
+        <svg
+          className="h-4 w-4 shrink-0 text-zinc-400 transition group-open:rotate-180"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M19 9l-7 7-7-7"
+          />
+        </svg>
+      </summary>
+      <p className="pb-4 text-sm leading-relaxed text-zinc-600">{answer}</p>
+    </details>
   );
 }
