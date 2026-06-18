@@ -21,6 +21,10 @@ type Event = {
   title: string;
   slug: string;
   source_url?: string | null;
+  banner?: string | null;
+  event_date?: string | null;
+  venue?: string | null;
+  city?: string | null;
 };
 
 type SeatData = {
@@ -40,6 +44,9 @@ type VenueLayout = {
 
 type Step = "tickets" | "seats" | "review";
 
+const FALLBACK_BANNER =
+  "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=800&auto=format&fit=crop";
+
 // ─── Main checkout component ───────────────────────────────────────────────────
 
 export default function TicketCheckout({
@@ -52,6 +59,7 @@ export default function TicketCheckout({
   lowestPrice: number | null;
 }) {
   const searchParams = useSearchParams();
+  const [isOpen, setIsOpen] = useState(false);
   const [step, setStep] = useState<Step>("tickets");
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(
     tickets[0] || null
@@ -74,9 +82,6 @@ export default function TicketCheckout({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [preparingPayment, setPreparingPayment] = useState(false);
-  // UUID minted when the user clicks Continue — ties this browser attempt
-  // to the Stripe idempotency key so retries reuse the same intent while
-  // going-back-then-returning always creates a fresh one.
   const [checkoutAttemptId, setCheckoutAttemptId] = useState<string | null>(null);
 
   // Load seat map if venue has assigned seating
@@ -95,7 +100,6 @@ export default function TicketCheckout({
       .catch(() => setLoadingSeats(false));
   }, [event.id]);
 
-
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   function formatPrice(price: number) {
@@ -106,6 +110,18 @@ export default function TicketCheckout({
           currency: "USD",
         }).format(price);
   }
+
+  const formattedDate = event.event_date
+    ? new Date(event.event_date).toLocaleString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      })
+    : null;
+
+  const locationLabel = [event.venue, event.city].filter(Boolean).join(", ");
 
   const effectivePrice =
     selectedSeats.length > 0
@@ -124,15 +140,20 @@ export default function TicketCheckout({
           .join(", ")
       : null;
 
+  const summaryItems = selectedTicket
+    ? [
+        { label: "Ticket", value: selectedTicket.name },
+        ...(seatLabel ? [{ label: "Seat(s)", value: seatLabel }] : []),
+        { label: "Qty", value: String(selectedSeats.length || quantity) },
+      ]
+    : [];
+
   // ─── Prepare Stripe PaymentIntent ────────────────────────────────────────────
-  // acceptAttemptId: the UUID minted for this particular checkout attempt.
-  // Using a parameter (vs reading state) avoids closure staleness.
   async function preparePayment(attemptId: string) {
-    if (effectivePrice === 0) return; // free tickets skip Stripe
-    if (clientSecret) return;         // already created for this attempt
+    if (effectivePrice === 0) return;
+    if (clientSecret) return;
     setPreparingPayment(true);
 
-    // Reserve seats before charging
     if (selectedSeats.length > 0) {
       const res = await fetch("/api/seats", {
         method: "POST",
@@ -179,9 +200,6 @@ export default function TicketCheckout({
   }
 
   function goToReview() {
-    // Mint a fresh UUID for every new checkout attempt so:
-    //  1. The same attempt (page still open) reuses the same Stripe intent.
-    //  2. A new attempt (user went back and came back) gets a brand-new intent.
     const attemptId = crypto.randomUUID();
     setCheckoutAttemptId(attemptId);
     setStep("review");
@@ -231,7 +249,6 @@ export default function TicketCheckout({
     return (
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
         <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-8 text-center shadow-2xl relative">
-          {/* Close button in top-right */}
           <button
             onClick={() => {
               window.location.href = `/events/${event.slug}`;
@@ -271,287 +288,355 @@ export default function TicketCheckout({
   }
 
   return (
-    <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm lg:sticky lg:top-24 overflow-hidden">
-      {/* Step indicator */}
-      <div className="border-b border-zinc-100 px-6 py-4">
-        <div className="flex items-center gap-2">
-          {steps.map((s, idx) => (
-            <div key={s.id} className="flex items-center gap-2">
-              <button
-                onClick={() => idx < currentStepIdx && setStep(s.id)}
-                className={`flex items-center gap-2 text-sm font-bold transition ${
-                  s.id === step
-                    ? "text-orange-600"
-                    : idx < currentStepIdx
-                    ? "text-zinc-400 hover:text-zinc-600 cursor-pointer"
-                    : "text-zinc-300 cursor-not-allowed"
-                }`}
-              >
-                <span
-                  className={`w-6 h-6 rounded-full text-xs flex items-center justify-center font-black ${
-                    s.id === step
-                      ? "bg-orange-500 text-white"
-                      : idx < currentStepIdx
-                      ? "bg-green-500 text-white"
-                      : "bg-zinc-200 text-zinc-500"
-                  }`}
-                >
-                  {idx < currentStepIdx ? "✓" : idx + 1}
-                </span>
-                {s.label}
-              </button>
-              {idx < steps.length - 1 && (
-                <span className="text-zinc-200">→</span>
-              )}
-            </div>
-          ))}
-        </div>
+    <>
+      {/* ── Collapsed trigger card (sits in the sidebar) ──────────────────── */}
+      <div className="rounded-3xl border border-zinc-200 bg-white shadow-sm lg:sticky lg:top-24 overflow-hidden p-6 sm:p-8">
+        {lowestPrice !== null && (
+          <>
+            <p className="text-zinc-500 mb-1">Starting from</p>
+            <h2 className="text-5xl font-black">{formatPrice(lowestPrice)}</h2>
+          </>
+        )}
+        {formattedDate && (
+          <p className="text-sm text-zinc-500 mt-2">{formattedDate}</p>
+        )}
+
+        {tickets.length > 0 ? (
+          <button
+            onClick={() => setIsOpen(true)}
+            className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl font-bold text-lg mt-6 transition"
+          >
+            Get Tickets
+          </button>
+        ) : event.source_url ? (
+          <a
+            href={event.source_url}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-6 block w-full rounded-2xl bg-orange-500 py-4 text-center text-lg font-bold text-white transition hover:bg-orange-600"
+          >
+            Get Tickets
+          </a>
+        ) : (
+          <p className="mt-6 rounded-2xl bg-zinc-100 p-4 text-center font-semibold text-zinc-500">
+            Tickets are not available yet.
+          </p>
+        )}
       </div>
 
-      <div className="p-6 sm:p-8">
-        {/* ── STEP 1: Ticket Selection ─────────────────────────────────────── */}
-        {step === "tickets" && (
-          <div className="space-y-5">
-            {lowestPrice !== null && (
-              <>
-                <p className="text-zinc-500 mb-1">Starting from</p>
-                <h2 className="text-5xl font-black">{formatPrice(lowestPrice)}</h2>
-              </>
-            )}
+      {/* ── Checkout modal ─────────────────────────────────────────────────── */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsOpen(false);
+          }}
+        >
+          <div className="relative grid w-full max-w-3xl max-h-[90vh] grid-cols-1 overflow-hidden rounded-3xl bg-white shadow-2xl lg:grid-cols-[1fr_300px]">
+            <button
+              onClick={() => setIsOpen(false)}
+              aria-label="Close"
+              className="absolute right-3 top-3 z-10 rounded-full bg-white/90 p-1.5 text-zinc-500 shadow hover:bg-white hover:text-zinc-800 transition"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
 
-            {tickets.length > 0 && (
-              <div className="space-y-3 mt-6">
-                {tickets.map((ticket) => (
-                  <div
-                    key={ticket.id}
-                    onClick={() => setSelectedTicket(ticket)}
-                    className={`border rounded-2xl p-4 cursor-pointer transition ${
-                      selectedTicket?.id === ticket.id
-                        ? "border-orange-500 bg-orange-50"
-                        : "border-zinc-200 hover:border-zinc-300"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-bold">{ticket.name}</h3>
-                        <p className="text-zinc-500 text-sm">
-                          {ticket.quantity} available
-                        </p>
-                      </div>
-                      <p className="font-bold">{formatPrice(ticket.price)}</p>
-                    </div>
+            {/* Left: step content */}
+            <div className="overflow-y-auto p-6 sm:p-8 max-h-[90vh]">
+              <h2 className="text-lg font-black leading-snug pr-8">{event.title}</h2>
+              {(formattedDate || locationLabel) && (
+                <p className="text-sm text-zinc-500 mt-0.5">
+                  {formattedDate}
+                  {formattedDate && locationLabel ? " · " : ""}
+                  {locationLabel}
+                </p>
+              )}
+
+              {/* Step indicator */}
+              <div className="flex items-center gap-2 border-b border-zinc-100 mt-4 pb-4 mb-5 flex-wrap">
+                {steps.map((s, idx) => (
+                  <div key={s.id} className="flex items-center gap-2">
+                    <button
+                      onClick={() => idx < currentStepIdx && setStep(s.id)}
+                      className={`flex items-center gap-2 text-sm font-bold transition ${
+                        s.id === step
+                          ? "text-orange-600"
+                          : idx < currentStepIdx
+                          ? "text-zinc-400 hover:text-zinc-600 cursor-pointer"
+                          : "text-zinc-300 cursor-not-allowed"
+                      }`}
+                    >
+                      <span
+                        className={`w-6 h-6 rounded-full text-xs flex items-center justify-center font-black ${
+                          s.id === step
+                            ? "bg-orange-500 text-white"
+                            : idx < currentStepIdx
+                            ? "bg-green-500 text-white"
+                            : "bg-zinc-200 text-zinc-500"
+                        }`}
+                      >
+                        {idx < currentStepIdx ? "✓" : idx + 1}
+                      </span>
+                      {s.label}
+                    </button>
+                    {idx < steps.length - 1 && <span className="text-zinc-200">→</span>}
                   </div>
                 ))}
               </div>
-            )}
 
-            {!seatMapAvailable && selectedTicket && (
-              <div className="flex items-center gap-4 mt-4">
-                <span className="font-semibold">Quantity</span>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-8 h-8 rounded-full border border-zinc-300 font-bold hover:bg-zinc-100"
-                  >
-                    −
-                  </button>
-                  <span className="font-bold text-lg">{quantity}</span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-8 h-8 rounded-full border border-zinc-300 font-bold hover:bg-zinc-100"
-                  >
-                    +
-                  </button>
+              {/* ── STEP 1: Ticket Selection ───────────────────────────────── */}
+              {step === "tickets" && (
+                <div className="space-y-3">
+                  {tickets.map((ticket) => {
+                    const isSelected = selectedTicket?.id === ticket.id;
+                    const remaining = ticket.quantity;
+                    const goingFast = remaining > 0 && remaining <= 5;
+                    return (
+                      <div
+                        key={ticket.id}
+                        onClick={() => {
+                          setSelectedTicket(ticket);
+                          setQuantity(1);
+                        }}
+                        className={`rounded-2xl border p-4 cursor-pointer transition ${
+                          isSelected
+                            ? "border-orange-400 ring-2 ring-orange-400 ring-offset-1 bg-orange-50"
+                            : "border-zinc-200 hover:border-zinc-300"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <h3 className="font-bold">{ticket.name}</h3>
+                          {isSelected && !seatMapAvailable && (
+                            <div
+                              className="flex items-center gap-3 shrink-0"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                className="w-8 h-8 rounded-full border border-zinc-300 bg-white font-bold hover:bg-zinc-100"
+                              >
+                                −
+                              </button>
+                              <span className="font-bold w-4 text-center">{quantity}</span>
+                              <button
+                                onClick={() =>
+                                  setQuantity(
+                                    remaining ? Math.min(remaining, quantity + 1) : quantity + 1
+                                  )
+                                }
+                                className="w-8 h-8 rounded-full border border-zinc-300 bg-white font-bold hover:bg-zinc-100"
+                              >
+                                +
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-2 flex items-center justify-between gap-3">
+                          <p className="font-bold text-lg">
+                            {formatPrice(isSelected ? ticket.price * quantity : ticket.price)}
+                          </p>
+                          {remaining > 0 && (
+                            <span className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-bold text-zinc-600">
+                              {remaining} Remaining
+                            </span>
+                          )}
+                        </div>
+                        {goingFast && (
+                          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-600">
+                            🔥 Going fast
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {selectedTicket && (
+                    <p className="text-sm text-zinc-500 pt-1 lg:hidden">
+                      Total: <span className="font-bold text-black">{formatPrice(effectivePrice)}</span>
+                    </p>
+                  )}
+
+                  {selectedTicket && (
+                    <button
+                      onClick={() => (seatMapAvailable ? setStep("seats") : goToReview())}
+                      className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl font-bold text-lg mt-2 transition"
+                    >
+                      {seatMapAvailable ? "Choose Your Seat →" : "Check out"}
+                    </button>
+                  )}
                 </div>
-              </div>
-            )}
+              )}
 
-            {selectedTicket && (
-              <p className="text-zinc-500 text-sm mt-2">
-                Total:{" "}
-                <span className="font-bold text-black">
-                  {formatPrice(effectivePrice)}
-                </span>
-              </p>
-            )}
+              {/* ── STEP 2: Seat Selection ─────────────────────────────────── */}
+              {step === "seats" && seatMapAvailable && (
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-xl font-black">Choose Your Seat</h3>
+                    <p className="text-zinc-500 text-sm mt-1">
+                      Ticket: <strong>{selectedTicket?.name}</strong> · Click seats to select
+                    </p>
+                  </div>
 
-            {selectedTicket ? (
-              <button
-                onClick={() =>
-                  seatMapAvailable ? setStep("seats") : goToReview()
-                }
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-4 rounded-2xl font-bold text-lg mt-4 transition"
-              >
-                {seatMapAvailable ? "Choose Your Seat →" : "Continue →"}
-              </button>
-            ) : event.source_url ? (
-              <a
-                href={event.source_url}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 block w-full rounded-2xl bg-orange-500 py-4 text-center text-lg font-bold text-white transition hover:bg-orange-600"
-              >
-                Get Tickets
-              </a>
-            ) : (
-              <p className="mt-4 rounded-2xl bg-zinc-100 p-4 text-center font-semibold text-zinc-500">
-                Tickets are not available yet.
-              </p>
-            )}
-          </div>
-        )}
+                  {loadingSeats ? (
+                    <div className="flex items-center justify-center py-16">
+                      <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : venueLayout ? (
+                    <SeatMap
+                      seats={allSeats}
+                      sections={venueLayout.sections}
+                      basePrice={selectedTicket?.price ?? 0}
+                      maxSelectable={quantity}
+                      onSelectionChange={setSelectedSeats}
+                    />
+                  ) : null}
 
-        {/* ── STEP 2: Seat Selection ───────────────────────────────────────── */}
-        {step === "seats" && seatMapAvailable && (
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-xl font-black">Choose Your Seat</h3>
-              <p className="text-zinc-500 text-sm mt-1">
-                Ticket: <strong>{selectedTicket?.name}</strong> · Click seats to
-                select
-              </p>
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={() => setStep("tickets")}
+                      className="flex-1 border border-zinc-300 text-zinc-700 py-3 rounded-2xl font-bold hover:bg-zinc-50 transition"
+                    >
+                      ← Back
+                    </button>
+                    <button
+                      onClick={goToReview}
+                      disabled={selectedSeats.length === 0}
+                      className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-200 disabled:text-zinc-400 text-white py-3 rounded-2xl font-bold transition"
+                    >
+                      Continue →
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── STEP 3: Review & Pay ───────────────────────────────────── */}
+              {step === "review" && (
+                <div className="space-y-5">
+                  <h3 className="text-xl font-black">Review &amp; Pay</h3>
+
+                  <div className="lg:hidden">
+                    <OrderSummary
+                      title="Order summary"
+                      accentColor="#f97316"
+                      items={summaryItems}
+                      total={effectivePrice}
+                      currency="USD"
+                    />
+                  </div>
+
+                  {effectivePrice === 0 ? (
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        placeholder="Full name (optional)"
+                        value={buyerName}
+                        onChange={(e) => setBuyerName(e.target.value)}
+                        className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
+                      />
+                      <input
+                        type="email"
+                        placeholder="Email for ticket delivery (optional)"
+                        value={buyerEmail}
+                        onChange={(e) => setBuyerEmail(e.target.value)}
+                        className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
+                      />
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => setStep(seatMapAvailable ? "seats" : "tickets")}
+                          className="flex-1 border border-zinc-300 text-zinc-700 py-3 rounded-2xl font-bold hover:bg-zinc-50 transition"
+                        >
+                          ← Back
+                        </button>
+                        <button
+                          onClick={handleFreeTicket}
+                          className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-2xl font-bold transition"
+                        >
+                          Book Free Ticket
+                        </button>
+                      </div>
+                    </div>
+                  ) : preparingPayment ? (
+                    <div className="flex flex-col items-center justify-center py-10 gap-3">
+                      <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm text-zinc-400">Setting up secure payment…</p>
+                    </div>
+                  ) : clientSecret ? (
+                    <StripeProvider clientSecret={clientSecret} accentColor="#f97316">
+                      <PaymentForm
+                        submitLabel={`Pay ${formatPrice(effectivePrice)}`}
+                        accentColor="#f97316"
+                        collectName
+                        collectEmail
+                        initialName={buyerName}
+                        initialEmail={buyerEmail}
+                        onNameChange={setBuyerName}
+                        onEmailChange={setBuyerEmail}
+                        onSuccess={() => setPaid(true)}
+                        onBack={() => {
+                          setStep(seatMapAvailable ? "seats" : "tickets");
+                          setClientSecret(null);
+                          setCheckoutAttemptId(null);
+                          setQrCode(null);
+                        }}
+                      />
+                    </StripeProvider>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-red-500 text-center">
+                        Could not load payment form. Please go back and try again.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setClientSecret(null);
+                          setCheckoutAttemptId(null);
+                          goToReview();
+                        }}
+                        className="w-full border border-zinc-300 text-zinc-700 py-3 rounded-2xl font-bold hover:bg-zinc-50 transition"
+                      >
+                        Retry
+                      </button>
+                      <button
+                        onClick={() => setStep(seatMapAvailable ? "seats" : "tickets")}
+                        className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition"
+                      >
+                        ← Back
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {loadingSeats ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+            {/* Right: banner + live order summary (desktop only) */}
+            <div className="hidden lg:flex lg:flex-col border-l border-zinc-100 bg-zinc-50 max-h-[90vh]">
+              <div className="aspect-[4/3] w-full overflow-hidden">
+                <img
+                  src={event.banner || FALLBACK_BANNER}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
               </div>
-            ) : venueLayout ? (
-              <SeatMap
-                seats={allSeats}
-                sections={venueLayout.sections}
-                basePrice={selectedTicket?.price ?? 0}
-                maxSelectable={quantity}
-                onSelectionChange={setSelectedSeats}
-              />
-            ) : null}
-
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={() => setStep("tickets")}
-                className="flex-1 border border-zinc-300 text-zinc-700 py-3 rounded-2xl font-bold hover:bg-zinc-50 transition"
-              >
-                ← Back
-              </button>
-              <button
-                onClick={goToReview}
-                disabled={selectedSeats.length === 0}
-                className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-zinc-200 disabled:text-zinc-400 text-white py-3 rounded-2xl font-bold transition"
-              >
-                Continue →
-              </button>
+              <div className="p-6 flex-1 overflow-y-auto">
+                {selectedTicket ? (
+                  <OrderSummary
+                    title="Order summary"
+                    accentColor="#f97316"
+                    items={summaryItems}
+                    total={effectivePrice}
+                    currency="USD"
+                  />
+                ) : (
+                  <p className="text-sm text-zinc-400">
+                    Select a ticket to see your order summary.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        )}
-
-        {/* ── STEP 3: Review & Pay ─────────────────────────────────────────── */}
-        {step === "review" && (
-          <div className="space-y-5">
-            <h3 className="text-xl font-black">Review &amp; Pay</h3>
-
-            {/* Order summary */}
-            <OrderSummary
-              title="Order summary"
-              accentColor="#f97316"
-              items={[
-                { label: "Ticket", value: selectedTicket?.name ?? "" },
-                ...(seatLabel ? [{ label: "Seat(s)", value: seatLabel }] : []),
-                { label: "Qty", value: String(selectedSeats.length || quantity) },
-              ]}
-              total={effectivePrice}
-              currency="USD"
-            />
-
-            {/* Free ticket */}
-            {effectivePrice === 0 ? (
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  placeholder="Full name (optional)"
-                  value={buyerName}
-                  onChange={(e) => setBuyerName(e.target.value)}
-                  className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
-                />
-                <input
-                  type="email"
-                  placeholder="Email for ticket delivery (optional)"
-                  value={buyerEmail}
-                  onChange={(e) => setBuyerEmail(e.target.value)}
-                  className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
-                />
-                <div className="flex gap-3">
-                  <button
-                    onClick={() =>
-                      setStep(seatMapAvailable ? "seats" : "tickets")
-                    }
-                    className="flex-1 border border-zinc-300 text-zinc-700 py-3 rounded-2xl font-bold hover:bg-zinc-50 transition"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    onClick={handleFreeTicket}
-                    className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-2xl font-bold transition"
-                  >
-                    Book Free Ticket
-                  </button>
-                </div>
-              </div>
-            ) : preparingPayment ? (
-              /* Loading while PaymentIntent is being created */
-              <div className="flex flex-col items-center justify-center py-10 gap-3">
-                <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                <p className="text-sm text-zinc-400">Setting up secure payment…</p>
-              </div>
-            ) : clientSecret ? (
-              /* ── Stripe PaymentElement (inline, no redirect) ── */
-              <StripeProvider clientSecret={clientSecret} accentColor="#f97316">
-                <PaymentForm
-                  submitLabel={`Pay ${formatPrice(effectivePrice)}`}
-                  accentColor="#f97316"
-                  collectName
-                  collectEmail
-                  initialName={buyerName}
-                  initialEmail={buyerEmail}
-                  onNameChange={setBuyerName}
-                  onEmailChange={setBuyerEmail}
-                  onSuccess={() => setPaid(true)}
-                  onBack={() => {
-                    setStep(seatMapAvailable ? "seats" : "tickets");
-                    setClientSecret(null);
-                    setCheckoutAttemptId(null); // next attempt gets a new UUID
-                    setQrCode(null);
-                  }}
-                />
-              </StripeProvider>
-            ) : (
-              /* Fallback — intent creation failed */
-              <div className="space-y-3">
-                <p className="text-sm text-red-500 text-center">
-                  Could not load payment form. Please go back and try again.
-                </p>
-                <button
-                  onClick={() => {
-                    setClientSecret(null);
-                    setCheckoutAttemptId(null);
-                    goToReview();
-                  }}
-                  className="w-full border border-zinc-300 text-zinc-700 py-3 rounded-2xl font-bold hover:bg-zinc-50 transition"
-                >
-                  Retry
-                </button>
-                <button
-                  onClick={() =>
-                    setStep(seatMapAvailable ? "seats" : "tickets")
-                  }
-                  className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition"
-                >
-                  ← Back
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   );
 }

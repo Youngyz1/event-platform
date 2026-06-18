@@ -429,11 +429,6 @@ export default async function EventPage({
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold uppercase tracking-wide text-zinc-400 mb-0.5">
-                        {event.source_organizer_name
-                          ? "Organizer"
-                          : "Platform organizer"}
-                      </p>
                       <div className="flex items-center justify-between gap-4 flex-wrap">
                         <div>
                           {primaryOrganizerUrl ? (
