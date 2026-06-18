@@ -33,6 +33,16 @@ function paragraphs(value: string | null | undefined) {
     .filter(Boolean);
 }
 
+function getHostingYears(createdAt: string) {
+  return Math.max(
+    1,
+    Math.floor(
+      (Date.now() - new Date(createdAt).getTime()) /
+        (1000 * 60 * 60 * 24 * 365)
+    )
+  );
+}
+
 export default async function EventPage({
   params,
 }: {
@@ -98,7 +108,17 @@ export default async function EventPage({
 
   // More events from same organizer, falling back to any other public
   // events happening within a 2-week window of this event's date.
-  let moreEvents: any[] = [];
+  type MoreEvent = {
+    id: string;
+    title: string;
+    slug: string;
+    banner: string | null;
+    event_date: string | null;
+    city: string | null;
+    venue: string | null;
+  };
+
+  let moreEvents: MoreEvent[] = [];
   let moreEventsSource: "organizer" | "related" | null = null;
 
   if (organizer?.id) {
@@ -197,13 +217,7 @@ export default async function EventPage({
     : "Date TBA";
 
   const hostingYears = organizer?.created_at
-    ? Math.max(
-        1,
-        Math.floor(
-          (Date.now() - new Date(organizer.created_at).getTime()) /
-            (1000 * 60 * 60 * 24 * 365)
-        )
-      )
+    ? getHostingYears(organizer.created_at)
     : null;
 
   // ── Title size scales down for longer event names so the hero

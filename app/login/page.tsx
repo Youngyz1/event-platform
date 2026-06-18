@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
-export default function LoginPage() {
+// ── Inner component that reads searchParams ──────────────────────
+function LoginForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -326,5 +327,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Default export wraps LoginForm in Suspense ───────────────────
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   );
 }
