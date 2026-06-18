@@ -206,6 +206,15 @@ export default async function EventPage({
       )
     : null;
 
+  // ── Title size scales down for longer event names so the hero
+  // block doesn't balloon in height on long titles ───────────────
+  const titleSizeClass =
+    event.title.length > 60
+      ? "text-lg sm:text-xl lg:text-2xl"
+      : event.title.length > 35
+        ? "text-xl sm:text-2xl lg:text-3xl"
+        : "text-2xl sm:text-3xl lg:text-4xl";
+
   return (
     <main className="min-h-screen bg-white text-zinc-950">
       {/* ── Banner image ───────────────── */}
@@ -244,7 +253,7 @@ export default async function EventPage({
                 {event.category}
               </p>
             )}
-            <h1 className="text-xl font-black leading-tight sm:text-2xl lg:text-3xl">
+            <h1 className={`font-black leading-tight ${titleSizeClass}`}>
               {event.title}
             </h1>
             {primaryOrganizerName && (
@@ -603,7 +612,7 @@ export default async function EventPage({
               <section>
                 <h2 className="text-xl font-black mb-1 break-words">
                   {moreEventsSource === "organizer"
-                    ? <>More events from{" "}{primaryOrganizerName || "this organizer"}</>
+                    ? <>{`More events from `}{primaryOrganizerName || "this organizer"}</>
                     : "Events you might also like"}
                 </h2>
                 <p className="text-sm text-zinc-500 mb-5">
