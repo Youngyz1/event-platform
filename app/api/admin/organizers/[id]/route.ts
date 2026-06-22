@@ -1,20 +1,36 @@
 /**
  * app/api/admin/organizers/[id]/route.ts
- * PATCH — update organizer status (pending | verified | rejected | suspended).
- * Admin-only: checks isAdmin() before any DB operation.
+ * GET — organizer detail for admin drawer.
+ * PATCH — update organizer status.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { isAdmin } from '@/lib/auth';
-
-// Service role: bypasses RLS — admin operations only
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { getOrganizerDetail, supabaseAdmin } from '@/lib/admin-data';
 
 const VALID_STATUSES = ['pending', 'verified', 'rejected', 'suspended'] as const;
+
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
+  const { id } = await params;
+
+  try {
+    const organizer = await getOrganizerDetail(id);
+    if (!organizer) {
+      return NextResponse.json({ error: 'Organizer not found.' }, { status: 404 });
+    }
+    return NextResponse.json({ organizer });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to load organizer.';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
 export async function PATCH(
   req: NextRequest,

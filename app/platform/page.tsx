@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "One Platform for the Event Economy | EventBrithe",
+  title: "One Platform for the Event Economy | Fund4Good",
   description:
     "Focused workflows for attendees, organizers, and sponsors across events, fundraising, and sponsorships.",
 };

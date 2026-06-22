@@ -3,7 +3,7 @@
 /**
  * components/ui/call-to-action.tsx
  * Community CTA banner used on the organizers directory page.
- * Adapted from 21st.dev design — rebranded for EventBrithe.
+ * Adapted from 21st.dev design — rebranded for Fund4Good.
  */
 
 import Link from "next/link";
@@ -24,7 +24,7 @@ const DEFAULT_AVATARS = [
 ];
 
 export function CallToAction({
-  headline    = "Join thousands of event organizers on EventBrithe.",
+  headline    = "Join thousands of event organizers on Fund4Good.",
   subtext     = "Create events, launch fundraisers, and grow your community — all in one place.",
   ctaLabel    = "Become an Organizer",
   ctaHref     = "/create-organizer",

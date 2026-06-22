@@ -59,11 +59,49 @@ export default function DonatePage({
   // UUID minted each time the user clicks "Proceed" — one per checkout attempt
   const [checkoutAttemptId, setCheckoutAttemptId] = useState<string | null>(null);
 
+  // Receipt state
+  const [donationId, setDonationId] = useState<string | null>(null);
+  const [isNonprofit, setIsNonprofit] = useState(false);
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
+
   useEffect(() => {
     if (success) {
       window.scrollTo({ top: 0, behavior: "instant" });
     }
   }, [success]);
+
+  useEffect(() => {
+    if (!success || !clientSecret) return;
+
+    setLoadingReceipt(true);
+    const piId = clientSecret.split("_secret_")[0];
+    let intervalId: any;
+    let attempts = 0;
+
+    async function pollLookup() {
+      attempts++;
+      try {
+        const res = await fetch(`/api/receipts/lookup?payment_intent_id=${piId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setDonationId(data.id);
+          setIsNonprofit(data.is_nonprofit);
+          setLoadingReceipt(false);
+          clearInterval(intervalId);
+        } else if (attempts > 15) {
+          setLoadingReceipt(false);
+          clearInterval(intervalId);
+        }
+      } catch (err) {
+        console.error("Receipt lookup error:", err);
+      }
+    }
+
+    intervalId = setInterval(pollLookup, 2000);
+    pollLookup();
+
+    return () => clearInterval(intervalId);
+  }, [success, clientSecret]);
 
   // ─── Derived amounts ────────────────────────────────────────────────────────
 
@@ -162,9 +200,43 @@ export default function DonatePage({
             to <span className="font-semibold">{fundraiserTitle}</span> has
             been received.
           </p>
+
+          <hr className="my-6 border-zinc-200" />
+
+          {loadingReceipt ? (
+            <div className="flex flex-col items-center justify-center py-4">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-green-700 border-t-transparent" />
+              <p className="mt-2 text-xs font-semibold text-zinc-400">Generating receipt…</p>
+            </div>
+          ) : donationId ? (
+            <div className="space-y-4">
+              <a
+                href={`/api/receipts/${donationId}`}
+                className="block w-full rounded-2xl bg-green-700 py-3.5 text-sm font-black text-white hover:bg-green-800 transition shadow-sm"
+              >
+                Download Receipt PDF
+              </a>
+              {isNonprofit ? (
+                <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-left text-xs text-emerald-800 leading-relaxed">
+                  <span className="font-black block mb-1">★ Tax-Deductible Donation</span>
+                  This fundraiser is run by a registered nonprofit. Your contribution qualifies for tax-deductible benefits.
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-zinc-50 border border-zinc-200 p-4 text-left text-xs text-zinc-500 leading-relaxed">
+                  <span className="font-bold block mb-1">Standard Donation</span>
+                  This is a standard donation receipt. Donations to individuals are generally not tax-deductible.
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-zinc-400">
+              Receipt will be emailed to you shortly.
+            </p>
+          )}
+
           <Link
             href={`/fundraisers/${fundraiserSlug}`}
-            className="mt-8 inline-block rounded-2xl bg-green-700 px-8 py-3 font-black text-white transition hover:bg-green-800"
+            className="mt-6 block text-center text-sm font-black text-zinc-500 hover:text-zinc-950 transition"
           >
             Back to fundraiser
           </Link>

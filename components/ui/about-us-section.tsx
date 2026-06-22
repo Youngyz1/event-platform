@@ -3,7 +3,7 @@
 /**
  * components/ui/about-us-section.tsx
  * Animated About Us section using framer-motion.
- * Adapted from 21st.dev — recoloured for EventBrithe brand.
+ * Adapted from 21st.dev — recoloured for Fund4Good brand.
  * Platform stats are injected as props from server pages.
  */
 
@@ -37,7 +37,7 @@ export interface AboutService {
   position:    "left" | "right";
 }
 
-// ── Default data (EventBrithe-specific) ─────────────────────────────────────
+// ── Default data (Fund4Good-specific) ─────────────────────────────────────
 
 const DEFAULT_SERVICES: AboutService[] = [
   {
@@ -142,7 +142,7 @@ export default function AboutUsSection({
           <motion.span className="text-orange-600 font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
             <Zap className="w-4 h-4" /> Our Story
           </motion.span>
-          <h2 className="text-4xl md:text-5xl font-black mb-4 text-center tracking-tight">About EventBrithe</h2>
+          <h2 className="text-4xl md:text-5xl font-black mb-4 text-center tracking-tight">About Fund4Good</h2>
           <motion.div
             className="w-24 h-1 bg-orange-500 rounded-full"
             initial={{ width: 0 }}
@@ -152,7 +152,7 @@ export default function AboutUsSection({
         </motion.div>
 
         <motion.p className="text-center max-w-2xl mx-auto mb-16 text-zinc-500 text-lg leading-relaxed" variants={item}>
-          We built EventBrithe so organizers can launch events, run fundraisers, and connect with sponsors — without juggling five different tools. One platform for the whole event economy.
+          We built Fund4Good so organizers can launch events, run fundraisers, and connect with sponsors — without juggling five different tools. One platform for the whole event economy.
         </motion.p>
 
         {/* Accordion + image layout */}
@@ -209,7 +209,7 @@ export default function AboutUsSection({
         >
           <div>
             <h3 className="text-2xl font-black mb-1">Ready to host your next event?</h3>
-            <p className="text-zinc-400">Join thousands of organizers already using EventBrithe.</p>
+            <p className="text-zinc-400">Join thousands of organizers already using Fund4Good.</p>
           </div>
           <SmartCTAButton className="shrink-0" />
         </motion.div>

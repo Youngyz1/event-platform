@@ -1,41 +1,58 @@
 /**
  * app/api/admin/organizers/route.ts
- * GET — returns all organizers with their owner's email.
- * Admin-only.
+ * GET — paginated organizers with filters, stats, and search.
  */
 
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 import { isAdmin } from '@/lib/auth';
+import { parsePageParams, type DateFilter } from '@/lib/admin-query';
+import { queryOrganizers } from '@/lib/admin-data';
+import type { OrganizerSort } from '@/types/admin-management';
 
-// Service role: bypasses RLS — admin operations only
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+const VALID_SORTS: OrganizerSort[] = [
+  'newest',
+  'oldest',
+  'alphabetical',
+  'most_events',
+  'most_fundraisers',
+];
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   if (!(await isAdmin())) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { data: organizers, error } = await supabaseAdmin
-    .from('organizers')
-    .select('id, name, user_id, status, created_at')
-    .order('created_at', { ascending: false });
+  const sp = req.nextUrl.searchParams;
+  const { page, perPage } = parsePageParams(sp);
+  const status = sp.get('status') ?? sp.get('tab') ?? 'all';
+  const sort = (sp.get('sort') ?? 'newest') as OrganizerSort;
+  const date = (sp.get('date') ?? 'all') as DateFilter;
+  const search = sp.get('search') ?? '';
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!VALID_SORTS.includes(sort)) {
+    return NextResponse.json({ error: 'Invalid sort value.' }, { status: 400 });
   }
 
-  // Attach owner emails
-  const { data: authData } = await supabaseAdmin.auth.admin.listUsers();
-  const emailMap = new Map((authData?.users ?? []).map((u) => [u.id, u.email ?? '']));
+  try {
+    const result = await queryOrganizers({
+      search,
+      status,
+      date,
+      sort,
+      page,
+      perPage,
+    });
 
-  const result = (organizers ?? []).map((o) => ({
-    ...o,
-    email: emailMap.get(o.user_id) ?? '',
-  }));
-
-  return NextResponse.json({ organizers: result });
+    return NextResponse.json({
+      organizers: result.items,
+      stats: result.stats,
+      total: result.total,
+      page: result.page,
+      per_page: result.per_page,
+      total_pages: result.total_pages,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Failed to load organizers.';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

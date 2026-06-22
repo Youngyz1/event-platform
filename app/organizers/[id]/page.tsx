@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
+import StarRating from "@/components/StarRating";
 
 
 type Organizer = {
@@ -18,6 +19,10 @@ type Organizer = {
   website: string | null;
   user_id: string;
   status: string | null;
+  follower_offset?: number;
+  events_offset?: number;
+  average_rating?: number;
+  review_count?: number;
 };
 
 type Event = {
@@ -133,7 +138,7 @@ export default function OrganizerProfilePage() {
         .select("*", { count: "exact", head: true })
         .eq("organizer_id", organizerId);
 
-      setFollowerCount(count ?? 0);
+      setFollowerCount((count ?? 0) + (org.follower_offset ?? 0));
 
       if (session?.user) {
         const { data: follow } = await supabase
@@ -245,12 +250,23 @@ export default function OrganizerProfilePage() {
                   <span className="break-words">{organizer.name}</span>
                   <VerifiedBadge verified={organizer.status === 'verified'} />
                 </h1>
+                {organizer.review_count !== undefined && (organizer.review_count ?? 0) > 0 && (
+                  <div className="mt-2 flex items-center gap-1.5 text-sm text-zinc-600">
+                    <StarRating value={organizer.average_rating ?? 0} size={16} />
+                    <span className="font-bold text-zinc-800">
+                      {Number(organizer.average_rating ?? 0).toFixed(1)}
+                    </span>
+                    <span>
+                      ({organizer.review_count} {organizer.review_count === 1 ? "review" : "reviews"})
+                    </span>
+                  </div>
+                )}
 
                 <div className="mt-8 grid grid-cols-2 gap-y-6 sm:grid-cols-4">
                   {[
                     { label: "followers", value: formatCount(followerCount) },
-                    { label: "hosting", value: events.length > 0 ? "active" : "new" },
-                    { label: "total events", value: formatCount(events.length) },
+                    { label: "hosting", value: (events.length + (organizer.events_offset ?? 0)) > 0 ? "active" : "new" },
+                    { label: "total events", value: formatCount(events.length + (organizer.events_offset ?? 0)) },
                     { label: "upcoming", value: formatCount(upcomingEvents.length) },
                   ].map((stat) => (
                     <div key={stat.label} className="pr-5">
@@ -428,6 +444,7 @@ export default function OrganizerProfilePage() {
           </div>
         )}
       </section>
+
     </main>
   );
 }

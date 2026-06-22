@@ -7,13 +7,14 @@ const supabaseAdmin = createClient(
 );
 
 export async function GET(req: NextRequest) {
-  const email = req.nextUrl.searchParams.get("email");
+  const email = req.nextUrl.searchParams.get("email")?.trim();
+  const orderId = req.nextUrl.searchParams.get("orderId")?.trim();
 
-  if (!email) {
-    return NextResponse.json({ error: "Email required." }, { status: 400 });
+  if (!email && !orderId) {
+    return NextResponse.json({ error: "Email or Order ID required." }, { status: 400 });
   }
 
-  const { data: orders, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from("ticket_orders")
     .select(`
       id,
@@ -24,17 +25,36 @@ export async function GET(req: NextRequest) {
       total_amount,
       created_at,
       checked_in_at,
+      buyer_email,
+      buyer_name,
       events (
+        id,
         title,
         event_date,
         venue,
         city,
         banner,
         slug
+      ),
+      tickets (
+        id,
+        name,
+        price
       )
-    `)
-    .eq("buyer_email", email)
-    .order("created_at", { ascending: false });
+    `);
+
+  if (orderId) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
+    if (isUuid) {
+      query = query.or(`id.eq.${orderId},qr_code.eq.${orderId}`);
+    } else {
+      query = query.eq("qr_code", orderId);
+    }
+  } else if (email) {
+    query = query.eq("buyer_email", email);
+  }
+
+  const { data: orders, error } = await query.order("created_at", { ascending: false });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

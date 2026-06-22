@@ -2,6 +2,7 @@ import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { recordDonationFromSession } from "@/lib/donations";
+import { processDonationReceipt } from "@/lib/receipt";
 
 // Service role: bypasses RLS — admin operations only
 const supabaseAdmin = createClient(
@@ -170,6 +171,20 @@ async function handlePaymentIntentSucceeded(
       }
       const { recalculateFundraiserRaised } = await import("@/lib/donations");
       await recalculateFundraiserRaised(meta.fundraiser_id);
+
+      // Fetch newly-inserted donation id, then trigger receipt generation
+      const { data: newDonation } = await supabaseAdmin
+        .from("donations")
+        .select("id")
+        .eq("payment_intent_id", pi.id)
+        .maybeSingle();
+
+      if (newDonation?.id) {
+        // Fire-and-forget: do not block webhook response
+        processDonationReceipt(newDonation.id).catch((err) =>
+          console.error("[webhook] Receipt generation error:", err)
+        );
+      }
     }
 
     return;
@@ -189,6 +204,24 @@ async function handleCheckoutSessionCompleted(
   // Legacy donation via Stripe Checkout
   if (meta.kind === "donation") {
     await recordDonationFromSession(session);
+
+    // Trigger receipt for the newly inserted donation (lookup by payment_intent_id)
+    const piId =
+      typeof session.payment_intent === "string" ? session.payment_intent : null;
+    if (piId) {
+      const { data: newDonation } = await supabaseAdmin
+        .from("donations")
+        .select("id")
+        .eq("payment_intent_id", piId)
+        .maybeSingle();
+
+      if (newDonation?.id) {
+        processDonationReceipt(newDonation.id).catch((err) =>
+          console.error("[webhook] Legacy receipt generation error:", err)
+        );
+      }
+    }
+
     return;
   }
 

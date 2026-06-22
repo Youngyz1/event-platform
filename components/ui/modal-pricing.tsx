@@ -2,7 +2,7 @@
 
 /**
  * components/ui/modal-pricing.tsx
- * Plan-selection modal for EventBrithe organizer tiers.
+ * Plan-selection modal for Fund4Good organizer tiers.
  * Adapted from 21st.dev design — uses shadcn Dialog + RadioGroup.
  */
 
@@ -22,7 +22,7 @@ export interface PlanOption {
   features:    string[];
 }
 
-export const EVENTBRITHE_PLANS: PlanOption[] = [
+export const RALLY_UP_PLANS: PlanOption[] = [
   {
     id:          "starter",
     name:        "Starter",
@@ -55,7 +55,7 @@ interface ModalPricingProps {
 }
 
 export function ModalPricing({
-  plans      = EVENTBRITHE_PLANS,
+  plans      = RALLY_UP_PLANS,
   triggerLabel = "Upgrade Plan",
   onConfirm,
 }: ModalPricingProps) {

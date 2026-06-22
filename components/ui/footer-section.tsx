@@ -26,9 +26,11 @@ import {
 const quickLinks = [
   ["Home", "/"],
   ["About", "/about"],
-  ["Platform", "/platform"],
   ["Events", "/events"],
   ["Fundraisers", "/fundraisers"],
+  ["Organizers", "/organizers"],
+  ["Platform Reviews", "/reviews"],
+  ["Search", "/search"],
   ["Create Event", "/create-event"],
   ["Start Fundraiser", "/create-fundraiser"],
   ["Privacy", "/privacy"],
@@ -46,14 +48,14 @@ function Footerdemo() {
   const [isDarkMode, setIsDarkMode] = React.useState(false);
 
   React.useEffect(() => {
-    const savedTheme = window.localStorage.getItem("eventbrithe-theme");
+    const savedTheme = window.localStorage.getItem("fund4good-theme");
     if (savedTheme === "dark") setIsDarkMode(true);
   }, []);
 
   React.useEffect(() => {
     document.documentElement.classList.toggle("dark", isDarkMode);
     window.localStorage.setItem(
-      "eventbrithe-theme",
+      "fund4good-theme",
       isDarkMode ? "dark" : "light"
     );
   }, [isDarkMode]);
@@ -113,15 +115,15 @@ function Footerdemo() {
               Contact us
             </h3>
             <address className="max-w-xs space-y-2 text-sm leading-6 text-zinc-600 not-italic dark:text-zinc-400">
-              <p>EventBrithe Support</p>
+              <p>Fund4Good Support</p>
               <p>Events, fundraising & community commerce.</p>
               <p>
                 Email:{" "}
                 <a
-                  href="mailto:support@eventbrithe.com"
+                  href="mailto:support@fund4good.org"
                   className="font-semibold text-orange-600"
                 >
-                  support@eventbrithe.com
+                  support@fund4good.org
                 </a>
               </p>
             </address>
@@ -170,7 +172,7 @@ function Footerdemo() {
 
         <div className="mt-8 flex items-center justify-center border-t border-zinc-200 pt-6 text-center lg:mt-10 dark:border-zinc-800">
           <p className="text-sm text-zinc-500">
-            © 2026 EventBrithe. All rights reserved.
+            © 2026 Fund4Good. All rights reserved.
           </p>
         </div>
       </div>

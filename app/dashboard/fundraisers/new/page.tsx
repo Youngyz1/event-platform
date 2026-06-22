@@ -41,7 +41,7 @@ export default async function NewDashboardFundraiserPage() {
           <p className="text-sm font-black uppercase tracking-wide text-emerald-600">Create</p>
           <h2 className="mt-2 text-2xl font-black text-zinc-950">Create from scratch</h2>
           <p className="mt-3 text-sm leading-6 text-zinc-600">
-            Build a new campaign with your story, goal, images, and EventBrithe donation checkout.
+            Build a new campaign with your story, goal, images, and Fund4Good donation checkout.
           </p>
           <span className="mt-5 inline-block rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white">
             Start Fundraiser

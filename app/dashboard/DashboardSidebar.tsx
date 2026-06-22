@@ -38,10 +38,8 @@ export default function DashboardSidebar() {
     <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 rounded-2xl bg-slate-950 p-4 text-white shadow-xl shadow-slate-950/15 lg:flex lg:flex-col">
       {/* Logo */}
       <Link href="/" className="mb-6 flex items-center gap-3 px-2">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-600 text-lg font-black">
-          E
-        </span>
-        <span className="text-sm font-black">EventBrithe</span>
+        <img src="/logo.jpg" alt="Fund4Good Logo" className="h-9 w-9 object-contain rounded-xl" />
+        <span className="text-sm font-black">Fund4Good</span>
       </Link>
 
       {/* Quick-create buttons */}

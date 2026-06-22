@@ -14,7 +14,8 @@ import {
 } from "recharts";
 
 export type DailyPoint = { date: string; value: number };
-export type TopEvent   = { title: string; revenue: number };
+export type TopEvent = { title: string; revenue: number };
+export type NamedValue = { name: string; value: number };
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -44,7 +45,7 @@ export function TicketsChart({ data }: { data: DailyPoint[] }) {
   if (!data.length) return <EmptyChart message="No ticket sales in the last 30 days." />;
   return (
     <div className="h-44 sm:h-56">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
         <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <CartesianGrid {...gridProps} vertical={false} />
           <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
@@ -68,7 +69,7 @@ export function RevenueChart({ data }: { data: DailyPoint[] }) {
   if (!data.length) return <EmptyChart message="No revenue data in the last 30 days." />;
   return (
     <div className="h-44 sm:h-56">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
         <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <CartesianGrid {...gridProps} vertical={false} />
           <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
@@ -85,7 +86,7 @@ export function DonationsChart({ data }: { data: DailyPoint[] }) {
   if (!data.length) return <EmptyChart message="No donations in the last 30 days." />;
   return (
     <div className="h-44 sm:h-56">
-      <ResponsiveContainer width="100%" height="100%">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
         <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <CartesianGrid {...gridProps} vertical={false} />
           <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
@@ -138,35 +139,76 @@ export function TopEventsChart({ data }: { data: TopEvent[] }) {
   );
 }
 
+export function NamedBarChart({ data, valuePrefix = "" }: { data: NamedValue[]; valuePrefix?: string }) {
+  if (!data.length) return <EmptyChart message="No data for this period." />;
+  return (
+    <div className="h-44 sm:h-56">
+      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
+        <BarChart data={data} layout="vertical" margin={{ top: 4, right: 4, left: 8, bottom: 0 }}>
+          <CartesianGrid {...gridProps} horizontal={false} />
+          <XAxis type="number" tick={tickStyle} tickLine={false} axisLine={false} tickFormatter={(v) => `${valuePrefix}${v}`} />
+          <YAxis type="category" dataKey="name" width={100} tick={tickStyle} tickLine={false} axisLine={false} />
+          <Tooltip {...tooltipStyle} formatter={(v: unknown) => [`${valuePrefix}${Number(v).toLocaleString()}`, "Total"]} />
+          <Bar dataKey="value" fill="#8b5cf6" radius={[0, 6, 6, 0]} maxBarSize={24} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
 export function ChartsGrid({
   tickets,
   revenue,
   donations,
   topEvents,
+  revenueByEvent = [],
+  ticketsByEvent = [],
+  donationsByCampaign = [],
+  topOrganizers = [],
 }: {
-  tickets:    DailyPoint[];
-  revenue:    DailyPoint[];
-  donations:  DailyPoint[];
-  topEvents:  TopEvent[];
+  tickets: DailyPoint[];
+  revenue: DailyPoint[];
+  donations: DailyPoint[];
+  topEvents: TopEvent[];
+  revenueByEvent?: NamedValue[];
+  ticketsByEvent?: NamedValue[];
+  donationsByCampaign?: NamedValue[];
+  topOrganizers?: NamedValue[];
 }) {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
-        <ChartCard title="Tickets Sold — Last 30 Days">
+        <ChartCard title="Tickets Sold">
           <TicketsChart data={tickets} />
         </ChartCard>
-        <ChartCard title="Revenue — Last 30 Days">
+        <ChartCard title="Revenue">
           <RevenueChart data={revenue} />
         </ChartCard>
       </div>
       <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
-        <ChartCard title="Donations — Last 30 Days">
+        <ChartCard title="Donations">
           <DonationsChart data={donations} />
         </ChartCard>
         <ChartCard title="Top 5 Events by Revenue">
           <div className="py-2">
             <TopEventsChart data={topEvents} />
           </div>
+        </ChartCard>
+      </div>
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
+        <ChartCard title="Revenue by Event">
+          <NamedBarChart data={revenueByEvent} valuePrefix="$" />
+        </ChartCard>
+        <ChartCard title="Tickets by Event">
+          <NamedBarChart data={ticketsByEvent} />
+        </ChartCard>
+      </div>
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-2">
+        <ChartCard title="Donations by Campaign">
+          <NamedBarChart data={donationsByCampaign} valuePrefix="$" />
+        </ChartCard>
+        <ChartCard title="Top Organizers">
+          <NamedBarChart data={topOrganizers} valuePrefix="$" />
         </ChartCard>
       </div>
     </div>

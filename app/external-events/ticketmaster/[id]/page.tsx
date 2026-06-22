@@ -191,7 +191,7 @@ export default async function TicketmasterEventPage({
               <h2 className="mb-6 text-3xl font-black">About this event</h2>
               <div className="space-y-5 text-lg leading-relaxed text-zinc-700">
                 <p>
-                  {event.info || event.pleaseNote || "This event is pulled from Ticketmaster search results so you can discover it on EventBrithe."}
+                  {event.info || event.pleaseNote || "This event is pulled from Ticketmaster search results so you can discover it on Fund4Good."}
                 </p>
                 {venue?.address?.line1 && (
                   <p>
@@ -204,9 +204,9 @@ export default async function TicketmasterEventPage({
 
             {canClaimExternalEvent && (
               <div className="mt-10 rounded-3xl border border-orange-200 bg-orange-50 p-6 sm:p-8">
-                <h2 className="text-2xl font-black">Want to sell this event on EventBrithe?</h2>
+                <h2 className="text-2xl font-black">Want to sell this event on Fund4Good?</h2>
                 <p className="mt-3 text-zinc-700">
-                  External events can be discovered here, but EventBrithe checkout is only available for events that are created or claimed by the organizer on this platform.
+                  External events can be discovered here, but Fund4Good checkout is only available for events that are created or claimed by the organizer on this platform.
                 </p>
                 <Link
                   href={`/import?mode=events&url=${encodeURIComponent(ticketUrl || "")}`}
@@ -224,7 +224,7 @@ export default async function TicketmasterEventPage({
             </p>
             <h2 className="mt-2 text-3xl font-black">{priceLabel(event)}</h2>
             <p className="mt-3 text-sm leading-6 text-zinc-600">
-              This listing is imported from Ticketmaster. Checkout and ticket delivery happen through Ticketmaster until the organizer sells this event directly on EventBrithe.
+              This listing is imported from Ticketmaster. Checkout and ticket delivery happen through Ticketmaster until the organizer sells this event directly on Fund4Good.
             </p>
             {ticketUrl ? (
               <a

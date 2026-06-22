@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 type EventCardProps = {
   title: string;
@@ -7,46 +8,73 @@ type EventCardProps = {
   image: string;
   slug: string | null;
   badge?: string;
-  variant?: "default" | "homepage";
+  price?: string | null;
+  category?: string | null;
+  variant?: "default" | "homepage" | "compact";
 };
 
-export default function EventCard({ title, date, location, image, slug, badge, variant = "default" }: EventCardProps) {
-  const imageClass =
-    variant === "homepage"
-      ? "relative h-40 w-full bg-zinc-100 sm:h-56"
-      : "relative h-40 w-full bg-zinc-100 sm:h-56";
-  const bodyClass = variant === "homepage" ? "p-3 sm:p-5" : "px-2 py-3 sm:p-5";
-  const titleClass =
-    variant === "homepage"
-      ? "mt-1 text-sm font-black leading-snug text-zinc-950 sm:mt-2 sm:text-xl"
-      : "mt-1 text-base font-black leading-snug text-zinc-950 sm:mt-2 sm:text-xl";
+export default function EventCard({
+  title,
+  date,
+  location,
+  image,
+  slug,
+  badge,
+  price,
+  category,
+  variant = "default",
+}: EventCardProps) {
+  const compact = variant === "compact";
 
   const card = (
-    <div className="overflow-hidden rounded-xl border border-zinc-100 bg-white transition hover:shadow-lg sm:rounded-2xl sm:border-zinc-200">
-      <div className={imageClass}>
+    <article
+      className={cn(
+        "group overflow-hidden rounded-2xl border border-zinc-200 bg-white transition hover:-translate-y-0.5 hover:shadow-lg",
+        compact && "rounded-xl"
+      )}
+    >
+      <div className={cn("relative w-full bg-zinc-100", compact ? "h-36" : "h-44 sm:h-52")}>
         <img
           src={image}
           alt={title}
           loading="lazy"
           decoding="async"
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
         />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
         {badge && (
-          <span className="absolute top-3 right-3 bg-orange-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow">
+          <span className="absolute left-3 top-3 rounded-full bg-orange-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow">
             {badge}
           </span>
         )}
+        {price && (
+          <span className="absolute bottom-3 right-3 rounded-lg bg-white/95 px-2.5 py-1 text-xs font-black text-zinc-950 shadow-sm backdrop-blur">
+            {price}
+          </span>
+        )}
       </div>
-      <div className={bodyClass}>
-        <p className="text-xs font-bold text-orange-600 sm:text-sm">{date}</p>
-        <h3 className={titleClass}>{title}</h3>
-        <p className="mt-1 text-xs font-semibold text-zinc-600 sm:mt-2 sm:text-base">{location}</p>
+      <div className={cn("p-4", compact && "p-3")}>
+        <div className="flex items-center gap-2">
+          <p className="text-xs font-bold uppercase tracking-wide text-orange-600">{date}</p>
+          {category && (
+            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-600">
+              {category}
+            </span>
+          )}
+        </div>
+        <h3
+          className={cn(
+            "mt-1.5 line-clamp-2 font-black leading-snug text-zinc-950",
+            compact ? "text-sm" : "text-base sm:text-lg"
+          )}
+        >
+          {title}
+        </h3>
+        <p className="mt-1 line-clamp-1 text-xs font-semibold text-zinc-500 sm:text-sm">{location}</p>
       </div>
-    </div>
+    </article>
   );
 
-  // Eventbrite cards have no slug — wrapping <a> is handled by the parent
   if (!slug) return card;
-
   return <Link href={`/events/${slug}`}>{card}</Link>;
 }

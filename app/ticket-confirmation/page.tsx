@@ -102,7 +102,7 @@ function TicketConfirmationContent() {
           <div className="bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-100 text-xs font-bold uppercase tracking-widest">EventBrithe</p>
+                <p className="text-orange-100 text-xs font-bold uppercase tracking-widest">Fund4Good</p>
                 <h2 className="text-white text-xl font-black mt-0.5">Event Ticket</h2>
               </div>
               <div className="text-white text-4xl">🎟️</div>

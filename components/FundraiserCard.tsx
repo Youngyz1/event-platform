@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Users } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type FundraiserCardProps = {
   title: string;
@@ -6,38 +8,80 @@ type FundraiserCardProps = {
   goal: number;
   image: string;
   slug: string;
+  donorCount?: number;
+  daysLeft?: number | null;
+  featured?: boolean;
 };
 
-export default function FundraiserCard({ title, raised, goal, image, slug }: FundraiserCardProps) {
+export default function FundraiserCard({
+  title,
+  raised,
+  goal,
+  image,
+  slug,
+  donorCount,
+  daysLeft,
+  featured = false,
+}: FundraiserCardProps) {
   const progress = goal ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
 
   return (
     <Link href={`/fundraisers/${slug}`}>
-      <div className="bg-white border border-zinc-200 rounded-2xl overflow-hidden hover:shadow-lg transition cursor-pointer">
-        <div className="h-48 w-full bg-zinc-100 sm:h-56">
+      <article
+        className={cn(
+          "group flex h-full flex-col overflow-hidden rounded-2xl border bg-white transition hover:-translate-y-0.5 hover:shadow-lg",
+          featured ? "border-emerald-200 ring-1 ring-emerald-100" : "border-zinc-200"
+        )}
+      >
+        <div className="relative h-44 w-full bg-zinc-100 sm:h-52">
           <img
             src={image}
             alt={title}
             loading="lazy"
             decoding="async"
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
           />
+          {featured && (
+            <span className="absolute left-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+              Featured
+            </span>
+          )}
+          {daysLeft !== null && daysLeft !== undefined && daysLeft >= 0 && (
+            <span className="absolute bottom-3 left-3 rounded-lg bg-black/70 px-2 py-1 text-[10px] font-bold text-white backdrop-blur">
+              {daysLeft === 0 ? "Ends today" : `${daysLeft} days left`}
+            </span>
+          )}
         </div>
-        <div className="p-5 flex flex-col justify-between flex-1">
-          <div>
-            <h3 className="text-lg font-black tracking-tight text-zinc-950 sm:text-xl">{title}</h3>
-            <p className="text-sm font-semibold text-zinc-500 mt-2.5">
-              <span className="font-bold text-zinc-900">${raised.toLocaleString()}</span> raised of <span className="font-bold text-zinc-900">${goal.toLocaleString()}</span>
-            </p>
-            <div className="w-full h-2 bg-zinc-100 rounded-full mt-3 overflow-hidden border border-zinc-200/50">
-              <div className="bg-green-500 h-full transition-all rounded-full" style={{ width: `${progress}%` }} />
+        <div className="flex flex-1 flex-col p-4 sm:p-5">
+          <h3 className="line-clamp-2 text-base font-black leading-snug text-zinc-950 sm:text-lg">{title}</h3>
+
+          <div className="mt-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-lg font-black text-emerald-700">${raised.toLocaleString()}</p>
+              <p className="text-xs font-semibold text-zinc-500">of ${goal.toLocaleString()}</p>
+            </div>
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+            <div className="mt-2 flex items-center justify-between text-xs font-bold text-zinc-500">
+              <span>{progress}% funded</span>
+              {donorCount !== undefined && donorCount > 0 && (
+                <span className="inline-flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  {donorCount} donors
+                </span>
+              )}
             </div>
           </div>
-          <div className="mt-6 flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-xl font-bold text-sm shadow-sm transition w-full text-center">
-            Donate Now
-          </div>
+
+          <span className="mt-4 block w-full rounded-xl bg-emerald-600 py-2.5 text-center text-sm font-black text-white transition group-hover:bg-emerald-700">
+            Donate now
+          </span>
         </div>
-      </div>
+      </article>
     </Link>
   );
 }

@@ -12,15 +12,6 @@ type SupportMessage = {
   author_organizer_id?: string | null;
 };
 
-type SupportMessagesProps = {
-  fundraiserId: string;
-  // Provided after a successful donation redirect
-  donorName?: string;
-  donorEmail?: string;
-  donorAmount?: number;
-  stripeSessionId?: string;
-};
-
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("en-US", {
     month: "short",

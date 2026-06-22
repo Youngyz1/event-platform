@@ -6,6 +6,7 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import EventPageClient from "./EventPageClient";
 import AboutSection from "./AboutSection";
+import StarRating from "@/components/StarRating";
 
 /** Forward-geocode a free-text address via Nominatim (no API key needed). */
 async function geocodeAddress(
@@ -14,7 +15,7 @@ async function geocodeAddress(
   try {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`;
     const res = await fetch(url, {
-      headers: { "User-Agent": "EventBrithe/1.0", "Accept-Language": "en" },
+      headers: { "User-Agent": "Fund4Good/1.0", "Accept-Language": "en" },
       next: { revalidate: 86400 }, // cache 24 h per address
     });
     if (!res.ok) return null;
@@ -69,7 +70,7 @@ export default async function EventPage({
   const { data: organizer } = event.organizer_id
     ? await supabase
         .from("organizers")
-        .select("id, name, bio, photo, website, status, created_at")
+        .select("id, name, bio, photo, website, status, created_at, follower_offset, events_offset")
         .eq("id", event.organizer_id)
         .single()
     : { data: null };
@@ -270,6 +271,17 @@ export default async function EventPage({
             <h1 className={`font-black leading-tight ${titleSizeClass}`}>
               {event.title}
             </h1>
+            {event.review_count > 0 && (
+              <div className="mt-2 flex items-center gap-1.5 text-sm text-zinc-600">
+                <StarRating value={event.average_rating} size={16} />
+                <span className="font-bold text-zinc-800">
+                  {Number(event.average_rating).toFixed(1)}
+                </span>
+                <span>
+                  ({event.review_count} {event.review_count === 1 ? "review" : "reviews"})
+                </span>
+              </div>
+            )}
             {primaryOrganizerName && (
               <p className="mt-2 text-sm text-zinc-500">
                 by{" "}
@@ -463,13 +475,14 @@ export default async function EventPage({
                             <div className="mt-1 flex gap-5 text-sm text-zinc-500">
                               <span>
                                 <strong className="text-zinc-800">
-                                  {followerCount ?? 0}
+                                  {(followerCount ?? 0) + (organizer.follower_offset ?? 0)}
                                 </strong>{" "}
                                 Followers
                               </span>
                               <span>
                                 <strong className="text-zinc-800">
                                   {(organizerEventCount ?? 0) +
+                                    (organizer.events_offset ?? 0) +
                                     (organizerFundraiserCount ?? 0)}
                                 </strong>{" "}
                                 Events
@@ -489,7 +502,7 @@ export default async function EventPage({
                         {organizer && (
                           <div className="flex gap-3 shrink-0">
                             <a
-                              href={`mailto:support@eventbrithe.com?subject=Contact%20${encodeURIComponent(
+                              href={`mailto:support@fund4good.com?subject=Contact%20${encodeURIComponent(
                                 primaryOrganizerName
                               )}`}
                               className="rounded-xl border border-zinc-300 px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-100 transition"
@@ -594,7 +607,7 @@ export default async function EventPage({
             {/* Report event */}
             <div className="flex justify-center pt-2 pb-4">
               <a
-                href={`mailto:support@eventbrithe.com?subject=Report%20event%3A%20${encodeURIComponent(
+                href={`mailto:support@fund4good.com?subject=Report%20event%3A%20${encodeURIComponent(
                   event.title
                 )}`}
                 className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-red-500 transition"
@@ -615,6 +628,8 @@ export default async function EventPage({
                 Report this event
               </a>
             </div>
+
+
 
             {/* More events from organizer */}
             {moreEvents && moreEvents.length > 0 && (

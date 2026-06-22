@@ -3,9 +3,9 @@ import Link from "next/link";
 
 
 export const metadata: Metadata = {
-  title: "About EventBrithe",
+  title: "About Fund4Good",
   description:
-    "Learn how EventBrithe helps people discover events, support fundraisers, and build trusted organizer profiles.",
+    "Learn how Fund4Good helps people discover events, support fundraisers, and build trusted organizer profiles.",
 };
 
 const platformStats = [
@@ -61,13 +61,13 @@ export default function AboutPage() {
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/90 via-black/60 to-black/30" />
         <div className="mx-auto grid min-h-[560px] max-w-7xl content-end px-4 pb-16 pt-24 sm:px-6 lg:pb-24">
           <p className="mb-4 w-fit rounded-full bg-orange-600 px-4 py-2 text-sm font-black uppercase tracking-wide">
-            About EventBrithe
+            About Fund4Good
           </p>
           <h1 className="max-w-4xl text-4xl font-black leading-tight sm:text-5xl lg:text-7xl">
             Bringing local communities together through events, causes, and trusted organizers.
           </h1>
           <p className="mt-6 max-w-2xl text-lg font-medium leading-8 text-zinc-100 sm:text-xl">
-            EventBrithe helps people create, discover, book, and support real experiences. From ticketed events to fundraisers, the goal is simple: make it easier for communities to show up.
+            Fund4Good helps people create, discover, book, and support real experiences. From ticketed events to fundraisers, the goal is simple: make it easier for communities to show up.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link href="/events" className="rounded-full bg-orange-600 px-6 py-3 font-black text-white transition hover:bg-orange-700">

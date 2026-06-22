@@ -15,11 +15,11 @@ const font = Plus_Jakarta_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
-  applicationName: "EventBrithe",
-  title: "EventBrithe",
+  applicationName: "Fund4Good",
+  title: "Fund4Good",
   description: "Discover events, fundraisers, and community gatherings near you.",
   openGraph: {
-    siteName: "EventBrithe",
+    siteName: "Fund4Good",
     type: "website",
   },
 };

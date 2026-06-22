@@ -9,8 +9,12 @@ import {
   getHomepageHeroSettings,
 } from "@/lib/homepage-hero";
 import FeaturedSlider, { type FeaturedSliderItem } from "@/components/FeaturedSlider";
+import HomepageTestimonials from "@/components/HomepageTestimonials";
+import HomepageSponsors from "@/components/HomepageSponsors";
 import AboutUsSection from "@/components/ui/about-us-section";
 import { Gallery4, type Gallery4Item } from "@/components/ui/gallery4";
+import TrustBar from "@/components/public/TrustBar";
+import * as LucideIcons from "lucide-react";
 import {
   Briefcase,
   GraduationCap,
@@ -25,7 +29,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const siteUrl = getSiteUrl();
-const homeTitle = "EventBrithe — Buy Tickets, Run Events & Fundraise";
+const homeTitle = "Fund4Good — Buy Tickets, Run Events & Fundraise";
 const homeDescription = "Discover events, buy tickets, support causes.";
 
 async function getHeroForMetadata() {
@@ -47,31 +51,31 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: new URL(siteUrl),
-    title: homeTitle,
-    description: homeDescription,
+    title: hero.seoTitle,
+    description: hero.seoDescription,
     alternates: {
       canonical: "/",
     },
     openGraph: {
-      title: homeTitle,
-      description: homeDescription,
+      title: hero.seoTitle,
+      description: hero.seoDescription,
       url: "/",
-      siteName: "EventBrithe",
+      siteName: "Fund4Good",
       type: "website",
       images: [
         {
-          url: hero.imageUrl,
+          url: hero.seoOgImageUrl,
           width: 1200,
           height: 630,
-          alt: "EventBrithe — Buy Tickets, Run Events & Fundraise",
+          alt: hero.seoTitle,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: homeTitle,
-      description: homeDescription,
-      images: [hero.imageUrl],
+      title: hero.seoTitle,
+      description: hero.seoDescription,
+      images: [hero.seoOgImageUrl],
     },
   };
 }
@@ -109,47 +113,142 @@ function fundraiserImage(src: string | null | undefined) {
 export default async function HomePage() {
   const supabaseAdmin = createSupabaseAdmin();
 
-  const [
-    { data: heroRows },
-    { data: featuredEvents },
-    { data: featuredFundraisers },
-  ] =
-    await Promise.all([
-      supabaseAdmin
-        .from("platform_settings")
-        .select("key, value")
-        .in("key", HOMEPAGE_HERO_SETTING_KEYS),
-      supabase
+  // 1. Fetch settings
+  const { data: heroRows } = await supabaseAdmin
+    .from("platform_settings")
+    .select("key, value")
+    .in("key", HOMEPAGE_HERO_SETTING_KEYS);
+  const hero = getHomepageHeroSettings(heroRows);
+
+  // 2. Fetch categories from database (resilient to schema errors)
+  let categories = categoryCards;
+  try {
+    const { data: dbCats } = await supabaseAdmin
+      .from("homepage_categories")
+      .select("name, icon")
+      .eq("is_visible", true)
+      .order("position", { ascending: true });
+    
+    if (dbCats && dbCats.length > 0) {
+      categories = dbCats.map((c: any) => ({
+        name: c.name,
+        icon: (LucideIcons as any)[c.icon] || LucideIcons.Tag,
+      }));
+    }
+  } catch (err) {
+    console.error("Failed to query homepage_categories", err);
+  }
+
+  // 3. Fetch featured events (resilient query)
+  let featuredEvents: any[] = [];
+  try {
+    const { data, error } = await supabase
+      .from("events")
+      .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
+      .eq("is_homepage_featured", true)
+      .order("homepage_position", { ascending: true })
+      .limit(6);
+    
+    if (error) {
+      // Fallback if homepage_position is missing
+      const { data: fallback } = await supabase
         .from("events")
         .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
         .eq("is_homepage_featured", true)
-        .limit(6),
-      supabase
+        .limit(6);
+      featuredEvents = fallback ?? [];
+    } else {
+      featuredEvents = data ?? [];
+    }
+  } catch (err) {
+    console.error("Failed to query featured events", err);
+  }
+
+  // 4. Fetch featured fundraisers (resilient query)
+  let featuredFundraisers: any[] = [];
+  try {
+    const { data, error } = await supabase
+      .from("fundraisers")
+      .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner")
+      .eq("is_homepage_featured", true)
+      .order("homepage_position", { ascending: true })
+      .limit(6);
+    
+    if (error) {
+      // Fallback if homepage_position is missing
+      const { data: fallback } = await supabase
         .from("fundraisers")
         .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner")
         .eq("is_homepage_featured", true)
-        .limit(6),
-    ]);
-  const hero = getHomepageHeroSettings(heroRows);
+        .limit(6);
+      featuredFundraisers = fallback ?? [];
+    } else {
+      featuredFundraisers = data ?? [];
+    }
+  } catch (err) {
+    console.error("Failed to query featured fundraisers", err);
+  }
 
-  const [featuredSliderEvents, featuredSliderFundraisers] = await Promise.all([
-    (featuredEvents?.length ?? 0) >= 2
-      ? Promise.resolve(featuredEvents ?? [])
+  // 5. Fallbacks for sliders if fewer than 2 items featured
+  const [featuredSliderEvents, featuredSliderFundraisers, testimonialsResult, platformReviewsResult, sponsorsResult] =
+    await Promise.all([
+    featuredEvents.length >= 2
+      ? Promise.resolve(featuredEvents)
       : supabase
           .from("events")
           .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
           .order("created_at", { ascending: false })
           .limit(5)
           .then(({ data }) => data ?? []),
-    (featuredFundraisers?.length ?? 0) >= 2
-      ? Promise.resolve(featuredFundraisers ?? [])
+    featuredFundraisers.length >= 2
+      ? Promise.resolve(featuredFundraisers)
       : supabase
           .from("fundraisers")
           .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner")
           .order("created_at", { ascending: false })
           .limit(5)
           .then(({ data }) => data ?? []),
+    supabaseAdmin
+      .from("homepage_testimonials")
+      .select("id, name, role, photo_url, quote, position")
+      .eq("is_visible", true)
+      .order("position", { ascending: true })
+      .then(({ data, error }) => (error ? [] : data ?? [])),
+    supabaseAdmin
+      .from("reviews")
+      .select("id, rating, title, review, created_at, profiles!reviews_user_id_fkey(display_name, avatar_url)")
+      .eq("review_type", "platform")
+      .eq("is_approved", true)
+      .order("created_at", { ascending: false })
+      .limit(6)
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("Failed to load platform reviews for homepage:", error);
+          return [];
+        }
+        return (data ?? []).map((r) => {
+          const profile = Array.isArray(r.profiles)
+            ? r.profiles[0]
+            : (r.profiles as any);
+          return {
+            id: r.id,
+            name: profile?.display_name || "Anonymous",
+            role: `Platform Reviewer (${r.rating} ★)`,
+            photo_url: profile?.avatar_url || "",
+            quote: r.title ? `"${r.title}" — ${r.review ?? ""}` : (r.review ?? ""),
+            position: 0,
+          };
+        });
+      }),
+    supabaseAdmin
+      .from("homepage_sponsors")
+      .select("id, name, logo_url, website_url, position")
+      .eq("is_visible", true)
+      .order("position", { ascending: true })
+      .then(({ data, error }) => (error ? [] : data ?? [])),
   ]);
+
+  const combinedTestimonials = [...platformReviewsResult, ...testimonialsResult].slice(0, 6);
 
   const combinedFeaturedItems: FeaturedSliderItem[] = [];
   const maxFeaturedLength = Math.max(
@@ -186,6 +285,21 @@ export default async function HomePage() {
     .order("created_at", { ascending: false })
     .limit(3);
 
+  // Platform stats for trust bar
+  const [{ count: totalEvents }, { count: totalFundraisers }, { count: totalOrganizers }] =
+    await Promise.all([
+      supabase.from("events").select("id", { count: "exact", head: true }).eq("visibility", "public").eq("status", "approved"),
+      supabase.from("fundraisers").select("id", { count: "exact", head: true }),
+      supabase.from("organizers").select("id", { count: "exact", head: true }).eq("visibility", "public"),
+    ]);
+
+  const trustStats = [
+    { label: "Live events", value: `${totalEvents ?? 0}+` },
+    { label: "Active campaigns", value: `${totalFundraisers ?? 0}+` },
+    { label: "Organizers", value: `${totalOrganizers ?? 0}+` },
+    { label: "Secure checkout", value: "Stripe" },
+  ];
+
   // Deduplicate events grid
   const seen = new Set<string>();
   const events = (rawEvents ?? [])
@@ -213,24 +327,38 @@ export default async function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/10 sm:from-black/85 sm:via-black/48 sm:to-black/15" />
           <div className="relative w-full max-w-full sm:max-w-3xl">
             <p className="text-xs font-black uppercase tracking-wide text-white drop-shadow sm:text-sm">
-              {hero.eyebrow}
+              {hero.subtitle}
             </p>
-            <h1 className="mt-2 max-w-full text-2xl font-black leading-[1.1] tracking-tight text-white drop-shadow-[0_3px_12px_rgba(0,0,0,0.65)] sm:mt-3 sm:text-6xl lg:text-7xl">
-              {hero.headlineLine1}
-              <br />
-              {hero.headlineLine2}
+            <h1 className="mt-2 max-w-full text-2xl font-black leading-[1.1] tracking-tight text-white drop-shadow-[0_3px_12px_rgba(0,0,0,0.65)] sm:mt-3 sm:text-4xl md:text-5xl lg:text-6xl">
+              {hero.title}
+              {hero.headlineLine2 && (
+                <>
+                  <br />
+                  <span className="text-violet-300">{hero.headlineLine2}</span>
+                </>
+              )}
             </h1>
-            <Link
-              href={hero.buttonHref}
-              className="mt-4 inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-black text-zinc-950 transition hover:bg-orange-50 sm:mt-8 sm:px-8 sm:py-3 sm:text-base"
-            >
-              {hero.buttonText}
-            </Link>
+            <div className="relative z-10 mt-4 flex flex-wrap gap-3 sm:mt-6">
+              <Link
+                href={hero.buttonHref}
+                className="inline-flex rounded-full bg-white px-5 py-2.5 text-sm font-black text-zinc-950 transition hover:bg-orange-50 sm:px-7 sm:py-3 sm:text-base shadow-lg shadow-black/20"
+              >
+                {hero.buttonText}
+              </Link>
+              {hero.secondaryButtonText && hero.secondaryButtonHref && (
+                <Link
+                  href={hero.secondaryButtonHref}
+                  className="inline-flex rounded-full border border-white/80 bg-white/10 px-5 py-2.5 text-sm font-black text-white backdrop-blur transition hover:bg-white/20 sm:px-7 sm:py-3 sm:text-base"
+                >
+                  {hero.secondaryButtonText}
+                </Link>
+              )}
+            </div>
           </div>
         </div>
 
         <div className="mx-auto grid max-w-7xl grid-cols-4 gap-x-3 gap-y-5 py-8 sm:gap-6 sm:py-12 lg:grid-cols-8">
-          {categoryCards.map(({ name, icon: Icon }) => (
+          {categories.map(({ name, icon: Icon }) => (
             <Link
               key={name}
               href={`/events?category=${encodeURIComponent(name)}`}
@@ -245,6 +373,8 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <TrustBar stats={trustStats} />
+
       <section className="bg-white py-7 sm:py-10">
         <div className="mx-auto mb-3 flex max-w-7xl items-center justify-between px-3 sm:mb-5 sm:px-6 lg:px-8">
           <p className="text-xs font-black uppercase tracking-widest text-orange-600 sm:text-xs">
@@ -253,6 +383,8 @@ export default async function HomePage() {
         </div>
         <FeaturedSlider items={combinedFeaturedItems} />
       </section>
+
+      <HomepageTestimonials testimonials={combinedTestimonials} />
 
       {/* ── TASK 1 — Events grid (deduplicated, max 6) ─────────────────────────── */}
       <section className="mx-auto max-w-7xl bg-white px-3 py-8 sm:px-6 sm:py-16 lg:px-8">
@@ -305,6 +437,8 @@ export default async function HomePage() {
         description="Campaigns can tell a story, show progress, collect donations, and keep supporters engaged."
         items={fundraiserGalleryItems}
       />
+
+      <HomepageSponsors sponsors={sponsorsResult} />
 
       {/* ── About Us section ──────────────────────────────────────────────────── */}
       <AboutUsSection />

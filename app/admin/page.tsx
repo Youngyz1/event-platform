@@ -62,7 +62,7 @@ export default async function AdminOverviewPage() {
     supabaseAdmin.from('events').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('fundraisers').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('ticket_orders').select('*', { count: 'exact', head: true }).eq('status', 'valid'),
-    supabaseAdmin.from('donations').select('amount').eq('status', 'succeeded'),
+    supabaseAdmin.from('donations').select('amount').in('status', ['succeeded', 'completed']),
   ]);
 
   const totalDonations = (donationTotal ?? []).reduce(

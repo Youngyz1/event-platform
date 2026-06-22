@@ -4,9 +4,9 @@ import Link from "next/link";
 
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | EventBrithe",
+  title: "Privacy Policy | Fund4Good",
   description:
-    "Learn how EventBrithe collects, uses, shares, stores, and protects personal information for event organizers and ticket buyers.",
+    "Learn how Fund4Good collects, uses, shares, stores, and protects personal information for event organizers and ticket buyers.",
 };
 
 const sections = [
@@ -28,7 +28,7 @@ const sections = [
   "EEA, Switzerland And UK Only",
   "Residents Of Certain States",
   "Brazil Only",
-  "Notice For People Who Don't Use EventBrithe Services",
+  "Notice For People Who Don't Use Fund4Good Services",
 ];
 
 function slugify(value: string) {
@@ -76,22 +76,22 @@ export default function PrivacyPage() {
                 Terms and policies
               </p>
               <h1 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">
-                EventBrithe Privacy Policy
+                Fund4Good Privacy Policy
               </h1>
               <p className="mt-4 text-base font-semibold text-zinc-500">
                 Last Updated: June 3, 2026
               </p>
               <p className="mt-6 text-lg leading-8 text-zinc-700">
-                This Privacy Policy explains how EventBrithe collects, uses, discloses,
+                This Privacy Policy explains how Fund4Good collects, uses, discloses,
                 transfers, stores, and protects personal information when people use our
                 event discovery, ticketing, registration, and fundraising services.
               </p>
               <p className="mt-4 text-base leading-7 text-zinc-600">
-                EventBrithe is based in the United States. We do not have a public
+                Fund4Good is based in the United States. We do not have a public
                 domain yet. Until a permanent domain and legal mailing address are added,
                 you can contact us at{" "}
-                <a className="font-bold text-orange-600" href="mailto:support@eventbrithe.com">
-                  support@eventbrithe.com
+                <a className="font-bold text-orange-600" href="mailto:support@fund4good.com">
+                  support@fund4good.com
                 </a>
                 .
               </p>
@@ -113,9 +113,9 @@ export default function PrivacyPage() {
             <div className="policy-content mt-10 space-y-10 text-base leading-8 text-zinc-700">
               <section id="who-we-are">
                 <h2 className="text-2xl font-black text-zinc-950">1. Who We Are.</h2>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">1.1 EventBrithe Services.</h3>
+                <h3 className="mt-5 text-xl font-black text-zinc-950">1.1 Fund4Good Services.</h3>
                 <p className="mt-3">
-                  EventBrithe is an event and ticketing platform that helps people create,
+                  Fund4Good is an event and ticketing platform that helps people create,
                   discover, share, register for, and attend live experiences. Our services may
                   include event pages, organizer tools, ticket purchasing, ticket delivery,
                   fundraising pages, account services, customer support, and related features
@@ -125,11 +125,11 @@ export default function PrivacyPage() {
                 <h3 className="mt-5 text-xl font-black text-zinc-950">1.2 Who's Who.</h3>
                 <p className="mt-3">
                   "Organizer" means a person or business that creates, lists, imports, manages,
-                  promotes, or hosts events or fundraisers on EventBrithe. "Consumer" means a
+                  promotes, or hosts events or fundraisers on Fund4Good. "Consumer" means a
                   person who browses, registers for, purchases, donates to, or attends events or
                   fundraisers. Organizers, Consumers, visitors, and other users are collectively
-                  called "Users," "you," or "your." "EventBrithe," "we," "us," and "our" mean
-                  EventBrithe.
+                  called "Users," "you," or "your." "Fund4Good," "we," "us," and "our" mean
+                  Fund4Good.
                 </p>
               </section>
 
@@ -176,7 +176,7 @@ export default function PrivacyPage() {
                 <p className="mt-3">
                   We may receive information from organizers, payment partners, authentication
                   providers, analytics providers, marketing partners, public sources, social
-                  platforms, or other services that you connect to EventBrithe.
+                  platforms, or other services that you connect to Fund4Good.
                 </p>
               </section>
 
@@ -184,7 +184,7 @@ export default function PrivacyPage() {
                 <h2 className="text-2xl font-black text-zinc-950">4. How We Use Your Personal Data.</h2>
                 <p className="mt-3">We may use personal data to:</p>
                 <ul className="mt-3 list-disc space-y-2 pl-6">
-                  <li>Provide, operate, personalize, and improve EventBrithe services.</li>
+                  <li>Provide, operate, personalize, and improve Fund4Good services.</li>
                   <li>Create accounts, publish events, process registrations, and deliver tickets.</li>
                   <li>Process payments, payouts, refunds, donations, tax records, and fraud checks.</li>
                   <li>Provide customer support and respond to questions or complaints.</li>
@@ -195,7 +195,7 @@ export default function PrivacyPage() {
                   <li>Analyze usage, debug errors, and develop new products and features.</li>
                 </ul>
                 <p className="mt-3">
-                  EventBrithe does not charge a separate service fee to ticket buyers. Ticket
+                  Fund4Good does not charge a separate service fee to ticket buyers. Ticket
                   prices shown on the platform are intended to be all-inclusive unless a page
                   clearly says otherwise.
                 </p>
@@ -208,7 +208,7 @@ export default function PrivacyPage() {
                   data to organizers, payment processors, hosting providers, email providers,
                   analytics providers, fraud prevention vendors, customer support vendors,
                   professional advisers, affiliates, and other service providers that help us
-                  operate EventBrithe.
+                  operate Fund4Good.
                 </p>
                 <p className="mt-3">
                   When you register for, buy, donate to, or express interest in an event or
@@ -240,9 +240,9 @@ export default function PrivacyPage() {
                 </h2>
                 <p className="mt-3">
                   You may be able to access, update, or delete some account information by
-                  logging into your EventBrithe account. You may also contact us at{" "}
-                  <a className="font-bold text-orange-600" href="mailto:support@eventbrithe.com">
-                    support@eventbrithe.com
+                  logging into your Fund4Good account. You may also contact us at{" "}
+                  <a className="font-bold text-orange-600" href="mailto:support@fund4good.com">
+                    support@fund4good.com
                   </a>{" "}
                   to request access, correction, deletion, restriction, portability, or other
                   privacy rights available under applicable law.
@@ -288,7 +288,7 @@ export default function PrivacyPage() {
                 <h2 className="text-2xl font-black text-zinc-950">10. Your Choices.</h2>
                 <h3 className="mt-5 text-xl font-black text-zinc-950">10.1 Limit The Personal Data You Provide.</h3>
                 <p className="mt-3">
-                  You may browse some parts of EventBrithe without creating an account. Certain
+                  You may browse some parts of Fund4Good without creating an account. Certain
                   features, including buying tickets, receiving ticket confirmations, creating
                   events, and receiving payouts, require personal data.
                 </p>
@@ -316,9 +316,9 @@ export default function PrivacyPage() {
                 <h2 className="text-2xl font-black text-zinc-950">11. Exclusions.</h2>
                 <p className="mt-3">
                   This Privacy Policy does not apply to websites, services, payment pages,
-                  social platforms, or third-party links that EventBrithe does not own or
+                  social platforms, or third-party links that Fund4Good does not own or
                   control. It also does not cover information you provide directly to organizers
-                  outside of EventBrithe.
+                  outside of Fund4Good.
                 </p>
               </section>
 
@@ -327,7 +327,7 @@ export default function PrivacyPage() {
                   12. Children - Children's Online Privacy Protection Act.
                 </h2>
                 <p className="mt-3">
-                  EventBrithe is not directed to children under 13, and we do not knowingly
+                  Fund4Good is not directed to children under 13, and we do not knowingly
                   collect personal data from children under 13. If you believe a child under 13
                   has provided personal data to us, please contact us so we can take appropriate
                   action.
@@ -337,7 +337,7 @@ export default function PrivacyPage() {
               <section id="international-privacy-laws">
                 <h2 className="text-2xl font-black text-zinc-950">13. International Privacy Laws.</h2>
                 <p className="mt-3">
-                  EventBrithe is based in the United States. If you use the services from
+                  Fund4Good is based in the United States. If you use the services from
                   outside the United States, your information may be processed in the United
                   States or other countries where our service providers operate. These countries
                   may have privacy laws that differ from those in your location.
@@ -350,7 +350,7 @@ export default function PrivacyPage() {
                   We may update this Privacy Policy from time to time. When we do, we will
                   update the "Last Updated" date above. If changes are material, we may provide
                   additional notice, such as through the service or by email where appropriate.
-                  Continued use of EventBrithe after an update means the updated policy applies.
+                  Continued use of Fund4Good after an update means the updated policy applies.
                 </p>
               </section>
 
@@ -358,8 +358,8 @@ export default function PrivacyPage() {
                 <h2 className="text-2xl font-black text-zinc-950">15. Dispute Resolution.</h2>
                 <p className="mt-3">
                   If you have a privacy question, concern, or complaint, contact us at{" "}
-                  <a className="font-bold text-orange-600" href="mailto:support@eventbrithe.com">
-                    support@eventbrithe.com
+                  <a className="font-bold text-orange-600" href="mailto:support@fund4good.com">
+                    support@fund4good.com
                   </a>
                   . We will review your request and try to respond within a reasonable time.
                 </p>
@@ -375,7 +375,7 @@ export default function PrivacyPage() {
                   protection authority.
                 </p>
                 <p className="mt-3">
-                  Depending on the context, EventBrithe may act as a controller for account,
+                  Depending on the context, Fund4Good may act as a controller for account,
                   platform, security, analytics, and business operations data, and may act as a
                   processor or service provider when processing attendee data on behalf of an
                   organizer.
@@ -388,7 +388,7 @@ export default function PrivacyPage() {
                   Residents of some U.S. states may have additional privacy rights, including
                   rights to know, access, correct, delete, opt out of certain data uses, limit
                   certain sensitive data uses, or appeal a privacy decision. To submit a request,
-                  contact us at support@eventbrithe.com.
+                  contact us at support@fund4good.com.
                 </p>
               </section>
 
@@ -402,15 +402,15 @@ export default function PrivacyPage() {
                 </p>
               </section>
 
-              <section id="notice-for-people-who-don-t-use-eventbrithe-services">
+              <section id="notice-for-people-who-don-t-use-Fund4Good-services">
                 <h2 className="text-2xl font-black text-zinc-950">
-                  19. Notice For People Who Don't Use EventBrithe Services.
+                  19. Notice For People Who Don't Use Fund4Good Services.
                 </h2>
                 <p className="mt-3">
-                  We may receive personal data about people who do not have EventBrithe accounts,
+                  We may receive personal data about people who do not have Fund4Good accounts,
                   such as when an organizer imports a contact list, transfers a ticket, sends an
                   invitation, or enters attendee information. If you believe we hold information
-                  about you and you do not use EventBrithe, contact us at support@eventbrithe.com.
+                  about you and you do not use Fund4Good, contact us at support@fund4good.com.
                 </p>
               </section>
             </div>
@@ -418,11 +418,11 @@ export default function PrivacyPage() {
             <div className="mt-12 rounded-lg border border-zinc-200 bg-zinc-50 p-6">
               <h2 className="text-xl font-black">Still have questions?</h2>
               <p className="mt-3 text-base leading-7 text-zinc-700">
-                Contact EventBrithe support for privacy requests, account questions, and policy
+                Contact Fund4Good support for privacy requests, account questions, and policy
                 questions.
               </p>
               <a
-                href="mailto:support@eventbrithe.com"
+                href="mailto:support@fund4good.com"
                 className="mt-5 inline-flex rounded-full bg-orange-600 px-6 py-3 font-black text-white transition hover:bg-orange-700"
               >
                 Contact us

@@ -2,8 +2,23 @@ import DashboardView from './DashboardView';
 import { redirect } from 'next/navigation';
 import { getDashboardContext, supabaseAdmin } from '@/lib/dashboard-context';
 
+function buildDateRange(days = 14): string[] {
+  const result: string[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    result.push(d.toISOString().slice(0, 10));
+  }
+  return result;
+}
+
+function shortDate(iso: string) {
+  const [, m, day] = iso.split('-');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[parseInt(m, 10) - 1]} ${parseInt(day, 10)}`;
+}
+
 export default async function Page() {
-  // getDashboardContext is cached — shared with layout, zero extra round-trips
   const ctx = await getDashboardContext();
   if (!ctx) redirect('/login');
 
@@ -11,83 +26,135 @@ export default async function Page() {
   const displayName = (user.user_metadata?.display_name as string | undefined)?.trim() || 'Account';
 
   if (organizerIds.length === 0) {
-    // No organizer yet — render empty state without any DB queries
     return (
       <DashboardView
         displayName={displayName}
-        analytics={{ totalRaised: 0, totalGoal: 0, overallProgress: 0, donationCount: 0, averageDonation: 0, ticketCount: 0, ticketRevenue: 0 }}
+        analytics={{
+          events: 0,
+          fundraisers: 0,
+          ticketsSold: 0,
+          revenue: 0,
+          donations: 0,
+          organizerProfiles: 0,
+          totalRaised: 0,
+        }}
         events={[]}
-        fundraisers={[]}
         donations={[]}
-        organizers={organizers}
         ticketOrders={[]}
+        chartTickets={[]}
+        chartRevenue={[]}
+        chartDonations={[]}
       />
     );
   }
 
-  // ── Round-trip 1: events + fundraisers in parallel ───────────────────────────
-  const [eventsResult, fundraisersResult] = await Promise.all([
+  const since = new Date();
+  since.setDate(since.getDate() - 14);
+  const sinceISO = since.toISOString();
+  const dateRange = buildDateRange(14);
+
+  const [eventsResult, fundraisersResult, allEventsResult] = await Promise.all([
     supabaseAdmin
       .from('events')
-      .select('id, title, slug, event_date, category, city')
+      .select('id, title, slug, event_date, city')
       .in('organizer_id', organizerIds)
       .order('created_at', { ascending: false })
       .limit(5),
-
     supabaseAdmin
       .from('fundraisers')
       .select('id, title, raised, goal')
       .in('organizer_id', organizerIds),
+    supabaseAdmin.from('events').select('id').in('organizer_id', organizerIds),
   ]);
 
-  const safeEvents      = eventsResult.data      ?? [];
-  const safeFundraisers = fundraisersResult.data  ?? [];
-  const eventIds        = safeEvents.map((e) => e.id);
-  const fundraiserIds   = safeFundraisers.map((f) => f.id);
+  const safeEvents = eventsResult.data ?? [];
+  const safeFundraisers = fundraisersResult.data ?? [];
+  const allEventIds = (allEventsResult.data ?? []).map((e) => e.id);
+  const fundraiserIds = safeFundraisers.map((f) => f.id);
 
-  // ── Round-trip 2: donations + ticket orders in parallel ─────────────────────
-  const [donationsResult, ordersResult] = await Promise.all([
-    fundraiserIds.length > 0
-      ? supabaseAdmin
-          .from('donations')
-          .select('id, donor_name, donor_email, amount, status, created_at')
-          .in('fundraiser_id', fundraiserIds)
-          .eq('status', 'succeeded')
-          .order('created_at', { ascending: false })
-          .limit(8)
-      : Promise.resolve({ data: [] }),
-
-    eventIds.length > 0
-      ? supabaseAdmin
-          .from('ticket_orders')
-          .select('id, buyer_name, buyer_email, quantity, total_amount, status, created_at, events(id, title)')
-          .in('event_id', eventIds)
-          .order('created_at', { ascending: false })
-          .limit(10)
-      : Promise.resolve({ data: [] }),
-  ]);
+  const [donationsResult, ordersResult, chartOrdersResult, chartDonationsResult, allOrdersResult] =
+    await Promise.all([
+      fundraiserIds.length > 0
+        ? supabaseAdmin
+            .from('donations')
+            .select('id, donor_name, amount, created_at')
+            .in('fundraiser_id', fundraiserIds)
+            .in('status', ['succeeded', 'completed'])
+            .order('created_at', { ascending: false })
+            .limit(5)
+        : Promise.resolve({ data: [] }),
+      allEventIds.length > 0
+        ? supabaseAdmin
+            .from('ticket_orders')
+            .select('id, buyer_name, buyer_email, quantity, total_amount, created_at, events(title)')
+            .in('event_id', allEventIds)
+            .order('created_at', { ascending: false })
+            .limit(5)
+        : Promise.resolve({ data: [] }),
+      allEventIds.length > 0
+        ? supabaseAdmin
+            .from('ticket_orders')
+            .select('quantity, total_amount, created_at')
+            .eq('status', 'valid')
+            .in('event_id', allEventIds)
+            .gte('created_at', sinceISO)
+        : Promise.resolve({ data: [] }),
+      fundraiserIds.length > 0
+        ? supabaseAdmin
+            .from('donations')
+            .select('amount, created_at')
+            .in('fundraiser_id', fundraiserIds)
+            .in('status', ['succeeded', 'completed'])
+            .gte('created_at', sinceISO)
+        : Promise.resolve({ data: [] }),
+      allEventIds.length > 0
+        ? supabaseAdmin
+            .from('ticket_orders')
+            .select('quantity, total_amount')
+            .eq('status', 'valid')
+            .in('event_id', allEventIds)
+        : Promise.resolve({ data: [] }),
+    ]);
 
   const safeDonations = donationsResult.data ?? [];
-  const safeOrders    = ordersResult.data    ?? [];
+  const safeOrders = ordersResult.data ?? [];
+  const allOrders = allOrdersResult.data ?? [];
 
-  // ── Analytics (no extra queries — computed from already-fetched rows) ────────
-  const totalRaised     = safeFundraisers.reduce((s, f) => s + (f.raised ?? 0), 0);
-  const totalGoal       = safeFundraisers.reduce((s, f) => s + (f.goal   ?? 0), 0);
-  const donationCount   = safeDonations.length;
-  const averageDonation = donationCount ? totalRaised / donationCount : 0;
-  const ticketCount     = safeOrders.reduce((s, o) => s + ((o as { quantity?: number }).quantity ?? 0), 0);
-  const ticketRevenue   = safeOrders.reduce((s, o) => s + ((o as { total_amount?: number }).total_amount ?? 0), 0);
-  const overallProgress = totalGoal ? Math.round((totalRaised / totalGoal) * 100) : 0;
+  const totalRaised = safeFundraisers.reduce((s, f) => s + (f.raised ?? 0), 0);
+  const ticketCount = allOrders.reduce((s, o) => s + (o.quantity ?? 0), 0);
+  const ticketRevenue = allOrders.reduce((s, o) => s + Number(o.total_amount ?? 0), 0);
+
+  const ticketsByDay: Record<string, number> = {};
+  const revenueByDay: Record<string, number> = {};
+  for (const o of chartOrdersResult.data ?? []) {
+    const day = (o.created_at as string).slice(0, 10);
+    ticketsByDay[day] = (ticketsByDay[day] ?? 0) + Number(o.quantity ?? 1);
+    revenueByDay[day] = (revenueByDay[day] ?? 0) + Number(o.total_amount ?? 0);
+  }
+  const donationsByDay: Record<string, number> = {};
+  for (const d of chartDonationsResult.data ?? []) {
+    const day = (d.created_at as string).slice(0, 10);
+    donationsByDay[day] = (donationsByDay[day] ?? 0) + Number(d.amount ?? 0);
+  }
 
   return (
     <DashboardView
       displayName={displayName}
-      analytics={{ totalRaised, totalGoal, overallProgress, donationCount, averageDonation, ticketCount, ticketRevenue }}
+      analytics={{
+        events: allEventIds.length,
+        fundraisers: safeFundraisers.length,
+        ticketsSold: ticketCount,
+        revenue: ticketRevenue,
+        donations: safeDonations.length,
+        organizerProfiles: organizers.length,
+        totalRaised,
+      }}
       events={safeEvents}
-      fundraisers={safeFundraisers}
       donations={safeDonations}
-      organizers={organizers}
       ticketOrders={safeOrders}
+      chartTickets={dateRange.map((d) => ({ date: shortDate(d), value: ticketsByDay[d] ?? 0 }))}
+      chartRevenue={dateRange.map((d) => ({ date: shortDate(d), value: +(revenueByDay[d] ?? 0).toFixed(2) }))}
+      chartDonations={dateRange.map((d) => ({ date: shortDate(d), value: +(donationsByDay[d] ?? 0).toFixed(2) }))}
     />
   );
 }

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Flag } from "lucide-react";
 import FundraiserFloatingActions, { ShareFundraiserButton } from "./FundraiserActions";
+import StarRating from "@/components/StarRating";
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1600&auto=format&fit=crop";
@@ -251,7 +252,7 @@ export default async function FundraiserPage({
         count: "exact",
       })
       .eq("fundraiser_id", fundraiser.id)
-      .eq("status", "completed")
+      .in("status", ["succeeded", "completed"])
       .order("created_at", { ascending: false })
       .limit(5),
     fundraiser.organizer_id
@@ -344,6 +345,17 @@ export default async function FundraiserPage({
             <h1 className="text-3xl font-bold leading-tight text-zinc-950 sm:text-4xl break-words">
               {fundraiser.title}
             </h1>
+            {fundraiser.review_count > 0 && (
+              <div className="mt-2 flex items-center gap-1.5 text-sm text-zinc-600">
+                <StarRating value={fundraiser.average_rating} size={16} />
+                <span className="font-bold text-zinc-800">
+                  {Number(fundraiser.average_rating).toFixed(1)}
+                </span>
+                <span>
+                  ({fundraiser.review_count} {fundraiser.review_count === 1 ? "review" : "reviews"})
+                </span>
+              </div>
+            )}
           </header>
 
           <section className="border-b border-zinc-200 pb-8">
@@ -445,7 +457,7 @@ export default async function FundraiserPage({
                     </span>
                     {organizerProfileId && (
                       <a
-                        href={"mailto:support@eventbrithe.com?subject=Message%20for%20" + encodeURIComponent(organizerName)}
+                        href={"mailto:support@fund4good.org?subject=Message%20for%20" + encodeURIComponent(organizerName)}
                         className="rounded-full border border-zinc-300 px-3 py-0.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50"
                       >
                         Message
@@ -500,7 +512,7 @@ export default async function FundraiserPage({
             </p>
 
             <a
-              href={`mailto:support@eventbrithe.com?subject=Report%20fundraiser%3A%20${encodeURIComponent(fundraiser.title)}`}
+              href={`mailto:support@fund4good.org?subject=Report%20fundraiser%3A%20${encodeURIComponent(fundraiser.title)}`}
               className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 transition hover:text-red-500"
             >
               <Flag className="h-3.5 w-3.5" />
@@ -512,6 +524,7 @@ export default async function FundraiserPage({
           <div className="border-t border-zinc-200 pt-8">
             <SupportMessages fundraiserId={fundraiser.id} />
           </div>
+
         </div>
 
         {/* Aside */}

@@ -97,20 +97,9 @@ function LoginForm() {
         </div>
         <div className="text-white max-w-lg relative z-10">
           <div className="flex items-center gap-3 mb-12">
-            <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center">
-              <svg viewBox="0 0 32 32" className="h-6 w-6" fill="none">
-                <path
-                  d="M8 7h12.5c2 0 3.5 1.5 3.5 3.4s-1.5 3.4-3.5 3.4H16l8.2 6.7c1.6 1.3 1.8 3.5.5 5.1-1.3 1.5-3.6 1.7-5.2.4L6.4 15.2A4.6 4.6 0 0 1 8 7Z"
-                  fill="white"
-                />
-                <path
-                  d="M8.6 17.5h5.8l-4.7 4.1c-1.5 1.3-3.8 1.1-5.1-.4-1.3-1.5-1.1-3.8.4-5.1l3.6-3.1v4.5Z"
-                  fill="white"
-                />
-              </svg>
-            </div>
+            <img src="/logo.jpg" alt="Fund4Good Logo" className="h-10 w-10 object-contain rounded-xl" />
             <span className="text-2xl font-black tracking-tight">
-              EventBrithe
+              Fund4Good
             </span>
           </div>
 
@@ -145,19 +134,8 @@ function LoginForm() {
 
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-              <svg viewBox="0 0 32 32" className="h-5 w-5" fill="none">
-                <path
-                  d="M8 7h12.5c2 0 3.5 1.5 3.5 3.4s-1.5 3.4-3.5 3.4H16l8.2 6.7c1.6 1.3 1.8 3.5.5 5.1-1.3 1.5-3.6 1.7-5.2.4L6.4 15.2A4.6 4.6 0 0 1 8 7Z"
-                  fill="white"
-                />
-                <path
-                  d="M8.6 17.5h5.8l-4.7 4.1c-1.5 1.3-3.8 1.1-5.1-.4-1.3-1.5-1.1-3.8.4-5.1l3.6-3.1v4.5Z"
-                  fill="white"
-                />
-              </svg>
-            </div>
-            <span className="text-xl font-black">EventBrithe</span>
+            <img src="/logo.jpg" alt="Fund4Good Logo" className="h-8 w-8 object-contain rounded-lg" />
+            <span className="text-xl font-black">Fund4Good</span>
           </div>
 
           <h2 className="text-3xl font-black text-zinc-900 mb-2">

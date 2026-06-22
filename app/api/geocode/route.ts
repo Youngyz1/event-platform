@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
         `${NOMINATIM_BASE}/reverse?lat=${lat}&lon=${lng}&format=json`,
         {
           headers: {
-            "User-Agent": "EventBrithe/1.0",
+            "User-Agent": "Fund4Good/1.0",
             "Accept-Language": "en",
           },
         }
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
         `${NOMINATIM_BASE}/search?q=${encodeURIComponent(query)}&format=json&limit=5&addressdetails=1`,
         {
           headers: {
-            "User-Agent": "EventBrithe/1.0",
+            "User-Agent": "Fund4Good/1.0",
             "Accept-Language": "en",
           },
         }

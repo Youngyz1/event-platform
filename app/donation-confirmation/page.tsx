@@ -21,9 +21,47 @@ function DonationConfirmationContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Receipt state
+  const [donationId, setDonationId] = useState<string | null>(null);
+  const [isNonprofit, setIsNonprofit] = useState(false);
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
+  const sessionId = searchParams.get("session_id");
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
+
+  useEffect(() => {
+    if (!sessionId) return;
+
+    setLoadingReceipt(true);
+    let intervalId: any;
+    let attempts = 0;
+
+    async function pollLookup() {
+      attempts++;
+      try {
+        const res = await fetch(`/api/receipts/lookup?session_id=${sessionId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setDonationId(data.id);
+          setIsNonprofit(data.is_nonprofit);
+          setLoadingReceipt(false);
+          clearInterval(intervalId);
+        } else if (attempts > 15) {
+          setLoadingReceipt(false);
+          clearInterval(intervalId);
+        }
+      } catch (err) {
+        console.error("Receipt lookup error:", err);
+      }
+    }
+
+    intervalId = setInterval(pollLookup, 2000);
+    pollLookup();
+
+    return () => clearInterval(intervalId);
+  }, [sessionId]);
 
   const formattedAmount = useMemo(() => {
     return Number(amount || 0).toLocaleString("en-US", {
@@ -108,6 +146,40 @@ function DonationConfirmationContent() {
         <p className="mt-3 text-center text-zinc-600">
           You donated {formattedAmount} to this campaign
         </p>
+
+        {/* Receipt Download Panel */}
+        <div className="mt-6 border-t border-zinc-100 pt-6">
+          {loadingReceipt ? (
+            <div className="flex flex-col items-center justify-center py-4">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+              <p className="mt-2 text-xs font-semibold text-zinc-400">Generating receipt…</p>
+            </div>
+          ) : donationId ? (
+            <div className="space-y-4">
+              <a
+                href={`/api/receipts/${donationId}?session_id=${sessionId}`}
+                className="block w-full text-center rounded-2xl bg-emerald-600 py-3.5 text-sm font-black text-white hover:bg-emerald-700 transition shadow-sm"
+              >
+                Download Receipt PDF
+              </a>
+              {isNonprofit ? (
+                <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-left text-xs text-emerald-800 leading-relaxed">
+                  <span className="font-black block mb-1">★ Tax-Deductible Donation</span>
+                  This fundraiser is run by a registered nonprofit. Your contribution qualifies for tax-deductible benefits.
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-zinc-50 border border-zinc-200 p-4 text-left text-xs text-zinc-500 leading-relaxed">
+                  <span className="font-bold block mb-1">Standard Donation</span>
+                  This is a standard donation receipt. Donations to individuals are generally not tax-deductible.
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-center text-xs text-zinc-400">
+              Receipt will be emailed to you shortly.
+            </p>
+          )}
+        </div>
 
         <hr className="my-8 border-zinc-200" />
 

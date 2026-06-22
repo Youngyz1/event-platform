@@ -118,9 +118,10 @@ export default function VerifyTicketPage({ params }: { params: Promise<{ code: s
     <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-block bg-orange-500 rounded-2xl px-4 py-2 mb-4">
-            <span className="text-white font-black text-sm tracking-widest">EVENTBRITHE</span>
+        <div className="text-center mb-8 flex flex-col items-center">
+          <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/25 rounded-2xl px-4 py-2 mb-4">
+            <img src="/logo.jpg" alt="Fund4Good Logo" className="h-5 w-5 object-contain rounded-md" />
+            <span className="text-orange-400 font-black text-sm tracking-widest uppercase">FUND4GOOD</span>
           </div>
           <h1 className="text-white text-2xl font-black">Ticket Verification</h1>
           <p className="text-slate-400 text-sm mt-1">Door Staff Portal</p>

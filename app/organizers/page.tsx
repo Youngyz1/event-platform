@@ -1,159 +1,275 @@
 import { supabase } from "@/lib/supabase";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { HOMEPAGE_SETTING_KEYS, getHomepageSettings } from "@/lib/homepage-hero";
 import Link from "next/link";
+import { Suspense } from "react";
 import { CallToAction } from "@/components/ui/call-to-action";
+import OrganizerCard, { type OrganizerCardData } from "@/components/public/OrganizerCard";
+import PublicPagination from "@/components/public/PublicPagination";
+import PublicEmptyState from "@/components/public/PublicEmptyState";
+import OrganizersDirectoryControls from "./OrganizersDirectoryControls";
+import type { Metadata } from "next";
 
-export default async function OrganizersDirectoryPage() {
-  // Fetch all organizers
-  const { data: organizers, error } = await supabase
+export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Organizer Directory | Fund4Good",
+  description: "Discover trusted hosts, creators, and community leaders.",
+};
+
+const PAGE_SIZE = 9;
+
+async function getOrganizerStats(ids: string[]) {
+  const stats = new Map<string, { events: number; fundraisers: number; followers: number }>();
+  if (ids.length === 0) return stats;
+
+  for (const id of ids) {
+    stats.set(id, { events: 0, fundraisers: 0, followers: 0 });
+  }
+
+  const [{ data: events }, { data: fundraisers }, { data: follows }] = await Promise.all([
+    supabase.from("events").select("organizer_id").in("organizer_id", ids).eq("visibility", "public"),
+    supabase.from("fundraisers").select("organizer_id").in("organizer_id", ids),
+    supabase.from("organizer_follows").select("organizer_id").in("organizer_id", ids),
+  ]);
+
+  for (const row of events ?? []) {
+    if (row.organizer_id && stats.has(row.organizer_id)) {
+      stats.get(row.organizer_id)!.events += 1;
+    }
+  }
+  for (const row of fundraisers ?? []) {
+    if (row.organizer_id && stats.has(row.organizer_id)) {
+      stats.get(row.organizer_id)!.fundraisers += 1;
+    }
+  }
+  for (const row of follows ?? []) {
+    if (row.organizer_id && stats.has(row.organizer_id)) {
+      stats.get(row.organizer_id)!.followers += 1;
+    }
+  }
+
+  return stats;
+}
+
+function enrichOrganizers(
+  organizers: Array<{
+    id: string;
+    name: string;
+    bio: string | null;
+    photo: string | null;
+    banner: string | null;
+    status: string | null;
+    follower_offset?: number;
+    events_offset?: number;
+  }>,
+  stats: Map<string, { events: number; fundraisers: number; followers: number }>
+): OrganizerCardData[] {
+  return organizers.map((org) => ({
+    id: org.id,
+    name: org.name,
+    bio: org.bio,
+    photo: org.photo,
+    banner: org.banner,
+    status: org.status,
+    eventCount: (stats.get(org.id)?.events ?? 0) + (org.events_offset ?? 0),
+    fundraiserCount: stats.get(org.id)?.fundraisers ?? 0,
+    followerCount: (stats.get(org.id)?.followers ?? 0) + (org.follower_offset ?? 0),
+  }));
+}
+
+export default async function OrganizersDirectoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string; sort?: string; page?: string }>;
+}) {
+  const filters = await searchParams;
+  const query = filters.q?.trim();
+  const statusFilter = filters.status === "verified" ? "verified" : "all";
+  const sort = filters.sort === "events" ? "events" : "name";
+  const page = Math.max(1, parseInt(filters.page || "1", 10) || 1);
+
+  const adminClient = createSupabaseAdmin();
+
+  // 1. Fetch CMS Hero Settings & dynamic statistics
+  const [
+    { data: cmsRows },
+    { count: verifiedCount },
+    { count: hostedCount },
+    { data: raisedData }
+  ] = await Promise.all([
+    adminClient.from("platform_settings").select("key, value").in("key", HOMEPAGE_SETTING_KEYS),
+    adminClient.from("organizers").select("id", { count: "exact", head: true }).eq("status", "verified").eq("visibility", "public"),
+    adminClient.from("events").select("id", { count: "exact", head: true }).eq("visibility", "public").eq("status", "approved"),
+    adminClient.from("fundraisers").select("raised")
+  ]);
+
+  const cms = getHomepageSettings(cmsRows);
+  const totalVerifiedOrganizers = verifiedCount ?? 0;
+  const totalEventsHosted = hostedCount ?? 0;
+  const totalCommunityRaised = raisedData?.reduce((sum, f) => sum + Number(f.raised || 0), 0) || 0;
+
+  // 2. Fetch main directory organizers (Step 3)
+  let organizersQuery = supabase
     .from("organizers")
-    .select("*")
-    .eq("visibility", "public")
-    .in("status", ["pending", "verified"])
-    .order("name", { ascending: true });
+    .select("*", { count: "exact" })
+    .eq("visibility", "public");
+
+  if (statusFilter === "verified") {
+    organizersQuery = organizersQuery.eq("status", "verified");
+  } else {
+    organizersQuery = organizersQuery.in("status", ["pending", "verified"]);
+  }
+
+  if (query) organizersQuery = organizersQuery.ilike("name", `%${query}%`);
+
+  if (sort === "name") {
+    organizersQuery = organizersQuery.order("name", { ascending: true });
+  } else {
+    organizersQuery = organizersQuery.order("created_at", { ascending: false });
+  }
+
+  const from = (page - 1) * PAGE_SIZE;
+  organizersQuery = organizersQuery.range(from, from + PAGE_SIZE - 1);
+
+  const { data: organizers, error, count: totalCount } = await organizersQuery;
+
+  const ids = (organizers ?? []).map((o) => o.id);
+  const stats = await getOrganizerStats(ids);
+  const enriched = enrichOrganizers(organizers ?? [], stats);
+
+  // 3. Fetch Featured Verified Organizers (Step 2) when no search query
+  const { data: featuredOrganizers } = !query
+    ? await supabase
+        .from("organizers")
+        .select("*")
+        .eq("visibility", "public")
+        .eq("status", "verified")
+        .order("created_at", { ascending: false })
+        .limit(3)
+    : { data: null };
+
+  const featuredIds = (featuredOrganizers ?? []).map((o) => o.id);
+  const featuredStats = await getOrganizerStats(featuredIds);
+  const featuredEnriched = enrichOrganizers(featuredOrganizers ?? [], featuredStats);
+
+  const totalPages = Math.max(1, Math.ceil((totalCount ?? 0) / PAGE_SIZE));
+
+  function buildHref(updates: Record<string, string>) {
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (statusFilter === "verified") params.set("status", "verified");
+    if (sort === "events") params.set("sort", "events");
+    Object.entries(updates).forEach(([k, v]) => params.set(k, v));
+    return `/organizers?${params.toString()}`;
+  }
+
+  function money(value: number) {
+    return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  }
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-black flex flex-col justify-between">
-      <div>
-         
+    <main className="min-h-screen bg-zinc-50 text-zinc-950 pb-16">
+      {/* ── CMS Hero Banner (Step 1) ── */}
+      <section
+        className="relative flex min-h-[360px] items-center justify-center bg-cover bg-center px-4 py-16 text-center sm:min-h-[420px] sm:px-12 sm:py-20 lg:min-h-[460px]"
+        style={{
+          backgroundImage: `url("${cms.organizersHeroImageUrl || cms.imageUrl}")`,
+        }}
+      >
+        <div className="absolute inset-0 bg-black/65" />
+        <div className="relative w-full max-w-4xl text-white">
+          <span className="inline-block rounded-full bg-violet-600/30 border border-violet-500/40 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-violet-300 backdrop-blur-sm">
+            {cms.organizersHeroEyebrow}
+          </span>
+          <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
+            {cms.organizersHeroHeadlineLine1}
+            {cms.organizersHeroHeadlineLine2 && (
+              <>
+                <br />
+                <span className="text-violet-400">{cms.organizersHeroHeadlineLine2}</span>
+              </>
+            )}
+          </h1>
+          <p className="mx-auto mt-4 max-w-2xl text-base text-zinc-300 sm:text-lg">
+            {cms.organizersHeroDescription}
+          </p>
 
-        {/* HERO HEADER */}
-        <section className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 text-white py-20 px-6 shadow-md">
-          <div className="max-w-6xl mx-auto text-center md:text-left">
-            <span className="bg-white/20 text-white text-xs font-black px-3.5 py-1.5 rounded-full uppercase tracking-wider backdrop-blur-md">
-              Directory
-            </span>
-            <h1 className="text-5xl md:text-6xl font-black mt-6 tracking-tight leading-none">
-              Meet Our Organizers
-            </h1>
-            <p className="text-white/80 mt-4 text-lg md:text-xl max-w-2xl font-medium leading-relaxed">
-              Discover the creative minds, visionaries, and community leaders hosting the most exciting events and fundraisers.
-            </p>
+          {/* Dynamic statistics */}
+          <div className="mx-auto mt-8 flex max-w-md flex-wrap justify-center gap-x-6 gap-y-2 border-t border-white/10 pt-6 text-xs font-bold text-zinc-400 sm:text-sm">
+            <span>{totalVerifiedOrganizers.toLocaleString()} Organizers</span>
+            <span>•</span>
+            <span>{totalEventsHosted.toLocaleString()} Events Hosted</span>
+            <span>•</span>
+            <span>{money(totalCommunityRaised)} Community Raised</span>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ORGANIZERS GRID */}
-        <section className="max-w-6xl mx-auto px-6 py-16">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-5 py-4 rounded-2xl mb-8">
-              Failed to load organizers. Please try again later.
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        {/* ── Featured Organizers Section (Step 2) ── */}
+        {!query && featuredEnriched.length > 0 && (
+          <div className="mb-14">
+            <div className="mb-6">
+              <p className="text-xs font-black uppercase tracking-wider text-orange-600 font-bold">Industry Leaders</p>
+              <h2 className="text-2xl font-black text-zinc-950 sm:text-3xl mt-1">Featured Organizers</h2>
             </div>
-          )}
-
-          {organizers && organizers.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {organizers.map((org) => (
-                <div
-                  key={org.id}
-                  className="bg-white rounded-3xl overflow-hidden border border-zinc-200 hover:border-orange-500 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between"
-                >
-                  {/* Banner Image Placeholder/Aesthetic */}
-                  <div className="h-28 bg-gradient-to-br from-zinc-100 to-zinc-200 relative">
-                    {org.banner && (
-                      <img
-                        src={org.banner}
-                        alt=""
-                        loading="lazy"
-                        decoding="async"
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-white/30 to-transparent" />
-                  </div>
-
-                  <div className="px-6 pb-6 relative flex-1 flex flex-col justify-between">
-                    {/* Photo / Avatar */}
-                    <div className="-mt-12 mb-4 relative z-10">
-                      <div className="w-20 h-20 rounded-full border-4 border-white bg-zinc-200 shadow-md overflow-hidden flex items-center justify-center mx-auto sm:mx-0">
-                        {org.photo ? (
-                          <img
-                            src={org.photo}
-                            alt={org.name}
-                            loading="lazy"
-                            decoding="async"
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-3xl font-black text-zinc-400">
-                            {org.name?.charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="text-center sm:text-left flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-2xl font-bold text-zinc-900 line-clamp-1">
-                          {org.name}
-                        </h3>
-                        <p className="text-zinc-600 mt-2 text-sm line-clamp-3 min-h-[3rem]">
-                          {org.bio || "No bio provided."}
-                        </p>
-                      </div>
-
-                      {/* Socials / Links */}
-                      <div className="flex gap-3 mt-5 justify-center sm:justify-start">
-                        {org.facebook && (
-                          <a
-                            href={org.facebook}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-orange-100 hover:text-orange-600 flex items-center justify-center text-zinc-500 transition-colors"
-                          >
-                            <span className="font-bold text-xs">f</span>
-                          </a>
-                        )}
-                        {org.twitter && (
-                          <a
-                            href={org.twitter}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-orange-100 hover:text-orange-600 flex items-center justify-center text-zinc-500 transition-colors"
-                          >
-                            <span className="font-bold text-xs">𝕏</span>
-                          </a>
-                        )}
-                        {org.website && (
-                          <a
-                            href={org.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-8 h-8 rounded-full bg-zinc-100 hover:bg-orange-100 hover:text-orange-600 flex items-center justify-center text-zinc-500 transition-colors"
-                          >
-                            <span className="text-xs">🌐</span>
-                          </a>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Action Button */}
-                    <div className="mt-6 pt-4 border-t border-zinc-100">
-                      <Link
-                        href={`/organizers/${org.id}`}
-                        className="block w-full text-center bg-zinc-900 hover:bg-orange-500 text-white font-bold py-3 rounded-2xl transition-all duration-300 shadow-sm"
-                      >
-                        View Profile
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {featuredEnriched.map((org) => (
+                <OrganizerCard key={org.id} organizer={org} featured />
               ))}
             </div>
-          ) : (
-            <div className="bg-white border border-zinc-200 rounded-3xl p-16 text-center shadow-sm">
-              <p className="text-zinc-500 text-lg">No organizers registered yet.</p>
-              <Link
-                href="/create-organizer"
-                className="mt-6 inline-block bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-4 rounded-full transition shadow"
-              >
-                Become an Organizer
-              </Link>
-            </div>
-          )}
-        </section>
+          </div>
+        )}
 
-        {/* CTA banner — below the grid */}
-        <section className="pb-16 px-6 flex justify-center">
+        {/* ── Browse Organizers Section (Step 3) ── */}
+        <div className="mb-8 border-b border-zinc-200 pb-6">
+          <div>
+            <h2 className="text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">Search Directory</h2>
+            <p className="text-sm font-medium text-zinc-500 mt-1 font-bold">Discover creators by name, verified status, or events hosted.</p>
+          </div>
+
+          <div className="mt-6">
+            <Suspense fallback={null}>
+              <OrganizersDirectoryControls
+                defaultQuery={query || ""}
+                activeStatus={statusFilter}
+                activeSort={sort}
+              />
+            </Suspense>
+          </div>
+        </div>
+
+        {error && (
+          <div className="mb-8 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-600">
+            Failed to load organizers. Please try again later.
+          </div>
+        )}
+
+        {enriched.length > 0 ? (
+          <>
+            <div className="mb-5 flex items-center justify-between">
+              <p className="text-sm font-bold text-zinc-500">
+                {totalCount ?? enriched.length} organizer{(totalCount ?? 0) === 1 ? "" : "s"} found
+              </p>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {enriched.map((org) => (
+                <OrganizerCard key={org.id} organizer={org} />
+              ))}
+            </div>
+          </>
+        ) : (
+          <PublicEmptyState
+            icon="👋"
+            title="No organizers found"
+            description={query ? "Try a different search term." : "Be the first to join the directory."}
+            action={{ label: "Become an organizer", href: "/create-organizer" }}
+          />
+        )}
+
+        {/* ── Become Organizer Section (Step 4) ── */}
+        <section className="mt-20 border-t border-zinc-200 pt-16 flex justify-center">
           <CallToAction
             headline="Ready to host your next big event?"
             subtext="Create events, run fundraisers, and grow your audience — all in one platform."
@@ -162,8 +278,18 @@ export default async function OrganizersDirectoryPage() {
             memberCount="1,200+ organizers"
           />
         </section>
-      </div>
 
+        {/* ── Pagination Section (Step 5) ── */}
+        {enriched.length > 0 && (
+          <div className="mt-12 flex justify-center border-t border-zinc-150 pt-8">
+            <PublicPagination
+              currentPage={page}
+              totalPages={totalPages}
+              buildHref={(p) => buildHref({ page: String(p) })}
+            />
+          </div>
+        )}
+      </div>
     </main>
   );
 }

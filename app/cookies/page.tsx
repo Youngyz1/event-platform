@@ -3,9 +3,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy | EventBrithe",
+  title: "Cookie Policy | Fund4Good",
   description:
-    "Learn about how EventBrithe uses cookies and similar tracking technologies to operate and improve our services.",
+    "Learn about how Fund4Good uses cookies and similar tracking technologies to operate and improve our services.",
 };
 
 const sections = [
@@ -62,13 +62,13 @@ export default function CookiesPage() {
                 Terms and policies
               </p>
               <h1 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">
-                EventBrithe Cookie Policy
+                Fund4Good Cookie Policy
               </h1>
               <p className="mt-4 text-base font-semibold text-zinc-500">
                 Last Updated: June 16, 2026
               </p>
               <p className="mt-6 text-lg leading-8 text-zinc-700">
-                This Cookie Policy explains how EventBrithe uses cookies and similar tracking
+                This Cookie Policy explains how Fund4Good uses cookies and similar tracking
                 technologies when you visit our event platform, buy tickets, run events, or support fundraisers.
               </p>
             </div>
@@ -103,7 +103,7 @@ export default function CookiesPage() {
                   We use cookies and similar technologies to:
                 </p>
                 <ul className="mt-3 list-disc space-y-2 pl-6">
-                  <li>Keep you signed into your EventBrithe account.</li>
+                  <li>Keep you signed into your Fund4Good account.</li>
                   <li>Remember your settings, preferences, and details you enter during checkout.</li>
                   <li>Verify transactions, ticket bookings, and fundraiser donations safely.</li>
                   <li>Understand how visitors interact with the site, analyze page performance, and diagnose technical issues.</li>
@@ -172,8 +172,8 @@ export default function CookiesPage() {
                 <h2 className="text-2xl font-black text-zinc-950">6. Contact Us.</h2>
                 <p className="mt-3">
                   If you have any questions about our use of cookies or this Cookie Policy, you can email us at{" "}
-                  <a className="font-bold text-orange-600" href="mailto:support@eventbrithe.com">
-                    support@eventbrithe.com
+                  <a className="font-bold text-orange-600" href="mailto:support@fund4good.org">
+                    support@fund4good.org
                   </a>.
                 </p>
               </section>
@@ -182,11 +182,11 @@ export default function CookiesPage() {
             <div className="mt-12 rounded-lg border border-zinc-200 bg-zinc-50 p-6">
               <h2 className="text-xl font-black">Still have questions?</h2>
               <p className="mt-3 text-base leading-7 text-zinc-700">
-                Contact EventBrithe support for privacy requests, account questions, and policy
+                Contact Fund4Good support for privacy requests, account questions, and policy
                 questions.
               </p>
               <a
-                href="mailto:support@eventbrithe.com"
+                href="mailto:support@fund4good.org"
                 className="mt-5 inline-flex rounded-full bg-orange-600 px-6 py-3 font-black text-white transition hover:bg-orange-700"
               >
                 Contact us
