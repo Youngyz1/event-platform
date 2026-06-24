@@ -198,7 +198,7 @@ export async function generateReceiptPdf(
   doc.setTextColor(mutedTextColor[0], mutedTextColor[1], mutedTextColor[2]);
   doc.text("Thank you for your generosity and supporting the community!", 20, 266);
   doc.text(
-    "For any questions regarding this receipt, please contact support@fund4good.org",
+    "For any questions regarding this receipt, please contact support@fund4agoodcause.com",
     20,
     271
   );
@@ -216,6 +216,8 @@ export async function generateReceiptPdf(
  */
 export async function processDonationReceipt(donationId: string) {
   try {
+    console.log("[processDonationReceipt] Started:", donationId);
+
     // 1. Fetch donation details
     const { data: donation, error: donErr } = await supabaseAdmin
       .from("donations")
@@ -227,6 +229,12 @@ export async function processDonationReceipt(donationId: string) {
       console.error(`[processDonationReceipt] Donation ${donationId} not found:`, donErr?.message);
       return;
     }
+
+    console.log("[processDonationReceipt] Donation loaded:", {
+      id: donation.id,
+      email: donation.donor_email,
+      amount: donation.amount,
+    });
 
     // 2. Fetch fundraiser details
     const { data: fundraiser, error: fundErr } = await supabaseAdmin
@@ -273,15 +281,26 @@ export async function processDonationReceipt(donationId: string) {
     }
 
     // 5. Generate PDF
+    console.log("[processDonationReceipt] Generating PDF...");
     const pdfBuffer = await generateReceiptPdf(
       donation,
       organizer,
       fundraiser.title || "Campaign"
     );
+    console.log("[processDonationReceipt] PDF generated successfully. Size:", pdfBuffer.length);
 
-    // 6. Email receipt to donor if email is provided
-    if (donation.donor_email && process.env.RESEND_API_KEY) {
+    // 6. Email receipt to donor
+    const recipientEmail = donation.donor_email;
+
+    console.log("[processDonationReceipt] Email check:", {
+      donor_email: donation.donor_email,
+      actual_recipient: recipientEmail,
+      hasResendKey: !!process.env.RESEND_API_KEY,
+    });
+
+    if (recipientEmail && process.env.RESEND_API_KEY) {
       const resend = new Resend(process.env.RESEND_API_KEY);
+      const fromAddress = `Fund4Good <${process.env.RESEND_FROM_EMAIL || "contact@fund4agoodcause.com"}>`;
       const subject = isNonprofit
         ? `Your Tax-Deductible Donation Receipt for ${fundraiser.title} 📄`
         : `Your Donation Receipt for ${fundraiser.title} 📄`;
@@ -300,14 +319,16 @@ export async function processDonationReceipt(donationId: string) {
               : ""
           }
           <p style="margin-top: 30px; font-size: 12px; color: #71717a;">
-            Fund4Good · support@fund4good.org
+            Fund4Good · support@fund4agoodcause.com
           </p>
         </div>
       `;
 
-      const { error: emailErr } = await resend.emails.send({
-        from: "Fund4Good <onboarding@resend.dev>",
-        to: donation.donor_email,
+      console.log("[processDonationReceipt] Sending email to:", recipientEmail);
+
+      const emailResponse = await resend.emails.send({
+        from: fromAddress,
+        to: recipientEmail,
         subject,
         html: htmlContent,
         attachments: [
@@ -318,11 +339,20 @@ export async function processDonationReceipt(donationId: string) {
         ],
       });
 
-      if (emailErr) {
-        console.error(`[processDonationReceipt] Resend API rejected email to ${donation.donor_email}:`, JSON.stringify(emailErr, null, 2));
+      console.log("[processDonationReceipt] Resend response:", JSON.stringify(emailResponse, null, 2));
+
+      if (emailResponse.error) {
+        console.error(
+          `[processDonationReceipt] Resend API rejected email to ${recipientEmail}:`,
+          JSON.stringify(emailResponse.error, null, 2)
+        );
       } else {
-        console.log(`[processDonationReceipt] Receipt email sent successfully to ${donation.donor_email}`);
+        console.log(`[processDonationReceipt] Receipt email sent successfully to ${recipientEmail}`);
       }
+    } else if (!recipientEmail) {
+      console.warn("[processDonationReceipt] No recipient email — skipping email send.");
+    } else if (!process.env.RESEND_API_KEY) {
+      console.warn("[processDonationReceipt] RESEND_API_KEY not set — skipping email send.");
     }
   } catch (err: any) {
     console.error("[processDonationReceipt] Unexpected error:", err.message, err.stack);

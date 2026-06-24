@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     const verifyUrl = `${baseUrl}/verify/${qrCode}`;
 
     const { error } = await resend.emails.send({
-      from: "Fund4Good <onboarding@resend.dev>",
+      from: "Fund4Good <contact@fund4agoodcause.com>",
       to: buyerEmail,
       subject: `Your ticket for ${eventTitle} 🎟️`,
       html: `
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
                   <tr>
                     <td style="background:#fafafa;border-top:1px solid #f4f4f5;padding:20px 32px;text-align:center;">
                       <p style="margin:0;color:#a1a1aa;font-size:12px;">
-                        Fund4Good · Questions? <a href="mailto:support@fund4good.org" style="color:#f97316;">Contact support</a>
+                        Fund4Good · Questions? <a href="mailto:support@fund4agoodcause.com" style="color:#f97316;">Contact support</a>
                       </p>
                     </td>
                   </tr>
