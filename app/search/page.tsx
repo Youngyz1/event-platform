@@ -3,8 +3,17 @@ import { supabase } from "@/lib/supabase";
 import SearchPageClient from "./SearchPageClient";
 
 export const metadata: Metadata = {
-  title: "Search | Fund4Good",
+  metadataBase: new URL("https://www.fund4agoodcause.com"),
+  title: "Search — Fund4Good",
   description: "Search events, fundraisers, and organizers on Fund4Good.",
+  openGraph: {
+    title: "Search — Fund4Good",
+    description: "Search events, fundraisers, and organizers on Fund4Good.",
+    url: "https://www.fund4agoodcause.com/search",
+    siteName: "Fund4Good",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Search Fund4Good" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
 };
 
 export default async function SearchPage({

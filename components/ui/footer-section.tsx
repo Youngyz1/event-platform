@@ -120,10 +120,10 @@ function Footerdemo() {
               <p>
                 Email:{" "}
                 <a
-                  href="mailto:support@fund4good.org"
+                  href="mailto:support@fund4agoodcause.com"
                   className="font-semibold text-orange-600"
                 >
-                  support@fund4good.org
+                  support@fund4agoodcause.com
                 </a>
               </p>
             </address>

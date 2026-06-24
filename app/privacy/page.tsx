@@ -4,9 +4,16 @@ import Link from "next/link";
 
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | Fund4Good",
-  description:
-    "Learn how Fund4Good collects, uses, shares, stores, and protects personal information for event organizers and ticket buyers.",
+  metadataBase: new URL("https://www.fund4agoodcause.com"),
+  title: "Privacy Policy — Fund4Good",
+  description: "Read Fund4Good's privacy policy.",
+  openGraph: {
+    title: "Privacy Policy — Fund4Good",
+    description: "Read Fund4Good's privacy policy.",
+    url: "https://www.fund4agoodcause.com/privacy",
+    siteName: "Fund4Good",
+    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+  },
 };
 
 const sections = [

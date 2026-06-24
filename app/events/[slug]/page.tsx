@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import TicketCheckout from "./TicketCheckout";
@@ -7,6 +8,46 @@ import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import EventPageClient from "./EventPageClient";
 import AboutSection from "./AboutSection";
 import StarRating from "@/components/StarRating";
+
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const { data: event } = await supabase
+    .from("events")
+    .select("title, description, banner, city, event_date")
+    .eq("slug", params.slug)
+    .single();
+
+  const title = event?.title
+    ? `${event.title} — Fund4Good`
+    : "Event — Fund4Good";
+  const description =
+    event?.description ||
+    (event?.city ? `Join us in ${event.city}` : "Buy tickets for this event on Fund4Good.");
+  const image = event?.banner || "/og-image.png";
+
+  return {
+    metadataBase: new URL("https://www.fund4agoodcause.com"),
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `https://www.fund4agoodcause.com/events/${params.slug}`,
+      siteName: "Fund4Good",
+      images: [{ url: image, width: 1200, height: 630, alt: event?.title || "Event" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
 
 /** Forward-geocode a free-text address via Nominatim (no API key needed). */
 async function geocodeAddress(

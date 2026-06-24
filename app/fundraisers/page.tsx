@@ -11,9 +11,17 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Fundraising Marketplace | Fund4Good",
-  description:
-    "Support causes, communities, and events. Donate to campaigns making a difference.",
+  metadataBase: new URL("https://www.fund4agoodcause.com"),
+  title: "Fundraisers — Fund4Good",
+  description: "Support causes and fundraising campaigns near you.",
+  openGraph: {
+    title: "Fundraisers — Fund4Good",
+    description: "Support causes and fundraising campaigns near you.",
+    url: "https://www.fund4agoodcause.com/fundraisers",
+    siteName: "Fund4Good",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Fund4Good Fundraisers" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
 };
 
 const PAGE_SIZE = 12;

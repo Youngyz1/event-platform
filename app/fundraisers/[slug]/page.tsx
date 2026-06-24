@@ -1,5 +1,7 @@
 export const dynamic = "force-dynamic";
 
+import type { Metadata } from "next";
+
 import DonationProtectedBadge from "@/components/DonationProtectedBadge";
 import DonorNameWithPopup from "@/components/DonorNameWithPopup";
 import SupportMessages from "@/components/SupportMessages";
@@ -16,6 +18,47 @@ import { notFound } from "next/navigation";
 import { Flag } from "lucide-react";
 import FundraiserFloatingActions, { ShareFundraiserButton } from "./FundraiserActions";
 import StarRating from "@/components/StarRating";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const { data: fundraiser } = await supabase
+    .from("fundraisers")
+    .select("title, description, banner, goal, raised")
+    .eq("slug", params.slug)
+    .single();
+
+  const title = fundraiser?.title
+    ? `${fundraiser.title} — Fund4Good`
+    : "Fundraiser — Fund4Good";
+  const raised = `$${Number(fundraiser?.raised ?? 0).toLocaleString()}`;
+  const goal = `$${Number(fundraiser?.goal ?? 0).toLocaleString()}`;
+  const description =
+    fundraiser?.description ||
+    `${raised} raised of ${goal} goal. Support this fundraiser on Fund4Good.`;
+  const image = fundraiser?.banner || "/og-image.png";
+
+  return {
+    metadataBase: new URL("https://www.fund4agoodcause.com"),
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `https://www.fund4agoodcause.com/fundraisers/${params.slug}`,
+      siteName: "Fund4Good",
+      images: [{ url: image, width: 1200, height: 630, alt: fundraiser?.title || "Fundraiser" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1600&auto=format&fit=crop";
@@ -457,7 +500,7 @@ export default async function FundraiserPage({
                     </span>
                     {organizerProfileId && (
                       <a
-                        href={"mailto:support@fund4good.org?subject=Message%20for%20" + encodeURIComponent(organizerName)}
+                        href={"mailto:support@fund4agoodcause.com?subject=Message%20for%20" + encodeURIComponent(organizerName)}
                         className="rounded-full border border-zinc-300 px-3 py-0.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-50"
                       >
                         Message
@@ -512,7 +555,7 @@ export default async function FundraiserPage({
             </p>
 
             <a
-              href={`mailto:support@fund4good.org?subject=Report%20fundraiser%3A%20${encodeURIComponent(fundraiser.title)}`}
+              href={`mailto:support@fund4agoodcause.com?subject=Report%20fundraiser%3A%20${encodeURIComponent(fundraiser.title)}`}
               className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 transition hover:text-red-500"
             >
               <Flag className="h-3.5 w-3.5" />

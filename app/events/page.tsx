@@ -26,8 +26,17 @@ import {
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Events Marketplace | Fund4Good",
-  description: "Find local events near you. Buy tickets instantly.",
+  metadataBase: new URL("https://www.fund4agoodcause.com"),
+  title: "Events — Fund4Good",
+  description: "Browse and buy tickets for events near you.",
+  openGraph: {
+    title: "Events — Fund4Good",
+    description: "Browse and buy tickets for events near you.",
+    url: "https://www.fund4agoodcause.com/events",
+    siteName: "Fund4Good",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Fund4Good Events" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
 };
 
 const PAGE_SIZE = 12;

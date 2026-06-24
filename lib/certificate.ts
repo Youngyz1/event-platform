@@ -293,7 +293,7 @@ export async function processDonationCertificate(donationId: string) {
             <p>Please find attached your official Certificate of Appreciation.
                You can download and share it to inspire others to give.</p>
             <p style="margin-top: 30px; font-size: 12px; color: #71717a;">
-              Fund4Good · support@fund4good.org
+              Fund4Good · support@fund4agoodcause.com
             </p>
           </div>
         `,

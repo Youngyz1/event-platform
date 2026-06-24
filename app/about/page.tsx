@@ -3,9 +3,17 @@ import Link from "next/link";
 
 
 export const metadata: Metadata = {
-  title: "About Fund4Good",
-  description:
-    "Learn how Fund4Good helps people discover events, support fundraisers, and build trusted organizer profiles.",
+  metadataBase: new URL("https://www.fund4agoodcause.com"),
+  title: "About — Fund4Good",
+  description: "Learn about Fund4Good's mission to connect communities through events and fundraising.",
+  openGraph: {
+    title: "About — Fund4Good",
+    description: "Learn about Fund4Good's mission to connect communities through events and fundraising.",
+    url: "https://www.fund4agoodcause.com/about",
+    siteName: "Fund4Good",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "About Fund4Good" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
 };
 
 const platformStats = [

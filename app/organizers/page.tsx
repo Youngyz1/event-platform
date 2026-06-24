@@ -13,8 +13,17 @@ import type { Metadata } from "next";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Organizer Directory | Fund4Good",
-  description: "Discover trusted hosts, creators, and community leaders.",
+  metadataBase: new URL("https://www.fund4agoodcause.com"),
+  title: "Organizers — Fund4Good",
+  description: "Discover event organizers and causes on Fund4Good.",
+  openGraph: {
+    title: "Organizers — Fund4Good",
+    description: "Discover event organizers and causes on Fund4Good.",
+    url: "https://www.fund4agoodcause.com/organizers",
+    siteName: "Fund4Good",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Fund4Good Organizers" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
 };
 
 const PAGE_SIZE = 9;

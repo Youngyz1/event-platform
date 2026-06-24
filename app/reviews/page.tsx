@@ -1,8 +1,18 @@
+import type { Metadata } from "next";
 import ReviewSection from "@/components/ReviewSection";
 
-export const metadata = {
-  title: "Platform Reviews | Fund4Good",
-  description: "Read reviews from our community about their experience using Fund4Good for fundraising, ticketing, and support.",
+export const metadata: Metadata = {
+  metadataBase: new URL("https://www.fund4agoodcause.com"),
+  title: "Reviews — Fund4Good",
+  description: "See what people are saying about Fund4Good.",
+  openGraph: {
+    title: "Reviews — Fund4Good",
+    description: "See what people are saying about Fund4Good.",
+    url: "https://www.fund4agoodcause.com/reviews",
+    siteName: "Fund4Good",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Fund4Good Reviews" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
 };
 
 export default function PlatformReviewsPage() {

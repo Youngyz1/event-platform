@@ -5,6 +5,7 @@ import NavbarWrapper from "@/components/NavbarWrapper";
 import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import { getSiteUrl } from "@/lib/site-url";
+import { GoogleAnalytics } from "@next/third-parties/google";
 
 const font = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -45,6 +46,7 @@ export default function RootLayout({
         <Footer />
         <CookieConsent />
       </body>
+      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID!} />
     </html>
   );
 }

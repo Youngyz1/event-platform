@@ -1,4 +1,20 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://www.fund4agoodcause.com"),
+  title: "Sponsors — Fund4Good",
+  description: "Sponsor events and causes on Fund4Good.",
+  openGraph: {
+    title: "Sponsors — Fund4Good",
+    description: "Sponsor events and causes on Fund4Good.",
+    url: "https://www.fund4agoodcause.com/sponsors",
+    siteName: "Fund4Good",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Fund4Good Sponsors" }],
+  },
+  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
+};
+
 
 const packages = [
   {

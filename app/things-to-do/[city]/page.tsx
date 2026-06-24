@@ -1,4 +1,5 @@
 
+import type { Metadata } from "next";
 import EventCard from "@/components/EventCard";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -13,6 +14,33 @@ export async function generateStaticParams() {
   ];
   
   return cities.map((city) => ({ city }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { city: string };
+}): Promise<Metadata> {
+  const cityName = decodeURIComponent(params.city)
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const title = `Things to Do in ${cityName} — Fund4Good`;
+  const description = `Discover events, fundraisers, and community gatherings in ${cityName}.`;
+
+  return {
+    metadataBase: new URL("https://www.fund4agoodcause.com"),
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `https://www.fund4agoodcause.com/things-to-do/${params.city}`,
+      siteName: "Fund4Good",
+      images: [{ url: "/og-image.png", width: 1200, height: 630, alt: title }],
+    },
+    twitter: { card: "summary_large_image", title, description, images: ["/og-image.png"] },
+  };
 }
 
 export default async function ThingsToDoPage({
