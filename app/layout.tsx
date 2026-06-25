@@ -17,11 +17,19 @@ const font = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   applicationName: "Fund4Good",
-  title: "Fund4Good",
-  description: "Discover events, fundraisers, and community gatherings near you.",
+  title: "Fund4Good — Buy Tickets, Run Events & Fundraise",
+  description: "Discover events, buy tickets, support causes.",
+  verification: {
+    google: "po4G29Q4YxDRxL3h7QbPGk_Wz4eYvinBleV7ISM5LBA",
+  },
   openGraph: {
     siteName: "Fund4Good",
     type: "website",
+    images: [{ url: "/logo.png", width: 1200, height: 630 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/logo.png"],
   },
 };
 
