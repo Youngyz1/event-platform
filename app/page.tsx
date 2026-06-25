@@ -128,7 +128,7 @@ export default async function HomePage() {
       .select("name, icon")
       .eq("is_visible", true)
       .order("position", { ascending: true });
-    
+
     if (dbCats && dbCats.length > 0) {
       categories = dbCats.map((c: any) => ({
         name: c.name,
@@ -148,7 +148,7 @@ export default async function HomePage() {
       .eq("is_homepage_featured", true)
       .order("homepage_position", { ascending: true })
       .limit(6);
-    
+
     if (error) {
       // Fallback if homepage_position is missing
       const { data: fallback } = await supabase
@@ -173,7 +173,7 @@ export default async function HomePage() {
       .eq("is_homepage_featured", true)
       .order("homepage_position", { ascending: true })
       .limit(6);
-    
+
     if (error) {
       // Fallback if homepage_position is missing
       const { data: fallback } = await supabase
@@ -192,61 +192,62 @@ export default async function HomePage() {
   // 5. Fallbacks for sliders if fewer than 2 items featured
   const [featuredSliderEvents, featuredSliderFundraisers, testimonialsResult, platformReviewsResult, sponsorsResult] =
     await Promise.all([
-    featuredEvents.length >= 2
-      ? Promise.resolve(featuredEvents)
-      : supabase
-          .from("events")
-          .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
-          .order("created_at", { ascending: false })
-          .limit(5)
-          .then(({ data }) => data ?? []),
-    featuredFundraisers.length >= 2
-      ? Promise.resolve(featuredFundraisers)
-      : supabase
-          .from("fundraisers")
-          .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner")
-          .order("created_at", { ascending: false })
-          .limit(5)
-          .then(({ data }) => data ?? []),
-    supabaseAdmin
-      .from("homepage_testimonials")
-      .select("id, name, role, photo_url, quote, position")
-      .eq("is_visible", true)
-      .order("position", { ascending: true })
-      .then(({ data, error }) => (error ? [] : data ?? [])),
-    supabaseAdmin
-      .from("reviews")
-      .select("id, rating, title, review, created_at, profiles!reviews_user_id_fkey(display_name, avatar_url)")
-      .eq("review_type", "platform")
-      .eq("is_approved", true)
-      .order("created_at", { ascending: false })
-      .limit(6)
-      .then(({ data, error }) => {
-        if (error) {
-          console.error("Failed to load platform reviews for homepage:", error);
-          return [];
-        }
-        return (data ?? []).map((r) => {
-          const profile = Array.isArray(r.profiles)
-            ? r.profiles[0]
-            : (r.profiles as any);
-          return {
-            id: r.id,
-            name: profile?.display_name || "Anonymous",
-            role: `Platform Reviewer (${r.rating} ★)`,
-            photo_url: profile?.avatar_url || "",
-            quote: r.title ? `"${r.title}" — ${r.review ?? ""}` : (r.review ?? ""),
-            position: 0,
-          };
-        });
-      }),
-    supabaseAdmin
-      .from("homepage_sponsors")
-      .select("id, name, logo_url, website_url, position")
-      .eq("is_visible", true)
-      .order("position", { ascending: true })
-      .then(({ data, error }) => (error ? [] : data ?? [])),
-  ]);
+      featuredEvents.length >= 2
+        ? Promise.resolve(featuredEvents)
+        : supabase
+            .from("events")
+            .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
+            .order("created_at", { ascending: false })
+            .limit(5)
+            .then(({ data }) => data ?? []),
+      featuredFundraisers.length >= 2
+        ? Promise.resolve(featuredFundraisers)
+        : supabase
+            .from("fundraisers")
+            .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner")
+            .order("created_at", { ascending: false })
+            .limit(5)
+            .then(({ data }) => data ?? []),
+      supabaseAdmin
+        .from("homepage_testimonials")
+        .select("id, name, role, photo_url, quote, position")
+        .eq("is_visible", true)
+        .order("position", { ascending: true })
+        .then(({ data, error }) => (error ? [] : data ?? [])),
+      // Platform reviews — joins profiles using correct column names
+      supabaseAdmin
+        .from("reviews")
+        .select("id, rating, title, review, created_at, profiles!reviews_user_id_fkey(display_name, avatar_url, profile_photo)")
+        .eq("review_type", "platform")
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false })
+        .limit(6)
+        .then(({ data, error }) => {
+          if (error) {
+            // Silently skip — table or columns may not be ready yet
+            return [];
+          }
+          return (data ?? []).map((r) => {
+            const profile = Array.isArray(r.profiles)
+              ? r.profiles[0]
+              : (r.profiles as any);
+            return {
+              id: r.id,
+              name: profile?.display_name || "Anonymous",
+              role: `Platform Reviewer (${r.rating} ★)`,
+              photo_url: profile?.avatar_url || profile?.profile_photo || "",
+              quote: r.title ? `"${r.title}" — ${r.review ?? ""}` : (r.review ?? ""),
+              position: 0,
+            };
+          });
+        }),
+      supabaseAdmin
+        .from("homepage_sponsors")
+        .select("id, name, logo_url, website_url, position")
+        .eq("is_visible", true)
+        .order("position", { ascending: true })
+        .then(({ data, error }) => (error ? [] : data ?? [])),
+    ]);
 
   const combinedTestimonials = [...platformReviewsResult, ...testimonialsResult].slice(0, 6);
 
