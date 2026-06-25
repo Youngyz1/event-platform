@@ -13,12 +13,13 @@ import StarRating from "@/components/StarRating";
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
+  const { slug } = await params;
   const { data: event } = await supabase
     .from("events")
     .select("title, description, banner, city, event_date")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   const title = event?.title
@@ -36,7 +37,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://www.fund4agoodcause.com/events/${params.slug}`,
+      url: `https://www.fund4agoodcause.com/events/${slug}`,
       siteName: "Fund4Good",
       images: [{ url: image, width: 1200, height: 630, alt: event?.title || "Event" }],
     },
@@ -271,8 +272,48 @@ export default async function EventPage({
         ? "text-xl sm:text-2xl lg:text-3xl"
         : "text-2xl sm:text-3xl lg:text-4xl";
 
+  // ── JSON-LD structured data (Event schema) ──────────────
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: event.title,
+    description: event.description || undefined,
+    image: event.banner || undefined,
+    url: `https://www.fund4agoodcause.com/events/${slug}`,
+    startDate: event.event_date || undefined,
+    location: event.venue || event.city ? {
+      "@type": "Place",
+      name: event.venue || event.city,
+      address: {
+        "@type": "PostalAddress",
+        addressLocality: event.city || undefined,
+        streetAddress: event.address || undefined,
+      },
+    } : undefined,
+    organizer: primaryOrganizerName ? {
+      "@type": "Organization",
+      name: primaryOrganizerName,
+      url: primaryOrganizerUrl
+        ? primaryOrganizerUrl.startsWith("http")
+          ? primaryOrganizerUrl
+          : `https://www.fund4agoodcause.com${primaryOrganizerUrl}`
+        : undefined,
+    } : undefined,
+    offers: tickets && tickets.length > 0 ? {
+      "@type": "Offer",
+      priceCurrency: "USD",
+      price: lowestPrice ?? 0,
+      availability: "https://schema.org/InStock",
+      url: `https://www.fund4agoodcause.com/events/${slug}#tickets`,
+    } : undefined,
+  };
+
   return (
     <main className="min-h-screen bg-white text-zinc-950">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* ── Banner image ───────────────── */}
       <div className="w-full overflow-hidden md:relative md:flex md:h-[400px] md:items-center md:justify-center md:bg-zinc-950 lg:h-[450px]">
         {/* Blurred background for desktop */}

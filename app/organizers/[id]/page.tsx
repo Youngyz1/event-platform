@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
+import { notFound } from "next/navigation";
 import OrganizerProfileClient from "./OrganizerProfileClient";
 
 export async function generateMetadata({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }): Promise<Metadata> {
+  const { id } = await params;
   const { data: organizer } = await supabase
     .from("organizers")
     .select("name, bio, logo_url")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   const title = organizer?.name
@@ -28,7 +30,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://www.fund4agoodcause.com/organizers/${params.id}`,
+      url: `https://www.fund4agoodcause.com/organizers/${id}`,
       siteName: "Fund4Good",
       images: [{ url: image, width: 1200, height: 630, alt: organizer?.name || "Organizer" }],
     },
@@ -41,6 +43,21 @@ export async function generateMetadata({
   };
 }
 
-export default function OrganizerProfilePage() {
-  return <OrganizerProfileClient />;
+export default async function OrganizerProfilePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const { data: organizer } = await supabase
+    .from("organizers")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (!organizer) {
+    return notFound();
+  }
+
+  return <OrganizerProfileClient id={id} initialData={organizer} />;
 }

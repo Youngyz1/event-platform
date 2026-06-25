@@ -14,6 +14,12 @@ export const metadata: Metadata = {
     siteName: "Fund4Good",
     images: [{ url: "/og-image.png", width: 1200, height: 630 }],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy Policy — Fund4Good",
+    description: "Read Fund4Good's privacy policy.",
+    images: ["/og-image.png"],
+  },
 };
 
 const sections = [

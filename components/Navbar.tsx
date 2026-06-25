@@ -113,7 +113,7 @@ export default function Navbar() {
   async function handleLogout() {
     await supabase.auth.signOut();
     setAccountOpen(false);
-    router.push("/");
+    router.push("/login");
     router.refresh();
   }
 

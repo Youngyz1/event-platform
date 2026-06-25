@@ -22,12 +22,13 @@ import StarRating from "@/components/StarRating";
 export async function generateMetadata({
   params,
 }: {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
+  const { slug } = await params;
   const { data: fundraiser } = await supabase
     .from("fundraisers")
     .select("title, description, banner, goal, raised")
-    .eq("slug", params.slug)
+    .eq("slug", slug)
     .single();
 
   const title = fundraiser?.title
@@ -47,7 +48,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://www.fund4agoodcause.com/fundraisers/${params.slug}`,
+      url: `https://www.fund4agoodcause.com/fundraisers/${slug}`,
       siteName: "Fund4Good",
       images: [{ url: image, width: 1200, height: 630, alt: fundraiser?.title || "Fundraiser" }],
     },
@@ -379,8 +380,37 @@ export default async function FundraiserPage({
   const fundraiserCreatedAt: string =
     fundraiser.created_at || new Date().toISOString();
 
+  // ── JSON-LD structured data (Fundraiser / DonateAction) ────
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "DonateAction",
+    name: fundraiser.title,
+    description: description || undefined,
+    image: coverImage !== FALLBACK_IMAGE ? coverImage : undefined,
+    url: `https://www.fund4agoodcause.com/fundraisers/${slug}`,
+    recipient: {
+      "@type": "Organization",
+      name: organizerName,
+      ...(organizerProfileId
+        ? { url: `https://www.fund4agoodcause.com/organizers/${organizerProfileId}` }
+        : {}),
+    },
+    object: {
+      "@type": "MonetaryAmount",
+      currency: "USD",
+      value: goal,
+    },
+    actionStatus: percentage >= 100
+      ? "https://schema.org/CompletedActionStatus"
+      : "https://schema.org/ActiveActionStatus",
+  };
+
   return (
     <main className="min-h-screen bg-white pb-24 text-zinc-950 lg:pb-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-3 lg:py-10">
         {/* Main content column */}
         <div className="min-w-0 space-y-8 lg:col-span-2">

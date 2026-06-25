@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
@@ -23,6 +23,15 @@ function LoginForm() {
   const resetSuccess = searchParams.get("reset") === "success";
   const suspendedNotice = searchParams.get("suspended") === "1";
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        const redirectUrl = searchParams.get("redirect") || "/";
+        router.push(redirectUrl);
+      }
+    });
+  }, [router, searchParams]);
+
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setForm({ ...form, [e.target.name]: e.target.value });
   }
@@ -30,10 +39,11 @@ function LoginForm() {
   async function handleGoogleLogin() {
     setGoogleLoading(true);
     setError("");
+    const redirectUrl = searchParams.get("redirect") || "/dashboard";
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/dashboard`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectUrl)}`,
       },
     });
     if (error) {
@@ -82,7 +92,8 @@ function LoginForm() {
       }
     }
 
-    router.push("/");
+    const redirectUrl = searchParams.get("redirect") || "/";
+    router.push(redirectUrl);
     router.refresh();
   }
 

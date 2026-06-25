@@ -59,6 +59,14 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // Redirect already-authenticated users away from login/signup.
+  if ((pathname === "/login" || pathname === "/signup") && user) {
+    const homeUrl = req.nextUrl.clone();
+    homeUrl.pathname = "/";
+    homeUrl.search = "";
+    return NextResponse.redirect(homeUrl);
+  }
+
   // Block suspended accounts from protected areas.
   if (isProtected && user) {
     const { data: profile } = await supabase
@@ -82,6 +90,13 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/dashboard/:path*",
+    "/admin/:path*",
+    "/my-tickets",
+    "/create-event/:path*",
+    "/create-fundraiser/:path*",
+    "/create-organizer/:path*",
+    "/login",
+    "/signup",
   ],
 };

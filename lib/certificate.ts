@@ -314,7 +314,11 @@ export async function processDonationCertificate(donationId: string) {
         console.log(`[processDonationCertificate] Certificate email sent to ${donation.donor_email}`);
       }
     }
-  } catch (err: any) {
-    console.error("[processDonationCertificate] Unexpected error:", err.message, err.stack);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      console.error("[processDonationCertificate] Unexpected error:", err.message, err.stack);
+    } else {
+      console.error("[processDonationCertificate] Unexpected error:", err);
+    }
   }
 }

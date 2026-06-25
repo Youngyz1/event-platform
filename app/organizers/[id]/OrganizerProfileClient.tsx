@@ -88,20 +88,26 @@ function LinkIcon() {
   );
 }
 
-export default function OrganizerProfileClient() {
+export default function OrganizerProfileClient({
+  id: propId,
+  initialData,
+}: {
+  id?: string;
+  initialData?: Organizer;
+}) {
   const params = useParams();
   const router = useRouter();
-  const [organizer, setOrganizer] = useState<Organizer | null>(null);
+  const [organizer, setOrganizer] = useState<Organizer | null>(initialData || null);
   const [events, setEvents] = useState<Event[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialData);
   const [activeTab, setActiveTab] = useState<"upcoming" | "past">("upcoming");
   const [isFollowing, setIsFollowing] = useState(false);
-  const [followerCount, setFollowerCount] = useState(0);
+  const [followerCount, setFollowerCount] = useState(initialData ? (initialData.follower_offset ?? 0) : 0);
   const [isOwner, setIsOwner] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const organizerId = params?.id as string;
+    const organizerId = propId || (params?.id as string);
     if (!organizerId) return;
 
     async function load() {
@@ -111,18 +117,24 @@ export default function OrganizerProfileClient() {
 
       if (session?.user) setCurrentUserId(session.user.id);
 
-      const { data: org, error } = await supabase
-        .from("organizers")
-        .select("*")
-        .eq("id", organizerId)
-        .single();
+      let org = organizer;
+      if (!org) {
+        const { data, error } = await supabase
+          .from("organizers")
+          .select("*")
+          .eq("id", organizerId)
+          .single();
 
-      if (error || !org) {
-        router.push("/404");
-        return;
+        if (error || !data) {
+          router.push("/404");
+          return;
+        }
+        org = data;
+        setOrganizer(org);
       }
 
-      setOrganizer(org);
+      if (!org) return;
+
       setIsOwner(session?.user?.id === org.user_id);
 
       const { data: evts } = await supabase
@@ -155,7 +167,7 @@ export default function OrganizerProfileClient() {
     }
 
     load();
-  }, [params?.id, router]);
+  }, [propId, params?.id, router, initialData]);
 
   async function toggleFollow() {
     if (!currentUserId || !organizer) {

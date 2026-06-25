@@ -19,9 +19,10 @@ export async function generateStaticParams() {
 export async function generateMetadata({
   params,
 }: {
-  params: { city: string };
+  params: Promise<{ city: string }>;
 }): Promise<Metadata> {
-  const cityName = decodeURIComponent(params.city)
+  const { city } = await params;
+  const cityName = decodeURIComponent(city)
     .replace(/-/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
 
@@ -35,7 +36,7 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://www.fund4agoodcause.com/things-to-do/${params.city}`,
+      url: `https://www.fund4agoodcause.com/things-to-do/${city}`,
       siteName: "Fund4Good",
       images: [{ url: "/og-image.png", width: 1200, height: 630, alt: title }],
     },
