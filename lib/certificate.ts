@@ -132,15 +132,13 @@ export async function generateCertificatePdf(
   const leftSig  = loadSignatureImage("left-sig.png");
   const rightSig = loadSignatureImage("right-sig.png");
 
-  const sigW = 40; // signature image width in mm
-  const sigH = 15; // signature image height in mm
+  const sigW = 40;
+  const sigH = 15;
 
-  // Left signature image (above the line)
   if (leftSig) {
     doc.addImage(leftSig, "PNG", leftX - sigW / 2, footerBaseY - sigH - 4, sigW, sigH);
   }
 
-  // Right signature image (above the line)
   if (rightSig) {
     doc.addImage(rightSig, "PNG", rightX - sigW / 2, footerBaseY - sigH - 4, sigW, sigH);
   }
@@ -274,6 +272,12 @@ export async function processDonationCertificate(donationId: string) {
       donation.created_at,
       organizerName
     );
+
+    // 4b. Update certificate_path in donations table
+    await supabaseAdmin
+      .from("donations")
+      .update({ certificate_path: `/api/certificates/${donationId}` })
+      .eq("id", donationId);
 
     // 5. Send via Resend
     if (process.env.RESEND_API_KEY) {
