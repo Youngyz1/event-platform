@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { recordDonationFromSession } from "@/lib/donations";
 import { processDonationReceipt } from "@/lib/receipt";
+import { processDonationCertificate } from "@/lib/certificate";
 
 // Service role: bypasses RLS — admin operations only
 const supabaseAdmin = createClient(
@@ -46,8 +47,6 @@ async function sendTicketEmail(params: {
 }
 
 // ── payment_intent.succeeded ──────────────────────────────────────────────────
-// Handles BOTH inline ticket purchases AND inline donations.
-// (checkout.session.completed still handles legacy Stripe Checkout Sessions)
 
 async function handlePaymentIntentSucceeded(
   pi: Stripe.PaymentIntent,
@@ -65,7 +64,6 @@ async function handlePaymentIntentSucceeded(
       return;
     }
 
-    // Idempotency: skip if a ticket_orders row already exists for this intent
     const { data: existing } = await supabaseAdmin
       .from("ticket_orders")
       .select("id")
@@ -101,7 +99,6 @@ async function handlePaymentIntentSucceeded(
       console.error("[webhook] ticket_orders insert error:", insertError.message);
     }
 
-    // Mark seat as sold
     if (meta.seat_id) {
       await supabaseAdmin
         .from("seats")
@@ -109,7 +106,6 @@ async function handlePaymentIntentSucceeded(
         .eq("id", meta.seat_id);
     }
 
-    // Send ticket confirmation email
     const recipientEmail = meta.buyer_email;
     if (recipientEmail) {
       await sendTicketEmail({
@@ -129,7 +125,6 @@ async function handlePaymentIntentSucceeded(
 
   // ── Donation (inline PaymentElement flow) ─────────────────────────────────
   if (kind === "donation" && meta.fundraiser_id) {
-    // Idempotency: skip if donation already recorded for this intent
     const { data: existing } = await supabaseAdmin
       .from("donations")
       .select("id")
@@ -146,7 +141,6 @@ async function handlePaymentIntentSucceeded(
       donor_name: meta.donor_name || "Anonymous",
       donor_email: meta.donor_email || null,
       message: meta.message || null,
-      // Use the donation_amount (without tip), not the total charged
       amount: parseFloat(meta.donation_amount) || pi.amount / 100,
       currency: (meta.currency ?? pi.currency ?? "usd").toUpperCase(),
       status: "completed",
@@ -169,10 +163,10 @@ async function handlePaymentIntentSucceeded(
           console.error("[webhook] comment insert error:", commentError.message);
         }
       }
+
       const { recalculateFundraiserRaised } = await import("@/lib/donations");
       await recalculateFundraiserRaised(meta.fundraiser_id);
 
-      // Fetch newly-inserted donation id, then trigger receipt generation
       const { data: newDonation } = await supabaseAdmin
         .from("donations")
         .select("id")
@@ -180,9 +174,11 @@ async function handlePaymentIntentSucceeded(
         .maybeSingle();
 
       if (newDonation?.id) {
-        // Fire-and-forget: do not block webhook response
         processDonationReceipt(newDonation.id).catch((err) =>
           console.error("[webhook] Receipt generation error:", err)
+        );
+        processDonationCertificate(newDonation.id).catch((err) =>
+          console.error("[webhook] Certificate generation error:", err)
         );
       }
     }
@@ -192,8 +188,6 @@ async function handlePaymentIntentSucceeded(
 }
 
 // ── checkout.session.completed ────────────────────────────────────────────────
-// Kept to handle legacy Stripe Checkout Sessions (old ticket + donation flows).
-// New flows use payment_intent.succeeded above.
 
 async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
@@ -201,11 +195,9 @@ async function handleCheckoutSessionCompleted(
 ) {
   const meta = session.metadata ?? {};
 
-  // Legacy donation via Stripe Checkout
   if (meta.kind === "donation") {
     await recordDonationFromSession(session);
 
-    // Trigger receipt for the newly inserted donation (lookup by payment_intent_id)
     const piId =
       typeof session.payment_intent === "string" ? session.payment_intent : null;
     if (piId) {
@@ -219,13 +211,15 @@ async function handleCheckoutSessionCompleted(
         processDonationReceipt(newDonation.id).catch((err) =>
           console.error("[webhook] Legacy receipt generation error:", err)
         );
+        processDonationCertificate(newDonation.id).catch((err) =>
+          console.error("[webhook] Legacy certificate generation error:", err)
+        );
       }
     }
 
     return;
   }
 
-  // Legacy ticket via Stripe Checkout
   const {
     qr_code,
     event_id,
@@ -245,7 +239,6 @@ async function handleCheckoutSessionCompleted(
     return;
   }
 
-  // Idempotency: check by qr_code (session flow doesn't have payment_intent_id here)
   const { data: existing } = await supabaseAdmin
     .from("ticket_orders")
     .select("id")
@@ -339,10 +332,8 @@ export async function POST(req: NextRequest) {
         req
       );
     }
-    // Silently acknowledge all other event types
   } catch (err) {
     console.error("[webhook] Handler error:", err);
-    // Return 200 to prevent Stripe retrying — log the error internally
   }
 
   return NextResponse.json({ received: true });
