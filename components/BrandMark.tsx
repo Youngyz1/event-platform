@@ -12,7 +12,7 @@ export default function BrandMark({
       <img
         src="/logo.png"
         alt="Fund4Good"
-        className="h-8 w-auto sm:h-10 object-contain"
+        className="h-12 w-auto sm:h-14 object-contain"
       />
     </span>
   );

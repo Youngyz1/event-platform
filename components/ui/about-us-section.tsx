@@ -151,9 +151,15 @@ export default function AboutUsSection({
           />
         </motion.div>
 
-        <motion.p className="text-center max-w-2xl mx-auto mb-16 text-zinc-500 text-lg leading-relaxed" variants={item}>
-          We built Fund4Good so organizers can launch events, run fundraisers, and connect with sponsors — without juggling five different tools. One platform for the whole event economy.
-        </motion.p>
+        <motion.p
+  className="text-center max-w-2xl mx-auto mb-16 text-zinc-500 text-lg leading-relaxed"
+  variants={item}
+>
+  Fund4Good helps individuals, nonprofits, and event organizers raise funds,
+  host events, sell tickets, and connect with sponsors—all in one platform.
+  Everything you need to grow your cause, engage supporters, and create
+  meaningful impact.
+</motion.p>
 
         {/* Accordion + image layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
