@@ -288,8 +288,11 @@ export async function processDonationCertificate(donationId: string) {
         to: donation.donor_email,
         subject: `Your Certificate of Appreciation — ${fundraiser.title} 🏅`,
         html: `
-          <div style="font-family: sans-serif; color: #18181b; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #1a2a4a; margin-bottom: 20px;">Your Certificate of Appreciation</h2>
+  <div style="font-family: sans-serif; color: #18181b; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <div style="text-align: center; margin-bottom: 24px;">
+      <img src="https://fund4agoodcause.com/fund4good-logo.png" alt="Fund4Good" style="height: 60px; width: auto;" />
+    </div>
+    <h2 style="color: #1a2a4a; margin-bottom: 20px;">Your Certificate of Appreciation</h2>
             <p>Hi ${donation.donor_name || "there"},</p>
             <p>On behalf of everyone at <strong>Fund4Good</strong>, thank you for your generous donation of
                <strong>$${donation.amount.toFixed(2)} ${donation.currency.toUpperCase()}</strong>

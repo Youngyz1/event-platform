@@ -17,25 +17,39 @@ const font = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL(getSiteUrl()),
   applicationName: "Fund4Good",
-  title: "Fund4Good — Buy Tickets, Run Events & Fundraise",
+  title: "Fund4GoodCause — Online Fundraising Platform | Fund4Good",
   description:
-    "Launch fundraisers, sell event tickets, and support causes that matter. Fund4Good helps organizers and communities raise money and connect with donors — all in one place.",
+    "Fund4GoodCause (Fund4Good) is an online fundraising platform that helps individuals, nonprofits, and communities raise money for causes that matter. Start a fundraiser, accept donations, and connect with donors — all in one place.",
+  keywords: [
+    "fund4good",
+    "fund4goodcause",
+    "fund4agoodcause",
+    "online fundraising",
+    "fundraising platform",
+    "raise money online",
+    "donate to causes",
+    "community fundraising",
+    "nonprofit fundraising",
+    "crowdfunding platform",
+    "fundraiser NJ",
+    "fundraising New Jersey",
+  ],
   verification: {
     google: "po4G29Q4YxDRxL3h7QbPGk_Wz4eYvinBleV7ISM5LBA",
   },
   openGraph: {
-    siteName: "Fund4Good",
-    title: "Fund4Good — Buy Tickets, Run Events & Fundraise",
+    siteName: "Fund4GoodCause",
+    title: "Fund4GoodCause — Online Fundraising Platform | Fund4Good",
     description:
-      "Launch fundraisers, sell event tickets, and support causes that matter. Fund4Good helps organizers and communities raise money and connect with donors — all in one place.",
+      "Fund4GoodCause (Fund4Good) is an online fundraising platform that helps individuals, nonprofits, and communities raise money for causes that matter. Start a fundraiser, accept donations, and connect with donors — all in one place.",
     type: "website",
     images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Fund4Good — Buy Tickets, Run Events & Fundraise",
+    title: "Fund4GoodCause — Online Fundraising Platform | Fund4Good",
     description:
-      "Launch fundraisers, sell event tickets, and support causes that matter. Fund4Good helps organizers and communities raise money and connect with donors — all in one place.",
+      "Fund4GoodCause (Fund4Good) is an online fundraising platform that helps individuals, nonprofits, and communities raise money for causes that matter. Start a fundraiser, accept donations, and connect with donors — all in one place.",
     images: ["/og-image.jpg"],
   },
 };
@@ -51,6 +65,26 @@ export default function RootLayout({
         <link
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Fund4GoodCause",
+              alternateName: ["Fund4Good", "Fund4AGoodCause"],
+              url: "https://www.fund4agoodcause.com",
+              description:
+                "Online fundraising platform helping individuals, nonprofits, and communities raise money for causes that matter.",
+              potentialAction: {
+                "@type": "SearchAction",
+                target:
+                  "https://www.fund4agoodcause.com/search?q={search_term_string}",
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
         />
       </head>
       <body className="min-h-full flex flex-col">

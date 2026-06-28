@@ -1,11 +1,5 @@
 "use client";
 
-/**
- * app/dashboard/DashboardSidebar.tsx
- * Client component — uses usePathname for active link highlighting.
- * Matches the dark sidebar style of app/admin/layout.tsx exactly.
- */
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -16,14 +10,14 @@ type SidebarLink = {
 };
 
 const links: SidebarLink[] = [
-  { label: "Overview",          href: "/dashboard",            exact: true },
-  { label: "Events",            href: "/dashboard/events" },
-  { label: "Fundraisers",       href: "/dashboard/fundraisers" },
-  { label: "Organizers",        href: "/dashboard/organizers" },
-  { label: "Donations",         href: "/dashboard/donations" },
-  { label: "Attendees",         href: "/dashboard/attendees" },
-  { label: "Reports",           href: "/dashboard/reports" },
-  { label: "Settings",          href: "/dashboard/settings" },
+  { label: "Overview",    href: "/dashboard",            exact: true },
+  { label: "Events",      href: "/dashboard/events" },
+  { label: "Fundraisers", href: "/dashboard/fundraisers" },
+  { label: "Organizers",  href: "/dashboard/organizers" },
+  { label: "Donations",   href: "/dashboard/donations" },
+  { label: "Attendees",   href: "/dashboard/attendees" },
+  { label: "Reports",     href: "/dashboard/reports" },
+  { label: "Settings",    href: "/dashboard/settings" },
 ];
 
 export default function DashboardSidebar() {
@@ -36,11 +30,10 @@ export default function DashboardSidebar() {
 
   return (
     <aside className="sticky top-6 hidden h-[calc(100vh-3rem)] w-60 shrink-0 rounded-2xl bg-slate-950 p-4 text-white shadow-xl shadow-slate-950/15 lg:flex lg:flex-col">
-      {/* Logo */}
+      {/* Brand */}
       <Link href="/" className="mb-6 flex items-center gap-3 px-2">
-        <img src="/logo.jpg" alt="Fund4Good Logo" className="h-9 w-9 object-contain rounded-xl" />
-        <span className="text-sm font-black">Fund4Good</span>
-      </Link>
+        <span className="text-lg font-black text-white">Fund4Good</span>
+      </Link> 
 
       {/* Quick-create buttons */}
       <div className="mb-5 grid gap-2">
