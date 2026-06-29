@@ -58,6 +58,8 @@ export default function DonatePage({
   const [success, setSuccess] = useState(false);
   // UUID minted each time the user clicks "Proceed" — one per checkout attempt
   const [checkoutAttemptId, setCheckoutAttemptId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "crypto">("card");
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Receipt state
   const [donationId, setDonationId] = useState<string | null>(null);
@@ -131,11 +133,44 @@ export default function DonatePage({
       setPaymentError("Please select a donation amount of at least $1.");
       return;
     }
+    setPaymentError(null);
+
+    if (paymentMethod === "crypto") {
+      setIsRedirecting(true);
+      try {
+        const res = await fetch("/api/crypto/create-payment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: total,
+            currency: "usd",
+            fundraiserSlug,
+            donorName: anonymous ? "Anonymous" : donorName,
+            donorEmail,
+            type: "donation",
+            message,
+            anonymous,
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.paymentUrl) {
+          throw new Error(data.error || "Could not start the crypto payment.");
+        }
+        window.location.href = data.paymentUrl;
+      } catch (err) {
+        setPaymentError(
+          err instanceof Error ? err.message : "Could not initialise crypto payment."
+        );
+        setIsRedirecting(false);
+      }
+      return;
+    }
+
     // Mint a fresh UUID for this attempt so the idempotency key is
     // unique per-click, preventing StripeIdempotencyError on retry.
     const attemptId = crypto.randomUUID();
     setCheckoutAttemptId(attemptId);
-    setPaymentError(null);
     setPreparingPayment(true);
 
     try {
@@ -402,24 +437,76 @@ export default function DonatePage({
         </div>
       )}
 
+      {/* Payment selector */}
+      {!clientSecret && (
+        <div className="rounded-2xl border border-zinc-200 bg-white p-6 space-y-4">
+          <h3 className="text-base font-black text-zinc-950">Select Payment Method</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("card")}
+              className={`flex flex-col items-center justify-center rounded-xl border p-4 text-center transition ${
+                paymentMethod === "card"
+                  ? "border-green-500 bg-green-50/50 text-green-700 font-bold"
+                  : "border-zinc-200 hover:border-zinc-300 text-zinc-600 font-medium"
+              }`}
+            >
+              <svg
+                className={`h-6 w-6 mb-1.5 ${paymentMethod === "card" ? "text-green-600" : "text-zinc-400"}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+              </svg>
+              <span className="text-sm">Pay with Card</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setPaymentMethod("crypto")}
+              className={`flex flex-col items-center justify-center rounded-xl border p-4 text-center transition ${
+                paymentMethod === "crypto"
+                  ? "border-green-500 bg-green-50/50 text-green-700 font-bold"
+                  : "border-zinc-200 hover:border-zinc-300 text-zinc-600 font-medium"
+              }`}
+            >
+              <svg
+                className={`h-6 w-6 mb-1.5 ${paymentMethod === "crypto" ? "text-green-600" : "text-zinc-400"}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v10m-3-7h6" />
+              </svg>
+              <span className="text-sm">Pay with Crypto</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Payment section */}
       {!clientSecret ? (
         /* Step 1 — Proceed button */
         <button
           onClick={handleProceedToPayment}
-          disabled={preparingPayment || donationAmount < 1}
+          disabled={preparingPayment || isRedirecting || donationAmount < 1}
           className="w-full rounded-2xl bg-green-700 py-4 text-base font-black text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-green-300 active:scale-[.99]"
         >
-          {preparingPayment ? (
+          {preparingPayment || isRedirecting ? (
             <span className="flex items-center justify-center gap-2">
               <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
               </svg>
-              Setting up…
+              {isRedirecting ? "Redirecting to payment…" : "Setting up…"}
             </span>
           ) : (
-            `Donate ${donationAmount >= 1 ? formatMoney(total) : "now"} →`
+            paymentMethod === "crypto"
+              ? `Donate ${donationAmount >= 1 ? formatMoney(total) : "now"} with Crypto →`
+              : `Donate ${donationAmount >= 1 ? formatMoney(total) : "now"} →`
           )}
         </button>
       ) : (
@@ -446,8 +533,9 @@ export default function DonatePage({
         <a href="/privacy" className="underline hover:text-zinc-600">
           Privacy Policy
         </a>
-        . Payments are processed securely via Stripe.
+        . Payments are processed securely via Stripe or NOWPayments.
       </p>
+
     </>
   );
 
@@ -515,7 +603,7 @@ export default function DonatePage({
       right={rightColumn}
       legalText={
         <>
-          Donations processed securely via Stripe.{" "}
+          Donations processed securely via Stripe or NOWPayments.{" "}
           <a href="/privacy" className="underline hover:text-zinc-600">
             Privacy Policy
           </a>

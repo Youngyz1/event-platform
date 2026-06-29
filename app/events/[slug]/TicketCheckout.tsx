@@ -83,6 +83,9 @@ export default function TicketCheckout({
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [preparingPayment, setPreparingPayment] = useState(false);
   const [checkoutAttemptId, setCheckoutAttemptId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "crypto">("card");
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [cryptoError, setCryptoError] = useState<string | null>(null);
 
   // Load seat map if venue has assigned seating
   useEffect(() => {
@@ -197,6 +200,60 @@ export default function TicketCheckout({
       alert("Could not initialise payment. Please try again.");
     }
     setPreparingPayment(false);
+  }
+
+  async function handleCryptoTicketPurchase() {
+    if (!buyerEmail) {
+      setCryptoError("Please enter your email for ticket delivery.");
+      return;
+    }
+    setCryptoError(null);
+    setIsRedirecting(true);
+
+    try {
+      if (selectedSeats.length > 0) {
+        const res = await fetch("/api/seats", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ seatIds: selectedSeats.map((s) => s.id) }),
+        });
+        if (!res.ok) {
+          const data = await res.json();
+          alert(data.error || "Some seats are no longer available. Please re-select.");
+          setIsRedirecting(false);
+          setStep("seats");
+          return;
+        }
+      }
+
+      const res = await fetch("/api/crypto/create-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: effectivePrice,
+          currency: "usd",
+          eventId: event.id,
+          donorName: buyerName,
+          donorEmail: buyerEmail,
+          ticketId: selectedTicket?.id,
+          seatId: selectedSeats[0]?.id || null,
+          seatLabel: seatLabel || null,
+          quantity: selectedSeats.length || quantity,
+          type: "ticket",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.paymentUrl) {
+        throw new Error(data.error || "Could not start the crypto payment.");
+      }
+      window.location.href = data.paymentUrl;
+    } catch (err) {
+      setCryptoError(
+        err instanceof Error ? err.message : "Could not initialise crypto payment."
+      );
+      setIsRedirecting(false);
+    }
   }
 
   function goToReview() {
@@ -557,52 +614,165 @@ export default function TicketCheckout({
                         </button>
                       </div>
                     </div>
-                  ) : preparingPayment ? (
-                    <div className="flex flex-col items-center justify-center py-10 gap-3">
-                      <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                      <p className="text-sm text-zinc-400">Setting up secure payment…</p>
-                    </div>
-                  ) : clientSecret ? (
-                    <StripeProvider clientSecret={clientSecret} accentColor="#f97316">
-                      <PaymentForm
-                        submitLabel={`Pay ${formatPrice(effectivePrice)}`}
-                        accentColor="#f97316"
-                        collectName
-                        collectEmail
-                        initialName={buyerName}
-                        initialEmail={buyerEmail}
-                        onNameChange={setBuyerName}
-                        onEmailChange={setBuyerEmail}
-                        onSuccess={() => setPaid(true)}
-                        onBack={() => {
-                          setStep(seatMapAvailable ? "seats" : "tickets");
-                          setClientSecret(null);
-                          setCheckoutAttemptId(null);
-                          setQrCode(null);
-                        }}
-                      />
-                    </StripeProvider>
                   ) : (
-                    <div className="space-y-3">
-                      <p className="text-sm text-red-500 text-center">
-                        Could not load payment form. Please go back and try again.
-                      </p>
-                      <button
-                        onClick={() => {
-                          setClientSecret(null);
-                          setCheckoutAttemptId(null);
-                          goToReview();
-                        }}
-                        className="w-full border border-zinc-300 text-zinc-700 py-3 rounded-2xl font-bold hover:bg-zinc-50 transition"
-                      >
-                        Retry
-                      </button>
-                      <button
-                        onClick={() => setStep(seatMapAvailable ? "seats" : "tickets")}
-                        className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition"
-                      >
-                        ← Back
-                      </button>
+                    <div className="space-y-4">
+                      {/* Payment Method Selector */}
+                      <div className="rounded-2xl border border-zinc-200 bg-white p-6 space-y-4">
+                        <h3 className="text-base font-black text-zinc-950">Select Payment Method</h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMethod("card")}
+                            className={`flex flex-col items-center justify-center rounded-xl border p-4 text-center transition ${
+                              paymentMethod === "card"
+                                ? "border-orange-500 bg-orange-50/50 text-orange-700 font-bold"
+                                : "border-zinc-200 hover:border-zinc-300 text-zinc-600 font-medium"
+                            }`}
+                          >
+                            <svg
+                              className={`h-6 w-6 mb-1.5 ${paymentMethod === "card" ? "text-orange-600" : "text-zinc-400"}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z" />
+                            </svg>
+                            <span className="text-sm">Pay with Card</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPaymentMethod("crypto")}
+                            className={`flex flex-col items-center justify-center rounded-xl border p-4 text-center transition ${
+                              paymentMethod === "crypto"
+                                ? "border-orange-500 bg-orange-50/50 text-orange-700 font-bold"
+                                : "border-zinc-200 hover:border-zinc-300 text-zinc-600 font-medium"
+                            }`}
+                          >
+                            <svg
+                              className={`h-6 w-6 mb-1.5 ${paymentMethod === "crypto" ? "text-orange-600" : "text-zinc-400"}`}
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v10m-3-7h6" />
+                            </svg>
+                            <span className="text-sm">Pay with Crypto</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {paymentMethod === "crypto" ? (
+                        <div className="space-y-4">
+                          <div className="space-y-3">
+                            <label className="block">
+                              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Full Name</span>
+                              <input
+                                type="text"
+                                placeholder="Your full name"
+                                value={buyerName}
+                                onChange={(e) => setBuyerName(e.target.value)}
+                                className="mt-1 w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Email for Ticket Delivery</span>
+                              <input
+                                type="email"
+                                placeholder="you@example.com"
+                                value={buyerEmail}
+                                onChange={(e) => setBuyerEmail(e.target.value)}
+                                className="mt-1 w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
+                              />
+                            </label>
+                          </div>
+
+                          {cryptoError && (
+                            <p className="text-sm text-red-500">{cryptoError}</p>
+                          )}
+
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => {
+                                setStep(seatMapAvailable ? "seats" : "tickets");
+                                setClientSecret(null);
+                                setCheckoutAttemptId(null);
+                                setQrCode(null);
+                              }}
+                              className="flex-1 border border-zinc-300 text-zinc-700 py-3.5 rounded-2xl font-bold hover:bg-zinc-50 transition"
+                              disabled={isRedirecting}
+                            >
+                              ← Back
+                            </button>
+                            <button
+                              onClick={handleCryptoTicketPurchase}
+                              className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-3.5 rounded-2xl font-bold transition flex items-center justify-center gap-2"
+                              disabled={isRedirecting}
+                            >
+                              {isRedirecting ? (
+                                <>
+                                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                  </svg>
+                                  Redirecting…
+                                </>
+                              ) : (
+                                `Pay ${formatPrice(effectivePrice)} with Crypto`
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ) : preparingPayment ? (
+                        <div className="flex flex-col items-center justify-center py-10 gap-3">
+                          <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+                          <p className="text-sm text-zinc-400">Setting up secure payment…</p>
+                        </div>
+                      ) : clientSecret ? (
+                        <StripeProvider clientSecret={clientSecret} accentColor="#f97316">
+                          <PaymentForm
+                            submitLabel={`Pay ${formatPrice(effectivePrice)}`}
+                            accentColor="#f97316"
+                            collectName
+                            collectEmail
+                            initialName={buyerName}
+                            initialEmail={buyerEmail}
+                            onNameChange={setBuyerName}
+                            onEmailChange={setBuyerEmail}
+                            onSuccess={() => setPaid(true)}
+                            onBack={() => {
+                              setStep(seatMapAvailable ? "seats" : "tickets");
+                              setClientSecret(null);
+                              setCheckoutAttemptId(null);
+                              setQrCode(null);
+                            }}
+                          />
+                        </StripeProvider>
+                      ) : (
+                        <div className="space-y-3">
+                          <p className="text-sm text-red-500 text-center">
+                            Could not load payment form. Please go back and try again.
+                          </p>
+                          <button
+                            onClick={() => {
+                              setClientSecret(null);
+                              setCheckoutAttemptId(null);
+                              goToReview();
+                            }}
+                            className="w-full border border-zinc-300 text-zinc-700 py-3 rounded-2xl font-bold hover:bg-zinc-50 transition"
+                          >
+                            Retry
+                          </button>
+                          <button
+                            onClick={() => setStep(seatMapAvailable ? "seats" : "tickets")}
+                            className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition"
+                          >
+                            ← Back
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
