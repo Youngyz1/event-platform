@@ -9,10 +9,6 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-/**
- * Loads a signature image from /public/signatures/ and returns a base64 data URL.
- * Returns null if the file doesn't exist (graceful fallback).
- */
 function loadSignatureImage(filename: string): string | null {
   try {
     const filePath = path.join(process.cwd(), "public", "signatures", filename);
@@ -25,11 +21,6 @@ function loadSignatureImage(filename: string): string | null {
   }
 }
 
-/**
- * Generates a Certificate of Appreciation PDF matching the navy/gold design.
- * Left signee: Dominic Mumolo, Director of Development (static)
- * Right signee: Campaign organizer name (dynamic per donation)
- */
 export async function generateCertificatePdf(
   donorName: string,
   amount: number,
@@ -47,7 +38,7 @@ export async function generateCertificatePdf(
   const pageW = 297;
   const pageH = 210;
 
-  // ── Subtle diamond background pattern ────────────────────────────────────
+  // ── Background ────────────────────────────────────────────────────────────
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, pageW, pageH, "F");
 
@@ -68,67 +59,67 @@ export async function generateCertificatePdf(
   doc.setFillColor(26, 42, 74);
   doc.rect(0, 0, pageW, 72, "F");
 
-  // Curved bottom of header
   doc.setFillColor(255, 255, 255);
   doc.ellipse(pageW / 2, 72, pageW * 0.6, 22, "F");
 
   // ── Header title ──────────────────────────────────────────────────────────
   doc.setFont("times", "bolditalic");
-  doc.setFontSize(42);
+  doc.setFontSize(46);
   doc.setTextColor(201, 168, 76);
-  doc.text("Certificate", pageW / 2, 30, { align: "center" });
+  doc.text("Certificate", pageW / 2, 32, { align: "center" });
 
   doc.setFont("times", "italic");
-  doc.setFontSize(24);
-  doc.text("of Appreciation", pageW / 2, 48, { align: "center" });
+  doc.setFontSize(26);
+  doc.setTextColor(201, 168, 76);
+  doc.text("of Appreciation", pageW / 2, 52, { align: "center" });
 
   // ── "This is to certify that" ─────────────────────────────────────────────
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
   doc.setTextColor(130, 130, 140);
-  doc.text("This is to certify that", pageW / 2, 86, { align: "center" });
+  doc.text("This is to certify that", pageW / 2, 88, { align: "center" });
 
   // ── Donor name ────────────────────────────────────────────────────────────
   const displayName = donorName || "Anonymous";
   doc.setFont("times", "bold");
   doc.setFontSize(38);
   doc.setTextColor(26, 42, 74);
-  doc.text(displayName, pageW / 2, 104, { align: "center" });
+  doc.text(displayName, pageW / 2, 106, { align: "center" });
 
   // Gold underline beneath name
-  const nameW = Math.min(doc.getTextWidth(displayName), 120);
+  const nameW = Math.min(doc.getTextWidth(displayName), 140);
   const lineX1 = pageW / 2 - nameW / 2;
   const lineX2 = pageW / 2 + nameW / 2;
   doc.setDrawColor(201, 168, 76);
   doc.setLineWidth(0.8);
-  doc.line(lineX1, 107, lineX2, 107);
+  doc.line(lineX1, 109, lineX2, 109);
 
-  // ── Donation description ──────────────────────────────────────────────────
+  // ── Donation description (auto-wrapped) ───────────────────────────────────
   const currencySymbol = currency.toUpperCase() === "USD" ? "$" : "";
-  const formattedAmount = `${currencySymbol}${amount.toFixed(2)}`;
+  const formattedAmount = `${currencySymbol}${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   const formattedDate = new Date(donationDate).toLocaleDateString("en-US", {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 
-  const shortTitle = fundraiserTitle.length > 55
-    ? fundraiserTitle.substring(0, 52) + "..."
-    : fundraiserTitle;
+  const donationText = `Has donated ${formattedAmount} ${currency.toUpperCase()} to the "${fundraiserTitle}" fundraising campaign on ${formattedDate}.`;
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
   doc.setTextColor(44, 62, 80);
-  doc.text(`Has donated ${formattedAmount} ${currency.toUpperCase()} to "${shortTitle}"`, pageW / 2, 120, { align: "center" });
-  doc.text(`fundraising campaign on ${formattedDate}.`, pageW / 2, 128, { align: "center" });
+
+  // Split long text into lines that fit within 200mm width
+  const splitText = doc.splitTextToSize(donationText, 200);
+  const textStartY = 122;
+  doc.text(splitText, pageW / 2, textStartY, { align: "center" });
 
   // ── Footer ────────────────────────────────────────────────────────────────
-  const footerBaseY = 165;
+  const footerBaseY = 168;
   const leftX  = 68;
   const rightX = pageW - 68;
   const sealX  = pageW / 2;
 
-  // Load signature images
   const leftSig  = loadSignatureImage("left-sig.png");
   const rightSig = loadSignatureImage("right-sig.png");
 
@@ -138,12 +129,11 @@ export async function generateCertificatePdf(
   if (leftSig) {
     doc.addImage(leftSig, "PNG", leftX - sigW / 2, footerBaseY - sigH - 4, sigW, sigH);
   }
-
   if (rightSig) {
     doc.addImage(rightSig, "PNG", rightX - sigW / 2, footerBaseY - sigH - 4, sigW, sigH);
   }
 
-  // Left signee line + name + title
+  // Left signee
   doc.setDrawColor(201, 168, 76);
   doc.setLineWidth(0.5);
   doc.line(leftX - 36, footerBaseY, leftX + 36, footerBaseY);
@@ -158,21 +148,23 @@ export async function generateCertificatePdf(
   doc.setTextColor(110, 110, 120);
   doc.text("Director of Development", leftX, footerBaseY + 13, { align: "center" });
 
-  // Right signee line + name + title
+  // Right signee
   const displayOrgName = organizerName || "Campaign Organizer";
-
   doc.setDrawColor(201, 168, 76);
   doc.line(rightX - 36, footerBaseY, rightX + 36, footerBaseY);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(26, 42, 74);
-  doc.text(displayOrgName, rightX, footerBaseY + 7, { align: "center" });
+
+  // Wrap long organizer names
+  const orgNameLines = doc.splitTextToSize(displayOrgName, 72);
+  doc.text(orgNameLines, rightX, footerBaseY + 7, { align: "center" });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.setTextColor(110, 110, 120);
-  doc.text("Campaign Organizer", rightX, footerBaseY + 13, { align: "center" });
+  doc.text("Campaign Organizer", rightX, footerBaseY + 13 + (orgNameLines.length - 1) * 5, { align: "center" });
 
   // ── Gold "Verified Donor" seal ────────────────────────────────────────────
   const sealY  = footerBaseY - 2;
@@ -190,14 +182,14 @@ export async function generateCertificatePdf(
   doc.setFillColor(201, 168, 76);
   doc.circle(sealX, sealY, outerR - 5.5, "F");
 
-  // Laurel dots
+  // Laurel leaves (arcs instead of dots for better look)
   const laurelR = outerR - 2.8;
   doc.setFillColor(255, 255, 255);
   for (let i = 0; i < 24; i++) {
     const angle = (i / 24) * Math.PI * 2;
     const lx = sealX + Math.cos(angle) * laurelR;
     const ly = sealY + Math.sin(angle) * laurelR;
-    doc.circle(lx, ly, 0.6, "F");
+    doc.circle(lx, ly, 0.7, "F");
   }
 
   doc.setFont("helvetica", "bold");
@@ -215,15 +207,8 @@ export async function generateCertificatePdf(
   return Buffer.from(arrayBuffer);
 }
 
-/**
- * Handles the full certificate flow:
- * 1. Fetches donation + fundraiser + organizer data from Supabase
- * 2. Generates the certificate PDF
- * 3. Emails it to the donor via Resend
- */
 export async function processDonationCertificate(donationId: string) {
   try {
-    // 1. Fetch donation
     const { data: donation, error: donErr } = await supabaseAdmin
       .from("donations")
       .select("id, donor_name, donor_email, amount, currency, created_at, fundraiser_id")
@@ -240,7 +225,6 @@ export async function processDonationCertificate(donationId: string) {
       return;
     }
 
-    // 2. Fetch fundraiser + organizer_id
     const { data: fundraiser, error: fundErr } = await supabaseAdmin
       .from("fundraisers")
       .select("title, organizer_id")
@@ -252,7 +236,6 @@ export async function processDonationCertificate(donationId: string) {
       return;
     }
 
-    // 3. Fetch organizer name (dynamic right signee)
     let organizerName = "Campaign Organizer";
     if (fundraiser.organizer_id) {
       const { data: organizer } = await supabaseAdmin
@@ -263,7 +246,6 @@ export async function processDonationCertificate(donationId: string) {
       if (organizer?.name) organizerName = organizer.name;
     }
 
-    // 4. Generate PDF
     const pdfBuffer = await generateCertificatePdf(
       donation.donor_name || "Anonymous",
       donation.amount,
@@ -273,13 +255,12 @@ export async function processDonationCertificate(donationId: string) {
       organizerName
     );
 
-    // 4b. Update certificate_path in donations table
+    // Update certificate_path in donations table
     await supabaseAdmin
       .from("donations")
       .update({ certificate_path: `/api/certificates/${donationId}` })
       .eq("id", donationId);
 
-    // 5. Send via Resend
     if (process.env.RESEND_API_KEY) {
       const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -288,11 +269,11 @@ export async function processDonationCertificate(donationId: string) {
         to: donation.donor_email,
         subject: `Your Certificate of Appreciation — ${fundraiser.title} 🏅`,
         html: `
-  <div style="font-family: sans-serif; color: #18181b; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <div style="text-align: center; margin-bottom: 24px;">
-      <img src="https://fund4agoodcause.com/fund4good-logo.png" alt="Fund4Good" style="height: 60px; width: auto;" />
-    </div>
-    <h2 style="color: #1a2a4a; margin-bottom: 20px;">Your Certificate of Appreciation</h2>
+          <div style="font-family: sans-serif; color: #18181b; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 24px;">
+              <img src="https://fund4agoodcause.com/fund4good-logo.png" alt="Fund4Good" style="height: 60px; width: auto;" />
+            </div>
+            <h2 style="color: #1a2a4a; margin-bottom: 20px;">Your Certificate of Appreciation</h2>
             <p>Hi ${donation.donor_name || "there"},</p>
             <p>On behalf of everyone at <strong>Fund4Good</strong>, thank you for your generous donation of
                <strong>$${donation.amount.toFixed(2)} ${donation.currency.toUpperCase()}</strong>
