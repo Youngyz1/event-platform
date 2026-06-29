@@ -26,7 +26,6 @@ type Account = {
 const NAV_LINKS = [
   { label: "Events", href: "/events", icon: CalendarDays },
   { label: "Fundraisers", href: "/fundraisers", icon: Heart },
-  { label: "Organizers", href: "/organizers", icon: User },
   { label: "Find Tickets", href: "/find-tickets", icon: Ticket },
 ] as const;
 
