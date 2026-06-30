@@ -18,8 +18,7 @@ import type {
   DashboardFundraiserRow,
   DashboardFundraiserStats,
 } from "@/types/dashboard-management";
-
-const CATEGORIES = ["Charity", "Medical", "Education", "Church", "Community Projects"];
+import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
 
 function FundraisersClientInner() {
   const { page, perPage, search, updateParams, getParam, buildQueryString } = useDashboardParams();
@@ -160,7 +159,7 @@ function FundraisersClientInner() {
             value: category,
             options: [
               { value: "all", label: "All Categories" },
-              ...CATEGORIES.map((c) => ({ value: c, label: c })),
+              ...CAMPAIGN_CATEGORIES.map((c) => ({ value: c, label: c })),
             ],
             onChange: (v) => updateParams({ category: v === "all" ? null : v }),
           },
@@ -212,9 +211,12 @@ function FundraisersClientInner() {
           <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
             {rows.map((row) => (
               <article key={row.id} className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-4">
-                <button type="button" onClick={() => openDrawer(row.id)} className="text-left">
-                  <h3 className="font-black text-zinc-950">{row.title}</h3>
-                  <p className="mt-1 text-sm font-medium text-emerald-700">{formatAdminMoney(row.raised)} raised</p>
+                <button type="button" onClick={() => openDrawer(row.id)} className="text-left w-full">
+                  <h3 className="font-black text-zinc-950 line-clamp-1">{row.title}</h3>
+                  <div className="mt-1 flex items-center justify-between">
+                    <span className="text-xs font-bold text-zinc-500 uppercase">{row.category || "Other"}</span>
+                    <p className="text-sm font-medium text-emerald-700">{formatAdminMoney(row.raised)} raised</p>
+                  </div>
                 </button>
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-200">
                   <div className="h-full rounded-full bg-emerald-500" style={{ width: `${row.progress}%` }} />
@@ -229,6 +231,7 @@ function FundraisersClientInner() {
               <thead className="border-b border-zinc-200 bg-zinc-50/80 text-xs font-black uppercase tracking-wide text-zinc-400">
                 <tr>
                   <th className="py-3 pr-4 pl-4">Campaign</th>
+                  <th className="py-3 pr-4">Category</th>
                   <th className="py-3 pr-4">Raised</th>
                   <th className="py-3 pr-4">Goal</th>
                   <th className="py-3 pr-4">Progress</th>
@@ -245,6 +248,7 @@ function FundraisersClientInner() {
                         {row.title}
                       </button>
                     </td>
+                    <td className="py-3 pr-4 text-xs font-bold text-zinc-500 uppercase">{row.category || "Other"}</td>
                     <td className="py-3 pr-4 font-black text-emerald-700">{formatAdminMoney(row.raised)}</td>
                     <td className="py-3 pr-4 font-black">{formatAdminMoney(row.goal)}</td>
                     <td className="py-3 pr-4 font-black text-violet-700">{row.progress}%</td>

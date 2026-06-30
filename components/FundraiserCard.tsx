@@ -11,6 +11,7 @@ type FundraiserCardProps = {
   donorCount?: number;
   daysLeft?: number | null;
   featured?: boolean;
+  category?: string | null;
 };
 
 export default function FundraiserCard({
@@ -22,6 +23,7 @@ export default function FundraiserCard({
   donorCount,
   daysLeft,
   featured = false,
+  category,
 }: FundraiserCardProps) {
   const progress = goal ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
 
@@ -44,6 +46,11 @@ export default function FundraiserCard({
           {featured && (
             <span className="absolute left-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
               Featured
+            </span>
+          )}
+          {category && !featured && (
+            <span className="absolute left-3 top-3 rounded-full bg-white/90 backdrop-blur px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-zinc-700 shadow-sm">
+              {category}
             </span>
           )}
           {daysLeft !== null && daysLeft !== undefined && daysLeft >= 0 && (

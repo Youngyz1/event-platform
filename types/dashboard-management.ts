@@ -35,7 +35,7 @@ export type DashboardFundraiserRow = {
   id: string;
   title: string;
   slug: string | null;
-  category: string | null;
+  category: string;
   goal: number;
   raised: number;
   donor_count: number;

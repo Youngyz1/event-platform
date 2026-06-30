@@ -28,6 +28,7 @@ type SearchResultsProps = {
     goal: number | null;
     raised: number | null;
     banner: string | null;
+    category: string | null;
   }>;
   organizers: Array<{
     id: string;
@@ -131,6 +132,7 @@ function SearchResultsContent({ query, events, fundraisers, organizers }: Search
                         f.banner ||
                         "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1200&auto=format&fit=crop"
                       }
+                      category={f.category}
                     />
                   ))}
                 </div>

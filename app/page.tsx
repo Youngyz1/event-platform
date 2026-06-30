@@ -169,7 +169,7 @@ export default async function HomePage() {
   try {
     const { data, error } = await supabase
       .from("fundraisers")
-      .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner")
+      .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner, category")
       .eq("is_homepage_featured", true)
       .order("homepage_position", { ascending: true })
       .limit(6);
@@ -178,7 +178,7 @@ export default async function HomePage() {
       // Fallback if homepage_position is missing
       const { data: fallback } = await supabase
         .from("fundraisers")
-        .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner")
+        .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner, category")
         .eq("is_homepage_featured", true)
         .limit(6);
       featuredFundraisers = fallback ?? [];
@@ -204,7 +204,7 @@ export default async function HomePage() {
         ? Promise.resolve(featuredFundraisers)
         : supabase
             .from("fundraisers")
-            .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner")
+            .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner, category")
             .order("created_at", { ascending: false })
             .limit(5)
             .then(({ data }) => data ?? []),
@@ -282,7 +282,7 @@ export default async function HomePage() {
   // ── Fundraisers grid (below-fold, existing section) ─────────────────────────
   const { data: fundraisers } = await supabase
     .from("fundraisers")
-    .select("id, title, slug, goal, raised, banner")
+    .select("id, title, slug, goal, raised, banner, category")
     .order("created_at", { ascending: false })
     .limit(3);
 

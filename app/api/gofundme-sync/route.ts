@@ -258,6 +258,7 @@ async function syncSource(source: SourceRow, userId: string) {
     organizer_id: organizerId,
     source_url: source.source_url,
     gofundme_source_id: source.id,
+    category: "Other",
   };
 
   let imported = 0;

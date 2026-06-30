@@ -4,13 +4,17 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import RichTextEditor from "@/components/editor/RichTextEditor";
+import SearchableSelect from "@/components/ui/SearchableSelect";
+import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
+
 
 function generateSlug(title: string) {
   return title.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-");
 }
 
 type GalleryItem = {
-  image_url: string;
+  url: string;
   caption: string;
 };
 
@@ -40,11 +44,12 @@ export default function EditFundraiserPage() {
     banner: "",
     video_url: "",
     story: "",
+    category: "",
   });
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([
-    { image_url: "", caption: "" },
-    { image_url: "", caption: "" },
-    { image_url: "", caption: "" },
+    { url: "", caption: "" },
+    { url: "", caption: "" },
+    { url: "", caption: "" },
   ]);
 
   useEffect(() => {
@@ -117,24 +122,25 @@ export default function EditFundraiserPage() {
         banner: fundraiser.banner || "",
         video_url: fundraiser.video_url || "",
         story: fundraiser.story || "",
+        category: fundraiser.category || "",
       });
 
       const { data: media } = await supabase
         .from("fundraiser_media")
-        .select("image_url, caption, sort_order")
+        .select("url, caption, position")
         .eq("fundraiser_id", fundraiserId)
-        .order("sort_order", { ascending: true });
+        .order("position", { ascending: true });
 
       const loadedMedia =
         media && media.length > 0
           ? media.map((item) => ({
-              image_url: item.image_url || "",
+              url: item.url || "",
               caption: item.caption || "",
             }))
           : [
-              { image_url: fundraiser.banner || "", caption: fundraiser.title || "" },
-              { image_url: "", caption: "" },
-              { image_url: "", caption: "" },
+              { url: fundraiser.banner || "", caption: fundraiser.title || "" },
+              { url: "", caption: "" },
+              { url: "", caption: "" },
             ];
 
       setGalleryItems(loadedMedia);
@@ -166,7 +172,7 @@ export default function EditFundraiserPage() {
   }
 
   function addGalleryItem() {
-    setGalleryItems((items) => [...items, { image_url: "", caption: "" }]);
+    setGalleryItems((items) => [...items, { url: "", caption: "" }]);
   }
 
   function removeGalleryItem(index: number) {
@@ -176,7 +182,7 @@ export default function EditFundraiserPage() {
   }
 
   function cleanGalleryItems() {
-    return galleryItems.filter((item) => item.image_url.trim().startsWith("http"));
+    return galleryItems.filter((item) => item.url.trim().startsWith("http"));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -203,6 +209,7 @@ export default function EditFundraiserPage() {
           banner: form.banner,
           video_url: form.video_url || null,
           story: form.story,
+          category: form.category || "Other",
         })
         .eq("id", fundraiserId);
 
@@ -220,9 +227,10 @@ export default function EditFundraiserPage() {
         const { error: mediaError } = await supabase.from("fundraiser_media").insert(
           mediaItems.map((item, index) => ({
             fundraiser_id: fundraiserId,
-            image_url: item.image_url.trim(),
+            url: item.url.trim(),
             caption: item.caption.trim() || form.title,
-            sort_order: index,
+            position: index,
+            type: "image",
           }))
         );
 
@@ -285,14 +293,14 @@ export default function EditFundraiserPage() {
                 <div key={index} className="rounded-2xl border border-zinc-200 bg-white p-4">
                   <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
                     <label className="block">
-                      <span className="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-500">Photo {index + 1} URL</span>
-                      <input
-                        value={item.image_url}
-                        onChange={(event) => updateGalleryItem(index, "image_url", event.target.value)}
-                        placeholder="https://..."
-                        className={inputClass}
-                      />
-                    </label>
+                <span className="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-500">Photo {index + 1} URL</span>
+                <input
+                  value={item.url}
+                  onChange={(event) => updateGalleryItem(index, "url", event.target.value)}
+                  placeholder="https://..."
+                  className={inputClass}
+                />
+              </label>
                     <label className="block">
                       <span className="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-500">Caption</span>
                       <input
@@ -322,8 +330,29 @@ export default function EditFundraiserPage() {
               Add another photo
             </button>
           </div>
+          <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+            <h2 className="mb-4 text-lg font-black text-zinc-950">Category</h2>
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-zinc-800">Campaign Category *</span>
+              <SearchableSelect
+                options={CAMPAIGN_CATEGORIES}
+                value={form.category}
+                onChange={(val) => update("category", val)}
+                placeholder="Select a category..."
+                accent="green"
+              />
+              {!form.category && (
+                <p className="mt-1.5 text-xs font-semibold text-red-600">Please select a category.</p>
+              )}
+            </label>
+          </div>
           <input value={form.video_url} onChange={(event) => update("video_url", event.target.value)} placeholder="Campaign video URL" className={inputClass} />
-          <textarea value={form.story} onChange={(event) => update("story", event.target.value)} required rows={10} placeholder="Campaign story" className={inputClass} />
+          <RichTextEditor
+            value={form.story}
+            onChange={(val) => update("story", val)}
+            placeholder="Campaign story"
+            accent="green"
+          />
 
           <button disabled={saving} className="w-full rounded-2xl bg-green-500 py-5 text-lg font-black text-white transition hover:bg-green-600 disabled:bg-green-300">
             {saving ? "Saving..." : "Save Fundraiser"}

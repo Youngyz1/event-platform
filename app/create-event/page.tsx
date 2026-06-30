@@ -12,6 +12,8 @@ import {
   inputClass,
 } from "@/components/CreatorWorkspace";
 import { supabase } from "@/lib/supabase";
+import RichTextEditor from "@/components/editor/RichTextEditor";
+
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
 
@@ -431,7 +433,12 @@ export default function CreateEventPage() {
                 </CreatorField>
 
                 <CreatorField label="Event Description">
-                  <textarea name="description" value={form.description} onChange={handleChange} required rows={7} placeholder="Tell people about your event..." className={inputClass} />
+                  <RichTextEditor
+                    value={form.description}
+                    onChange={(val) => setForm((c) => ({ ...c, description: val }))}
+                    placeholder="Tell people about your event..."
+                    accent="orange"
+                  />
                 </CreatorField>
 
                 <div className="grid gap-5 md:grid-cols-2">

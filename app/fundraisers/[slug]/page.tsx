@@ -415,6 +415,11 @@ export default async function FundraiserPage({
         {/* Main content column */}
         <div className="min-w-0 space-y-8 lg:col-span-2">
           <header>
+            {fundraiserCategory && (
+              <span className="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-700 mb-3">
+                {fundraiserCategory}
+              </span>
+            )}
             <h1 className="text-3xl font-bold leading-tight text-zinc-950 sm:text-4xl break-words">
               {fundraiser.title}
             </h1>

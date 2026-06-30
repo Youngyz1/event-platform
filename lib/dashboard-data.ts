@@ -815,13 +815,14 @@ export function exportFundraisersCsv(rows: DashboardFundraiserRow[]) {
   return toCsv(
     rows.map((r) => ({
       campaign: r.title,
+      category: r.category || 'Other',
       raised: r.raised,
       goal: r.goal,
       progress: `${r.progress}%`,
       donors: r.donor_count,
       status: r.status,
     })),
-    ['campaign', 'raised', 'goal', 'progress', 'donors', 'status']
+    ['campaign', 'category', 'raised', 'goal', 'progress', 'donors', 'status']
   );
 }
 

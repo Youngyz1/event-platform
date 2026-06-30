@@ -11,6 +11,9 @@ import {
   greenInputClass,
 } from "@/components/CreatorWorkspace";
 import { supabase } from "@/lib/supabase";
+import RichTextEditor from "@/components/editor/RichTextEditor";
+import SearchableSelect from "@/components/ui/SearchableSelect";
+import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
 
 const FUNDRAISER_STEPS = [
   { label: "Fundraiser Details" },
@@ -18,8 +21,6 @@ const FUNDRAISER_STEPS = [
   { label: "Settings" },
   { label: "Review & Publish" },
 ];
-
-const campaignCategories = ["Charity", "Medical", "Education", "Church", "Community Projects"];
 
 type OrganizerProfile = {
   id: string;
@@ -78,7 +79,7 @@ export default function CreateFundraiserPage() {
     organizer_id: "",
     organizer: "",
     banner: "",
-    category: "Charity",
+    category: "",
     tags: "",
   });
 
@@ -224,6 +225,12 @@ export default function CreateFundraiserPage() {
       return;
     }
 
+    if (!form.category) {
+      setError("Please select a campaign category.");
+      setLoading(false);
+      return;
+    }
+
     let video_url = null;
     if (videoFile) {
       setUploadProgress("Uploading video...");
@@ -254,6 +261,7 @@ export default function CreateFundraiserPage() {
         raised: Number(form.raised) || 0,
         organizer: form.organizer,
         organizer_id: form.organizer_id,
+        category: form.category,
         video_url,
         user_id: session.user.id,
       })
@@ -530,7 +538,12 @@ export default function CreateFundraiserPage() {
                 </CreatorField>
               </div>
               <CreatorField label="Campaign Story">
-                <textarea name="story" value={form.story} onChange={handleChange} required rows={10} placeholder="Tell people why this cause matters, who it helps, and how funds will be used..." className={greenInputClass} />
+                <RichTextEditor
+                  value={form.story}
+                  onChange={(val) => setForm((c) => ({ ...c, story: val }))}
+                  placeholder="Tell people why this cause matters, who it helps, and how funds will be used..."
+                  accent="green"
+                />
               </CreatorField>
             </div>
           </CreatorPanel>
@@ -539,19 +552,22 @@ export default function CreateFundraiserPage() {
         {currentStep === 2 && (
           <CreatorPanel title="Settings">
             <div className="grid gap-5">
-              <CreatorField label="Campaign Category">
-                <select name="category" value={form.category} onChange={handleChange} className={greenInputClass}>
-                  {campaignCategories.map((category) => (
-                    <option key={category}>{category}</option>
-                  ))}
-                </select>
+              <CreatorField label="Campaign Category *">
+                <SearchableSelect
+                  options={CAMPAIGN_CATEGORIES}
+                  value={form.category}
+                  onChange={(val) => setForm((c) => ({ ...c, category: val }))}
+                  placeholder="Select a category..."
+                  accent="green"
+                  error={!form.category ? "Category is required" : undefined}
+                />
+                {!form.category && (
+                  <p className="mt-1.5 text-xs font-semibold text-red-600">Please select a category to continue.</p>
+                )}
               </CreatorField>
               <CreatorField label="Tags" hint="Use commas to separate tags for internal organization.">
                 <input name="tags" value={form.tags} onChange={handleChange} type="text" placeholder="school, community, scholarship" className={greenInputClass} />
               </CreatorField>
-              <div className="rounded-2xl bg-emerald-50 p-5 text-sm font-semibold leading-6 text-emerald-800 ring-1 ring-emerald-100">
-                Campaign categories and tags are staged for the future marketplace filters. The current publish flow keeps database writes limited to the existing fundraiser fields.
-              </div>
             </div>
           </CreatorPanel>
         )}

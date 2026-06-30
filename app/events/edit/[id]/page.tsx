@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import RichTextEditor from "@/components/editor/RichTextEditor";
+
 
 type Organizer = { id: string; name: string };
 type Ticket = { id: string; name: string; price: number; quantity: number };
@@ -279,13 +281,15 @@ export default function EditEventPage() {
             className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
           />
 
-          <textarea
-            value={form.description}
-            onChange={(event) => update("description", event.target.value)}
-            rows={8}
-            placeholder="Event description"
-            className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
-          />
+          <div className="space-y-2">
+            <span className="block font-bold">Event Description</span>
+            <RichTextEditor
+              value={form.description}
+              onChange={(val) => update("description", val)}
+              placeholder="Event description"
+              accent="orange"
+            />
+          </div>
 
           {/* Only shown for imported events that have source organizer data */}
           {isImported && (

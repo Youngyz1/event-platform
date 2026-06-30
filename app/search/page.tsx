@@ -43,8 +43,8 @@ export default async function SearchPage({
       .limit(8),
     supabase
       .from("fundraisers")
-      .select("id, title, slug, goal, raised, banner")
-      .ilike("title", pattern)
+      .select("id, title, slug, goal, raised, banner, category")
+      .or(`title.ilike.${pattern},category.ilike.${pattern}`)
       .order("created_at", { ascending: false })
       .limit(8),
     supabase

@@ -48,6 +48,7 @@ const fundraiserColumns = [
   "banner",
   "video_url",
   "source_url",
+  "category",
 ];
 
 function generateSlug(title: string) {
@@ -531,6 +532,7 @@ function ImportClient() {
       user_id: userId,
       organizer_id: organizerId,
       source_url: row.data.source_url || null,
+      category: row.data.category || "Other",
     }));
 
     if (payload.length > 0) {

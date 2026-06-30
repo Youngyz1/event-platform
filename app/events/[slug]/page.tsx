@@ -69,13 +69,6 @@ async function geocodeAddress(
   }
 }
 
-function paragraphs(value: string | null | undefined) {
-  return (value || "")
-    .split(/\n{2,}/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 function getHostingYears(createdAt: string) {
   return Math.max(
     1,
@@ -210,12 +203,9 @@ export default async function EventPage({
   const primaryOrganizerUrl =
     event.source_organizer_url ||
     (organizer ? `/organizers/${organizer.id}` : "");
-  const primaryOrganizerDescription =
-    event.source_organizer_description || organizer?.bio || "";
   const primaryOrganizerPhoto = event.source_organizer_name
     ? ""
     : organizer?.photo || "";
-  const descriptionParagraphs = paragraphs(event.description);
 
   // ── Resolve map coordinates ──────────────────────────────────
   // Use stored lat/lng if available; otherwise geocode from address fields.
@@ -468,7 +458,7 @@ export default async function EventPage({
             {/* About */}
             <section>
               <h2 className="text-xl font-black mb-4">About this event</h2>
-              <AboutSection paragraphs={descriptionParagraphs} />
+              <AboutSection description={event.description || ""} />
             </section>
 
             {/* Good to Know + Refund Policy */}

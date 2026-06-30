@@ -2,11 +2,13 @@ import FundraiserCard from "@/components/FundraiserCard";
 import PublicEmptyState from "@/components/public/PublicEmptyState";
 import PublicSearchBar from "@/components/public/PublicSearchBar";
 import PublicPagination from "@/components/public/PublicPagination";
+import FundraisersFilterSidebar from "@/components/public/FundraisersFilterSidebar";
 import { supabase } from "@/lib/supabase";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { HOMEPAGE_SETTING_KEYS, getHomepageSettings } from "@/lib/homepage-hero";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -29,12 +31,15 @@ const PAGE_SIZE = 12;
 export default async function FundraisersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sort?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; sort?: string; page?: string; categories?: string }>;
 }) {
   const filters = await searchParams;
   const query = filters.q?.trim();
   const sort = filters.sort || "newest";
   const page = Math.max(1, parseInt(filters.page || "1", 10) || 1);
+  const selectedCategories = filters.categories
+    ? filters.categories.split(",").map((c) => c.trim()).filter(Boolean)
+    : [];
 
   const adminClient = createSupabaseAdmin();
 
@@ -69,11 +74,17 @@ export default async function FundraisersPage({
   // 3. Fetch main query campaigns (Step 3)
   let fundraisersQuery = supabase
     .from("fundraisers")
-    .select("id, title, slug, goal, raised, banner, created_at, is_featured", {
+    .select("id, title, slug, goal, raised, banner, category, created_at, is_featured", {
       count: "exact",
     });
 
-  if (query) fundraisersQuery = fundraisersQuery.ilike("title", `%${query}%`);
+  if (query) {
+    fundraisersQuery = fundraisersQuery.or(`title.ilike.%${query}%,category.ilike.%${query}%`);
+  }
+
+  if (selectedCategories.length > 0) {
+    fundraisersQuery = fundraisersQuery.in("category", selectedCategories);
+  }
 
   if (sort === "raised") {
     fundraisersQuery = fundraisersQuery.order("raised", { ascending: false });
@@ -112,6 +123,7 @@ export default async function FundraisersPage({
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (sort !== "newest") params.set("sort", sort);
+    if (selectedCategories.length > 0) params.set("categories", selectedCategories.join(","));
     Object.entries(updates).forEach(([k, v]) => params.set(k, v));
     return `/fundraisers?${params.toString()}`;
   }
@@ -214,25 +226,6 @@ export default async function FundraisersPage({
               <h2 className="text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">Browse Campaigns</h2>
               <p className="text-sm font-medium text-zinc-500 mt-1">Explore all community fundraisers and find causes to support.</p>
             </div>
-            <div className="flex flex-wrap gap-2 shrink-0">
-              {[
-                { value: "newest", label: "Newest" },
-                { value: "raised", label: "Most raised" },
-                { value: "goal", label: "Highest goal" },
-              ].map((opt) => (
-                <Link
-                  key={opt.value}
-                  href={buildHref({ sort: opt.value, page: "1" })}
-                  className={`rounded-full px-4 py-2 text-xs font-black transition ${
-                    sort === opt.value
-                      ? "bg-emerald-600 text-white"
-                      : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:text-emerald-700"
-                  }`}
-                >
-                  {opt.label}
-                </Link>
-              ))}
-            </div>
           </div>
 
           <div className="mt-6">
@@ -246,29 +239,73 @@ export default async function FundraisersPage({
           </div>
         </div>
 
-        {fundraisers && fundraisers.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {fundraisers.map((fundraiser) => (
-              <FundraiserCard
-                key={fundraiser.id}
-                slug={fundraiser.slug}
-                title={fundraiser.title}
-                raised={fundraiser.raised ?? 0}
-                goal={fundraiser.goal ?? 0}
-                image={fundraiser.banner || FALLBACK}
-                donorCount={donorCounts.get(fundraiser.id)}
-                featured={fundraiser.is_featured === true}
+        <div className="flex flex-col gap-8 lg:flex-row">
+          {/* Sidebar */}
+          <div className="hidden lg:block w-56 flex-shrink-0">
+            <Suspense>
+              <FundraisersFilterSidebar
+                activeCategories={selectedCategories}
+                activeSort={sort}
+                resultCount={totalCount ?? 0}
               />
-            ))}
+            </Suspense>
           </div>
-        ) : (
-          <PublicEmptyState
-            icon="💚"
-            title="No fundraisers found"
-            description="Try adjusting your keywords to find campaigns."
-            action={{ label: "Start a fundraiser", href: "/create-fundraiser" }}
-          />
-        )}
+
+          {/* Card Grid */}
+          <div className="flex-1 min-w-0">
+            {/* Mobile: inline category chips */}
+            <div className="mb-5 flex flex-wrap gap-2 lg:hidden">
+              {["All", ...selectedCategories].map((cat, i) =>
+                i === 0 ? (
+                  <Link
+                    key="all"
+                    href="/fundraisers"
+                    className={`rounded-full px-4 py-1.5 text-xs font-black ring-1 transition ${
+                      selectedCategories.length === 0
+                        ? "bg-emerald-600 text-white ring-emerald-600"
+                        : "bg-white text-zinc-600 ring-zinc-200"
+                    }`}
+                  >
+                    All
+                  </Link>
+                ) : (
+                  <Link
+                    key={cat}
+                    href={`/fundraisers?categories=${selectedCategories.filter((c) => c !== cat).join(",")}`}
+                    className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-black text-white"
+                  >
+                    {cat} ×
+                  </Link>
+                )
+              )}
+            </div>
+
+            {fundraisers && fundraisers.length > 0 ? (
+              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                {fundraisers.map((fundraiser) => (
+                  <FundraiserCard
+                    key={fundraiser.id}
+                    slug={fundraiser.slug}
+                    title={fundraiser.title}
+                    raised={fundraiser.raised ?? 0}
+                    goal={fundraiser.goal ?? 0}
+                    image={fundraiser.banner || FALLBACK}
+                    donorCount={donorCounts.get(fundraiser.id)}
+                    featured={fundraiser.is_featured === true}
+                    category={fundraiser.category ?? undefined}
+                  />
+                ))}
+              </div>
+            ) : (
+              <PublicEmptyState
+                icon="💚"
+                title="No fundraisers found"
+                description="Try adjusting your keywords or selecting a different category."
+                action={{ label: "Start a fundraiser", href: "/create-fundraiser" }}
+              />
+            )}
+          </div>
+        </div>
 
         {/* ── Success Stories Section (Step 4) ── */}
         {successStories.length > 0 && (
