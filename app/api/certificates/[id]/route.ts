@@ -111,10 +111,10 @@ export async function GET(
     headers.set("Content-Type", "application/pdf");
     headers.set("Content-Disposition", 'inline; filename="certificate.pdf"');
 
-    return new NextResponse(pdfBuffer, {
-      status: 200,
-      headers,
-    });
+    return new NextResponse(new Uint8Array(pdfBuffer), {
+  status: 200,
+  headers,
+});
   } catch (err: any) {
     console.error("Certificate generation failed:", err);
     return NextResponse.json({ error: "Failed to generate certificate PDF." }, { status: 500 });
