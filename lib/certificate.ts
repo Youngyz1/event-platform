@@ -9,6 +9,8 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
 function loadSignatureImage(filename: string): string | null {
   try {
     const filePath = path.join(process.cwd(), "public", "signatures", filename);
@@ -20,6 +22,29 @@ function loadSignatureImage(filename: string): string | null {
     return null;
   }
 }
+
+/** Load any image from /public (not limited to /signatures). */
+function loadPublicImage(filename: string): string | null {
+  try {
+    const filePath = path.join(process.cwd(), "public", filename);
+    if (!fs.existsSync(filePath)) return null;
+    const ext = path.extname(filename).slice(1).toUpperCase() || "PNG";
+    const buffer = fs.readFileSync(filePath);
+    const base64 = buffer.toString("base64");
+    return `data:image/${ext.toLowerCase()};base64,${base64}`;
+  } catch {
+    return null;
+  }
+}
+
+/** Generate a random 9-digit document ID formatted as "XXX XXX XXX". */
+function generateDocumentId(): string {
+  const n = Math.floor(100000000 + Math.random() * 900000000).toString();
+  return `${n.slice(0, 3)} ${n.slice(3, 6)} ${n.slice(6, 9)}`;
+}
+
+
+// ── Main export ───────────────────────────────────────────────────────────────
 
 export async function generateCertificatePdf(
   donorName: string,
@@ -37,175 +62,173 @@ export async function generateCertificatePdf(
 
   const pageW = 297;
   const pageH = 210;
+  const maroon: [number, number, number] = [139, 26, 26]; // #8B1A1A
+  const gray: [number, number, number] = [140, 140, 140];
+  const darkText: [number, number, number] = [40, 40, 40];
 
-  // ── Background ────────────────────────────────────────────────────────────
+  // ── White background ───────────────────────────────────────────────────────
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, pageW, pageH, "F");
 
-  doc.setDrawColor(220, 220, 225);
-  doc.setLineWidth(0.15);
-  const spacing = 8;
-  for (let x = 0; x <= pageW + spacing; x += spacing) {
-    for (let y = 0; y <= pageH + spacing; y += spacing) {
-      const s = spacing / 2;
-      doc.line(x, y - s, x + s, y);
-      doc.line(x + s, y, x, y + s);
-      doc.line(x, y + s, x - s, y);
-      doc.line(x - s, y, x, y - s);
-    }
-  }
+  // ── Light-gray watermark circle (centered vertically in content area, above footer) ──
+  const wmCY = 100; // center slightly above mid-page so it clears footer
+  doc.setFillColor(232, 232, 232);
+  doc.circle(pageW / 2, wmCY, 58, "F");
+  doc.setFillColor(241, 241, 241);
+  doc.circle(pageW / 2, wmCY, 50, "F");
+  doc.setFillColor(248, 248, 248);
+  doc.circle(pageW / 2, wmCY, 42, "F");
 
-  // ── Navy header ───────────────────────────────────────────────────────────
-  doc.setFillColor(26, 42, 74);
-  doc.rect(0, 0, pageW, 72, "F");
+  // ── Double maroon border ───────────────────────────────────────────────────
+  // Outer thick border (4 pt ≈ 1.4 mm)
+  doc.setDrawColor(...maroon);
+  doc.setLineWidth(1.4);
+  doc.rect(3, 3, pageW - 6, pageH - 6);
 
-  doc.setFillColor(255, 255, 255);
-  doc.ellipse(pageW / 2, 72, pageW * 0.6, 22, "F");
+  // Inner thin border (1 pt ≈ 0.35 mm), inset by 5mm from outer
+  doc.setLineWidth(0.35);
+  doc.rect(7, 7, pageW - 14, pageH - 14);
 
-  // ── Header title ──────────────────────────────────────────────────────────
-  doc.setFont("times", "bolditalic");
-  doc.setFontSize(46);
-  doc.setTextColor(201, 168, 76);
-  doc.text("Certificate", pageW / 2, 32, { align: "center" });
+  // ── Title: "Certificate Of Appreciation" ──────────────────────────────────
+  doc.setFont("times", "normal");
+  doc.setFontSize(38);
+  doc.setTextColor(...maroon);
+  doc.text("Certificate Of Appreciation", pageW / 2, 32, { align: "center" });
 
-  doc.setFont("times", "italic");
-  doc.setFontSize(26);
-  doc.setTextColor(201, 168, 76);
-  doc.text("of Appreciation", pageW / 2, 52, { align: "center" });
+  // Thin maroon line under title
+  doc.setDrawColor(...maroon);
+  doc.setLineWidth(0.35);
+  doc.line(30, 37, pageW - 30, 37);
 
-  // ── "This is to certify that" ─────────────────────────────────────────────
+  // ── "Recognizes" ──────────────────────────────────────────────────────────
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.setTextColor(130, 130, 140);
-  doc.text("This is to certify that", pageW / 2, 88, { align: "center" });
+  doc.setFontSize(11);
+  doc.setTextColor(...gray);
+  doc.text("Recognizes", pageW / 2, 47, { align: "center" });
 
   // ── Donor name ────────────────────────────────────────────────────────────
   const displayName = donorName || "Anonymous";
-  doc.setFont("times", "bold");
-  doc.setFontSize(38);
-  doc.setTextColor(26, 42, 74);
-  doc.text(displayName, pageW / 2, 106, { align: "center" });
+  doc.setFont("times", "normal");
+  doc.setFontSize(44);
+  doc.setTextColor(...darkText);
+  doc.text(displayName, pageW / 2, 74, { align: "center" });
 
-  // Gold underline beneath name
-  const nameW = Math.min(doc.getTextWidth(displayName), 140);
-  const lineX1 = pageW / 2 - nameW / 2;
-  const lineX2 = pageW / 2 + nameW / 2;
-  doc.setDrawColor(201, 168, 76);
-  doc.setLineWidth(0.8);
-  doc.line(lineX1, 109, lineX2, 109);
-
-  // ── Donation description (auto-wrapped) ───────────────────────────────────
-  const currencySymbol = currency.toUpperCase() === "USD" ? "$" : "";
-  const formattedAmount = `${currencySymbol}${amount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  const formattedDate = new Date(donationDate).toLocaleDateString("en-US", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-
-  const donationText = `Has donated ${formattedAmount} ${currency.toUpperCase()} to the "${fundraiserTitle}" fundraising campaign on ${formattedDate}.`;
+  // ── Description lines ─────────────────────────────────────────────────────
+  const formattedDate = (() => {
+    const d = new Date(donationDate);
+    const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+    const dd = String(d.getUTCDate()).padStart(2, "0");
+    const yyyy = d.getUTCFullYear();
+    return `${mm}/${dd}/${yyyy}`;
+  })();
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(12);
-  doc.setTextColor(44, 62, 80);
+  doc.setFontSize(11.5);
+  doc.setTextColor(...gray);
+  doc.text(
+    `His munificent donation for ${fundraiserTitle},`,
+    pageW / 2,
+    87,
+    { align: "center" }
+  );
+  doc.text(
+    `providing financial support and generosity on ${formattedDate}.`,
+    pageW / 2,
+    94,
+    { align: "center" }
+  );
 
-  // Split long text into lines that fit within 200mm width
-  const splitText = doc.splitTextToSize(donationText, 200);
-  const textStartY = 122;
-  doc.text(splitText, pageW / 2, textStartY, { align: "center" });
+  // ── Bold maroon donation amount ────────────────────────────────────────────
+  const currencySymbol = currency.toUpperCase() === "USD" ? "$" : currency.toUpperCase() + " ";
+  const formattedAmount = `${currencySymbol}${amount.toLocaleString("en-US")}`;
 
-  // ── Footer ────────────────────────────────────────────────────────────────
-  const footerBaseY = 168;
-  const leftX  = 68;
-  const rightX = pageW - 68;
-  const sealX  = pageW / 2;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(13);
+  doc.setTextColor(...maroon);
+  doc.text(`Munificent ${formattedAmount} donation`, pageW / 2, 106, { align: "center" });
 
-  const leftSig  = loadSignatureImage("left-sig.png");
+  // ── Footer layout ──────────────────────────────────────────────────────────
+  const footerLineY = 155; // y of signature line
+  const leftX = 70;
+  const rightX = pageW - 70;
+  const sealCX = pageW / 2;
+  const sealCY = 157;
+  // Badge image: 36×36 mm centred on sealCX / sealCY
+  const badgeSize = 36;
+
+  const leftSig = loadSignatureImage("left-sig.png");
   const rightSig = loadSignatureImage("right-sig.png");
+  const sigW = 44;
+  const sigH = 18;
 
-  const sigW = 40;
-  const sigH = 15;
-
+  // Signature images
   if (leftSig) {
-    doc.addImage(leftSig, "PNG", leftX - sigW / 2, footerBaseY - sigH - 4, sigW, sigH);
+    doc.addImage(leftSig, "PNG", leftX - sigW / 2, footerLineY - sigH - 2, sigW, sigH);
   }
   if (rightSig) {
-    doc.addImage(rightSig, "PNG", rightX - sigW / 2, footerBaseY - sigH - 4, sigW, sigH);
+    doc.addImage(rightSig, "PNG", rightX - sigW / 2, footerLineY - sigH - 2, sigW, sigH);
   }
 
-  // Left signee
-  doc.setDrawColor(201, 168, 76);
+  // ── Left column ────────────────────────────────────────────────────────────
+  doc.setDrawColor(...maroon);
   doc.setLineWidth(0.5);
-  doc.line(leftX - 36, footerBaseY, leftX + 36, footerBaseY);
+  doc.line(leftX - 38, footerLineY, leftX + 38, footerLineY);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.setTextColor(26, 42, 74);
-  doc.text("Dominic Mumolo", leftX, footerBaseY + 7, { align: "center" });
+  doc.setTextColor(...darkText);
+  doc.text("Dominic Mumolo", leftX, footerLineY + 7, { align: "center" });
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(110, 110, 120);
-  doc.text("Director of Development", leftX, footerBaseY + 13, { align: "center" });
+  doc.setFontSize(9.5);
+  doc.setTextColor(...gray);
+  doc.text("Director of Development", leftX, footerLineY + 13, { align: "center" });
 
-  // Right signee
+  // ── Right column ───────────────────────────────────────────────────────────
   const displayOrgName = organizerName || "Campaign Organizer";
-  doc.setDrawColor(201, 168, 76);
-  doc.line(rightX - 36, footerBaseY, rightX + 36, footerBaseY);
+  doc.setDrawColor(...maroon);
+  doc.setLineWidth(0.5);
+  doc.line(rightX - 38, footerLineY, rightX + 38, footerLineY);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
-  doc.setTextColor(26, 42, 74);
-
-  // Wrap long organizer names
-  const orgNameLines = doc.splitTextToSize(displayOrgName, 72);
-  doc.text(orgNameLines, rightX, footerBaseY + 7, { align: "center" });
+  doc.setTextColor(...darkText);
+  const orgLines = doc.splitTextToSize(displayOrgName, 76);
+  doc.text(orgLines, rightX, footerLineY + 7, { align: "center" });
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(110, 110, 120);
-  doc.text("Campaign Organizer", rightX, footerBaseY + 13 + (orgNameLines.length - 1) * 5, { align: "center" });
+  doc.setFontSize(9.5);
+  doc.setTextColor(...gray);
+  doc.text("Campaign Organizer", rightX, footerLineY + 7 + orgLines.length * 5.5, {
+    align: "center",
+  });
 
-  // ── Gold "Verified Donor" seal ────────────────────────────────────────────
-  const sealY  = footerBaseY - 2;
-  const outerR = 20;
-
-  doc.setFillColor(180, 140, 30);
-  doc.circle(sealX, sealY, outerR, "F");
-
-  doc.setFillColor(201, 168, 76);
-  doc.circle(sealX, sealY, outerR - 2, "F");
-
-  doc.setFillColor(255, 255, 255);
-  doc.circle(sealX, sealY, outerR - 4, "F");
-
-  doc.setFillColor(201, 168, 76);
-  doc.circle(sealX, sealY, outerR - 5.5, "F");
-
-  // Laurel leaves (arcs instead of dots for better look)
-  const laurelR = outerR - 2.8;
-  doc.setFillColor(255, 255, 255);
-  for (let i = 0; i < 24; i++) {
-    const angle = (i / 24) * Math.PI * 2;
-    const lx = sealX + Math.cos(angle) * laurelR;
-    const ly = sealY + Math.sin(angle) * laurelR;
-    doc.circle(lx, ly, 0.7, "F");
+  // ── Centre badge (Fund4AGoodCause logo) ──────────────────────────────────
+  const logoBadge = loadPublicImage("logo_badge_no_bg.png");
+  if (logoBadge) {
+    doc.addImage(
+      logoBadge,
+      "PNG",
+      sealCX - badgeSize / 2,  // x: left edge
+      sealCY - badgeSize / 2,  // y: top edge
+      badgeSize,
+      badgeSize
+    );
   }
 
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(7.5);
-  doc.setTextColor(255, 255, 255);
-  doc.text("★  ★  ★", sealX, sealY - 5.5, { align: "center" });
-  doc.text("VERIFIED", sealX, sealY + 1, { align: "center" });
-  doc.text("DONOR", sealX, sealY + 7, { align: "center" });
-
-  // ── Gold bottom border ────────────────────────────────────────────────────
-  doc.setFillColor(201, 168, 76);
-  doc.rect(0, pageH - 5, pageW, 5, "F");
+  // ── Bottom row: date + document ID ────────────────────────────────────────
+  const bottomY = pageH - 8;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(10);
+  doc.setTextColor(...maroon);
+  doc.text(`Date Of Issuance: ${formattedDate}`, 14, bottomY);
+  doc.text(`Document ID: ${generateDocumentId()}`, pageW - 14, bottomY, { align: "right" });
 
   const arrayBuffer = doc.output("arraybuffer");
   return Buffer.from(arrayBuffer);
 }
+
+// ── Full pipeline: fetch, generate, store, email ──────────────────────────────
 
 export async function processDonationCertificate(donationId: string) {
   try {
@@ -273,7 +296,7 @@ export async function processDonationCertificate(donationId: string) {
             <div style="text-align: center; margin-bottom: 24px;">
               <img src="https://fund4agoodcause.com/fund4good-logo.png" alt="Fund4Good" style="height: 60px; width: auto;" />
             </div>
-            <h2 style="color: #1a2a4a; margin-bottom: 20px;">Your Certificate of Appreciation</h2>
+            <h2 style="color: #8B1A1A; margin-bottom: 20px;">Your Certificate of Appreciation</h2>
             <p>Hi ${donation.donor_name || "there"},</p>
             <p>On behalf of everyone at <strong>Fund4Good</strong>, thank you for your generous donation of
                <strong>$${donation.amount.toFixed(2)} ${donation.currency.toUpperCase()}</strong>

@@ -78,6 +78,20 @@ async function handlePaymentIntentSucceeded(
     const qty = parseInt(meta.quantity) || 1;
     const totalAmount = parseFloat(meta.total_amount) || pi.amount / 100;
 
+    // pi.charges is an expandable field — cast to avoid TS error on the unexpanded type
+    const piAny = pi as unknown as Record<string, unknown>;
+    const chargesList = piAny.charges as { data?: { billing_details?: { email?: string | null; name?: string | null } }[] } | undefined;
+    const firstCharge = chargesList?.data?.[0];
+
+    const recipientEmail = meta.buyer_email ||
+      pi.receipt_email ||
+      firstCharge?.billing_details?.email ||
+      null;
+
+    const recipientName = meta.buyer_name ||
+      firstCharge?.billing_details?.name ||
+      "";
+
     const { error: insertError } = await supabaseAdmin
       .from("ticket_orders")
       .insert({
@@ -85,8 +99,8 @@ async function handlePaymentIntentSucceeded(
         ticket_id: meta.ticket_id || null,
         seat_id: meta.seat_id || null,
         seat_label: meta.seat_label || null,
-        buyer_email: meta.buyer_email || null,
-        buyer_name: meta.buyer_name || null,
+        buyer_email: recipientEmail,
+        buyer_name: recipientName || null,
         quantity: qty,
         total_amount: totalAmount,
         currency: meta.currency ?? pi.currency ?? "usd",
@@ -106,11 +120,10 @@ async function handlePaymentIntentSucceeded(
         .eq("id", meta.seat_id);
     }
 
-    const recipientEmail = meta.buyer_email;
     if (recipientEmail) {
       await sendTicketEmail({
         buyerEmail: recipientEmail,
-        buyerName: meta.buyer_name || "",
+        buyerName: recipientName,
         eventTitle: meta.event_title || "",
         eventSlug: meta.event_slug || "",
         qrCode: qr_code,

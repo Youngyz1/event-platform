@@ -78,6 +78,10 @@ export default function TicketCheckout({
   const [buyerName, setBuyerName] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
 
+  // Contact form submission and validation
+  const [contactInfoSubmitted, setContactInfoSubmitted] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
   // Stripe inline payment
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -257,10 +261,56 @@ export default function TicketCheckout({
   }
 
   function goToReview() {
+    setStep("review");
+    setContactInfoSubmitted(false);
+    setValidationError(null);
+    setClientSecret(null);
+    setCheckoutAttemptId(null);
+    setQrCode(null);
+    setPreparingPayment(false);
+  }
+
+  function isValidEmail(email: string) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function handleProceedToPaymentClick() {
+    setValidationError(null);
+    if (!buyerName.trim()) {
+      setValidationError("Full Name is required.");
+      return;
+    }
+    if (!buyerEmail.trim()) {
+      setValidationError("Email Address is required.");
+      return;
+    }
+    if (!isValidEmail(buyerEmail.trim())) {
+      setValidationError("Please enter a valid email address.");
+      return;
+    }
+
+    setContactInfoSubmitted(true);
     const attemptId = crypto.randomUUID();
     setCheckoutAttemptId(attemptId);
-    setStep("review");
     preparePayment(attemptId);
+  }
+
+  function handleFreeTicketClick() {
+    setValidationError(null);
+    if (!buyerName.trim()) {
+      setValidationError("Full Name is required.");
+      return;
+    }
+    if (!buyerEmail.trim()) {
+      setValidationError("Email Address is required.");
+      return;
+    }
+    if (!isValidEmail(buyerEmail.trim())) {
+      setValidationError("Please enter a valid email address.");
+      return;
+    }
+
+    handleFreeTicket();
   }
 
   // ─── Free ticket handler ─────────────────────────────────────────────────────
@@ -583,39 +633,68 @@ export default function TicketCheckout({
                     />
                   </div>
 
-                  {effectivePrice === 0 ? (
-                    <div className="space-y-3">
-                      <input
-                        type="text"
-                        placeholder="Full name (optional)"
-                        value={buyerName}
-                        onChange={(e) => setBuyerName(e.target.value)}
-                        className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
-                      />
-                      <input
-                        type="email"
-                        placeholder="Email for ticket delivery (optional)"
-                        value={buyerEmail}
-                        onChange={(e) => setBuyerEmail(e.target.value)}
-                        className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
-                      />
-                      <div className="flex gap-3">
+                  {!contactInfoSubmitted ? (
+                    <div className="space-y-4 text-left">
+                      <h4 className="text-base font-bold text-zinc-900 mb-2">Contact Information</h4>
+                      <div className="space-y-3">
+                        <label className="block">
+                          <span className="block text-sm font-semibold text-zinc-700 mb-1">
+                            Full Name <span className="text-red-500">*</span>
+                          </span>
+                          <input
+                            type="text"
+                            placeholder="Enter your full name"
+                            value={buyerName}
+                            onChange={(e) => setBuyerName(e.target.value)}
+                            className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition min-h-[48px]"
+                            required
+                          />
+                        </label>
+                        <label className="block">
+                          <span className="block text-sm font-semibold text-zinc-700 mb-1">
+                            Email Address <span className="text-red-500">*</span>
+                          </span>
+                          <input
+                            type="email"
+                            placeholder="you@example.com"
+                            value={buyerEmail}
+                            onChange={(e) => setBuyerEmail(e.target.value)}
+                            className="w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition min-h-[48px]"
+                            required
+                          />
+                        </label>
+                      </div>
+
+                      {validationError && (
+                        <p className="text-sm font-medium text-red-600 mt-2">{validationError}</p>
+                      )}
+
+                      <div className="flex gap-3 pt-2">
                         <button
                           onClick={() => setStep(seatMapAvailable ? "seats" : "tickets")}
-                          className="flex-1 border border-zinc-300 text-zinc-700 py-3 rounded-2xl font-bold hover:bg-zinc-50 transition"
+                          className="flex-1 border border-zinc-300 text-zinc-700 py-3.5 rounded-2xl font-bold hover:bg-zinc-50 transition"
                         >
                           ← Back
                         </button>
-                        <button
-                          onClick={handleFreeTicket}
-                          className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-2xl font-bold transition"
-                        >
-                          Book Free Ticket
-                        </button>
+                        {effectivePrice === 0 ? (
+                          <button
+                            onClick={handleFreeTicketClick}
+                            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3.5 rounded-2xl font-bold transition"
+                          >
+                            Book Free Ticket
+                          </button>
+                        ) : (
+                          <button
+                            onClick={handleProceedToPaymentClick}
+                            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white py-3.5 rounded-2xl font-bold transition"
+                          >
+                            Proceed to Payment
+                          </button>
+                        )}
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 text-left">
                       {/* Payment Method Selector */}
                       <div className="rounded-2xl border border-zinc-200 bg-white p-6 space-y-4">
                         <h3 className="text-base font-black text-zinc-950">Select Payment Method</h3>
@@ -666,29 +745,6 @@ export default function TicketCheckout({
 
                       {paymentMethod === "crypto" ? (
                         <div className="space-y-4">
-                          <div className="space-y-3">
-                            <label className="block">
-                              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Full Name</span>
-                              <input
-                                type="text"
-                                placeholder="Your full name"
-                                value={buyerName}
-                                onChange={(e) => setBuyerName(e.target.value)}
-                                className="mt-1 w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
-                              />
-                            </label>
-                            <label className="block">
-                              <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">Email for Ticket Delivery</span>
-                              <input
-                                type="email"
-                                placeholder="you@example.com"
-                                value={buyerEmail}
-                                onChange={(e) => setBuyerEmail(e.target.value)}
-                                className="mt-1 w-full border border-zinc-200 rounded-xl px-4 py-3 text-base outline-none focus:border-orange-500 transition"
-                              />
-                            </label>
-                          </div>
-
                           {cryptoError && (
                             <p className="text-sm text-red-500">{cryptoError}</p>
                           )}
@@ -696,7 +752,7 @@ export default function TicketCheckout({
                           <div className="flex gap-3">
                             <button
                               onClick={() => {
-                                setStep(seatMapAvailable ? "seats" : "tickets");
+                                setContactInfoSubmitted(false);
                                 setClientSecret(null);
                                 setCheckoutAttemptId(null);
                                 setQrCode(null);
@@ -728,22 +784,23 @@ export default function TicketCheckout({
                       ) : preparingPayment ? (
                         <div className="flex flex-col items-center justify-center py-10 gap-3">
                           <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                          <p className="text-sm text-zinc-400">Setting up secure payment…</p>
+                          <p className="text-sm text-zinc-400 text-center">Setting up secure payment…</p>
                         </div>
                       ) : clientSecret ? (
                         <StripeProvider clientSecret={clientSecret} accentColor="#f97316">
                           <PaymentForm
                             submitLabel={`Pay ${formatPrice(effectivePrice)}`}
                             accentColor="#f97316"
-                            collectName
-                            collectEmail
+                            collectName={true}
+                            collectEmail={true}
+                            hideInputs={true}
                             initialName={buyerName}
                             initialEmail={buyerEmail}
                             onNameChange={setBuyerName}
                             onEmailChange={setBuyerEmail}
                             onSuccess={() => setPaid(true)}
                             onBack={() => {
-                              setStep(seatMapAvailable ? "seats" : "tickets");
+                              setContactInfoSubmitted(false);
                               setClientSecret(null);
                               setCheckoutAttemptId(null);
                               setQrCode(null);
@@ -759,15 +816,26 @@ export default function TicketCheckout({
                             onClick={() => {
                               setClientSecret(null);
                               setCheckoutAttemptId(null);
-                              goToReview();
+                              if (checkoutAttemptId) {
+                                preparePayment(checkoutAttemptId);
+                              } else {
+                                const attemptId = crypto.randomUUID();
+                                setCheckoutAttemptId(attemptId);
+                                preparePayment(attemptId);
+                              }
                             }}
                             className="w-full border border-zinc-300 text-zinc-700 py-3 rounded-2xl font-bold hover:bg-zinc-50 transition"
                           >
                             Retry
                           </button>
                           <button
-                            onClick={() => setStep(seatMapAvailable ? "seats" : "tickets")}
-                            className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition"
+                            onClick={() => {
+                              setContactInfoSubmitted(false);
+                              setClientSecret(null);
+                              setCheckoutAttemptId(null);
+                              setQrCode(null);
+                            }}
+                            className="w-full text-sm text-zinc-400 hover:text-zinc-600 transition text-center"
                           >
                             ← Back
                           </button>

@@ -36,6 +36,8 @@ type Props = {
   onNameChange?: (v: string) => void;
   onEmailChange?: (v: string) => void;
   disabled?: boolean;
+  /** Hide our own custom inputs for Name/Email if they are already collected beforehand */
+  hideInputs?: boolean;
 };
 
 export default function PaymentForm({
@@ -50,6 +52,7 @@ export default function PaymentForm({
   onNameChange,
   onEmailChange,
   disabled = false,
+  hideInputs = false,
 }: Props) {
   const stripe = useStripe();
   const elements = useElements();
@@ -122,7 +125,7 @@ export default function PaymentForm({
     <form onSubmit={handleSubmit} className="space-y-4">
 
       {/* Buyer detail inputs — collected by us, hidden inside PaymentElement */}
-      {(collectName || collectEmail) && (
+      {(collectName || collectEmail) && !hideInputs && (
         <div className="space-y-2.5">
           {collectName && (
             <div>

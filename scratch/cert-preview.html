@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Certificate Preview</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .cert {
+    /* A4 landscape at 96dpi: 297mm × 210mm ≈ 1122px × 794px */
+    width: 1122px;
+    height: 794px;
+    background: #fff;
+    position: relative;
+    font-family: 'Times New Roman', Times, serif;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  /* Double border */
+  .cert::before {
+    content: '';
+    position: absolute;
+    inset: 11px;
+    border: 1px solid #8B1A1A;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .border-outer {
+    position: absolute;
+    inset: 4px;
+    border: 5px solid #8B1A1A;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Watermark - positioned behind the main content, roughly center-page */
+  .watermark {
+    position: absolute;
+    left: 50%;
+    top: 42%;
+    transform: translate(-50%, -50%);
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fafafa 0%, #f3f3f3 50%, #e8e8e8 100%);
+    z-index: 0;
+    opacity: 0.9;
+  }
+
+  .content {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 50px 16px;
+  }
+
+  /* Title */
+  .title {
+    font-family: 'Times New Roman', serif;
+    font-size: 46px;
+    font-weight: normal;
+    color: #8B1A1A;
+    letter-spacing: 1px;
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+
+  /* Line under title */
+  .title-line {
+    width: calc(100% - 60px);
+    height: 1px;
+    background: #8B1A1A;
+    margin-bottom: 12px;
+  }
+
+  /* Recognizes */
+  .recognizes {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    color: #8C8C8C;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+  }
+
+  /* Donor name */
+  .donor-name {
+    font-family: 'Times New Roman', serif;
+    font-size: 58px;
+    font-weight: normal;
+    color: #282828;
+    line-height: 1;
+    margin-bottom: 20px;
+  }
+
+  /* Description */
+  .description {
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    color: #8C8C8C;
+    text-align: center;
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  /* Amount */
+  .amount {
+    font-family: Arial, sans-serif;
+    font-size: 17px;
+    font-weight: bold;
+    color: #8B1A1A;
+    margin-bottom: 0;
+  }
+
+  /* Footer */
+  .footer {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-top: auto;
+    padding: 0 30px;
+    padding-bottom: 8px;
+  }
+
+  .sig-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 280px;
+  }
+
+  .sig-img {
+    height: 60px;
+    object-fit: contain;
+    margin-bottom: 4px;
+  }
+
+  .sig-line {
+    width: 210px;
+    height: 1.5px;
+    background: #8B1A1A;
+    margin-bottom: 6px;
+  }
+
+  .sig-name {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    color: #282828;
+    margin-bottom: 2px;
+  }
+
+  .sig-title {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    color: #8C8C8C;
+  }
+
+  /* Badge image */
+  .badge-img {
+    width: 136px;
+    height: 136px;
+    object-fit: contain;
+  }
+
+  /* Bottom bar */
+  .bottom-bar {
+    position: absolute;
+    bottom: 14px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 22px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    color: #8B1A1A;
+    z-index: 5;
+  }
+</style>
+</head>
+<body>
+<div class="cert" id="cert">
+  <div class="border-outer"></div>
+  <div class="watermark"></div>
+
+  <div class="content">
+    <div class="title">Certificate Of Appreciation</div>
+    <div class="title-line"></div>
+    <div class="recognizes">Recognizes</div>
+    <div class="donor-name">Sarah Clark</div>
+    <div class="description">
+      His munificent donation for scholarship funds,<br>
+      providing financial support and generosity on 07/09/2024.
+    </div>
+    <div class="amount">Munificent $1,000 donation</div>
+
+    <div class="footer">
+      <!-- Left sig -->
+      <div class="sig-col">
+        <img class="sig-img" src="file:///C:/Users/Youngyz/event-platform/public/signatures/left-sig.png" alt="Signature" onerror="this.style.display='none'"/>
+        <div class="sig-line"></div>
+        <div class="sig-name">Dominic Mumolo</div>
+        <div class="sig-title">Director of Development</div>
+      </div>
+
+      <!-- Centre badge: Fund4AGoodCause logo -->
+      <div class="seal-col">
+        <img class="badge-img"
+             src="file:///C:/Users/Youngyz/event-platform/public/logo_badge_no_bg.png"
+             alt="Fund4AGoodCause badge" />
+      </div>
+
+      <!-- Right sig -->
+      <div class="sig-col">
+        <img class="sig-img" src="file:///C:/Users/Youngyz/event-platform/public/signatures/right-sig.png" alt="Signature" onerror="this.style.display='none'"/>
+        <div class="sig-line"></div>
+        <div class="sig-name">Dominic Mumolo</div>
+        <div class="sig-title">Campaign Organizer</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom date + ID -->
+  <div class="bottom-bar">
+    <span>Date Of Issuance: 07/09/2024</span>
+    <span>Document ID: 679 477 928</span>
+  </div>
+</div>
+
+
+</body>
+</html>

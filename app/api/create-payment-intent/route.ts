@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
         amount: totalAmount,
         currency: currency.toLowerCase(),
         automatic_payment_methods: { enabled: true },
-        ...(buyerEmail ? { receipt_email: buyerEmail } : {}),
+        receipt_email: buyerEmail || undefined,
         metadata: {
           // Identifies this intent as a ticket purchase for the webhook
           kind: "ticket",
