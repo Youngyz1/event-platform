@@ -7,7 +7,7 @@ import { CheckCircle2, Loader2, AlertCircle, Award, Ticket, ArrowLeft, Download 
 
 function CryptoPendingContent() {
   const searchParams = useSearchParams();
-  const paymentId = searchParams.get("paymentId");
+  const orderId = searchParams.get("orderId") || searchParams.get("paymentId");
 
   const [status, setStatus] = useState<"loading" | "waiting" | "confirmed" | "failed">("loading");
   const [paymentDetails, setPaymentDetails] = useState<{
@@ -35,7 +35,7 @@ function CryptoPendingContent() {
   }, [status]);
 
   useEffect(() => {
-    if (!paymentId) {
+    if (!orderId) {
       setError("Missing payment ID. Please check the URL.");
       setStatus("failed");
       return;
@@ -46,7 +46,7 @@ function CryptoPendingContent() {
 
     async function checkStatus() {
       try {
-        const res = await fetch(`/api/crypto/status?paymentId=${paymentId}`);
+        const res = await fetch(`/api/crypto/status?orderId=${orderId}`);
         if (!res.ok) {
           throw new Error("Failed to check status.");
         }
@@ -87,7 +87,7 @@ function CryptoPendingContent() {
       isMounted = false;
       clearInterval(pollInterval);
     };
-  }, [paymentId]);
+  }, [orderId]);
 
   if (status === "loading") {
     return (
@@ -144,7 +144,7 @@ function CryptoPendingContent() {
           <div className="space-y-4">
             {paymentDetails.recordId && (
               <a
-                href={`/api/certificates/${paymentDetails.recordId}?paymentId=${paymentId}`}
+                href={`/api/certificates/${paymentDetails.recordId}?paymentId=${orderId}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full rounded-2xl bg-green-700 hover:bg-green-800 py-4 text-sm font-black text-white transition shadow-md"
@@ -209,10 +209,10 @@ function CryptoPendingContent() {
           <span className="font-semibold text-zinc-400 uppercase">Payment Method</span>
           <span className="font-black text-zinc-700">Cryptocurrency</span>
         </div>
-        {paymentId && (
+        {orderId && (
           <div className="flex justify-between text-xs">
             <span className="font-semibold text-zinc-400 uppercase">Payment Reference</span>
-            <span className="font-mono text-zinc-500 truncate max-w-[150px]">{paymentId}</span>
+            <span className="font-mono text-zinc-500 truncate max-w-[150px]">{orderId}</span>
           </div>
         )}
         <div className="flex justify-between text-xs">

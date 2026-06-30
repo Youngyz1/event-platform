@@ -58,7 +58,11 @@ export async function GET(
     const sp = request.nextUrl.searchParams;
     const queryPaymentId = sp.get("paymentId") || sp.get("session_id");
 
-    if (queryPaymentId && donation.payment_intent_id && queryPaymentId === donation.payment_intent_id) {
+    if (
+      queryPaymentId &&
+      ((donation.payment_intent_id && queryPaymentId === donation.payment_intent_id) ||
+        queryPaymentId === donation.id)
+    ) {
       authorized = true;
     }
 

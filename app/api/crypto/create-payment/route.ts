@@ -50,9 +50,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin;
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      "https://www.fund4agoodcause.com";
     const ipnCallbackUrl = `${baseUrl}/api/crypto/webhook`;
-    const successUrl = `${baseUrl}/crypto-pending?paymentId={payment_id}`;
 
     // Create NOWPayments invoice
     let cancelUrl = baseUrl;
@@ -104,6 +105,31 @@ export async function POST(req: NextRequest) {
 
     const orderId = crypto.randomUUID();
 
+    // NOWPayments does NOT support placeholder syntax like {payment_id} in URLs.
+    // Curly braces are invalid URI characters and will cause a validation error.
+    // We use our own orderId (generated before the API call) so the success_url
+    // is a fully-formed absolute URL that NOWPayments can validate.
+    const successUrl = `${baseUrl}/crypto-pending?orderId=${orderId}`;
+
+    // Validate URLs before sending to NOWPayments to surface misconfigurations early.
+    try {
+      new URL(successUrl);
+      new URL(cancelUrl);
+      new URL(ipnCallbackUrl);
+    } catch (urlErr) {
+      console.error("[create-payment] Invalid URL detected:", { successUrl, cancelUrl, ipnCallbackUrl }, urlErr);
+      return NextResponse.json(
+        { error: "Server misconfiguration: invalid callback URL." },
+        { status: 500 }
+      );
+    }
+
+    console.log("[create-payment] Calling NOWPayments with URLs:", {
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      ipn_callback_url: ipnCallbackUrl,
+    });
+
     // Call NOWPayments API to create invoice
     const nowpaymentsRes = await fetch("https://api.nowpayments.io/v1/invoice", {
       method: "POST",
@@ -137,6 +163,7 @@ export async function POST(req: NextRequest) {
     // Save pending record in Supabase
     if (type === "donation") {
       const { error: insertError } = await supabaseAdmin.from("donations").insert({
+        id: orderId,
         fundraiser_id: fundraiserId,
         donor_name: anonymous ? "Anonymous" : (donorName || "Anonymous"),
         donor_email: donorEmail || null,
@@ -184,6 +211,7 @@ export async function POST(req: NextRequest) {
       }
 
       const { error: insertError } = await supabaseAdmin.from("ticket_orders").insert({
+        id: orderId,
         event_id: eventId,
         ticket_id: ticketId || null,
         seat_id: seatId || null,

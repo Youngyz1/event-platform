@@ -10,12 +10,12 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-async function findRecordByInvoiceId(invoiceId: string) {
-  // 1. Look up in donations
+async function findRecordByOrderId(orderId: string) {
+  // 1. Look up in donations by ID (orderId UUID)
   const { data: donation } = await supabaseAdmin
     .from("donations")
-    .select("id, status, fundraiser_id, fundraiser:fundraisers(slug)")
-    .eq("payment_intent_id", invoiceId)
+    .select("id, status, fundraiser_id, payment_intent_id, fundraiser:fundraisers(slug)")
+    .eq("id", orderId)
     .maybeSingle();
 
   if (donation) {
@@ -25,14 +25,15 @@ async function findRecordByInvoiceId(invoiceId: string) {
       type: "donation" as const,
       slug: (donation.fundraiser as any)?.slug || null,
       qrCode: null,
+      paymentIntentId: donation.payment_intent_id,
     };
   }
 
-  // 2. Look up in ticket_orders
+  // 2. Look up in ticket_orders by ID (orderId UUID)
   const { data: order } = await supabaseAdmin
     .from("ticket_orders")
-    .select("id, status, event_id, qr_code, event:events(slug)")
-    .eq("stripe_payment_intent_id", invoiceId)
+    .select("id, status, event_id, qr_code, stripe_payment_intent_id, event:events(slug)")
+    .eq("id", orderId)
     .maybeSingle();
 
   if (order) {
@@ -42,6 +43,43 @@ async function findRecordByInvoiceId(invoiceId: string) {
       type: "ticket" as const,
       slug: (order.event as any)?.slug || null,
       qrCode: order.qr_code || null,
+      paymentIntentId: order.stripe_payment_intent_id,
+    };
+  }
+
+  // 3. Legacy lookup: in donations by payment_intent_id
+  const { data: donationLegacy } = await supabaseAdmin
+    .from("donations")
+    .select("id, status, fundraiser_id, payment_intent_id, fundraiser:fundraisers(slug)")
+    .eq("payment_intent_id", orderId)
+    .maybeSingle();
+
+  if (donationLegacy) {
+    return {
+      id: donationLegacy.id,
+      status: donationLegacy.status,
+      type: "donation" as const,
+      slug: (donationLegacy.fundraiser as any)?.slug || null,
+      qrCode: null,
+      paymentIntentId: donationLegacy.payment_intent_id,
+    };
+  }
+
+  // 4. Legacy lookup: in ticket_orders by stripe_payment_intent_id
+  const { data: orderLegacy } = await supabaseAdmin
+    .from("ticket_orders")
+    .select("id, status, event_id, qr_code, stripe_payment_intent_id, event:events(slug)")
+    .eq("stripe_payment_intent_id", orderId)
+    .maybeSingle();
+
+  if (orderLegacy) {
+    return {
+      id: orderLegacy.id,
+      status: orderLegacy.status,
+      type: "ticket" as const,
+      slug: (orderLegacy.event as any)?.slug || null,
+      qrCode: orderLegacy.qr_code || null,
+      paymentIntentId: orderLegacy.stripe_payment_intent_id,
     };
   }
 
@@ -51,18 +89,18 @@ async function findRecordByInvoiceId(invoiceId: string) {
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = req.nextUrl;
-    const paymentId = searchParams.get("paymentId");
+    const orderId = searchParams.get("orderId") || searchParams.get("paymentId");
 
-    if (!paymentId) {
-      return NextResponse.json({ error: "Missing paymentId parameter." }, { status: 400 });
+    if (!orderId) {
+      return NextResponse.json({ error: "Missing orderId or paymentId parameter." }, { status: 400 });
     }
 
     if (!process.env.NOWPAYMENTS_API_KEY) {
       return NextResponse.json({ error: "NOWPayments is not configured." }, { status: 500 });
     }
 
-    // 1. Check if the paymentId matches directly (as invoice ID) in our database
-    let record = await findRecordByInvoiceId(paymentId);
+    // 1. Check if we already have a confirmed record in our database
+    let record = await findRecordByOrderId(orderId);
     if (record && (record.status === "completed" || record.status === "valid" || record.status === "succeeded")) {
       return NextResponse.json({
         status: "confirmed",
@@ -73,11 +111,14 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // Determine what ID to send to NOWPayments API for checking
+    const queryId = record?.paymentIntentId || orderId;
+
     // 2. Fetch status from NOWPayments GET /v1/payment/:id
     let nowpaymentsStatus = "waiting";
-    let invoiceIdFromPayment = paymentId;
+    let invoiceIdFromPayment = queryId;
 
-    const paymentRes = await fetch(`https://api.nowpayments.io/v1/payment/${paymentId}`, {
+    const paymentRes = await fetch(`https://api.nowpayments.io/v1/payment/${queryId}`, {
       headers: {
         "x-api-key": process.env.NOWPAYMENTS_API_KEY,
       },
@@ -91,7 +132,7 @@ export async function GET(req: NextRequest) {
       }
     } else {
       // If payment status fails, check GET /v1/invoice/:id
-      const invoiceRes = await fetch(`https://api.nowpayments.io/v1/invoice/${paymentId}`, {
+      const invoiceRes = await fetch(`https://api.nowpayments.io/v1/invoice/${queryId}`, {
         headers: {
           "x-api-key": process.env.NOWPAYMENTS_API_KEY,
         },
@@ -110,9 +151,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // 3. Find database record by the invoice ID
+    // 3. Find database record by the updated invoice ID if we didn't have one before or if it was pending
     if (!record || record.status === "pending") {
-      record = await findRecordByInvoiceId(invoiceIdFromPayment);
+      record = await findRecordByOrderId(invoiceIdFromPayment) || await findRecordByOrderId(orderId);
     }
 
     // Map NOWPayments status to a simplified UI status ("confirmed" or "waiting" or "failed")

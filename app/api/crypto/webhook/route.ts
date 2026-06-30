@@ -83,20 +83,28 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid webhook signature." }, { status: 400 });
     }
 
-    const { invoice_id, payment_id, payment_status } = body;
-    console.log(`[crypto webhook] Received IPN callback: invoice=${invoice_id}, payment=${payment_id}, status=${payment_status}`);
+    const { invoice_id, payment_id, payment_status, order_id } = body;
+    console.log(`[crypto webhook] Received IPN callback: invoice=${invoice_id}, payment=${payment_id}, status=${payment_status}, order_id=${order_id}`);
 
     const isConfirmed = payment_status === "finished" || payment_status === "confirmed";
 
-    if (isConfirmed && invoice_id) {
+    if (isConfirmed) {
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || req.nextUrl.origin;
 
-      // 1. Check if this is a donation
-      const { data: donation, error: donError } = await supabaseAdmin
-        .from("donations")
-        .select("*")
-        .eq("payment_intent_id", String(invoice_id))
-        .maybeSingle();
+      // 1. Check if this is a donation (match by order_id UUID or legacy invoice_id)
+      let donation: any = null;
+      if (order_id || invoice_id) {
+        let donationQuery = supabaseAdmin.from("donations").select("*");
+        if (order_id && invoice_id) {
+          donationQuery = donationQuery.or(`id.eq.${order_id},payment_intent_id.eq.${invoice_id}`);
+        } else if (order_id) {
+          donationQuery = donationQuery.eq("id", order_id);
+        } else {
+          donationQuery = donationQuery.eq("payment_intent_id", String(invoice_id));
+        }
+        const { data } = await donationQuery.maybeSingle();
+        donation = data;
+      }
 
       if (donation) {
         if (donation.status === "pending") {
@@ -145,12 +153,20 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // 2. Check if this is a ticket order
-      const { data: order, error: orderError } = await supabaseAdmin
-        .from("ticket_orders")
-        .select("*")
-        .eq("stripe_payment_intent_id", String(invoice_id))
-        .maybeSingle();
+      // 2. Check if this is a ticket order (match by order_id UUID or legacy invoice_id)
+      let order: any = null;
+      if (order_id || invoice_id) {
+        let orderQuery = supabaseAdmin.from("ticket_orders").select("*");
+        if (order_id && invoice_id) {
+          orderQuery = orderQuery.or(`id.eq.${order_id},stripe_payment_intent_id.eq.${invoice_id}`);
+        } else if (order_id) {
+          orderQuery = orderQuery.eq("id", order_id);
+        } else {
+          orderQuery = orderQuery.eq("stripe_payment_intent_id", String(invoice_id));
+        }
+        const { data } = await orderQuery.maybeSingle();
+        order = data;
+      }
 
       if (order) {
         if (order.status === "pending") {
