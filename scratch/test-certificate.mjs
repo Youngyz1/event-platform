@@ -68,13 +68,13 @@ const darkText = [40, 40, 40];
 doc.setFillColor(255, 255, 255);
 doc.rect(0, 0, pageW, pageH, "F");
 
-// Watermark circles — centered in upper content area, above footer
-const wmCY = 100;
-doc.setFillColor(232, 232, 232);
+// Watermark circles — lighter, centered lower
+const wmCY = 115;
+doc.setFillColor(245, 245, 245);
 doc.circle(pageW / 2, wmCY, 58, "F");
-doc.setFillColor(241, 241, 241);
+doc.setFillColor(250, 250, 250);
 doc.circle(pageW / 2, wmCY, 50, "F");
-doc.setFillColor(248, 248, 248);
+doc.setFillColor(253, 253, 253);
 doc.circle(pageW / 2, wmCY, 42, "F");
 
 // Double maroon border
@@ -115,7 +115,7 @@ const formattedDate = `${String(d.getUTCMonth()+1).padStart(2,"0")}/${String(d.g
 doc.setFont("helvetica", "normal");
 doc.setFontSize(11.5);
 doc.setTextColor(...gray);
-doc.text(`His munificent donation for ${fundraiserTitle},`, pageW / 2, 87, { align: "center" });
+doc.text(`A munificent donation for ${fundraiserTitle},`, pageW / 2, 87, { align: "center" });
 doc.text(`providing financial support and generosity on ${formattedDate}.`, pageW / 2, 94, { align: "center" });
 
 // Amount
@@ -132,7 +132,7 @@ const leftX = 70;
 const rightX = pageW - 70;
 const sealCX = pageW / 2;
 const sealCY = 157;
-const badgeSize = 36; // mm
+const badgeSize = 44; // mm
 
 const leftSig = loadSig("left-sig.png");
 const rightSig = loadSig("right-sig.png");

@@ -105,7 +105,9 @@ export async function GET(
 
     const headers = new Headers();
     headers.set("Content-Type", "application/pdf");
-    headers.set("Content-Disposition", `attachment; filename=certificate_${id}.pdf`);
+    headers.set("Content-Disposition", "inline; filename=certificate.pdf");
+    headers.set("Cache-Control", "no-store");
+    headers.set("X-Content-Type-Options", "nosniff");
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,

@@ -71,12 +71,12 @@ export async function generateCertificatePdf(
   doc.rect(0, 0, pageW, pageH, "F");
 
   // ── Light-gray watermark circle (centered vertically in content area, above footer) ──
-  const wmCY = 100; // center slightly above mid-page so it clears footer
-  doc.setFillColor(232, 232, 232);
+  const wmCY = 115; // center slightly below mid-page
+  doc.setFillColor(245, 245, 245);
   doc.circle(pageW / 2, wmCY, 58, "F");
-  doc.setFillColor(241, 241, 241);
+  doc.setFillColor(250, 250, 250);
   doc.circle(pageW / 2, wmCY, 50, "F");
-  doc.setFillColor(248, 248, 248);
+  doc.setFillColor(253, 253, 253);
   doc.circle(pageW / 2, wmCY, 42, "F");
 
   // ── Double maroon border ───────────────────────────────────────────────────
@@ -126,7 +126,7 @@ export async function generateCertificatePdf(
   doc.setFontSize(11.5);
   doc.setTextColor(...gray);
   doc.text(
-    `His munificent donation for ${fundraiserTitle},`,
+    `A munificent donation for ${fundraiserTitle},`,
     pageW / 2,
     87,
     { align: "center" }
@@ -153,8 +153,8 @@ export async function generateCertificatePdf(
   const rightX = pageW - 70;
   const sealCX = pageW / 2;
   const sealCY = 157;
-  // Badge image: 36×36 mm centred on sealCX / sealCY
-  const badgeSize = 36;
+  // Badge image: 44×44 mm centred on sealCX / sealCY
+  const badgeSize = 44;
 
   const leftSig = loadSignatureImage("left-sig.png");
   const rightSig = loadSignatureImage("right-sig.png");

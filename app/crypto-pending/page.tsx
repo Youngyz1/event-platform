@@ -145,6 +145,8 @@ function CryptoPendingContent() {
             {paymentDetails.recordId && (
               <a
                 href={`/api/certificates/${paymentDetails.recordId}?paymentId=${paymentId}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full rounded-2xl bg-green-700 hover:bg-green-800 py-4 text-sm font-black text-white transition shadow-md"
               >
                 <Award className="h-4 w-4" />
