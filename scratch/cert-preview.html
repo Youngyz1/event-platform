@@ -42,18 +42,15 @@
     z-index: 10;
   }
 
-  /* Watermark - positioned behind the main content, lighter */
+  /* Watermark — logo at 8% opacity, wider than tall */
   .watermark {
     position: absolute;
     left: 50%;
     top: 54%;
     transform: translate(-50%, -50%);
-    width: 420px;
-    height: 420px;
-    border-radius: 50%;
-    background: radial-gradient(circle, #fdfdfd 0%, #fafafa 50%, #f5f5f5 100%);
+    width: 90%;   /* wider to match 1024/538 aspect ratio */
+    opacity: 0.08;
     z-index: 0;
-    opacity: 0.9;
   }
 
   .content {
@@ -88,9 +85,9 @@
   /* Recognizes */
   .recognizes {
     font-family: Arial, sans-serif;
-    font-size: 14px;
+    font-size: 20px;
     color: #8C8C8C;
-    letter-spacing: 0.5px;
+    letter-spacing: 3px;
     margin-bottom: 16px;
   }
 
@@ -168,10 +165,10 @@
     color: #8C8C8C;
   }
 
-  /* Badge image */
+  /* Badge image — natural aspect ratio */
   .badge-img {
-    width: 160px;
-    height: 160px;
+    width: 220px;   /* wider to avoid squishing the logo circle */
+    height: auto;
     object-fit: contain;
   }
 
@@ -194,7 +191,7 @@
 <body>
 <div class="cert" id="cert">
   <div class="border-outer"></div>
-  <div class="watermark"></div>
+  <img class="watermark" src="file:///C:/Users/Youngyz/event-platform/public/logo_badge_no_bg.png" alt="" />
 
   <div class="content">
     <div class="title">Certificate Of Appreciation</div>

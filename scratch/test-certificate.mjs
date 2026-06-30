@@ -68,14 +68,21 @@ const darkText = [40, 40, 40];
 doc.setFillColor(255, 255, 255);
 doc.rect(0, 0, pageW, pageH, "F");
 
-// Watermark circles — lighter, centered lower
+// Faded logo watermark — 8% opacity, height 140mm
 const wmCY = 115;
-doc.setFillColor(245, 245, 245);
-doc.circle(pageW / 2, wmCY, 58, "F");
-doc.setFillColor(250, 250, 250);
-doc.circle(pageW / 2, wmCY, 50, "F");
-doc.setFillColor(253, 253, 253);
-doc.circle(pageW / 2, wmCY, 42, "F");
+const wmH = 140;
+const logoRatio = 1024 / 538;
+const wmW = wmH * logoRatio;
+const wmX = (pageW - wmW) / 2;
+const wmY = wmCY - wmH / 2;
+const watermarkLogo = loadPublicImage("logo_badge_no_bg.png");
+if (watermarkLogo) {
+  doc.saveGraphicsState();
+  const gState = new doc.GState({ opacity: 0.08 });
+  doc.setGState(gState);
+  doc.addImage(watermarkLogo, "PNG", wmX, wmY, wmW, wmH);
+  doc.restoreGraphicsState();
+}
 
 // Double maroon border
 doc.setDrawColor(...maroon);
@@ -86,7 +93,7 @@ doc.rect(7, 7, pageW - 14, pageH - 14);
 
 // Title
 doc.setFont("times", "normal");
-doc.setFontSize(38);
+doc.setFontSize(40);
 doc.setTextColor(...maroon);
 doc.text("Certificate Of Appreciation", pageW / 2, 32, { align: "center" });
 
@@ -95,17 +102,19 @@ doc.setDrawColor(...maroon);
 doc.setLineWidth(0.35);
 doc.line(30, 37, pageW - 30, 37);
 
-// "Recognizes"
+// "Recognizes" — larger with letter spacing
 doc.setFont("helvetica", "normal");
-doc.setFontSize(11);
+doc.setFontSize(16);
 doc.setTextColor(...gray);
-doc.text("Recognizes", pageW / 2, 47, { align: "center" });
+doc.setCharSpace(1.5);
+doc.text("Recognizes", pageW / 2, 49, { align: "center" });
+doc.setCharSpace(0);
 
 // Donor name
 doc.setFont("times", "normal");
-doc.setFontSize(44);
+doc.setFontSize(48);
 doc.setTextColor(...darkText);
-doc.text(donorName, pageW / 2, 74, { align: "center" });
+doc.text(donorName, pageW / 2, 75, { align: "center" });
 
 // Date format MM/DD/YYYY using UTC to avoid timezone shifts
 const d = new Date(donationDate);
@@ -113,18 +122,18 @@ const formattedDate = `${String(d.getUTCMonth()+1).padStart(2,"0")}/${String(d.g
 
 // Description lines
 doc.setFont("helvetica", "normal");
-doc.setFontSize(11.5);
+doc.setFontSize(12.5);
 doc.setTextColor(...gray);
-doc.text(`A munificent donation for ${fundraiserTitle},`, pageW / 2, 87, { align: "center" });
-doc.text(`providing financial support and generosity on ${formattedDate}.`, pageW / 2, 94, { align: "center" });
+doc.text(`A munificent donation for ${fundraiserTitle},`, pageW / 2, 88, { align: "center" });
+doc.text(`providing financial support and generosity on ${formattedDate}.`, pageW / 2, 95.5, { align: "center" });
 
 // Amount
 const sym = currency.toUpperCase() === "USD" ? "$" : currency.toUpperCase() + " ";
 const fmtAmount = `${sym}${amount.toLocaleString("en-US")}`;
 doc.setFont("helvetica", "bold");
-doc.setFontSize(13);
+doc.setFontSize(14);
 doc.setTextColor(...maroon);
-doc.text(`Munificent ${fmtAmount} donation`, pageW / 2, 106, { align: "center" });
+doc.text(`Munificent ${fmtAmount} donation`, pageW / 2, 108, { align: "center" });
 
 // Footer
 const footerLineY = 155;
@@ -132,7 +141,8 @@ const leftX = 70;
 const rightX = pageW - 70;
 const sealCX = pageW / 2;
 const sealCY = 157;
-const badgeSize = 44; // mm
+const badgeH = 44; // mm height
+const badgeW = badgeH * logoRatio; // ≈ 83.7 mm width — correct aspect ratio
 
 const leftSig = loadSig("left-sig.png");
 const rightSig = loadSig("right-sig.png");
@@ -145,7 +155,7 @@ if (rightSig) doc.addImage(rightSig, "PNG", rightX - sigW/2, footerLineY - sigH 
 // Left column
 doc.setDrawColor(...maroon);
 doc.setLineWidth(0.5);
-doc.line(leftX - 38, footerLineY, leftX + 38, footerLineY);
+doc.line(leftX - 30, footerLineY, leftX + 30, footerLineY);
 doc.setFont("helvetica", "bold");
 doc.setFontSize(11);
 doc.setTextColor(...darkText);
@@ -158,7 +168,7 @@ doc.text("Director of Development", leftX, footerLineY + 13, { align: "center" }
 // Right column
 doc.setDrawColor(...maroon);
 doc.setLineWidth(0.5);
-doc.line(rightX - 38, footerLineY, rightX + 38, footerLineY);
+doc.line(rightX - 30, footerLineY, rightX + 30, footerLineY);
 doc.setFont("helvetica", "bold");
 doc.setFontSize(11);
 doc.setTextColor(...darkText);
@@ -169,14 +179,14 @@ doc.setFontSize(9.5);
 doc.setTextColor(...gray);
 doc.text("Campaign Organizer", rightX, footerLineY + 7 + orgLines.length * 5.5, { align: "center" });
 
-// Centre badge — Fund4AGoodCause logo
+// Centre badge — Fund4AGoodCause logo, correct aspect ratio
 const logoBadge = loadPublicImage("logo_badge_no_bg.png");
 if (logoBadge) {
   doc.addImage(logoBadge, "PNG",
-    sealCX - badgeSize / 2,
-    sealCY - badgeSize / 2,
-    badgeSize,
-    badgeSize
+    sealCX - badgeW / 2,
+    sealCY - badgeH / 2,
+    badgeW,
+    badgeH
   );
 }
 

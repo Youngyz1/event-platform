@@ -70,14 +70,22 @@ export async function generateCertificatePdf(
   doc.setFillColor(255, 255, 255);
   doc.rect(0, 0, pageW, pageH, "F");
 
-  // ── Light-gray watermark circle (centered vertically in content area, above footer) ──
-  const wmCY = 115; // center slightly below mid-page
-  doc.setFillColor(245, 245, 245);
-  doc.circle(pageW / 2, wmCY, 58, "F");
-  doc.setFillColor(250, 250, 250);
-  doc.circle(pageW / 2, wmCY, 50, "F");
-  doc.setFillColor(253, 253, 253);
-  doc.circle(pageW / 2, wmCY, 42, "F");
+  // ── Faded logo watermark (centered vertically at wmCY = 115, height 140) ──
+  const wmCY = 115;
+  const wmH = 140;
+  const logoRatio = 1024 / 538;
+  const wmW = wmH * logoRatio;
+  const wmX = (pageW - wmW) / 2;
+  const wmY = wmCY - wmH / 2;
+
+  const watermarkLogo = loadPublicImage("logo_badge_no_bg.png");
+  if (watermarkLogo) {
+    doc.saveGraphicsState();
+    const gState = new (doc as any).GState({ opacity: 0.08 });
+    doc.setGState(gState);
+    doc.addImage(watermarkLogo, "PNG", wmX, wmY, wmW, wmH);
+    doc.restoreGraphicsState();
+  }
 
   // ── Double maroon border ───────────────────────────────────────────────────
   // Outer thick border (4 pt ≈ 1.4 mm)
@@ -91,7 +99,7 @@ export async function generateCertificatePdf(
 
   // ── Title: "Certificate Of Appreciation" ──────────────────────────────────
   doc.setFont("times", "normal");
-  doc.setFontSize(38);
+  doc.setFontSize(40);
   doc.setTextColor(...maroon);
   doc.text("Certificate Of Appreciation", pageW / 2, 32, { align: "center" });
 
@@ -102,16 +110,18 @@ export async function generateCertificatePdf(
 
   // ── "Recognizes" ──────────────────────────────────────────────────────────
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
+  doc.setFontSize(16);
   doc.setTextColor(...gray);
-  doc.text("Recognizes", pageW / 2, 47, { align: "center" });
+  (doc as any).setCharSpace(1.5);
+  doc.text("Recognizes", pageW / 2, 49, { align: "center" });
+  (doc as any).setCharSpace(0);
 
   // ── Donor name ────────────────────────────────────────────────────────────
   const displayName = donorName || "Anonymous";
   doc.setFont("times", "normal");
-  doc.setFontSize(44);
+  doc.setFontSize(48);
   doc.setTextColor(...darkText);
-  doc.text(displayName, pageW / 2, 74, { align: "center" });
+  doc.text(displayName, pageW / 2, 75, { align: "center" });
 
   // ── Description lines ─────────────────────────────────────────────────────
   const formattedDate = (() => {
@@ -123,18 +133,18 @@ export async function generateCertificatePdf(
   })();
 
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11.5);
+  doc.setFontSize(12.5);
   doc.setTextColor(...gray);
   doc.text(
     `A munificent donation for ${fundraiserTitle},`,
     pageW / 2,
-    87,
+    88,
     { align: "center" }
   );
   doc.text(
     `providing financial support and generosity on ${formattedDate}.`,
     pageW / 2,
-    94,
+    95.5,
     { align: "center" }
   );
 
@@ -143,9 +153,9 @@ export async function generateCertificatePdf(
   const formattedAmount = `${currencySymbol}${amount.toLocaleString("en-US")}`;
 
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(13);
+  doc.setFontSize(14);
   doc.setTextColor(...maroon);
-  doc.text(`Munificent ${formattedAmount} donation`, pageW / 2, 106, { align: "center" });
+  doc.text(`Munificent ${formattedAmount} donation`, pageW / 2, 108, { align: "center" });
 
   // ── Footer layout ──────────────────────────────────────────────────────────
   const footerLineY = 155; // y of signature line
@@ -153,8 +163,9 @@ export async function generateCertificatePdf(
   const rightX = pageW - 70;
   const sealCX = pageW / 2;
   const sealCY = 157;
-  // Badge image: 44×44 mm centred on sealCX / sealCY
-  const badgeSize = 44;
+  // Badge image: height 44mm, width derived from logo aspect ratio (1024×538)
+  const badgeH = 44;
+  const badgeW = badgeH * logoRatio; // ≈ 83.7 mm — keeps circle un-squished
 
   const leftSig = loadSignatureImage("left-sig.png");
   const rightSig = loadSignatureImage("right-sig.png");
@@ -172,7 +183,7 @@ export async function generateCertificatePdf(
   // ── Left column ────────────────────────────────────────────────────────────
   doc.setDrawColor(...maroon);
   doc.setLineWidth(0.5);
-  doc.line(leftX - 38, footerLineY, leftX + 38, footerLineY);
+  doc.line(leftX - 30, footerLineY, leftX + 30, footerLineY);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
@@ -188,7 +199,7 @@ export async function generateCertificatePdf(
   const displayOrgName = organizerName || "Campaign Organizer";
   doc.setDrawColor(...maroon);
   doc.setLineWidth(0.5);
-  doc.line(rightX - 38, footerLineY, rightX + 38, footerLineY);
+  doc.line(rightX - 30, footerLineY, rightX + 30, footerLineY);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
@@ -209,10 +220,10 @@ export async function generateCertificatePdf(
     doc.addImage(
       logoBadge,
       "PNG",
-      sealCX - badgeSize / 2,  // x: left edge
-      sealCY - badgeSize / 2,  // y: top edge
-      badgeSize,
-      badgeSize
+      sealCX - badgeW / 2,   // x: centred horizontally
+      sealCY - badgeH / 2,   // y: centred vertically
+      badgeW,
+      badgeH
     );
   }
 
@@ -294,7 +305,7 @@ export async function processDonationCertificate(donationId: string) {
         html: `
           <div style="font-family: sans-serif; color: #18181b; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 24px;">
-              <img src="https://fund4agoodcause.com/flogo_badge_no_bg.png" alt="Fund4Good" style="height: 60px; width: auto;" />
+              <img src="https://www.fund4agoodcause.com/logo_badge_no_bg.png" alt="Fund4Good" style="height: 60px; width: auto;" />
             </div>
             <h2 style="color: #8B1A1A; margin-bottom: 20px;">Your Certificate of Appreciation</h2>
             <p>Hi ${donation.donor_name || "there"},</p>
