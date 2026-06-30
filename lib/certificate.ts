@@ -294,7 +294,7 @@ export async function processDonationCertificate(donationId: string) {
         html: `
           <div style="font-family: sans-serif; color: #18181b; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 24px;">
-              <img src="https://fund4agoodcause.com/fund4good-logo.png" alt="Fund4Good" style="height: 60px; width: auto;" />
+              <img src="https://fund4agoodcause.com/flogo_badge_no_bg.png" alt="Fund4Good" style="height: 60px; width: auto;" />
             </div>
             <h2 style="color: #8B1A1A; margin-bottom: 20px;">Your Certificate of Appreciation</h2>
             <p>Hi ${donation.donor_name || "there"},</p>
