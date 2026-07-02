@@ -19,17 +19,27 @@ import { Flag } from "lucide-react";
 import FundraiserFloatingActions, { ShareFundraiserButton } from "./FundraiserActions";
 import StarRating from "@/components/StarRating";
 
+import { cache } from "react";
+
+/** Deduplicated cache helper for querying fundraiser details. */
+const getFundraiserBySlug = cache(async (slug: string) => {
+  const { data: fundraiser } = await supabase
+    .from("fundraisers")
+    .select(
+      "id, title, slug, description, banner, image_url, goal, raised, goal_amount, raised_amount, organizer_id, organizer, story, short_description, category, beneficiary, beneficiary_name, created_at, review_count, average_rating"
+    )
+    .eq("slug", slug)
+    .maybeSingle();
+  return fundraiser;
+});
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const { data: fundraiser } = await supabase
-    .from("fundraisers")
-    .select("title, description, banner, goal, raised")
-    .eq("slug", slug)
-    .single();
+  const fundraiser = await getFundraiserBySlug(slug);
 
   const title = fundraiser?.title
     ? `${fundraiser.title} — Fund4Good`
@@ -265,11 +275,7 @@ export default async function FundraiserPage({
     await recordDonationFromStripeSessionId(query.session_id);
   }
 
-  const { data: fundraiser } = await supabase
-    .from("fundraisers")
-    .select("*")
-    .eq("slug", slug)
-    .single();
+  const fundraiser = await getFundraiserBySlug(slug);
 
   if (!fundraiser) return notFound();
 

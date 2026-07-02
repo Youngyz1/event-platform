@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
 
 const supabaseAdmin = createClient(
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    revalidatePath("/", "page");
     return NextResponse.json({ success: true, sponsor: data });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });
@@ -83,6 +85,7 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    revalidatePath("/", "page");
     return NextResponse.json({ success: true, sponsor: data });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 400 });
@@ -97,5 +100,6 @@ export async function DELETE(req: NextRequest) {
 
   const { error } = await supabaseAdmin.from("homepage_sponsors").delete().eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  revalidatePath("/", "page");
   return NextResponse.json({ success: true });
 }

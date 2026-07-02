@@ -11,7 +11,8 @@ import { HOMEPAGE_SETTING_KEYS, getHomepageSettings } from "@/lib/homepage-hero"
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import * as LucideIcons from "lucide-react";
+import Image from "next/image";
+import { unstable_cache } from "next/cache";
 import {
   Briefcase,
   GraduationCap,
@@ -21,7 +22,120 @@ import {
   Mic,
   Stethoscope,
   Users,
+  Tag,
+  Music,
+  Heart,
+  Star,
+  Globe,
+  Zap,
+  BookOpen,
+  Coffee,
+  type LucideIcon,
 } from "lucide-react";
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  Mic, Briefcase, GraduationCap, HandHeart, HeartHandshake,
+  Laptop, Stethoscope, Users, Tag, Music, Heart, Star, Globe,
+  Zap, BookOpen, Coffee,
+};
+
+// ---------------------------------------------------------------------------
+// Cached data fetchers for events listing page
+// ---------------------------------------------------------------------------
+
+const getEventsPageCmsAndStats = unstable_cache(
+  async () => {
+    const adminClient = createSupabaseAdmin();
+    const [
+      { data: cmsRows },
+      { count: totalEventsCount },
+      { data: ticketSalesData },
+      { count: activeOrganizersCount }
+    ] = await Promise.all([
+      adminClient.from("platform_settings").select("key, value").in("key", HOMEPAGE_SETTING_KEYS),
+      adminClient.from("events").select("id", { count: "exact", head: true }).eq("visibility", "public").eq("status", "approved"),
+      adminClient.from("ticket_orders").select("quantity").in("status", ["valid", "used"]),
+      adminClient.from("organizers").select("id", { count: "exact", head: true }).eq("visibility", "public")
+    ]);
+
+    const cms = getHomepageSettings(cmsRows);
+    const totalEvents = totalEventsCount ?? 0;
+    const ticketsSold = ticketSalesData?.reduce((sum, order) => sum + (order.quantity || 0), 0) || 0;
+    const activeOrganizers = activeOrganizersCount ?? 0;
+
+    return { cms, totalEvents, ticketsSold, activeOrganizers };
+  },
+  ["events-page-cms-and-stats"],
+  { revalidate: 300 }
+);
+
+const getCachedEventsCategories = unstable_cache(
+  async () => {
+    const adminClient = createSupabaseAdmin();
+    const { data: dbCats } = await adminClient
+      .from("homepage_categories")
+      .select("name, icon")
+      .eq("is_visible", true)
+      .order("position", { ascending: true });
+    return dbCats && dbCats.length > 0 ? dbCats : null;
+  },
+  ["events-page-categories"],
+  { revalidate: 300 }
+);
+
+const getCachedTrendingEvents = unstable_cache(
+  async () => {
+    const adminClient = createSupabaseAdmin();
+    const { data: ticketSalesForTrending } = await adminClient
+      .from("ticket_orders")
+      .select("event_id, quantity")
+      .in("status", ["valid", "used"]);
+
+    const salesMap: Record<string, number> = {};
+    for (const sale of ticketSalesForTrending ?? []) {
+      if (sale.event_id) {
+        salesMap[sale.event_id] = (salesMap[sale.event_id] || 0) + (sale.quantity || 0);
+      }
+    }
+
+    const trendingEventIds = Object.keys(salesMap)
+      .sort((a, b) => salesMap[b] - salesMap[a])
+      .slice(0, 4);
+
+    let trendingEvents: any[] = [];
+    if (trendingEventIds.length > 0) {
+      const { data: dbTrending } = await adminClient
+        .from("events")
+        .select("id, title, slug, event_date, city, venue, banner, category")
+        .in("id", trendingEventIds)
+        .eq("visibility", "public")
+        .eq("status", "approved");
+      trendingEvents = dbTrending ?? [];
+    }
+
+    if (trendingEvents.length < 4) {
+      const skipIds = trendingEvents.map(e => e.id);
+      let fallbackQuery = adminClient
+        .from("events")
+        .select("id, title, slug, event_date, city, venue, banner, category")
+        .eq("visibility", "public")
+        .eq("status", "approved");
+      
+      if (skipIds.length > 0) {
+        fallbackQuery = fallbackQuery.not("id", "in", `(${skipIds.join(",")})`);
+      }
+      const { data: dbFallback } = await fallbackQuery
+        .order("event_date", { ascending: true })
+        .limit(4 - trendingEvents.length);
+      if (dbFallback) {
+        trendingEvents = [...trendingEvents, ...dbFallback];
+      }
+    }
+    return trendingEvents;
+  },
+  ["events-page-trending-events"],
+  { revalidate: 600 }
+);
 
 export const dynamic = "force-dynamic";
 
@@ -104,23 +218,8 @@ export default async function EventsPage({
 
   const adminClient = createSupabaseAdmin();
 
-  // 1. Fetch CMS settings and statistics
-  const [
-    { data: cmsRows },
-    { count: totalEventsCount },
-    { data: ticketSalesData },
-    { count: activeOrganizersCount }
-  ] = await Promise.all([
-    adminClient.from("platform_settings").select("key, value").in("key", HOMEPAGE_SETTING_KEYS),
-    adminClient.from("events").select("id", { count: "exact", head: true }).eq("visibility", "public").eq("status", "approved"),
-    adminClient.from("ticket_orders").select("quantity").in("status", ["valid", "used"]),
-    adminClient.from("organizers").select("id", { count: "exact", head: true }).eq("visibility", "public")
-  ]);
-
-  const cms = getHomepageSettings(cmsRows);
-  const totalEvents = totalEventsCount ?? 0;
-  const ticketsSold = ticketSalesData?.reduce((sum, order) => sum + (order.quantity || 0), 0) || 0;
-  const activeOrganizers = activeOrganizersCount ?? 0;
+  // 1. Fetch CMS settings and statistics (via cached helper)
+  const { cms, totalEvents, ticketsSold, activeOrganizers } = await getEventsPageCmsAndStats();
 
   // 2. Fetch featured events (step 2) when browsing without filters
   const { data: featuredEvents } = !hasFilters
@@ -134,10 +233,10 @@ export default async function EventsPage({
         .limit(4)
     : { data: null };
 
-  // 3. Fetch main query events (step 3)
+  // 3. Fetch main query events (step 3) - explicit column selection instead of select("*")
   let eventsQuery = supabase
     .from("events")
-    .select("*", { count: "exact" })
+    .select("id, slug, title, event_date, city, venue, banner, category, latitude, longitude", { count: "exact" })
     .eq("visibility", "public")
     .eq("status", "approved");
 
@@ -255,71 +354,18 @@ export default async function EventsPage({
     return `/events?${params.toString()}`;
   };
 
-  // 5. Fetch categories
+  // 5. Fetch categories (cached)
   let categories = categoryCards;
-  try {
-    const { data: dbCats } = await adminClient
-      .from("homepage_categories")
-      .select("name, icon")
-      .eq("is_visible", true)
-      .order("position", { ascending: true });
-    
-    if (dbCats && dbCats.length > 0) {
-      categories = dbCats.map((c: any) => ({
-        name: c.name,
-        icon: (LucideIcons as any)[c.icon] || LucideIcons.Tag,
-      }));
-    }
-  } catch (err) {
-    console.error("Failed to query homepage_categories", err);
+  const dbCats = await getCachedEventsCategories();
+  if (dbCats) {
+    categories = dbCats.map((c: any) => ({
+      name: c.name,
+      icon: ICON_MAP[c.icon] ?? Tag,
+    }));
   }
 
-  // 6. Fetch trending events (step 5)
-  const { data: ticketSalesForTrending } = await adminClient
-    .from("ticket_orders")
-    .select("event_id, quantity")
-    .in("status", ["valid", "used"]);
-
-  const salesMap: Record<string, number> = {};
-  for (const sale of ticketSalesForTrending ?? []) {
-    if (sale.event_id) {
-      salesMap[sale.event_id] = (salesMap[sale.event_id] || 0) + (sale.quantity || 0);
-    }
-  }
-
-  const trendingEventIds = Object.keys(salesMap)
-    .sort((a, b) => salesMap[b] - salesMap[a])
-    .slice(0, 4);
-
-  let trendingEvents: any[] = [];
-  if (trendingEventIds.length > 0) {
-    const { data: dbTrending } = await adminClient
-      .from("events")
-      .select("id, title, slug, event_date, city, venue, banner, category")
-      .in("id", trendingEventIds)
-      .eq("visibility", "public")
-      .eq("status", "approved");
-    trendingEvents = dbTrending ?? [];
-  }
-
-  if (trendingEvents.length < 4) {
-    const skipIds = trendingEvents.map(e => e.id);
-    let fallbackQuery = adminClient
-      .from("events")
-      .select("id, title, slug, event_date, city, venue, banner, category")
-      .eq("visibility", "public")
-      .eq("status", "approved");
-    
-    if (skipIds.length > 0) {
-      fallbackQuery = fallbackQuery.not("id", "in", `(${skipIds.join(",")})`);
-    }
-    const { data: dbFallback } = await fallbackQuery
-      .order("event_date", { ascending: true })
-      .limit(4 - trendingEvents.length);
-    if (dbFallback) {
-      trendingEvents = [...trendingEvents, ...dbFallback];
-    }
-  }
+  // 6. Fetch trending events (cached)
+  const trendingEvents = await getCachedTrendingEvents();
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950 pb-16">

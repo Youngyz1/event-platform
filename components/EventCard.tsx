@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 type EventCardProps = {
@@ -34,12 +35,12 @@ export default function EventCard({
       )}
     >
       <div className={cn("relative w-full bg-zinc-100", compact ? "h-36" : "h-44 sm:h-52")}>
-        <img
+        <Image
           src={image}
           alt={title}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transition duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
         {badge && (

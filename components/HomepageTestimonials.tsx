@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { UserCircle2 } from "lucide-react";
 import type { PublicTestimonial } from "@/types/homepage-cms";
 
@@ -31,10 +32,11 @@ export default function HomepageTestimonials({ testimonials }: Props) {
               </blockquote>
               <div className="mt-5 flex items-center gap-3 border-t border-zinc-100 pt-5">
                 {item.photo_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={item.photo_url}
                     alt={item.name}
+                    width={44}
+                    height={44}
                     className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-violet-100"
                   />
                 ) : (

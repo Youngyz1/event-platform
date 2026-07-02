@@ -9,6 +9,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
 
 const supabaseAdmin = createClient(
@@ -58,10 +59,10 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    revalidatePath("/", "page");
+    revalidatePath("/events", "page");
     return NextResponse.json({ success: true, category: data });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });
@@ -95,6 +96,8 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Otherwise, update a single category
+    revalidatePath("/", "page");
+    revalidatePath("/events", "page");
     const { id, name, icon, position, is_visible } = body;
 
     if (!id) {
@@ -141,9 +144,9 @@ export async function DELETE(req: NextRequest) {
     .delete()
     .eq("id", id);
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+  revalidatePath("/", "page");
+  revalidatePath("/events", "page");
   return NextResponse.json({ success: true });
 }

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,12 +37,12 @@ export default function FundraiserCard({
         )}
       >
         <div className="relative h-44 w-full bg-zinc-100 sm:h-52">
-          <img
+          <Image
             src={image}
             alt={title}
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition duration-500 group-hover:scale-105"
           />
           {featured && (
             <span className="absolute left-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">

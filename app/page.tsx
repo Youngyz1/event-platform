@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { unstable_cache } from "next/cache";
 import EventCard from "@/components/EventCard";
 import { supabase } from "@/lib/supabase";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
@@ -14,7 +15,6 @@ import HomepageSponsors from "@/components/HomepageSponsors";
 import AboutUsSection from "@/components/ui/about-us-section";
 import { Gallery4, type Gallery4Item } from "@/components/ui/gallery4";
 import TrustBar from "@/components/public/TrustBar";
-import * as LucideIcons from "lucide-react";
 import {
   Briefcase,
   GraduationCap,
@@ -24,30 +24,151 @@ import {
   Mic,
   Stethoscope,
   Users,
+  Tag,
+  Music,
+  Heart,
+  Star,
+  Globe,
+  Zap,
+  BookOpen,
+  Coffee,
+  type LucideIcon,
 } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+// Page is ISR – cached and regenerated at most every 60 seconds.
+// Admin-managed data (hero, categories, sponsors, testimonials) uses
+// a longer 5-minute cache via unstable_cache so those caches stay
+// hot across page regenerations.
+export const revalidate = 60;
+
 
 const siteUrl = getSiteUrl();
-const homeTitle = "Fund4Good — Buy Tickets, Run Events & Fundraise";
-const homeDescription = "Discover events, buy tickets, support causes.";
 
-async function getHeroForMetadata() {
-  try {
+/**
+ * Map of icon names the CMS may store in homepage_categories.icon.
+ * Adding new icons here keeps the bundle tree-shakeable — never use
+ * `import * as LucideIcons` which defeats tree-shaking.
+ */
+const ICON_MAP: Record<string, LucideIcon> = {
+  Mic, Briefcase, GraduationCap, HandHeart, HeartHandshake,
+  Laptop, Stethoscope, Users, Tag, Music, Heart, Star, Globe,
+  Zap, BookOpen, Coffee,
+};
+
+// ---------------------------------------------------------------------------
+// Cached data fetchers – 5-minute TTL for admin-managed content
+// ---------------------------------------------------------------------------
+
+/** Hero settings (platform_settings table). Shared by generateMetadata and page. */
+const getCachedHeroSettings = unstable_cache(
+  async () => {
+    try {
+      const supabaseAdmin = createSupabaseAdmin();
+      const { data } = await supabaseAdmin
+        .from("platform_settings")
+        .select("key, value")
+        .in("key", HOMEPAGE_HERO_SETTING_KEYS);
+      return getHomepageHeroSettings(data);
+    } catch {
+      return getHomepageHeroSettings(null);
+    }
+  },
+  ["homepage-hero-settings"],
+  { revalidate: 300 }
+);
+
+/** Homepage category icons from DB (with fallback to static list). */
+const getCachedCategories = unstable_cache(
+  async () => {
+    try {
+      const supabaseAdmin = createSupabaseAdmin();
+      const { data: dbCats } = await supabaseAdmin
+        .from("homepage_categories")
+        .select("name, icon")
+        .eq("is_visible", true)
+        .order("position", { ascending: true });
+      return dbCats && dbCats.length > 0 ? dbCats : null;
+    } catch {
+      return null;
+    }
+  },
+  ["homepage-categories"],
+  { revalidate: 300 }
+);
+
+/** Testimonials + platform reviews. */
+const getCachedTestimonials = unstable_cache(
+  async () => {
     const supabaseAdmin = createSupabaseAdmin();
-    const { data } = await supabaseAdmin
-      .from("platform_settings")
-      .select("key, value")
-      .in("key", HOMEPAGE_HERO_SETTING_KEYS);
+    const [testimonialsResult, platformReviewsResult] = await Promise.all([
+      supabaseAdmin
+        .from("homepage_testimonials")
+        .select("id, name, role, photo_url, quote, position")
+        .eq("is_visible", true)
+        .order("position", { ascending: true })
+        .then(({ data, error }) => (error ? [] : data ?? [])),
+      supabaseAdmin
+        .from("reviews")
+        .select("id, rating, title, review, created_at, profiles!reviews_user_id_fkey(display_name, avatar_url, profile_photo)")
+        .eq("review_type", "platform")
+        .eq("is_approved", true)
+        .order("created_at", { ascending: false })
+        .limit(6)
+        .then(({ data, error }) => {
+          if (error) return [];
+          return (data ?? []).map((r) => {
+            const profile = Array.isArray(r.profiles) ? r.profiles[0] : (r.profiles as any);
+            return {
+              id: r.id,
+              name: profile?.display_name || "Anonymous",
+              role: `Platform Reviewer (${r.rating} ★)`,
+              photo_url: profile?.avatar_url || profile?.profile_photo || "",
+              quote: r.title ? `"${r.title}" — ${r.review ?? ""}` : (r.review ?? ""),
+              position: 0,
+            };
+          });
+        }),
+    ]);
+    return [...platformReviewsResult, ...testimonialsResult].slice(0, 6);
+  },
+  ["homepage-testimonials"],
+  { revalidate: 300 }
+);
 
-    return getHomepageHeroSettings(data);
-  } catch {
-    return getHomepageHeroSettings(null);
-  }
-}
+/** Sponsors. */
+const getCachedSponsors = unstable_cache(
+  async () => {
+    const supabaseAdmin = createSupabaseAdmin();
+    const { data, error } = await supabaseAdmin
+      .from("homepage_sponsors")
+      .select("id, name, logo_url, website_url, position")
+      .eq("is_visible", true)
+      .order("position", { ascending: true });
+    return error ? [] : data ?? [];
+  },
+  ["homepage-sponsors"],
+  { revalidate: 300 }
+);
+
+/** Platform stats (event/fundraiser/organizer counts). */
+const getCachedPlatformStats = unstable_cache(
+  async () => {
+    const [{ count: totalEvents }, { count: totalFundraisers }, { count: totalOrganizers }] =
+      await Promise.all([
+        supabase.from("events").select("id", { count: "exact", head: true }).eq("visibility", "public").eq("status", "approved"),
+        supabase.from("fundraisers").select("id", { count: "exact", head: true }),
+        supabase.from("organizers").select("id", { count: "exact", head: true }).eq("visibility", "public"),
+      ]);
+    return { totalEvents: totalEvents ?? 0, totalFundraisers: totalFundraisers ?? 0, totalOrganizers: totalOrganizers ?? 0 };
+  },
+  ["homepage-platform-stats"],
+  { revalidate: 300 }
+);
+
 
 export async function generateMetadata(): Promise<Metadata> {
-  const hero = await getHeroForMetadata();
+  // Reuses the same cache as the page component – no extra DB query.
+  const hero = await getCachedHeroSettings();
 
   return {
     metadataBase: new URL(siteUrl),
@@ -111,35 +232,20 @@ function fundraiserImage(src: string | null | undefined) {
 }
 
 export default async function HomePage() {
-  const supabaseAdmin = createSupabaseAdmin();
+  // 1. Hero settings (5-min cache, shared with generateMetadata)
+  const hero = await getCachedHeroSettings();
 
-  // 1. Fetch settings
-  const { data: heroRows } = await supabaseAdmin
-    .from("platform_settings")
-    .select("key, value")
-    .in("key", HOMEPAGE_HERO_SETTING_KEYS);
-  const hero = getHomepageHeroSettings(heroRows);
-
-  // 2. Fetch categories from database (resilient to schema errors)
+  // 2. Categories (5-min cache)
   let categories = categoryCards;
-  try {
-    const { data: dbCats } = await supabaseAdmin
-      .from("homepage_categories")
-      .select("name, icon")
-      .eq("is_visible", true)
-      .order("position", { ascending: true });
-
-    if (dbCats && dbCats.length > 0) {
-      categories = dbCats.map((c: any) => ({
-        name: c.name,
-        icon: (LucideIcons as any)[c.icon] || LucideIcons.Tag,
-      }));
-    }
-  } catch (err) {
-    console.error("Failed to query homepage_categories", err);
+  const dbCats = await getCachedCategories();
+  if (dbCats) {
+    categories = dbCats.map((c: any) => ({
+      name: c.name,
+      icon: ICON_MAP[c.icon] ?? Tag,
+    }));
   }
 
-  // 3. Fetch featured events (resilient query)
+  // 3. Featured events (live data, max 60-s page cache)
   let featuredEvents: any[] = [];
   try {
     const { data, error } = await supabase
@@ -150,7 +256,6 @@ export default async function HomePage() {
       .limit(6);
 
     if (error) {
-      // Fallback if homepage_position is missing
       const { data: fallback } = await supabase
         .from("events")
         .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
@@ -164,7 +269,7 @@ export default async function HomePage() {
     console.error("Failed to query featured events", err);
   }
 
-  // 4. Fetch featured fundraisers (resilient query)
+  // 4. Featured fundraisers (live data)
   let featuredFundraisers: any[] = [];
   try {
     const { data, error } = await supabase
@@ -175,7 +280,6 @@ export default async function HomePage() {
       .limit(6);
 
     if (error) {
-      // Fallback if homepage_position is missing
       const { data: fallback } = await supabase
         .from("fundraisers")
         .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner, category")
@@ -189,125 +293,90 @@ export default async function HomePage() {
     console.error("Failed to query featured fundraisers", err);
   }
 
-  // 5. Fallbacks for sliders if fewer than 2 items featured
-  const [featuredSliderEvents, featuredSliderFundraisers, testimonialsResult, platformReviewsResult, sponsorsResult] =
-    await Promise.all([
-      featuredEvents.length >= 2
-        ? Promise.resolve(featuredEvents)
-        : supabase
-            .from("events")
-            .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
-            .order("created_at", { ascending: false })
-            .limit(5)
-            .then(({ data }) => data ?? []),
-      featuredFundraisers.length >= 2
-        ? Promise.resolve(featuredFundraisers)
-        : supabase
-            .from("fundraisers")
-            .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner, category")
-            .order("created_at", { ascending: false })
-            .limit(5)
-            .then(({ data }) => data ?? []),
-      supabaseAdmin
-        .from("homepage_testimonials")
-        .select("id, name, role, photo_url, quote, position")
-        .eq("is_visible", true)
-        .order("position", { ascending: true })
-        .then(({ data, error }) => (error ? [] : data ?? [])),
-      // Platform reviews — joins profiles using correct column names
-      supabaseAdmin
-        .from("reviews")
-        .select("id, rating, title, review, created_at, profiles!reviews_user_id_fkey(display_name, avatar_url, profile_photo)")
-        .eq("review_type", "platform")
-        .eq("is_approved", true)
-        .order("created_at", { ascending: false })
-        .limit(6)
-        .then(({ data, error }) => {
-          if (error) {
-            // Silently skip — table or columns may not be ready yet
-            return [];
-          }
-          return (data ?? []).map((r) => {
-            const profile = Array.isArray(r.profiles)
-              ? r.profiles[0]
-              : (r.profiles as any);
-            return {
-              id: r.id,
-              name: profile?.display_name || "Anonymous",
-              role: `Platform Reviewer (${r.rating} ★)`,
-              photo_url: profile?.avatar_url || profile?.profile_photo || "",
-              quote: r.title ? `"${r.title}" — ${r.review ?? ""}` : (r.review ?? ""),
-              position: 0,
-            };
-          });
-        }),
-      supabaseAdmin
-        .from("homepage_sponsors")
-        .select("id, name, logo_url, website_url, position")
-        .eq("is_visible", true)
-        .order("position", { ascending: true })
-        .then(({ data, error }) => (error ? [] : data ?? [])),
-    ]);
+  // 5. Fallbacks for slider + cached admin data + below-fold data — all in parallel
+  const [
+    featuredSliderEvents,
+    featuredSliderFundraisers,
+    combinedTestimonials,
+    sponsorsResult,
+    { totalEvents, totalFundraisers, totalOrganizers },
+    rawEventsResult,
+    fundraisersResult,
+  ] = await Promise.all([
+    featuredEvents.length >= 2
+      ? Promise.resolve(featuredEvents)
+      : supabase
+          .from("events")
+          .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
+          .order("created_at", { ascending: false })
+          .limit(5)
+          .then(({ data }) => data ?? []),
+    featuredFundraisers.length >= 2
+      ? Promise.resolve(featuredFundraisers)
+      : supabase
+          .from("fundraisers")
+          .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner, category")
+          .order("created_at", { ascending: false })
+          .limit(5)
+          .then(({ data }) => data ?? []),
+    // Admin data — served from 5-min cache
+    getCachedTestimonials(),
+    getCachedSponsors(),
+    getCachedPlatformStats(),
+    // Below-fold data fetching
+    supabase
+      .from("events")
+      .select("id, title, slug, event_date, city, venue, banner, visibility, status")
+      .eq("visibility", "public")
+      .eq("status", "approved")
+      .order("created_at", { ascending: false })
+      .limit(12)
+      .then(({ data }) => data ?? []),
+    supabase
+      .from("fundraisers")
+      .select("id, title, slug, goal, raised, banner, category")
+      .order("created_at", { ascending: false })
+      .limit(3)
+      .then(({ data }) => data ?? []),
+  ]);
 
-  const combinedTestimonials = [...platformReviewsResult, ...testimonialsResult].slice(0, 6);
-
-  const combinedFeaturedItems: FeaturedSliderItem[] = [];
-  const maxFeaturedLength = Math.max(
-    featuredSliderEvents.length,
-    featuredSliderFundraisers.length
-  );
-
-  for (let i = 0; i < maxFeaturedLength; i++) {
-    if (featuredSliderEvents[i]) {
-      combinedFeaturedItems.push({ ...featuredSliderEvents[i], type: "event" });
-    }
-
-    if (featuredSliderFundraisers[i]) {
-      combinedFeaturedItems.push({
-        ...featuredSliderFundraisers[i],
-        type: "fundraiser",
-      });
-    }
-  }
-
-  // ── Events grid (below-fold, existing section) ──────────────────────────────
-  const { data: rawEvents } = await supabase
-    .from("events")
-    .select("id, title, slug, event_date, city, venue, banner, visibility, status")
-    .eq("visibility", "public")
-    .eq("status", "approved")
-    .order("created_at", { ascending: false })
-    .limit(12);
-
-  // ── Fundraisers grid (below-fold, existing section) ─────────────────────────
-  const { data: fundraisers } = await supabase
-    .from("fundraisers")
-    .select("id, title, slug, goal, raised, banner, category")
-    .order("created_at", { ascending: false })
-    .limit(3);
-
-  // Platform stats for trust bar
-  const [{ count: totalEvents }, { count: totalFundraisers }, { count: totalOrganizers }] =
-    await Promise.all([
-      supabase.from("events").select("id", { count: "exact", head: true }).eq("visibility", "public").eq("status", "approved"),
-      supabase.from("fundraisers").select("id", { count: "exact", head: true }),
-      supabase.from("organizers").select("id", { count: "exact", head: true }).eq("visibility", "public"),
-    ]);
+  // Combine featured events + fundraisers for the FeaturedSlider component
+  const combinedFeaturedItems: FeaturedSliderItem[] = [
+    ...featuredSliderEvents.map((e: any) => ({
+      type: "event" as const,
+      id: e.id,
+      title: e.title,
+      slug: e.slug,
+      date: e.date,
+      location: e.location,
+      image_url: e.image_url,
+      category: e.category,
+    })),
+    ...featuredSliderFundraisers.map((f: any) => ({
+      type: "fundraiser" as const,
+      id: f.id,
+      title: f.title,
+      slug: f.slug,
+      goal_amount: f.goal_amount,
+      raised_amount: f.raised_amount,
+      image_url: f.image_url,
+    })),
+  ];
 
   const trustStats = [
-    { label: "Live events", value: `${totalEvents ?? 0}+` },
-    { label: "Active campaigns", value: `${totalFundraisers ?? 0}+` },
-    { label: "Organizers", value: `${totalOrganizers ?? 0}+` },
+    { label: "Live events", value: `${totalEvents}+` },
+    { label: "Active campaigns", value: `${totalFundraisers}+` },
+    { label: "Organizers", value: `${totalOrganizers}+` },
     { label: "Secure checkout", value: "Stripe" },
   ];
 
   // Deduplicate events grid
   const seen = new Set<string>();
-  const events = (rawEvents ?? [])
+  const events = rawEventsResult
     .filter((ev) => { if (seen.has(ev.id)) return false; seen.add(ev.id); return true; })
     .slice(0, 6);
 
-  const fundraiserGalleryItems: Gallery4Item[] = (fundraisers ?? []).map((fundraiser) => ({
+  const fundraiserGalleryItems: Gallery4Item[] = fundraisersResult.map((fundraiser) => ({
     id: fundraiser.id,
     title: fundraiser.title,
     description: `${money(fundraiser.raised)} raised of ${money(fundraiser.goal)} goal`,
@@ -315,6 +384,7 @@ export default async function HomePage() {
     image: fundraiserImage(fundraiser.banner),
     cta: "Donate Now",
   }));
+
 
   return (
     <main className="min-h-screen bg-white text-zinc-950">

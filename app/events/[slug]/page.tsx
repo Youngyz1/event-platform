@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import { cache } from "react";
 import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import TicketCheckout from "./TicketCheckout";
@@ -9,6 +11,24 @@ import EventPageClient from "./EventPageClient";
 import AboutSection from "./AboutSection";
 import StarRating from "@/components/StarRating";
 
+/** Deduplicated cache helper for querying event details. */
+const getEventBySlug = cache(async (slug: string) => {
+  const { data: event } = await supabase
+    .from("events")
+    .select("id, title, slug, description, banner, city, venue, event_date, category, organizer_id, visibility, user_id, latitude, longitude, address, state, country, review_count, average_rating, source_organizer_name, source_organizer_url, highlights, refund_policy, created_at, status, source_url")
+    .eq("slug", slug)
+    .maybeSingle();
+  return event;
+});
+
+/** Deduplicated cache helper for querying tickets. */
+const getTicketsByEventId = cache(async (eventId: string) => {
+  const { data: tickets } = await supabase
+    .from("tickets")
+    .select("id, name, price, quantity, event_id")
+    .eq("event_id", eventId);
+  return tickets;
+});
 
 export async function generateMetadata({
   params,
@@ -16,11 +36,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const { data: event } = await supabase
-    .from("events")
-    .select("title, description, banner, city, event_date")
-    .eq("slug", slug)
-    .single();
+  const event = await getEventBySlug(slug);
 
   const title = event?.title
     ? `${event.title} — Fund4Good`
@@ -86,11 +102,7 @@ export default async function EventPage({
 }) {
   const { slug } = await params;
 
-  const { data: event } = await supabase
-    .from("events")
-    .select("*")
-    .eq("slug", slug)
-    .single();
+  const event = await getEventBySlug(slug);
 
   if (!event) return notFound();
 
@@ -110,10 +122,8 @@ export default async function EventPage({
         .single()
     : { data: null };
 
-  const { data: tickets } = await supabase
-    .from("tickets")
-    .select("*")
-    .eq("event_id", event.id);
+  const tickets = await getTicketsByEventId(event.id);
+
 
   // Count organizer's events and fundraisers
   const [
@@ -308,25 +318,29 @@ export default async function EventPage({
       <div className="w-full overflow-hidden md:relative md:flex md:h-[400px] md:items-center md:justify-center md:bg-zinc-950 lg:h-[450px]">
         {/* Blurred background for desktop */}
         <div className="hidden md:block absolute inset-0 select-none pointer-events-none opacity-40 blur-2xl">
-          <img
+          <Image
             src={
               event.banner ||
               "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop"
             }
             alt=""
-            className="h-full w-full object-cover object-center"
+            fill
+            sizes="100vw"
+            className="object-cover object-center"
           />
         </div>
 
         {/* Main image */}
-        <img
+        <Image
           src={
             event.banner ||
             "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop"
           }
-          alt=""
-          fetchPriority="high"
-          decoding="async"
+          alt={event.title}
+          width={1200}
+          height={675}
+          priority
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
           className="aspect-video w-full object-cover sm:aspect-auto sm:max-h-[500px] md:relative md:z-10 md:h-full md:w-auto md:max-w-7xl md:object-contain md:object-center lg:max-h-[450px]"
         />
       </div>
@@ -502,10 +516,11 @@ export default async function EventPage({
                   <div className="flex items-start gap-4">
                     <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-100 font-black text-orange-700 text-base">
                       {primaryOrganizerPhoto ? (
-                        <img
+                        <Image
                           src={primaryOrganizerPhoto}
                           alt={primaryOrganizerName}
-                          loading="lazy"
+                          width={56}
+                          height={56}
                           className="h-full w-full object-cover"
                         />
                       ) : (
@@ -724,13 +739,15 @@ export default async function EventPage({
                       className="group rounded-2xl border border-zinc-200 overflow-hidden hover:border-orange-300 transition"
                     >
                       <div className="aspect-video w-full overflow-hidden bg-zinc-100">
-                        <img
+                        <Image
                           src={
                             e.banner ||
                             "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=800&auto=format&fit=crop"
                           }
                           alt={e.title}
-                          loading="lazy"
+                          width={400}
+                          height={225}
+                          sizes="(max-width: 640px) 100vw, 400px"
                           className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
                         />
                       </div>

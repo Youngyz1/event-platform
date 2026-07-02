@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { revalidatePath } from "next/cache";
 import { isAdmin, getCurrentUser } from "@/lib/auth";
 import { HOMEPAGE_SETTING_KEYS } from "@/lib/homepage-hero";
 
@@ -50,6 +51,10 @@ export async function POST(req: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Bust the cached homepage and events page so changes are visible immediately
+  revalidatePath("/", "page");
+  revalidatePath("/events", "page");
 
   return NextResponse.json({ success: true, count: rows.length });
 }

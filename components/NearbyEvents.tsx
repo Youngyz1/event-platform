@@ -75,13 +75,13 @@ export default function NearbyEvents() {
   async function fallbackToIP() {
     if (!mountedRef.current) return;
     try {
-      // ip-api.com is free, no key needed
-      const res = await fetch("http://ip-api.com/json/?fields=city,regionName,status");
+      // Use https://ipwho.is/ as a free, HTTPS-compatible geolocation fallback
+      const res = await fetch("https://ipwho.is/");
       if (!mountedRef.current) return;
       const data = await res.json();
       if (!mountedRef.current) return;
-      if (data.status === "success" && data.city) {
-        const detectedCity = `${data.city}, ${data.regionName}`;
+      if (data.success && data.city) {
+        const detectedCity = `${data.city}, ${data.region}`;
         setCity(detectedCity);
         setStatus("granted");
         fetchEvents(detectedCity);

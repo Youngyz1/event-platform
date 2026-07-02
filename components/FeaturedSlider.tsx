@@ -60,6 +60,26 @@ function progress(raised: number | null | undefined, goal: number | null | undef
   return Math.min(100, Math.max(0, Math.round((raisedAmount / goalAmount) * 100)));
 }
 
+import { useState } from "react";
+import Image from "next/image";
+
+function SliderImage({ src, alt, priority }: { src: string; alt: string; priority?: boolean }) {
+  const [imgSrc, setImgSrc] = useState(src);
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      fill
+      sizes="300px"
+      priority={priority}
+      className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 hover:scale-105"
+      onError={() => {
+        setImgSrc(FALLBACK_IMAGE);
+      }}
+    />
+  );
+}
+
 export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] }) {
   if (!items || items.length === 0) {
     return (
@@ -82,6 +102,7 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
       >
         {looped.map((item, index) => {
           const imageUrl = validImageUrl(item.image_url);
+          const isPriority = index < 2; // Priority load first two images to optimize LCP
 
           if (item.type === "event") {
             return (
@@ -90,14 +111,10 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
                 href={`/events/${item.slug}`}
                 className="relative h-44 w-64 flex-shrink-0 overflow-hidden rounded-xl shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72 sm:rounded-2xl"
               >
-                <img
+                <SliderImage
                   src={imageUrl}
                   alt={item.title}
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-                  loading="lazy"
-                  onError={(e) => {
-                    e.currentTarget.src = FALLBACK_IMAGE;
-                  }}
+                  priority={isPriority}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/45 to-zinc-950/10" />
                 <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-orange-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
@@ -127,14 +144,10 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
               href={`/fundraisers/${item.slug}`}
               className="relative h-44 w-64 flex-shrink-0 overflow-hidden rounded-xl shadow-md transition-shadow hover:shadow-xl sm:h-52 sm:w-72 sm:rounded-2xl"
             >
-              <img
+              <SliderImage
                 src={imageUrl}
                 alt={item.title}
-                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 hover:scale-105"
-                loading="lazy"
-                onError={(e) => {
-                  e.currentTarget.src = FALLBACK_IMAGE;
-                }}
+                priority={isPriority}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/50 to-zinc-950/10" />
               <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">

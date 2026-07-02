@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron/daily-post", "schedule": "0 14 * * *" }
+    { "path": "/api/cron/daily-post", "schedule": "0 14 * * *" },
+    { "path": "/api/cron/promotion-engine", "schedule": "0 18 * * *" }
   ]
 }
