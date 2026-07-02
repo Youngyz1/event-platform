@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { normalizeImageUrl } from "@/lib/image-url";
 
 type FundraiserCardProps = {
   title: string;
@@ -15,6 +16,9 @@ type FundraiserCardProps = {
   category?: string | null;
 };
 
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1200&auto=format&fit=crop";
+
 export default function FundraiserCard({
   title,
   raised,
@@ -27,6 +31,7 @@ export default function FundraiserCard({
   category,
 }: FundraiserCardProps) {
   const progress = goal ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
+  const imageSrc = normalizeImageUrl(image, FALLBACK_IMAGE);
 
   return (
     <Link href={`/fundraisers/${slug}`}>
@@ -38,7 +43,7 @@ export default function FundraiserCard({
       >
         <div className="relative h-44 w-full bg-zinc-100 sm:h-52">
           <Image
-            src={image}
+            src={imageSrc}
             alt={title}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

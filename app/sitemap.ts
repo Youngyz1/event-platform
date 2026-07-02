@@ -36,14 +36,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Dynamic: public events ───────────────────────────────────────
   const { data: events } = await supabase
     .from("events")
-    .select("slug, updated_at")
+    .select("slug, created_at")
     .eq("visibility", "public")
-    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(5000);
 
   const eventUrls: MetadataRoute.Sitemap = (events ?? []).map((e) => ({
     url: `${BASE_URL}/events/${e.slug}`,
-    lastModified: e.updated_at ? new Date(e.updated_at) : now,
+    lastModified: e.created_at ? new Date(e.created_at) : now,
     changeFrequency: "weekly" as const,
     priority: 0.8,
   }));
@@ -51,13 +51,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Dynamic: public fundraisers ──────────────────────────────────
   const { data: fundraisers } = await supabase
     .from("fundraisers")
-    .select("slug, updated_at")
-    .order("updated_at", { ascending: false })
+    .select("slug, created_at")
+    .order("created_at", { ascending: false })
     .limit(5000);
 
   const fundraiserUrls: MetadataRoute.Sitemap = (fundraisers ?? []).map((f) => ({
     url: `${BASE_URL}/fundraisers/${f.slug}`,
-    lastModified: f.updated_at ? new Date(f.updated_at) : now,
+    lastModified: f.created_at ? new Date(f.created_at) : now,
     changeFrequency: "weekly" as const,
     priority: 0.8,
   }));
@@ -65,15 +65,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // ── Dynamic: public organizers ────────────────────────────────────
   const { data: organizers } = await supabase
     .from("organizers")
-    .select("id, updated_at")
+    .select("id, created_at")
     .eq("visibility", "public")
     .not("status", "in", "(rejected,suspended)")
-    .order("updated_at", { ascending: false })
+    .order("created_at", { ascending: false })
     .limit(5000);
 
   const organizerUrls: MetadataRoute.Sitemap = (organizers ?? []).map((o) => ({
     url: `${BASE_URL}/organizers/${o.id}`,
-    lastModified: o.updated_at ? new Date(o.updated_at) : now,
+    lastModified: o.created_at ? new Date(o.created_at) : now,
     changeFrequency: "monthly" as const,
     priority: 0.6,
   }));

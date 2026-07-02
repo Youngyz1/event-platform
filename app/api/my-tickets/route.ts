@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
       checked_in_at,
       buyer_email,
       buyer_name,
+      ticket_id,
       events (
         id,
         title,
@@ -35,11 +36,6 @@ export async function GET(req: NextRequest) {
         city,
         banner,
         slug
-      ),
-      tickets (
-        id,
-        name,
-        price
       )
     `);
 
@@ -60,5 +56,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ orders: orders || [] });
+  const ticketIds = Array.from(
+    new Set((orders ?? []).map((order) => order.ticket_id).filter(Boolean))
+  );
+  const { data: tickets } = ticketIds.length
+    ? await supabaseAdmin
+        .from("tickets")
+        .select("id, name, price")
+        .in("id", ticketIds)
+    : { data: [] };
+  const ticketById = new Map((tickets ?? []).map((ticket) => [ticket.id, ticket]));
+  const ordersWithTickets = (orders ?? []).map((order) => ({
+    ...order,
+    tickets: order.ticket_id ? ticketById.get(order.ticket_id) ?? null : null,
+  }));
+
+  return NextResponse.json({ orders: ordersWithTickets });
 }

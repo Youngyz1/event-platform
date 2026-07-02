@@ -41,8 +41,7 @@ export async function GET(request: NextRequest) {
     target = { column: "organizer_id", id: organizerId };
   }
 
-  const baseSelect = "id, rating, title, review, is_verified, created_at, updated_at, user_id, profiles!reviews_user_id_fkey(display_name, avatar_url)";
-  const fallbackSelect = "id, rating, title, review, is_verified, created_at, updated_at, user_id";
+  const baseSelect = "id, rating, title, review, is_verified, created_at, updated_at, user_id";
 
   let query = supabaseAdmin
     .from("reviews")
@@ -60,30 +59,30 @@ export async function GET(request: NextRequest) {
     .limit(50);
 
   if (error) {
-    // If the join fails, fall back without profile data
-    let fallbackQuery = supabaseAdmin
-      .from("reviews")
-      .select(fallbackSelect)
-      .eq("is_approved", true);
-
-    if (target) {
-      fallbackQuery = fallbackQuery.eq(target.column, target.id);
-    } else {
-      fallbackQuery = fallbackQuery.eq("review_type", "platform");
-    }
-
-    const { data: plain, error: plainErr } = await fallbackQuery
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (plainErr) {
-      return NextResponse.json({ error: plainErr.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ reviews: plain ?? [] });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ reviews: data ?? [] });
+  const userIds = Array.from(
+    new Set((data ?? []).map((review) => review.user_id).filter(Boolean))
+  );
+  const { data: profiles } = userIds.length
+    ? await supabaseAdmin
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", userIds)
+    : { data: [] };
+  const profileById = new Map(
+    (profiles ?? []).map((profile) => [
+      profile.id,
+      { display_name: profile.display_name, avatar_url: profile.avatar_url },
+    ])
+  );
+  const reviews = (data ?? []).map((review) => ({
+    ...review,
+    profiles: review.user_id ? profileById.get(review.user_id) ?? null : null,
+  }));
+
+  return NextResponse.json({ reviews });
 }
 
 // ── POST — create review ──────────────────────────────────────────────────────

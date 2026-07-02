@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
   let query = supabaseAdmin
     .from("reviews")
     .select(
-      "id, rating, title, review, is_approved, is_verified, created_at, user_id, event_id, fundraiser_id, organizer_id, review_type, profiles!reviews_user_id_fkey(display_name), events(title), fundraisers(title), organizers(name)",
+      "id, rating, title, review, is_approved, is_verified, created_at, user_id, event_id, fundraiser_id, organizer_id, review_type, events(title), fundraisers(title), organizers(name)",
       { count: "exact" }
     )
     .order("created_at", { ascending: false })
@@ -59,8 +59,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const userIds = Array.from(
+    new Set((data ?? []).map((review) => review.user_id).filter(Boolean))
+  );
+  const { data: profiles } = userIds.length
+    ? await supabaseAdmin
+        .from("profiles")
+        .select("id, display_name")
+        .in("id", userIds)
+    : { data: [] };
+  const profileById = new Map(
+    (profiles ?? []).map((profile) => [profile.id, { display_name: profile.display_name }])
+  );
+  const reviews = (data ?? []).map((review) => ({
+    ...review,
+    profiles: review.user_id ? profileById.get(review.user_id) ?? null : null,
+  }));
+
   return NextResponse.json({
-    reviews: data ?? [],
+    reviews,
     total: count ?? 0,
     page,
     per_page: perPage,

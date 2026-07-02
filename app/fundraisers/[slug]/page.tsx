@@ -18,6 +18,7 @@ import { notFound } from "next/navigation";
 import { Flag } from "lucide-react";
 import FundraiserFloatingActions, { ShareFundraiserButton } from "./FundraiserActions";
 import StarRating from "@/components/StarRating";
+import { normalizeImageUrl } from "@/lib/image-url";
 
 import { cache } from "react";
 
@@ -26,7 +27,7 @@ const getFundraiserBySlug = cache(async (slug: string) => {
   const { data: fundraiser } = await supabase
     .from("fundraisers")
     .select(
-      "id, title, slug, description, banner, image_url, goal, raised, goal_amount, raised_amount, organizer_id, organizer, story, short_description, category, beneficiary, beneficiary_name, created_at, review_count, average_rating"
+      "id, title, slug, banner, image_url, goal, raised, raised_amount, organizer_id, organizer, story, category, created_at, review_count, average_rating"
     )
     .eq("slug", slug)
     .maybeSingle();
@@ -47,9 +48,9 @@ export async function generateMetadata({
   const raised = `$${Number(fundraiser?.raised ?? 0).toLocaleString()}`;
   const goal = `$${Number(fundraiser?.goal ?? 0).toLocaleString()}`;
   const description =
-    fundraiser?.description ||
+    fundraiser?.story ||
     `${raised} raised of ${goal} goal. Support this fundraiser on Fund4Good.`;
-  const image = fundraiser?.banner || "/og-image.png";
+  const image = normalizeImageUrl(fundraiser?.banner, "/og-image.png");
 
   return {
     metadataBase: new URL("https://www.fund4agoodcause.com"),
@@ -100,6 +101,38 @@ type OrganizerRow = {
   id: string;
   name: string | null;
 };
+
+type OptionalFundraiserFields = {
+  description?: string | null;
+  goal_amount?: number | string | null;
+  short_description?: string | null;
+  beneficiary?: string | null;
+  beneficiary_name?: string | null;
+};
+
+const getOptionalFundraiserFields = cache(async (fundraiserId: string) => {
+  const fields = [
+    "description",
+    "goal_amount",
+    "short_description",
+    "beneficiary",
+    "beneficiary_name",
+  ] as const;
+  const rows = await Promise.all(
+    fields.map(async (field) => {
+      const { data, error } = await supabase
+        .from("fundraisers")
+        .select(field)
+        .eq("id", fundraiserId)
+        .maybeSingle();
+
+      if (error || !data) return [field, null] as const;
+      return [field, (data as Record<string, string | number | null>)[field]] as const;
+    })
+  );
+
+  return Object.fromEntries(rows) as OptionalFundraiserFields;
+});
 
 function money(value: number) {
   return value.toLocaleString("en-US", {
@@ -170,17 +203,20 @@ async function getDonorOrganizerMap(
 
     const userIdByEmail = new Map<string, string>();
 
-    const { data: authUsers, error: authUsersError } = await supabaseAdmin
-      .from("auth.users")
-      .select("id,email")
-      .in("email", emails);
+    for (let page = 1; page <= 10 && userIdByEmail.size < emails.length; page++) {
+      const { data: authUsers, error: authUsersError } =
+        await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
 
-    if (authUsersError || !authUsers) return new Map<string, string>();
+      if (authUsersError || !authUsers?.users?.length) break;
 
-    for (const user of authUsers) {
-      if (user.email && user.id) {
-        userIdByEmail.set(user.email.trim().toLowerCase(), user.id);
+      for (const user of authUsers.users) {
+        const email = user.email?.trim().toLowerCase();
+        if (email && emails.includes(email)) {
+          userIdByEmail.set(email, user.id);
+        }
       }
+
+      if (authUsers.users.length < 1000) break;
     }
 
     const userIds = Array.from(new Set(userIdByEmail.values()));
@@ -272,12 +308,17 @@ export default async function FundraiserPage({
   const query = searchParams ? await searchParams : {};
 
   if (query.success === "true" && query.session_id) {
-    await recordDonationFromStripeSessionId(query.session_id);
+    try {
+      await recordDonationFromStripeSessionId(query.session_id);
+    } catch (error) {
+      console.error("Failed to record Stripe donation session:", error);
+    }
   }
 
   const fundraiser = await getFundraiserBySlug(slug);
 
   if (!fundraiser) return notFound();
+  const optionalFundraiser = await getOptionalFundraiserFields(fundraiser.id);
 
   const [
     mediaResult,
@@ -341,8 +382,10 @@ export default async function FundraiserPage({
   const organizerProfileId: string | null =
     organizer?.id ?? organizerByName?.id ?? null;
 
-  const coverImage =
-    fundraiser.image_url || fundraiser.banner || FALLBACK_IMAGE;
+  const coverImage = normalizeImageUrl(
+    fundraiser.image_url || fundraiser.banner,
+    FALLBACK_IMAGE
+  );
   const mediaRows = (mediaResult.data ?? []) as MediaRow[];
   const media: FundraiserMediaSlide[] =
     mediaRows.length > 0
@@ -357,18 +400,18 @@ export default async function FundraiserPage({
   const organizerIdByDonorEmail = await getDonorOrganizerMap(recentDonors);
   const donationCount = donationsResult.count ?? recentDonors.length;
   const raised = Number(fundraiser.raised_amount ?? fundraiser.raised ?? 0);
-  const goal = Number(fundraiser.goal_amount ?? fundraiser.goal ?? 0);
+  const goal = Number(optionalFundraiser.goal_amount ?? fundraiser.goal ?? 0);
   const percentage =
     goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
   const description =
-    fundraiser.description ||
+    optionalFundraiser.description ||
     fundraiser.story ||
-    fundraiser.short_description ||
+    optionalFundraiser.short_description ||
     "";
-  const commentCount = commentsResult.count ?? 0;
+  void commentsResult.count;
   const beneficiaryName: string =
-    fundraiser.beneficiary ||
-    fundraiser.beneficiary_name ||
+    optionalFundraiser.beneficiary ||
+    optionalFundraiser.beneficiary_name ||
     fundraiser.title ||
     "This Cause";
 

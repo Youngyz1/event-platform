@@ -332,7 +332,7 @@ export async function getDashboardFundraiserDetail(
 
   const { data: fr } = await supabaseAdmin
     .from('fundraisers')
-    .select('id, title, slug, goal, raised, category, created_at, short_description, story, organizer_id, organizers(name)')
+    .select('id, title, slug, goal, raised, category, created_at, story, organizer_id, organizers(name)')
     .eq('id', fundraiserId)
     .in('organizer_id', organizerIds)
     .maybeSingle();
@@ -367,7 +367,7 @@ export async function getDashboardFundraiserDetail(
     progress,
     status: goal > 0 && raised >= goal ? 'completed' : 'active',
     created_at: fr.created_at,
-    short_description: fr.short_description,
+    short_description: fr.story ? String(fr.story).slice(0, 200) : null,
     story: fr.story,
     organizer_name: (org as { name?: string } | null)?.name ?? '—',
     update_count: updateCount ?? 0,

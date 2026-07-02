@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { normalizeImageUrl } from "@/lib/image-url";
 
 type EventCardProps = {
   title: string;
@@ -14,6 +15,9 @@ type EventCardProps = {
   variant?: "default" | "homepage" | "compact";
 };
 
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop";
+
 export default function EventCard({
   title,
   date,
@@ -26,6 +30,7 @@ export default function EventCard({
   variant = "default",
 }: EventCardProps) {
   const compact = variant === "compact";
+  const imageSrc = normalizeImageUrl(image, FALLBACK_IMAGE);
 
   const card = (
     <article
@@ -36,7 +41,7 @@ export default function EventCard({
     >
       <div className={cn("relative w-full bg-zinc-100", compact ? "h-36" : "h-44 sm:h-52")}>
         <Image
-          src={image}
+          src={imageSrc}
           alt={title}
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"

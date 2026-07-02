@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
 import OrganizerProfileClient from "./OrganizerProfileClient";
+import { normalizeImageUrl } from "@/lib/image-url";
 
 export async function generateMetadata({
   params,
@@ -11,9 +12,9 @@ export async function generateMetadata({
   const { id } = await params;
   const { data: organizer } = await supabase
     .from("organizers")
-    .select("name, bio, logo_url")
+    .select("name, bio, photo, banner")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
   const title = organizer?.name
     ? `${organizer.name} — Fund4Good`
@@ -21,7 +22,10 @@ export async function generateMetadata({
   const description =
     organizer?.bio ||
     "View this organizer's events and fundraisers on Fund4Good.";
-  const image = organizer?.logo_url || "/og-image.png";
+  const image = normalizeImageUrl(
+    organizer?.photo || organizer?.banner,
+    "/og-image.png"
+  );
 
   return {
     metadataBase: new URL("https://www.fund4agoodcause.com"),

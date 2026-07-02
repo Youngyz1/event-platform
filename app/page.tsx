@@ -109,15 +109,28 @@ const getCachedTestimonials = unstable_cache(
         .then(({ data, error }) => (error ? [] : data ?? [])),
       supabaseAdmin
         .from("reviews")
-        .select("id, rating, title, review, created_at, profiles!reviews_user_id_fkey(display_name, avatar_url, profile_photo)")
+        .select("id, rating, title, review, created_at, user_id")
         .eq("review_type", "platform")
         .eq("is_approved", true)
         .order("created_at", { ascending: false })
         .limit(6)
-        .then(({ data, error }) => {
+        .then(async ({ data, error }) => {
           if (error) return [];
+          const userIds = Array.from(
+            new Set((data ?? []).map((r) => r.user_id).filter(Boolean))
+          );
+          const { data: profiles } = userIds.length
+            ? await supabaseAdmin
+                .from("profiles")
+                .select("id, display_name, avatar_url, profile_photo")
+                .in("id", userIds)
+            : { data: [] };
+          const profileById = new Map(
+            (profiles ?? []).map((profile) => [profile.id, profile])
+          );
+
           return (data ?? []).map((r) => {
-            const profile = Array.isArray(r.profiles) ? r.profiles[0] : (r.profiles as any);
+            const profile = r.user_id ? profileById.get(r.user_id) : null;
             return {
               id: r.id,
               name: profile?.display_name || "Anonymous",

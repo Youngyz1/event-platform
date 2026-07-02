@@ -10,15 +10,53 @@ import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import EventPageClient from "./EventPageClient";
 import AboutSection from "./AboutSection";
 import StarRating from "@/components/StarRating";
+import { normalizeImageUrl } from "@/lib/image-url";
+
+const FALLBACK_EVENT_IMAGE =
+  "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop";
+
+type OptionalEventFields = {
+  address?: string | null;
+  state?: string | null;
+  country?: string | null;
+  highlights?: string | null;
+  refund_policy?: string | null;
+  source_url?: string | null;
+};
 
 /** Deduplicated cache helper for querying event details. */
 const getEventBySlug = cache(async (slug: string) => {
   const { data: event } = await supabase
     .from("events")
-    .select("id, title, slug, description, banner, city, venue, event_date, category, organizer_id, visibility, user_id, latitude, longitude, address, state, country, review_count, average_rating, source_organizer_name, source_organizer_url, highlights, refund_policy, created_at, status, source_url")
+    .select("id, title, slug, description, banner, city, venue, event_date, category, organizer_id, visibility, user_id, latitude, longitude, review_count, average_rating, source_organizer_name, source_organizer_url, created_at, status")
     .eq("slug", slug)
     .maybeSingle();
   return event;
+});
+
+const getOptionalEventFields = cache(async (eventId: string) => {
+  const fields = [
+    "address",
+    "state",
+    "country",
+    "highlights",
+    "refund_policy",
+    "source_url",
+  ] as const;
+  const rows = await Promise.all(
+    fields.map(async (field) => {
+      const { data, error } = await supabase
+        .from("events")
+        .select(field)
+        .eq("id", eventId)
+        .maybeSingle();
+
+      if (error || !data) return [field, null] as const;
+      return [field, (data as Record<string, string | null>)[field]] as const;
+    })
+  );
+
+  return Object.fromEntries(rows) as OptionalEventFields;
 });
 
 /** Deduplicated cache helper for querying tickets. */
@@ -44,7 +82,7 @@ export async function generateMetadata({
   const description =
     event?.description ||
     (event?.city ? `Join us in ${event.city}` : "Buy tickets for this event on Fund4Good.");
-  const image = event?.banner || "/og-image.png";
+  const image = normalizeImageUrl(event?.banner, "/og-image.png");
 
   return {
     metadataBase: new URL("https://www.fund4agoodcause.com"),
@@ -105,6 +143,8 @@ export default async function EventPage({
   const event = await getEventBySlug(slug);
 
   if (!event) return notFound();
+  const optionalEvent = await getOptionalEventFields(event.id);
+  const eventImage = normalizeImageUrl(event.banner, FALLBACK_EVENT_IMAGE);
 
   if (event.visibility === "private") {
     const supabaseServer = await createSupabaseServer();
@@ -182,24 +222,26 @@ export default async function EventPage({
 
   if (moreEvents.length === 0 && event.event_date) {
     const eventDate = new Date(event.event_date);
-    const windowStart = new Date(eventDate);
-    windowStart.setDate(windowStart.getDate() - 14);
-    const windowEnd = new Date(eventDate);
-    windowEnd.setDate(windowEnd.getDate() + 14);
+    if (!Number.isNaN(eventDate.getTime())) {
+      const windowStart = new Date(eventDate);
+      windowStart.setDate(windowStart.getDate() - 14);
+      const windowEnd = new Date(eventDate);
+      windowEnd.setDate(windowEnd.getDate() + 14);
 
-    const { data: related } = await supabase
-      .from("events")
-      .select("id, title, slug, banner, event_date, city, venue")
-      .neq("id", event.id)
-      .eq("visibility", "public")
-      .gte("event_date", windowStart.toISOString())
-      .lte("event_date", windowEnd.toISOString())
-      .order("event_date", { ascending: true })
-      .limit(4);
+      const { data: related } = await supabase
+        .from("events")
+        .select("id, title, slug, banner, event_date, city, venue")
+        .neq("id", event.id)
+        .eq("visibility", "public")
+        .gte("event_date", windowStart.toISOString())
+        .lte("event_date", windowEnd.toISOString())
+        .order("event_date", { ascending: true })
+        .limit(4);
 
-    if (related && related.length > 0) {
-      moreEvents = related;
-      moreEventsSource = "related";
+      if (related && related.length > 0) {
+        moreEvents = related;
+        moreEventsSource = "related";
+      }
     }
   }
 
@@ -215,7 +257,10 @@ export default async function EventPage({
     (organizer ? `/organizers/${organizer.id}` : "");
   const primaryOrganizerPhoto = event.source_organizer_name
     ? ""
-    : organizer?.photo || "";
+    : normalizeImageUrl(organizer?.photo, "");
+  const eventAddress = optionalEvent.address || "";
+  const eventHighlights = optionalEvent.highlights || "";
+  const eventRefundPolicy = optionalEvent.refund_policy || "";
 
   // ── Resolve map coordinates ──────────────────────────────────
   // Use stored lat/lng if available; otherwise geocode from address fields.
@@ -224,11 +269,11 @@ export default async function EventPage({
 
   if (!mapLat || !mapLng) {
     const addressQuery = [
-      event.address,
+      eventAddress,
       event.venue,
       event.city,
-      event.state,
-      event.country,
+      optionalEvent.state,
+      optionalEvent.country,
     ]
       .filter(Boolean)
       .join(", ");
@@ -278,7 +323,7 @@ export default async function EventPage({
     "@type": "Event",
     name: event.title,
     description: event.description || undefined,
-    image: event.banner || undefined,
+    image: eventImage,
     url: `https://www.fund4agoodcause.com/events/${slug}`,
     startDate: event.event_date || undefined,
     location: event.venue || event.city ? {
@@ -287,7 +332,7 @@ export default async function EventPage({
       address: {
         "@type": "PostalAddress",
         addressLocality: event.city || undefined,
-        streetAddress: event.address || undefined,
+        streetAddress: eventAddress || undefined,
       },
     } : undefined,
     organizer: primaryOrganizerName ? {
@@ -319,10 +364,7 @@ export default async function EventPage({
         {/* Blurred background for desktop */}
         <div className="hidden md:block absolute inset-0 select-none pointer-events-none opacity-40 blur-2xl">
           <Image
-            src={
-              event.banner ||
-              "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop"
-            }
+            src={eventImage}
             alt=""
             fill
             sizes="100vw"
@@ -332,10 +374,7 @@ export default async function EventPage({
 
         {/* Main image */}
         <Image
-          src={
-            event.banner ||
-            "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop"
-          }
+          src={eventImage}
           alt={event.title}
           width={1200}
           height={675}
@@ -476,23 +515,23 @@ export default async function EventPage({
             </section>
 
             {/* Good to Know + Refund Policy */}
-            {(event.highlights || event.refund_policy) && (
+            {(eventHighlights || eventRefundPolicy) && (
               <section>
                 <h2 className="text-xl font-black mb-4">Good to know</h2>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  {event.highlights && (
+                  {eventHighlights && (
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
                       <h3 className="font-black mb-3">Highlights</h3>
                       <p className="text-sm text-zinc-600 whitespace-pre-wrap">
-                        {event.highlights}
+                        {eventHighlights}
                       </p>
                     </div>
                   )}
-                  {event.refund_policy && (
+                  {eventRefundPolicy && (
                     <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-5">
                       <h3 className="font-black mb-3">Refund Policy</h3>
                       <p className="text-sm text-zinc-600 whitespace-pre-wrap">
-                        {event.refund_policy}
+                        {eventRefundPolicy}
                       </p>
                     </div>
                   )}
@@ -612,7 +651,7 @@ export default async function EventPage({
             )}
 
             {/* Venue Map */}
-            {(event.venue || event.city || event.address) && (
+            {(event.venue || event.city || eventAddress) && (
               <section>
                 <h2 className="text-xl font-black mb-4">Venue location</h2>
                 <div className="rounded-2xl border border-zinc-200 overflow-hidden">
@@ -620,8 +659,8 @@ export default async function EventPage({
                     <p className="font-bold text-zinc-900">
                       {event.venue || "Venue"}
                     </p>
-                    {event.address && (
-                      <p className="text-sm text-zinc-500">{event.address}</p>
+                    {eventAddress && (
+                      <p className="text-sm text-zinc-500">{eventAddress}</p>
                     )}
                     {event.city && (
                       <p className="text-sm text-zinc-500">{event.city}</p>
@@ -639,7 +678,7 @@ export default async function EventPage({
                     /* No coordinates at all — show a Google Maps link instead */
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        [event.address, event.venue, event.city]
+                        [eventAddress, event.venue, event.city]
                           .filter(Boolean)
                           .join(", ")
                       )}`}
@@ -740,10 +779,7 @@ export default async function EventPage({
                     >
                       <div className="aspect-video w-full overflow-hidden bg-zinc-100">
                         <Image
-                          src={
-                            e.banner ||
-                            "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=800&auto=format&fit=crop"
-                          }
+                          src={normalizeImageUrl(e.banner, FALLBACK_EVENT_IMAGE)}
                           alt={e.title}
                           width={400}
                           height={225}
@@ -779,7 +815,7 @@ export default async function EventPage({
           {/* Sidebar ticket checkout */}
           <div id="tickets">
             <TicketCheckout
-              event={event}
+              event={{ ...event, source_url: optionalEvent.source_url ?? null }}
               tickets={tickets || []}
               lowestPrice={lowestPrice}
             />

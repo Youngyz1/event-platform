@@ -91,16 +91,22 @@ export async function GET(request: NextRequest) {
     // 2. Fetch organizer profile mapping
     promises.push(
       (async () => {
-        const { data: authUsers } = await supabaseAdmin
-          .from("auth.users")
-          .select("id, email")
-          .in("email", emails);
-
         const userIdByEmail = new Map<string, string>();
-        for (const u of authUsers || []) {
-          if (u.email && u.id) {
-            userIdByEmail.set(u.email.toLowerCase(), u.id);
+
+        for (let page = 1; page <= 10 && userIdByEmail.size < emails.length; page++) {
+          const { data: authUsers, error: authUsersError } =
+            await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
+
+          if (authUsersError || !authUsers?.users?.length) break;
+
+          for (const user of authUsers.users) {
+            const email = user.email?.trim().toLowerCase();
+            if (email && emails.includes(email)) {
+              userIdByEmail.set(email, user.id);
+            }
           }
+
+          if (authUsers.users.length < 1000) break;
         }
 
         const userIds = Array.from(userIdByEmail.values());
