@@ -35,7 +35,9 @@ export default function EditEventPage() {
     organizer_id: "",
     title: "",
     category: "",
+    event_type: "In person",
     event_date: "",
+    end_date: "",
     venue: "",
     city: "",
     banner: "",
@@ -110,7 +112,9 @@ export default function EditEventPage() {
         organizer_id: event.organizer_id || "",
         title: event.title || "",
         category: event.category || "",
+        event_type: event.event_type || "In person",
         event_date: toDateTimeLocal(event.event_date),
+        end_date: toDateTimeLocal(event.end_date),
         venue: event.venue || "",
         city: event.city || "",
         banner: event.banner || "",
@@ -163,7 +167,9 @@ export default function EditEventPage() {
           title: form.title,
           slug: nextSlug,
           category: form.category,
+          event_type: form.event_type,
           event_date: form.event_date,
+          end_date: form.end_date || null,
           venue: form.venue,
           city: form.city,
           banner: form.banner,
@@ -254,9 +260,24 @@ export default function EditEventPage() {
               placeholder="Category"
               className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
             />
+            <select
+              value={form.event_type}
+              onChange={(event) => update("event_type", event.target.value)}
+              className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+            >
+              <option>In person</option>
+              <option>Virtual</option>
+              <option>Hybrid</option>
+            </select>
             <input
               value={form.event_date}
               onChange={(event) => update("event_date", event.target.value)}
+              type="datetime-local"
+              className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+            />
+            <input
+              value={form.end_date}
+              onChange={(event) => update("end_date", event.target.value)}
               type="datetime-local"
               className="rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
             />

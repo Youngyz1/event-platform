@@ -178,6 +178,10 @@ function createdAgo(value: string) {
   return `${years} year${years !== 1 ? "s" : ""} ago`;
 }
 
+function jsonLdScriptValue(value: unknown) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
 async function getDonorOrganizerMap(
   donations: DonationRow[]
 ): Promise<Map<string, string>> {
@@ -458,7 +462,7 @@ export default async function FundraiserPage({
     <main className="min-h-screen bg-white pb-24 text-zinc-950 lg:pb-12">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptValue(jsonLd) }}
       />
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-3 lg:py-10">
         {/* Main content column */}

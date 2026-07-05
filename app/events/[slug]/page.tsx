@@ -11,14 +11,30 @@ import EventPageClient from "./EventPageClient";
 import AboutSection from "./AboutSection";
 import StarRating from "@/components/StarRating";
 import { normalizeImageUrl } from "@/lib/image-url";
+import { getSiteUrl } from "@/lib/site-url";
 
 const FALLBACK_EVENT_IMAGE =
   "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop";
 
 type OptionalEventFields = {
   address?: string | null;
+  street_address?: string | null;
+  address_locality?: string | null;
+  address_region?: string | null;
+  postal_code?: string | null;
+  zip_code?: string | null;
+  zip?: string | null;
+  address_country?: string | null;
   state?: string | null;
+  region?: string | null;
   country?: string | null;
+  country_code?: string | null;
+  end_date?: string | null;
+  event_type?: string | null;
+  online_url?: string | null;
+  virtual_url?: string | null;
+  performer?: string | null;
+  performer_name?: string | null;
   highlights?: string | null;
   refund_policy?: string | null;
   source_url?: string | null;
@@ -37,8 +53,23 @@ const getEventBySlug = cache(async (slug: string) => {
 const getOptionalEventFields = cache(async (eventId: string) => {
   const fields = [
     "address",
+    "street_address",
+    "address_locality",
+    "address_region",
+    "postal_code",
+    "zip_code",
+    "zip",
+    "address_country",
     "state",
+    "region",
     "country",
+    "country_code",
+    "end_date",
+    "event_type",
+    "online_url",
+    "virtual_url",
+    "performer",
+    "performer_name",
     "highlights",
     "refund_policy",
     "source_url",
@@ -131,6 +162,65 @@ function getHostingYears(createdAt: string) {
         (1000 * 60 * 60 * 24 * 365)
     )
   );
+}
+
+function stripHtml(value: string | null | undefined) {
+  return value
+    ? value
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    : "";
+}
+
+function absoluteUrl(value: string | null | undefined) {
+  if (!value) return undefined;
+
+  try {
+    return new URL(value, getSiteUrl()).toString();
+  } catch {
+    return undefined;
+  }
+}
+
+function jsonLdScriptValue(value: unknown) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
+}
+
+function eventStatusUrl(status: string | null | undefined) {
+  switch ((status || "").toLowerCase()) {
+    case "cancelled":
+    case "canceled":
+      return "https://schema.org/EventCancelled";
+    case "postponed":
+      return "https://schema.org/EventPostponed";
+    case "rescheduled":
+      return "https://schema.org/EventRescheduled";
+    default:
+      return "https://schema.org/EventScheduled";
+  }
+}
+
+function compactJsonLd<T>(value: T): T {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => compactJsonLd(item))
+      .filter((item) => item !== undefined && item !== "") as T;
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .map(([key, item]) => [key, compactJsonLd(item)])
+        .filter(([, item]) => {
+          if (item === undefined || item === null || item === "") return false;
+          if (Array.isArray(item) && item.length === 0) return false;
+          return true;
+        })
+    ) as T;
+  }
+
+  return value;
 }
 
 export default async function EventPage({
@@ -261,6 +351,8 @@ export default async function EventPage({
   const eventAddress = optionalEvent.address || "";
   const eventHighlights = optionalEvent.highlights || "";
   const eventRefundPolicy = optionalEvent.refund_policy || "";
+  const siteUrl = getSiteUrl().replace(/\/$/, "");
+  const canonicalEventUrl = `${siteUrl}/events/${slug}`;
 
   // ── Resolve map coordinates ──────────────────────────────────
   // Use stored lat/lng if available; otherwise geocode from address fields.
@@ -317,24 +409,105 @@ export default async function EventPage({
         ? "text-xl sm:text-2xl lg:text-3xl"
         : "text-2xl sm:text-3xl lg:text-4xl";
 
+  const streetAddress =
+    optionalEvent.street_address || optionalEvent.address || "";
+  const addressLocality = optionalEvent.address_locality || event.city || "";
+  const addressRegion =
+    optionalEvent.address_region || optionalEvent.region || optionalEvent.state || "";
+  const postalCode =
+    optionalEvent.postal_code || optionalEvent.zip_code || optionalEvent.zip || "";
+  const addressCountry =
+    optionalEvent.address_country || optionalEvent.country_code || optionalEvent.country || "";
+  const eventType = (optionalEvent.event_type || "").toLowerCase();
+  const hasPhysicalLocation = Boolean(
+    event.venue ||
+      streetAddress ||
+      addressLocality ||
+      addressRegion ||
+      postalCode ||
+      addressCountry ||
+      mapLat ||
+      mapLng
+  );
+  const isHybridEvent = eventType.includes("hybrid");
+  const isVirtualEvent =
+    eventType.includes("virtual") ||
+    eventType.includes("online") ||
+    (!hasPhysicalLocation && !isHybridEvent);
+  const virtualLocation = {
+    "@type": "VirtualLocation",
+    url:
+      absoluteUrl(optionalEvent.virtual_url) ||
+      absoluteUrl(optionalEvent.online_url) ||
+      canonicalEventUrl,
+  };
+  const physicalLocation = {
+    "@type": "Place",
+    name: event.venue || addressLocality || undefined,
+    address: {
+      "@type": "PostalAddress",
+      name:
+        !streetAddress &&
+        !addressLocality &&
+        !addressRegion &&
+        !postalCode &&
+        !addressCountry
+          ? event.venue || undefined
+          : undefined,
+      streetAddress: streetAddress || undefined,
+      addressLocality: addressLocality || undefined,
+      addressRegion: addressRegion || undefined,
+      postalCode: postalCode || undefined,
+      addressCountry: addressCountry || undefined,
+    },
+    geo:
+      mapLat && mapLng
+        ? {
+            "@type": "GeoCoordinates",
+            latitude: mapLat,
+            longitude: mapLng,
+          }
+        : undefined,
+  };
+  const eventLocation = isVirtualEvent
+    ? virtualLocation
+    : isHybridEvent
+      ? [physicalLocation, virtualLocation]
+      : physicalLocation;
+  const ticketOffers =
+    tickets && tickets.length > 0
+      ? tickets.map((ticket) => ({
+          "@type": "Offer",
+          name: ticket.name || undefined,
+          priceCurrency: "USD",
+          price: Number(ticket.price ?? 0),
+          availability:
+            Number(ticket.quantity ?? 0) <= 0
+              ? "https://schema.org/SoldOut"
+              : "https://schema.org/InStock",
+          url: `${canonicalEventUrl}#tickets`,
+        }))
+      : undefined;
+  const performerName =
+    optionalEvent.performer || optionalEvent.performer_name || "";
+
   // ── JSON-LD structured data (Event schema) ──────────────
-  const jsonLd = {
+  const jsonLd = compactJsonLd({
     "@context": "https://schema.org",
     "@type": "Event",
     name: event.title,
-    description: event.description || undefined,
+    description: stripHtml(event.description) || undefined,
     image: eventImage,
-    url: `https://www.fund4agoodcause.com/events/${slug}`,
+    url: canonicalEventUrl,
     startDate: event.event_date || undefined,
-    location: event.venue || event.city ? {
-      "@type": "Place",
-      name: event.venue || event.city,
-      address: {
-        "@type": "PostalAddress",
-        addressLocality: event.city || undefined,
-        streetAddress: eventAddress || undefined,
-      },
-    } : undefined,
+    endDate: optionalEvent.end_date || undefined,
+    eventStatus: eventStatusUrl(event.status),
+    eventAttendanceMode: isVirtualEvent
+      ? "https://schema.org/OnlineEventAttendanceMode"
+      : isHybridEvent
+        ? "https://schema.org/MixedEventAttendanceMode"
+        : "https://schema.org/OfflineEventAttendanceMode",
+    location: eventLocation,
     organizer: primaryOrganizerName ? {
       "@type": "Organization",
       name: primaryOrganizerName,
@@ -344,20 +517,20 @@ export default async function EventPage({
           : `https://www.fund4agoodcause.com${primaryOrganizerUrl}`
         : undefined,
     } : undefined,
-    offers: tickets && tickets.length > 0 ? {
-      "@type": "Offer",
-      priceCurrency: "USD",
-      price: lowestPrice ?? 0,
-      availability: "https://schema.org/InStock",
-      url: `https://www.fund4agoodcause.com/events/${slug}#tickets`,
-    } : undefined,
-  };
+    offers: ticketOffers && ticketOffers.length === 1 ? ticketOffers[0] : ticketOffers,
+    performer: performerName
+      ? {
+          "@type": "PerformingGroup",
+          name: performerName,
+        }
+      : undefined,
+  });
 
   return (
     <main className="min-h-screen bg-white text-zinc-950">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScriptValue(jsonLd) }}
       />
       {/* ── Banner image ───────────────── */}
       <div className="w-full overflow-hidden md:relative md:flex md:h-[400px] md:items-center md:justify-center md:bg-zinc-950 lg:h-[450px]">

@@ -59,6 +59,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const siteUrl = getSiteUrl().replace(/\/$/, "");
+
   return (
     <html lang="en" className={`h-full antialiased ${font.variable}`}>
       <head>
@@ -70,16 +72,15 @@ export default function RootLayout({
               "@type": "WebSite",
               name: "Fund4GoodCause",
               alternateName: ["Fund4Good", "Fund4AGoodCause"],
-              url: "https://www.fund4agoodcause.com",
+              url: siteUrl,
               description:
                 "Online fundraising platform helping individuals, nonprofits, and communities raise money for causes that matter.",
               potentialAction: {
                 "@type": "SearchAction",
-                target:
-                  "https://www.fund4agoodcause.com/search?q={search_term_string}",
+                target: `${siteUrl}/search?q={search_term_string}`,
                 "query-input": "required name=search_term_string",
               },
-            }),
+            }).replace(/</g, "\\u003c"),
           }}
         />
       </head>
