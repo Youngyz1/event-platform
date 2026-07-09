@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
+  Building2,
   CalendarDays,
   ChevronDown,
   Heart,
@@ -29,6 +30,7 @@ const NAV_LINKS = [
   { label: "Fundraisers", href: "/fundraisers", icon: Heart },
   { label: "Find Tickets", href: "/find-tickets", icon: Ticket },
   { label: "Articles", href: "/articles", icon: BookOpen },
+  { label: "Businesses", href: "/businesses", icon: Building2 },
 ] as const;
 
 const CREATE_LINKS = [

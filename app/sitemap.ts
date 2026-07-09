@@ -31,6 +31,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/platform`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
     { url: `${BASE_URL}/sponsors`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE_URL}/reviews`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${BASE_URL}/businesses`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
   ];
 
   // ── Dynamic: public events ───────────────────────────────────────
@@ -110,5 +111,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...eventUrls, ...fundraiserUrls, ...organizerUrls, ...cityUrls, ...articleUrls];
+  // ── Dynamic: public active businesses ───────────────────────────────────
+  const { data: businesses } = await supabase
+    .from("businesses")
+    .select("slug, updated_at")
+    .eq("status", "active")
+    .eq("is_flagged", false)
+    .order("created_at", { ascending: false })
+    .limit(5000);
+
+  const businessUrls: MetadataRoute.Sitemap = (businesses ?? []).map((b) => ({
+    url: `${BASE_URL}/businesses/${b.slug}`,
+    lastModified: b.updated_at ? new Date(b.updated_at) : now,
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...eventUrls, ...fundraiserUrls, ...organizerUrls, ...cityUrls, ...articleUrls, ...businessUrls];
 }
