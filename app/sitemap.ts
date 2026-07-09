@@ -93,5 +93,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticPages, ...eventUrls, ...fundraiserUrls, ...organizerUrls, ...cityUrls];
+  // ── Dynamic: public active articles ──────────────────────────────
+  const { data: articles } = await supabase
+    .from("articles")
+    .select("slug, updated_at")
+    .eq("status", "published")
+    .eq("visibility", "public")
+    .lte("published_at", now.toISOString())
+    .order("published_at", { ascending: false })
+    .limit(5000);
+
+  const articleUrls: MetadataRoute.Sitemap = (articles ?? []).map((a) => ({
+    url: `${BASE_URL}/articles/${a.slug}`,
+    lastModified: a.updated_at ? new Date(a.updated_at) : now,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...eventUrls, ...fundraiserUrls, ...organizerUrls, ...cityUrls, ...articleUrls];
 }

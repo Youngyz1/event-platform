@@ -18,7 +18,7 @@ export type Database = {
         Row: {
           body: string
           canonical_url: string | null
-          category: string | null
+          categories: string[]
           cover_image_url: string | null
           created_at: string
           excerpt: string | null
@@ -34,11 +34,14 @@ export type Database = {
           title: string
           updated_at: string
           visibility: string
+          scheduled_for: string | null
+          reading_time: number | null
+          business_id: string | null
         }
         Insert: {
           body: string
           canonical_url?: string | null
-          category?: string | null
+          categories?: string[]
           cover_image_url?: string | null
           created_at?: string
           excerpt?: string | null
@@ -54,11 +57,14 @@ export type Database = {
           title: string
           updated_at?: string
           visibility?: string
+          scheduled_for?: string | null
+          reading_time?: number | null
+          business_id?: string | null
         }
         Update: {
           body?: string
           canonical_url?: string | null
-          category?: string | null
+          categories?: string[]
           cover_image_url?: string | null
           created_at?: string
           excerpt?: string | null
@@ -74,6 +80,9 @@ export type Database = {
           title?: string
           updated_at?: string
           visibility?: string
+          scheduled_for?: string | null
+          reading_time?: number | null
+          business_id?: string | null
         }
         Relationships: [
           {

@@ -14,6 +14,7 @@ import {
   Ticket,
   User,
   X,
+  BookOpen,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import BrandMark from "@/components/BrandMark";
@@ -27,6 +28,7 @@ const NAV_LINKS = [
   { label: "Events", href: "/events", icon: CalendarDays },
   { label: "Fundraisers", href: "/fundraisers", icon: Heart },
   { label: "Find Tickets", href: "/find-tickets", icon: Ticket },
+  { label: "Articles", href: "/articles", icon: BookOpen },
 ] as const;
 
 const CREATE_LINKS = [
