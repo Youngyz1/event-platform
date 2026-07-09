@@ -101,6 +101,67 @@ async function checkArticleAccess(
   return profile?.role === "admin" && profile?.status === "active";
 }
 
+// ---------------------------------------------------------------------------
+// Business access-control helper
+// A business listing is publicly visible only when status='active' and
+// is_flagged=false. Owners and admins bypass the gate (same rules as articles).
+// ---------------------------------------------------------------------------
+async function checkBusinessAccess(
+  slug: string,
+  userId: string | null
+): Promise<boolean> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/businesses?slug=eq.${encodeURIComponent(slug)}&select=status,is_flagged,owner_id&limit=1`,
+    {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) return true; // On fetch error, let the page handle it.
+
+  const rows = (await res.json()) as Array<{
+    status: string;
+    is_flagged: boolean;
+    owner_id: string;
+  }>;
+
+  if (!rows.length) return false; // Business doesn't exist → 404.
+
+  const biz = rows[0];
+
+  // Publicly accessible.
+  if (biz.status === "active" && !biz.is_flagged) return true;
+
+  // Restricted — check authorization.
+  if (!userId) return false;
+  if (userId === biz.owner_id) return true;
+
+  // Admin bypass (same pattern as articles).
+  const profileRes = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=role,status&limit=1`,
+    {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!profileRes.ok) return false;
+  const profiles = (await profileRes.json()) as Array<{ role: string; status: string }>;
+  const profile = profiles[0];
+  return profile?.role === "admin" && profile?.status === "active";
+}
+
 export async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
 
@@ -198,6 +259,22 @@ export async function proxy(req: NextRequest) {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Business listing access-control gate.
+  // Same reason as articles: notFound() cannot set HTTP 404 after streaming
+  // has begun. The proxy is the only place to return a real 404.
+  // -------------------------------------------------------------------------
+  const businessSlugMatch = pathname.match(/^\/businesses\/([^/]+)$/);
+  if (businessSlugMatch) {
+    const slug = businessSlugMatch[1];
+    const allowed = await checkBusinessAccess(slug, user?.id ?? null);
+    if (!allowed) {
+      const notFoundUrl = req.nextUrl.clone();
+      notFoundUrl.pathname = "/_not-found";
+      return NextResponse.rewrite(notFoundUrl, { status: 404 });
+    }
+  }
+
   return res;
 }
 
@@ -214,5 +291,9 @@ export const config = {
     // Article detail pages — must be in matcher for the access gate to fire.
     // Excluded: /articles (list), /articles/category/:cat, /articles/tag/:tag.
     "/articles/:slug([^/]+)",
+    // Business detail pages — same reason: notFound() cannot set HTTP 404
+    // after streaming starts; must be intercepted here before the page renders.
+    // Excluded: /businesses (directory listing).
+    "/businesses/:slug([^/]+)",
   ],
 };

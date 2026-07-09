@@ -633,6 +633,52 @@ async function handleCheckoutSessionCompleted(
     return;
   }
 
+  if (meta.kind === "business") {
+    const businessId = meta.business_id;
+    if (!businessId) {
+      console.error("[webhook] Missing business_id in business checkout session metadata");
+      return;
+    }
+
+    let subscriptionId: string | null = null;
+    let currentPeriodEnd: string | null = null;
+
+    if (session.mode === "subscription" && typeof session.subscription === "string") {
+      subscriptionId = session.subscription;
+      try {
+        if (!process.env.STRIPE_SECRET_KEY) {
+          throw new Error("Stripe secret key not configured.");
+        }
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        currentPeriodEnd = new Date((subscription as any).current_period_end * 1000).toISOString();
+      } catch (err) {
+        console.error("[webhook] Failed to retrieve subscription details:", err);
+      }
+    }
+
+    const { data: updated, error: updateErr } = await supabaseAdmin
+      .from("businesses")
+      .update({
+        status: "active",
+        stripe_subscription_id: subscriptionId,
+        current_period_end: currentPeriodEnd,
+        stripe_price_id: meta.stripe_price_id || null,
+      })
+      .eq("id", businessId)
+      .neq("status", "active")
+      .select("id")
+      .maybeSingle();
+
+    if (updateErr) {
+      console.error("[webhook] Failed to update business status:", updateErr.message);
+    } else if (updated) {
+      console.log(`[webhook] Successfully activated business ${businessId}`);
+    }
+
+    return;
+  }
+
   const {
     qr_code,
     event_id,
@@ -753,10 +799,64 @@ export async function POST(req: NextRequest) {
         event.data.object as Stripe.Checkout.Session,
         req
       );
+    } else if (event.type === "customer.subscription.deleted") {
+      await handleSubscriptionDeleted(
+        event.data.object as Stripe.Subscription
+      );
+    } else if (event.type === "invoice.payment_failed") {
+      await handleInvoicePaymentFailed(
+        event.data.object as Stripe.Invoice
+      );
     }
   } catch (err) {
     console.error("[webhook] Handler error:", err);
   }
 
   return NextResponse.json({ received: true });
+}
+
+// ── Additional Webhook Sub-Handlers ──────────────────────────────────────────
+
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+  const subId = subscription.id;
+  if (!subId) return;
+
+  const { data: updated, error } = await supabaseAdmin
+    .from("businesses")
+    .update({
+      status: "expired",
+    })
+    .eq("stripe_subscription_id", subId)
+    .neq("status", "expired")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error(`[webhook] Failed to expire business for subscription ${subId}:`, error.message);
+  } else if (updated) {
+    console.log(`[webhook] Expired business for subscription ${subId}`);
+  }
+}
+
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
+  const subId = typeof (invoice as any).subscription === "string" ? (invoice as any).subscription : null;
+  if (!subId) return;
+
+  console.warn(`[webhook] Payment failed for invoice ${invoice.id} on subscription ${subId}`);
+
+  const { data: updated, error } = await supabaseAdmin
+    .from("businesses")
+    .update({
+      status: "expired",
+    })
+    .eq("stripe_subscription_id", subId)
+    .neq("status", "expired")
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    console.error(`[webhook] Failed to expire business for failed payment on subscription ${subId}:`, error.message);
+  } else if (updated) {
+    console.log(`[webhook] Expired business for failed payment on subscription ${subId}`);
+  }
 }

@@ -17,6 +17,7 @@ export type Database = {
       articles: {
         Row: {
           body: string
+          business_id: string | null
           canonical_url: string | null
           categories: string[]
           cover_image_url: string | null
@@ -26,6 +27,8 @@ export type Database = {
           organizer_id: string | null
           owner_id: string
           published_at: string | null
+          reading_time: number | null
+          scheduled_for: string | null
           seo_description: string | null
           seo_title: string | null
           slug: string
@@ -34,12 +37,10 @@ export type Database = {
           title: string
           updated_at: string
           visibility: string
-          scheduled_for: string | null
-          reading_time: number | null
-          business_id: string | null
         }
         Insert: {
           body: string
+          business_id?: string | null
           canonical_url?: string | null
           categories?: string[]
           cover_image_url?: string | null
@@ -49,6 +50,8 @@ export type Database = {
           organizer_id?: string | null
           owner_id: string
           published_at?: string | null
+          reading_time?: number | null
+          scheduled_for?: string | null
           seo_description?: string | null
           seo_title?: string | null
           slug: string
@@ -57,12 +60,10 @@ export type Database = {
           title: string
           updated_at?: string
           visibility?: string
-          scheduled_for?: string | null
-          reading_time?: number | null
-          business_id?: string | null
         }
         Update: {
           body?: string
+          business_id?: string | null
           canonical_url?: string | null
           categories?: string[]
           cover_image_url?: string | null
@@ -72,6 +73,8 @@ export type Database = {
           organizer_id?: string | null
           owner_id?: string
           published_at?: string | null
+          reading_time?: number | null
+          scheduled_for?: string | null
           seo_description?: string | null
           seo_title?: string | null
           slug?: string
@@ -80,11 +83,15 @@ export type Database = {
           title?: string
           updated_at?: string
           visibility?: string
-          scheduled_for?: string | null
-          reading_time?: number | null
-          business_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "articles_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "articles_organizer_id_fkey"
             columns: ["organizer_id"]
@@ -94,6 +101,90 @@ export type Database = {
           },
         ]
       }
+      businesses: {
+        Row: {
+          address: string | null
+          category: string
+          city: string | null
+          country: string | null
+          created_at: string
+          current_period_end: string | null
+          description: string
+          email: string | null
+          id: string
+          industry: string
+          is_flagged: boolean
+          listing_tier: string
+          logo: string | null
+          name: string
+          owner_id: string
+          phone: string | null
+          seo_description: string | null
+          seo_title: string | null
+          slug: string
+          state: string | null
+          status: string
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          category: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          description: string
+          email?: string | null
+          id?: string
+          industry: string
+          is_flagged?: boolean
+          listing_tier?: string
+          logo?: string | null
+          name: string
+          owner_id: string
+          phone?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug: string
+          state?: string | null
+          status?: string
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          category?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          description?: string
+          email?: string | null
+          id?: string
+          industry?: string
+          is_flagged?: boolean
+          listing_tier?: string
+          logo?: string | null
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          seo_description?: string | null
+          seo_title?: string | null
+          slug?: string
+          state?: string | null
+          status?: string
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       comments: {
         Row: {
           author_email: string | null
@@ -101,6 +192,7 @@ export type Database = {
           body: string
           created_at: string | null
           id: string
+          payment_intent_id: string | null
           status: string | null
           target_id: string
           target_type: string
@@ -113,6 +205,7 @@ export type Database = {
           body: string
           created_at?: string | null
           id?: string
+          payment_intent_id?: string | null
           status?: string | null
           target_id: string
           target_type: string
@@ -125,21 +218,14 @@ export type Database = {
           body?: string
           created_at?: string | null
           id?: string
+          payment_intent_id?: string | null
           status?: string | null
           target_id?: string
           target_type?: string
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       donations: {
         Row: {
@@ -199,13 +285,6 @@ export type Database = {
             columns: ["fundraiser_id"]
             isOneToOne: false
             referencedRelation: "fundraisers"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "donations_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -381,6 +460,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+        }
+        Relationships: []
       }
       fundraiser_media: {
         Row: {
@@ -1149,11 +1249,42 @@ export type Database = {
       }
     }
     Views: {
+      public_donation_activity: {
+        Row: {
+          amount: number | null
+          created_at: string | null
+          fundraiser_banner: string | null
+          fundraiser_id: string | null
+          fundraiser_slug: string | null
+          fundraiser_title: string | null
+          id: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_fundraiser_id_fkey"
+            columns: ["fundraiser_id"]
+            isOneToOne: false
+            referencedRelation: "fundraisers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_profiles: {
         Row: {
           avatar_url: string | null
           display_name: string | null
           id: string | null
+        }
+        Insert: {
+          avatar_url?: never
+          display_name?: string | null
+          id?: string | null
+        }
+        Update: {
+          avatar_url?: never
+          display_name?: string | null
+          id?: string | null
         }
         Relationships: []
       }
@@ -1304,3 +1435,4 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
