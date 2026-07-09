@@ -18,6 +18,13 @@ function baseUrl(req: NextRequest) {
   return process.env.NEXT_PUBLIC_BASE_URL ?? req.nextUrl.origin;
 }
 
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function metadataUserId(meta: Stripe.Metadata) {
+  return uuidPattern.test(meta.user_id || "") ? meta.user_id : null;
+}
+
 export async function notifyOrganizerOfTicketPurchase(params: {
   eventId: string;
   buyerName: string;
@@ -406,72 +413,179 @@ async function handlePaymentIntentSucceeded(
 
   // ── Donation (inline PaymentElement flow) ─────────────────────────────────
   if (kind === "donation" && meta.fundraiser_id) {
-    const { data: existing } = await supabaseAdmin
-      .from("donations")
-      .select("id")
-      .eq("payment_intent_id", pi.id)
-      .maybeSingle();
+    const resolvedUserId = metadataUserId(meta);
 
-    if (existing) {
-      console.log("[webhook] Donation already recorded for intent:", pi.id);
+    // ── Step 1: Atomic upsert on donations, keyed on payment_intent_id ───────
+    //
+    // ON CONFLICT DO UPDATE eliminates the check-then-insert race window: two
+    // concurrent invocations can no longer both see "no row" and both attempt
+    // an INSERT. One wins the INSERT, the other resolves via UPDATE — both
+    // receive the canonical row ID back via RETURNING.
+    //
+    // We ask PostgREST to include the PostgreSQL system column `xmax` in the
+    // RETURNING clause. Its value tells us unambiguously which path fired:
+    //   xmax = 0  → this call performed the INSERT (fresh row)
+    //   xmax ≠ 0  → ON CONFLICT path fired (existing row, UPDATE executed)
+    // This is the standard PostgREST trick and works reliably within the same
+    // request that performed the upsert.
+    const rawDonationUpsert = await supabaseAdmin
+      .from("donations")
+      .upsert(
+        {
+          fundraiser_id:     meta.fundraiser_id,
+          donor_name:        meta.donor_name || "Anonymous",
+          donor_email:       meta.donor_email || null,
+          user_id:           resolvedUserId,
+          message:           meta.message || null,
+          amount:            parseFloat(meta.donation_amount) || pi.amount / 100,
+          currency:          (meta.currency ?? pi.currency ?? "usd").toUpperCase(),
+          status:            "completed",
+          payment_intent_id: pi.id,
+        },
+        { onConflict: "payment_intent_id", ignoreDuplicates: false }
+      )
+      .select("id, user_id, xmax")
+      .returns<{ id: string; user_id: string | null; xmax: number }[]>()
+      .single();
+
+    const upsertError     = rawDonationUpsert.error;
+    const upsertedDonation = rawDonationUpsert.data;
+
+    if (upsertError || !upsertedDonation) {
+      console.error(
+        "[webhook] donations upsert error:",
+        upsertError?.message ?? "no data returned"
+      );
       return;
     }
 
-    const { error: insertError } = await supabaseAdmin.from("donations").insert({
-      fundraiser_id: meta.fundraiser_id,
-      donor_name: meta.donor_name || "Anonymous",
-      donor_email: meta.donor_email || null,
-      message: meta.message || null,
-      amount: parseFloat(meta.donation_amount) || pi.amount / 100,
-      currency: (meta.currency ?? pi.currency ?? "usd").toUpperCase(),
-      status: "completed",
-      payment_intent_id: pi.id,
-    });
+    // xmax = 0 → INSERT won; non-zero → conflict path (existing row was updated).
+    const isNewDonation = Number(upsertedDonation.xmax) === 0;
 
-    if (insertError) {
-      console.error("[webhook] donations insert error:", insertError.message);
+    if (isNewDonation) {
+      console.log(
+        `[webhook] Donation upserted (new) id=${upsertedDonation.id} pi=${pi.id}`
+      );
     } else {
-      if (meta.message && meta.message.trim()) {
-        const { error: commentError } = await supabaseAdmin.from("comments").insert({
-          target_type: "fundraiser",
-          target_id: meta.fundraiser_id,
-          author_name: meta.donor_name || "Anonymous",
-          author_email: meta.donor_email || null,
-          body: meta.message.trim(),
-          status: "approved",
-        });
-        if (commentError) {
-          console.error("[webhook] comment insert error:", commentError.message);
+      console.log(
+        `[webhook] Donation upserted (conflict resolved) id=${upsertedDonation.id} pi=${pi.id}`
+      );
+      // Backfill user_id if the conflict row has it NULL but we now have a
+      // valid UUID. This covers the historical race where the winning INSERT
+      // ran without the user_id because metadata wasn't available at that
+      // instant (or the old code's early-return prevented the backfill).
+      if (!upsertedDonation.user_id && resolvedUserId) {
+        const { error: backfillError } = await supabaseAdmin
+          .from("donations")
+          .update({ user_id: resolvedUserId })
+          .eq("id", upsertedDonation.id);
+        if (backfillError) {
+          console.error(
+            "[webhook] donation user_id backfill error:", backfillError.message
+          );
+        } else {
+          console.log(
+            `[webhook] Backfilled user_id on donation ${upsertedDonation.id}`
+          );
         }
       }
-
-      const { recalculateFundraiserRaised } = await import("@/lib/donations");
-      await recalculateFundraiserRaised(meta.fundraiser_id);
-
-      const { data: newDonation } = await supabaseAdmin
-        .from("donations")
-        .select("id")
-        .eq("payment_intent_id", pi.id)
-        .maybeSingle();
-
-      if (newDonation?.id) {
-        processDonationReceipt(newDonation.id).catch((err) =>
-          console.error("[webhook] Receipt generation error:", err)
-        );
-        processDonationCertificate(newDonation.id).catch((err) =>
-          console.error("[webhook] Certificate generation error:", err)
-        );
-      }
-
-      await notifyOrganizerOfDonation({
-        fundraiserId: meta.fundraiser_id,
-        donorName: meta.donor_name || "Anonymous",
-        amount: parseFloat(meta.donation_amount) || pi.amount / 100,
-        currency: (meta.currency ?? pi.currency ?? "usd").toUpperCase(),
-        message: meta.message || null,
-        base: baseUrl(req),
-      });
     }
+
+    // ── Step 2: Race-safe comment upsert, keyed on payment_intent_id ─────────
+    //
+    // Runs in BOTH the new-row and conflict-row paths so that a partial failure
+    // on a prior invocation (e.g. crash after the donation INSERT but before the
+    // comment INSERT) is retried correctly on the next delivery.
+    //
+    // Requires migration:
+    //   ALTER TABLE comments ADD COLUMN IF NOT EXISTS payment_intent_id text;
+    //   CREATE UNIQUE INDEX IF NOT EXISTS comments_payment_intent_id_key
+    //     ON comments (payment_intent_id) WHERE payment_intent_id IS NOT NULL;
+    if (meta.message && meta.message.trim()) {
+      const rawCommentUpsert = await supabaseAdmin
+        .from("comments")
+        .upsert(
+          {
+            target_type:       "fundraiser",
+            target_id:         meta.fundraiser_id,
+            author_name:       meta.donor_name || "Anonymous",
+            author_email:      meta.donor_email || null,
+            user_id:           resolvedUserId,
+            body:              meta.message.trim(),
+            status:            "approved",
+            payment_intent_id: pi.id,
+          },
+          { onConflict: "payment_intent_id", ignoreDuplicates: false }
+        )
+        .select("id, user_id, xmax")
+        .returns<{ id: string; user_id: string | null; xmax: number }[]>()
+        .single();
+
+      const commentUpsertError = rawCommentUpsert.error;
+      const upsertedComment    = rawCommentUpsert.data;
+
+      if (commentUpsertError) {
+        console.error("[webhook] comment upsert error:", commentUpsertError.message);
+      } else if (upsertedComment) {
+        const isNewComment = Number(upsertedComment.xmax) === 0;
+        if (isNewComment) {
+          console.log(
+            `[webhook] Inserted comment id=${upsertedComment.id} for donation ${upsertedDonation.id}`
+          );
+        } else {
+          console.log(
+            `[webhook] Comment already exists (id=${upsertedComment.id}), skipping insert.`
+          );
+          // Backfill comment user_id if the existing row has it NULL.
+          if (!upsertedComment.user_id && resolvedUserId) {
+            const { error: commentBackfillError } = await supabaseAdmin
+              .from("comments")
+              .update({ user_id: resolvedUserId })
+              .eq("id", upsertedComment.id);
+            if (commentBackfillError) {
+              console.error(
+                "[webhook] comment user_id backfill error:", commentBackfillError.message
+              );
+            } else {
+              console.log(
+                `[webhook] Backfilled user_id on comment ${upsertedComment.id}`
+              );
+            }
+          }
+        }
+      }
+    }
+
+    // ── Step 3: Downstream effects — fired exactly once per new donation ──────
+    //
+    // Gated on isNewDonation (xmax = 0) so receipt generation, certificate
+    // generation, fundraiser recalculation, and organizer notification never
+    // fire more than once even if Stripe retries the event.
+    if (!isNewDonation) {
+      console.log(
+        `[webhook] Downstream already processed for donation ${upsertedDonation.id}, skipping.`
+      );
+      return;
+    }
+
+    const { recalculateFundraiserRaised } = await import("@/lib/donations");
+    await recalculateFundraiserRaised(meta.fundraiser_id);
+
+    processDonationReceipt(upsertedDonation.id).catch((err) =>
+      console.error("[webhook] Receipt generation error:", err)
+    );
+    processDonationCertificate(upsertedDonation.id).catch((err) =>
+      console.error("[webhook] Certificate generation error:", err)
+    );
+
+    await notifyOrganizerOfDonation({
+      fundraiserId: meta.fundraiser_id,
+      donorName:    meta.donor_name || "Anonymous",
+      amount:       parseFloat(meta.donation_amount) || pi.amount / 100,
+      currency:     (meta.currency ?? pi.currency ?? "usd").toUpperCase(),
+      message:      meta.message || null,
+      base:         baseUrl(req),
+    });
 
     return;
   }

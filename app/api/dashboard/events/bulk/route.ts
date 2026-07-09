@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDashboardApiContext } from '@/lib/dashboard-api';
 import { supabaseAdmin } from '@/lib/dashboard-context';
+import { deleteEventsWithoutPaymentRecords } from '@/lib/dashboard-delete';
 
 export async function POST(req: NextRequest) {
   const auth = await getDashboardApiContext();
@@ -26,8 +27,15 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'delete') {
-    const { error } = await supabaseAdmin.from('events').delete().in('id', ownedIds);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    try {
+      const result = await deleteEventsWithoutPaymentRecords(ownedIds);
+      if (result.blocked) {
+        return NextResponse.json({ error: result.message }, { status: 409 });
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to delete events.';
+      return NextResponse.json({ error: message }, { status: 500 });
+    }
   } else if (action === 'publish') {
     const { error } = await supabaseAdmin
       .from('events')

@@ -3,22 +3,24 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 
 import DonationProtectedBadge from "@/components/DonationProtectedBadge";
-import DonorNameWithPopup from "@/components/DonorNameWithPopup";
 import SupportMessages from "@/components/SupportMessages";
 import FundraiserMediaSlider, {
   type FundraiserMediaSlide,
 } from "@/components/FundraiserMediaSlider";
 import FundraiserShare from "@/components/FundraiserShare";
 import FundraiserStory from "@/components/FundraiserStory";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { supabase } from "@/lib/supabase";
 import { recordDonationFromStripeSessionId } from "@/lib/donations";
-import { createClient } from "@supabase/supabase-js";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Flag } from "lucide-react";
 import FundraiserFloatingActions, { ShareFundraiserButton } from "./FundraiserActions";
 import StarRating from "@/components/StarRating";
 import { normalizeImageUrl } from "@/lib/image-url";
+import { jsonLdScriptValue } from "@/lib/structured-data";
+import { money } from "@/lib/format";
+import DonorList from "@/components/DonorList";
 
 import { cache } from "react";
 
@@ -78,9 +80,9 @@ const FALLBACK_IMAGE =
 type DonationRow = {
   id: string;
   donor_name: string | null;
-  donor_email: string | null;
   amount: number | string | null;
   created_at: string;
+  user_id: string | null;
 };
 
 type UpdateRow = {
@@ -102,6 +104,12 @@ type OrganizerRow = {
   name: string | null;
 };
 
+type PublicProfileRow = {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+};
+
 type OptionalFundraiserFields = {
   description?: string | null;
   goal_amount?: number | string | null;
@@ -110,37 +118,25 @@ type OptionalFundraiserFields = {
   beneficiary_name?: string | null;
 };
 
+const OPTIONAL_FUNDRAISER_FIELDS = [
+  "description", "goal_amount", "short_description",
+  "beneficiary", "beneficiary_name",
+] as const;
+
 const getOptionalFundraiserFields = cache(async (fundraiserId: string) => {
-  const fields = [
-    "description",
-    "goal_amount",
-    "short_description",
-    "beneficiary",
-    "beneficiary_name",
-  ] as const;
-  const rows = await Promise.all(
-    fields.map(async (field) => {
-      const { data, error } = await supabase
-        .from("fundraisers")
-        .select(field)
-        .eq("id", fundraiserId)
-        .maybeSingle();
+  const { data, error } = await supabase
+    .from("fundraisers")
+    .select(OPTIONAL_FUNDRAISER_FIELDS.join(", "))
+    .eq("id", fundraiserId)
+    .maybeSingle();
 
-      if (error || !data) return [field, null] as const;
-      return [field, (data as Record<string, string | number | null>)[field]] as const;
-    })
-  );
-
-  return Object.fromEntries(rows) as OptionalFundraiserFields;
+  if (error || !data) {
+    return Object.fromEntries(
+      OPTIONAL_FUNDRAISER_FIELDS.map((f) => [f, null])
+    ) as OptionalFundraiserFields;
+  }
+  return data as unknown as OptionalFundraiserFields;
 });
-
-function money(value: number) {
-  return value.toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  });
-}
 
 function initial(value: string) {
   return (value.trim() || "A").charAt(0).toUpperCase();
@@ -178,77 +174,21 @@ function createdAgo(value: string) {
   return `${years} year${years !== 1 ? "s" : ""} ago`;
 }
 
-function jsonLdScriptValue(value: unknown) {
-  return JSON.stringify(value).replace(/</g, "\\u003c");
-}
+async function getPublicProfileMap(
+  userIds: string[],
+  supabaseAdmin: ReturnType<typeof createSupabaseAdmin>
+): Promise<Map<string, PublicProfileRow>> {
+  const ids = Array.from(new Set(userIds.filter(Boolean)));
+  if (ids.length === 0) return new Map();
 
-async function getDonorOrganizerMap(
-  donations: DonationRow[]
-): Promise<Map<string, string>> {
-  const emails = Array.from(
-    new Set(
-      donations
-        .map((d) => d.donor_email?.trim().toLowerCase())
-        .filter((e): e is string => Boolean(e))
-    )
+  const { data } = await supabaseAdmin
+    .from("public_profiles")
+    .select("id, display_name, avatar_url")
+    .in("id", ids);
+
+  return new Map(
+    ((data ?? []) as PublicProfileRow[]).map((profile) => [profile.id, profile])
   );
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-  if (emails.length === 0 || !url || !serviceKey) {
-    return new Map<string, string>();
-  }
-
-  try {
-    const supabaseAdmin = createClient(url, serviceKey, {
-      auth: { persistSession: false },
-    });
-
-    const userIdByEmail = new Map<string, string>();
-
-    for (let page = 1; page <= 10 && userIdByEmail.size < emails.length; page++) {
-      const { data: authUsers, error: authUsersError } =
-        await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
-
-      if (authUsersError || !authUsers?.users?.length) break;
-
-      for (const user of authUsers.users) {
-        const email = user.email?.trim().toLowerCase();
-        if (email && emails.includes(email)) {
-          userIdByEmail.set(email, user.id);
-        }
-      }
-
-      if (authUsers.users.length < 1000) break;
-    }
-
-    const userIds = Array.from(new Set(userIdByEmail.values()));
-    if (userIds.length === 0) return new Map<string, string>();
-
-    const { data: organizers } = await supabaseAdmin
-      .from("organizers")
-      .select("id, user_id, status, visibility")
-      .in("user_id", userIds)
-      .eq("visibility", "public");
-
-    const organizerIdByUserId = new Map(
-      (organizers ?? [])
-        .filter(
-          (o) => !["rejected", "suspended"].includes(o.status ?? "")
-        )
-        .map((o) => [o.user_id as string, o.id as string])
-    );
-
-    const result = new Map<string, string>();
-    for (const [email, userId] of userIdByEmail.entries()) {
-      const orgId = organizerIdByUserId.get(userId);
-      if (orgId) result.set(email, orgId);
-    }
-    return result;
-  } catch {
-    return new Map<string, string>();
-  }
 }
 
 function OrganizerAvatar({ name }: { name: string }) {
@@ -323,6 +263,7 @@ export default async function FundraiserPage({
 
   if (!fundraiser) return notFound();
   const optionalFundraiser = await getOptionalFundraiserFields(fundraiser.id);
+  const supabaseAdmin = createSupabaseAdmin();
 
   const [
     mediaResult,
@@ -341,9 +282,9 @@ export default async function FundraiserPage({
       .select("id, organizer_id, title, content, created_at")
       .eq("fundraiser_id", fundraiser.id)
       .order("created_at", { ascending: false }),
-    supabase
+    supabaseAdmin
       .from("donations")
-      .select("id, donor_name, donor_email, amount, created_at", {
+      .select("id, donor_name, amount, created_at, user_id", {
         count: "exact",
       })
       .eq("fundraiser_id", fundraiser.id)
@@ -357,7 +298,7 @@ export default async function FundraiserPage({
           .eq("id", fundraiser.organizer_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
-    supabase
+    supabaseAdmin
       .from("comments")
       .select("id", { count: "exact", head: true })
       .eq("target_type", "fundraiser")
@@ -401,7 +342,12 @@ export default async function FundraiserPage({
       : [{ url: coverImage, type: "image" }];
   const updates = (updatesResult.data ?? []) as UpdateRow[];
   const recentDonors = (donationsResult.data ?? []) as DonationRow[];
-  const organizerIdByDonorEmail = await getDonorOrganizerMap(recentDonors);
+  const publicProfileById = await getPublicProfileMap(
+    recentDonors
+      .map((donation) => donation.user_id)
+      .filter((id): id is string => Boolean(id)),
+    supabaseAdmin
+  );
   const donationCount = donationsResult.count ?? recentDonors.length;
   const raised = Number(fundraiser.raised_amount ?? fundraiser.raised ?? 0);
   const goal = Number(optionalFundraiser.goal_amount ?? fundraiser.goal ?? 0);
@@ -691,59 +637,18 @@ export default async function FundraiserPage({
             </section>
 
             <section className="border-t border-zinc-200 pt-5">
-              <h2 className="text-base font-bold text-zinc-950">
-                Recent donors
-              </h2>
-              {recentDonors.length === 0 ? (
-                <p className="mt-4 text-sm text-zinc-500">
-                  No donations yet.
-                </p>
-              ) : (
-                <ul className="mt-4 space-y-4">
-                  {recentDonors.map((donation) => {
-                    const donorName = donation.donor_name;
-                    const donorEmail =
-                      donation.donor_email?.trim().toLowerCase();
-                    const organizerId = donorEmail
-                      ? organizerIdByDonorEmail.get(donorEmail)
-                      : undefined;
-                    const amount = Number(donation.amount ?? 0);
-                    const displayName = donorName || "Anonymous";
-
-                    return (
-                      <li
-                        key={donation.id}
-                        className="flex items-center gap-3"
-                      >
-                        <OrganizerAvatar name={displayName} />
-                        <div className="min-w-0 flex-1">
-                          {!donorName ? (
-                            <p className="truncate text-sm font-bold text-zinc-950">
-                              Anonymous
-                            </p>
-                          ) : organizerId ? (
-                            <Link
-                              href={`/organizers/${organizerId}`}
-                              className="block max-w-full truncate text-sm font-bold text-zinc-950 hover:underline"
-                            >
-                              {donorName}
-                            </Link>
-                          ) : (
-                            <DonorNameWithPopup
-                              name={donorName}
-                              fundraiserTitle={fundraiser.title}
-                            />
-                          )}
-                          <p className="text-xs text-zinc-500">
-                            {money(amount)} · {timeAgo(donation.created_at)}
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </section>
+  <h2 className="text-base font-bold text-zinc-950">
+    Recent donors
+  </h2>
+  <DonorList
+    fundraiserId={fundraiser.id}
+    initialDonations={recentDonors.map((d) => ({
+      ...d,
+      profile: d.user_id ? publicProfileById.get(d.user_id) ?? null : null,
+    }))}
+    initialHasMore={donationCount > recentDonors.length}
+  />
+</section>
           </div>
         </aside>
       </div>

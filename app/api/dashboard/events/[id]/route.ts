@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDashboardApiContext } from '@/lib/dashboard-api';
 import { getDashboardEventDetail } from '@/lib/dashboard-data';
 import { supabaseAdmin } from '@/lib/dashboard-context';
+import { deleteEventsWithoutPaymentRecords } from '@/lib/dashboard-delete';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -63,8 +64,15 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
   }
 
-  const { error } = await supabaseAdmin.from('events').delete().eq('id', id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    const result = await deleteEventsWithoutPaymentRecords([id]);
+    if (result.blocked) {
+      return NextResponse.json({ error: result.message }, { status: 409 });
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to delete event.';
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true });
 }

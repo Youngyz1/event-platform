@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseServer } from "@/lib/supabase-server";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,6 +24,16 @@ function cleanText(value: unknown, fallback = "") {
   return typeof value === "string" ? value.trim() : fallback;
 }
 
+async function getCurrentUserId() {
+  try {
+    const supabase = await createSupabaseServer();
+    const { data } = await supabase.auth.getUser();
+    return data.user?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function targetExists(targetType: TargetType, targetId: string) {
   const { data, error } = await supabaseAdmin
     .from(targetTable(targetType))
@@ -39,6 +50,8 @@ export async function GET(request: NextRequest) {
   const targetType = searchParams.get("targetType");
   const targetId = searchParams.get("targetId") || "";
   const includeDonorAmounts = searchParams.get("includeDonorAmounts") === "true";
+  const limit = Math.min(Number(searchParams.get("limit") ?? 50) || 50, 50);
+  const offset = Math.max(Number(searchParams.get("offset") ?? 0) || 0, 0);
 
   if (!isTargetType(targetType) || !uuidPattern.test(targetId)) {
     return NextResponse.json({ error: "Invalid comment target." }, { status: 400 });
@@ -46,12 +59,12 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from("comments")
-    .select("id, author_name, author_email, body, created_at")
+    .select("id, author_name, author_email, body, created_at, user_id")
     .eq("target_type", targetType)
     .eq("target_id", targetId)
     .eq("status", "approved")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .range(offset, offset + limit - 1);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -63,12 +76,21 @@ export async function GET(request: NextRequest) {
     .filter((e): e is string => Boolean(e));
 
   const amountByEmail = new Map<string, number>();
-  const organizerIdByEmail = new Map<string, string>();
+  const userIds = Array.from(
+    new Set(
+      comments
+        .map((comment) => comment.user_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  const profileByUserId = new Map<
+    string,
+    { id: string; display_name: string | null; avatar_url: string | null }
+  >();
 
   if (emails.length > 0) {
     const promises = [];
 
-    // 1. Fetch donation amounts if requested
     if (includeDonorAmounts && targetType === "fundraiser") {
       promises.push(
         supabaseAdmin
@@ -88,67 +110,35 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2. Fetch organizer profile mapping
-    promises.push(
-      (async () => {
-        const userIdByEmail = new Map<string, string>();
-
-        for (let page = 1; page <= 10 && userIdByEmail.size < emails.length; page++) {
-          const { data: authUsers, error: authUsersError } =
-            await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 });
-
-          if (authUsersError || !authUsers?.users?.length) break;
-
-          for (const user of authUsers.users) {
-            const email = user.email?.trim().toLowerCase();
-            if (email && emails.includes(email)) {
-              userIdByEmail.set(email, user.id);
-            }
-          }
-
-          if (authUsers.users.length < 1000) break;
-        }
-
-        const userIds = Array.from(userIdByEmail.values());
-        if (userIds.length > 0) {
-          const { data: organizers } = await supabaseAdmin
-            .from("organizers")
-            .select("id, user_id")
-            .in("user_id", userIds)
-            .eq("visibility", "public")
-            .not("status", "in", "(rejected,suspended)");
-
-          const organizerIdByUserId = new Map<string, string>();
-          for (const o of organizers || []) {
-            organizerIdByUserId.set(o.user_id, o.id);
-          }
-
-          for (const [email, userId] of userIdByEmail.entries()) {
-            const orgId = organizerIdByUserId.get(userId);
-            if (orgId) {
-              organizerIdByEmail.set(email, orgId);
-            }
-          }
-        }
-      })()
-    );
-
     await Promise.all(promises);
+  }
+
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabaseAdmin
+      .from("public_profiles")
+      .select("id, display_name, avatar_url")
+      .in("id", userIds);
+
+    for (const profile of profiles ?? []) {
+      profileByUserId.set(profile.id, profile);
+    }
   }
 
   const safeComments = comments.map((comment) => {
     const emailKey = comment.author_email?.toLowerCase();
+    const profile = comment.user_id ? profileByUserId.get(comment.user_id) ?? null : null;
     return {
       id: comment.id,
       author_name: comment.author_name,
       body: comment.body,
       created_at: comment.created_at,
+      user_id: comment.user_id,
       donor_amount: emailKey ? (amountByEmail.get(emailKey) ?? null) : null,
-      author_organizer_id: emailKey ? (organizerIdByEmail.get(emailKey) ?? null) : null,
+      author_profile: profile,
     };
   });
 
-  return NextResponse.json({ comments: safeComments });
+  return NextResponse.json({ comments: safeComments, hasMore: safeComments.length === limit });
 }
 
 export async function POST(request: NextRequest) {
@@ -165,6 +155,7 @@ export async function POST(request: NextRequest) {
   const body = cleanText(payload.body);
   const stripeSessionId = cleanText(payload.stripeSessionId);
   const postDonationFlow = payload.type === "fundraiser" && Boolean(payload.fundraiser_id);
+  const currentUserId = await getCurrentUserId();
 
   if (!isTargetType(targetType) || !uuidPattern.test(targetId)) {
     return NextResponse.json({ error: "Invalid comment target." }, { status: 400 });
@@ -254,20 +245,30 @@ export async function POST(request: NextRequest) {
       target_id: targetId,
       author_name: authorName,
       author_email: authorEmail || verifiedDonation?.donor_email || null,
+      user_id: currentUserId,
       body,
       status: "approved",
     })
-    .select("id, author_name, body, created_at")
+    .select("id, author_name, body, created_at, user_id")
     .single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const { data: profile } = data.user_id
+    ? await supabaseAdmin
+        .from("public_profiles")
+        .select("id, display_name, avatar_url")
+        .eq("id", data.user_id)
+        .maybeSingle()
+    : { data: null };
+
   return NextResponse.json({
     comment: {
       ...data,
       donor_amount: Number(verifiedDonation?.amount ?? 0),
+      author_profile: profile,
     }
   }, { status: 201 });
 }

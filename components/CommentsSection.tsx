@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 
 type CommentTarget = "event" | "fundraiser";
 
@@ -9,6 +10,12 @@ type CommentItem = {
   author_name: string | null;
   body: string;
   created_at: string;
+  user_id?: string | null;
+  author_profile?: {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
 type CommentsSectionProps = {
@@ -343,6 +350,8 @@ export default function CommentsSection({
         ) : (
           comments.map((comment) => {
             const displayName = comment.author_name || "Anonymous";
+            const profile = comment.author_profile;
+            const canLinkProfile = profile && displayName !== "Anonymous";
 
             return (
               <article key={comment.id} className="rounded-2xl border border-zinc-200 p-5">
@@ -354,7 +363,21 @@ export default function CommentsSection({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <h3 className="font-black">{displayName}</h3>
+                      {canLinkProfile ? (
+                        <Link
+                          href={`/profile/${profile.id}`}
+                          className="font-black hover:underline"
+                        >
+                          {profile.display_name || displayName}
+                        </Link>
+                      ) : (
+                        <h3 className="font-black">{displayName}</h3>
+                      )}
+                      {!comment.user_id && (
+                        <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-zinc-500">
+                          Guest
+                        </span>
+                      )}
                       <p className="text-sm text-zinc-500">{formatDate(comment.created_at)}</p>
                     </div>
                     <p className="mt-2 whitespace-pre-wrap leading-7 text-zinc-700">

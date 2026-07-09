@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServer } from "@/lib/supabase-server";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error("STRIPE_SECRET_KEY is not set.");
@@ -29,6 +30,14 @@ export async function POST(req: NextRequest) {
       // UUID generated client-side at the moment the user clicks "Proceed".
       checkoutAttemptId,
     } = await req.json();
+    const supabase = await createSupabaseServer();
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData.user?.id ?? "";
+    console.log("[donate/intent] auth check:", {
+  hasUser: Boolean(authData.user),
+  userId: authData.user?.id,
+  email: authData.user?.email,
+});
 
     const donationAmount = Number(amount);
     const tipAmount = Number(tip) || 0;
@@ -105,6 +114,7 @@ export async function POST(req: NextRequest) {
           // Full name always stored in Stripe for records (not shown publicly when anonymous)
           donor_name_real: normalizedName || "",
           donor_email: normalizedEmail,
+          user_id: userId,
           message: message || "",
           donation_amount: String(donationAmount),
           tip_amount: String(tipAmount),

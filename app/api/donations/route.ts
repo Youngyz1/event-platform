@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
   // --- Query donations (paginated list) ---
   const { data: donations, error: donationsError } = await supabaseAdmin
     .from("donations")
-    .select("id, donor_name, donor_email, amount, created_at")
+    .select("id, donor_name, amount, created_at, user_id")
     .eq("fundraiser_id", fundraiserId)
     .eq("status", "completed")
     .order("created_at", { ascending: false })
@@ -58,6 +58,29 @@ export async function GET(request: NextRequest) {
       { error: "Failed to fetch donations" },
       { status: 500 }
     );
+  }
+
+  const userIds = Array.from(
+    new Set(
+      (donations ?? [])
+        .map((donation) => donation.user_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  );
+  const profileByUserId = new Map<
+    string,
+    { id: string; display_name: string | null; avatar_url: string | null }
+  >();
+
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabaseAdmin
+      .from("public_profiles")
+      .select("id, display_name, avatar_url")
+      .in("id", userIds);
+
+    for (const profile of profiles ?? []) {
+      profileByUserId.set(profile.id, profile);
+    }
   }
 
   // --- Query total count of completed donations ---
@@ -90,10 +113,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  // --- Strip donor_email from public response (privacy) ---
   const publicDonations = (donations ?? []).map((donation) => ({
     id: donation.id,
     donor_name: donation.donor_name,
+    user_id: donation.user_id,
+    profile: donation.user_id ? profileByUserId.get(donation.user_id) ?? null : null,
     amount: donation.amount,
     created_at: donation.created_at,
   }));

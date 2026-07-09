@@ -9,6 +9,7 @@ import DashboardToolbar from "@/components/dashboard/DashboardToolbar";
 import DashboardTableCard from "@/components/dashboard/DashboardTableCard";
 import DashboardDrawer from "@/components/dashboard/DashboardDrawer";
 import DashboardEmptyState from "@/components/dashboard/DashboardEmptyState";
+import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
 import { formatAdminDate, formatAdminMoney } from "@/lib/admin-query";
 import { useDashboardParams } from "@/hooks/use-dashboard-params";
 import { useDashboardExport } from "@/hooks/use-dashboard-export";
@@ -35,8 +36,10 @@ function FundraisersClientInner() {
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [working, setWorking] = useState<string | null>(null);
   const [drawerItem, setDrawerItem] = useState<DashboardFundraiserDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DashboardFundraiserRow | DashboardFundraiserDetail | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const queryString = useMemo(
@@ -89,6 +92,33 @@ function FundraisersClientInner() {
     params.delete("per_page");
     const ok = await exportCsv(`/api/dashboard/fundraisers/export?${params}`, "fundraisers-export.csv");
     if (!ok) setError("Failed to export CSV.");
+  }
+
+  async function deleteFundraiser() {
+    if (!deleteTarget) return;
+
+    setWorking(`delete:${deleteTarget.id}`);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/dashboard/fundraisers/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.error ?? "Delete failed.");
+        return;
+      }
+
+      setDeleteTarget(null);
+      if (drawerItem?.id === deleteTarget.id) {
+        setDrawerItem(null);
+      }
+      await fetchData();
+    } finally {
+      setWorking(null);
+    }
   }
 
   const statItems = stats
@@ -222,6 +252,10 @@ function FundraisersClientInner() {
                   <div className="h-full rounded-full bg-emerald-500" style={{ width: `${row.progress}%` }} />
                 </div>
                 <p className="mt-2 text-xs font-bold text-zinc-500">{row.progress}% of {formatAdminMoney(row.goal)}</p>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  <Link href={`/fundraisers/edit/${row.id}`} className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50">Edit</Link>
+                  <button type="button" onClick={() => setDeleteTarget(row)} className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-black text-red-700 hover:bg-red-50">Delete</button>
+                </div>
               </article>
             ))}
           </div>
@@ -262,6 +296,7 @@ function FundraisersClientInner() {
                       <div className="flex flex-wrap gap-1.5">
                         <button type="button" onClick={() => openDrawer(row.id)} className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-black text-zinc-700 hover:bg-zinc-50">View</button>
                         <Link href={`/fundraisers/edit/${row.id}`} className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50">Edit</Link>
+                        <button type="button" onClick={() => setDeleteTarget(row)} className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-black text-red-700 hover:bg-red-50">Delete</button>
                       </div>
                     </td>
                   </tr>
@@ -285,6 +320,7 @@ function FundraisersClientInner() {
               )}
               <Link href={`/fundraisers/edit/${drawerItem.id}`} className="rounded-xl border border-emerald-200 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-50">Edit</Link>
               <Link href={`/dashboard/fundraisers/${drawerItem.id}/updates`} className="rounded-xl border border-violet-200 px-4 py-2 text-sm font-black text-violet-700 hover:bg-violet-50">Updates ({drawerItem.update_count})</Link>
+              <button type="button" onClick={() => setDeleteTarget(drawerItem)} className="rounded-xl border border-red-200 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-50">Delete</button>
             </div>
           )
         }
@@ -317,6 +353,17 @@ function FundraisersClientInner() {
           </div>
         ) : null}
       </DashboardDrawer>
+
+      <AdminConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete Fundraiser"
+        description={`Delete "${deleteTarget?.title ?? "this fundraiser"}"? Fundraisers with donation payment records are blocked to preserve payment history.`}
+        confirmLabel="Delete"
+        onConfirm={deleteFundraiser}
+        loading={deleteTarget ? working === `delete:${deleteTarget.id}` : false}
+        variant="danger"
+      />
     </div>
   );
 }

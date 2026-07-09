@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createSupabaseServer } from "@/lib/supabase-server";
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set.");
@@ -17,6 +18,9 @@ function generateQRCode(): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const supabase = await createSupabaseServer();
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData.user?.id ?? null;
     const {
       amount,
       currency = "usd",
@@ -167,6 +171,7 @@ export async function POST(req: NextRequest) {
         fundraiser_id: fundraiserId,
         donor_name: anonymous ? "Anonymous" : (donorName || "Anonymous"),
         donor_email: donorEmail || null,
+        user_id: userId,
         message: message || null,
         amount: numAmount,
         currency: currency.toUpperCase(),

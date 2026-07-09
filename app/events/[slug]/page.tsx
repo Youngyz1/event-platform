@@ -12,6 +12,12 @@ import AboutSection from "./AboutSection";
 import StarRating from "@/components/StarRating";
 import { normalizeImageUrl } from "@/lib/image-url";
 import { getSiteUrl } from "@/lib/site-url";
+import {
+  absoluteUrl as toAbsoluteUrl,
+  compactJsonLd,
+  jsonLdScriptValue,
+  stripHtml,
+} from "@/lib/structured-data";
 
 const FALLBACK_EVENT_IMAGE =
   "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1600&auto=format&fit=crop";
@@ -50,44 +56,27 @@ const getEventBySlug = cache(async (slug: string) => {
   return event;
 });
 
+const OPTIONAL_EVENT_FIELDS = [
+  "address", "street_address", "address_locality", "address_region",
+  "postal_code", "zip_code", "zip", "address_country", "state", "region",
+  "country", "country_code", "end_date", "event_type", "online_url",
+  "virtual_url", "performer", "performer_name", "highlights",
+  "refund_policy", "source_url",
+] as const;
+
 const getOptionalEventFields = cache(async (eventId: string) => {
-  const fields = [
-    "address",
-    "street_address",
-    "address_locality",
-    "address_region",
-    "postal_code",
-    "zip_code",
-    "zip",
-    "address_country",
-    "state",
-    "region",
-    "country",
-    "country_code",
-    "end_date",
-    "event_type",
-    "online_url",
-    "virtual_url",
-    "performer",
-    "performer_name",
-    "highlights",
-    "refund_policy",
-    "source_url",
-  ] as const;
-  const rows = await Promise.all(
-    fields.map(async (field) => {
-      const { data, error } = await supabase
-        .from("events")
-        .select(field)
-        .eq("id", eventId)
-        .maybeSingle();
+  const { data, error } = await supabase
+    .from("events")
+    .select(OPTIONAL_EVENT_FIELDS.join(", "))
+    .eq("id", eventId)
+    .maybeSingle();
 
-      if (error || !data) return [field, null] as const;
-      return [field, (data as Record<string, string | null>)[field]] as const;
-    })
-  );
-
-  return Object.fromEntries(rows) as OptionalEventFields;
+  if (error || !data) {
+    return Object.fromEntries(
+      OPTIONAL_EVENT_FIELDS.map((f) => [f, null])
+    ) as OptionalEventFields;
+  }
+  return data as unknown as OptionalEventFields;
 });
 
 /** Deduplicated cache helper for querying tickets. */
@@ -164,29 +153,6 @@ function getHostingYears(createdAt: string) {
   );
 }
 
-function stripHtml(value: string | null | undefined) {
-  return value
-    ? value
-        .replace(/<[^>]*>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-    : "";
-}
-
-function absoluteUrl(value: string | null | undefined) {
-  if (!value) return undefined;
-
-  try {
-    return new URL(value, getSiteUrl()).toString();
-  } catch {
-    return undefined;
-  }
-}
-
-function jsonLdScriptValue(value: unknown) {
-  return JSON.stringify(value).replace(/</g, "\\u003c");
-}
-
 function eventStatusUrl(status: string | null | undefined) {
   switch ((status || "").toLowerCase()) {
     case "cancelled":
@@ -199,28 +165,6 @@ function eventStatusUrl(status: string | null | undefined) {
     default:
       return "https://schema.org/EventScheduled";
   }
-}
-
-function compactJsonLd<T>(value: T): T {
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => compactJsonLd(item))
-      .filter((item) => item !== undefined && item !== "") as T;
-  }
-
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
-        .map(([key, item]) => [key, compactJsonLd(item)])
-        .filter(([, item]) => {
-          if (item === undefined || item === null || item === "") return false;
-          if (Array.isArray(item) && item.length === 0) return false;
-          return true;
-        })
-    ) as T;
-  }
-
-  return value;
 }
 
 export default async function EventPage({
@@ -437,8 +381,8 @@ export default async function EventPage({
   const virtualLocation = {
     "@type": "VirtualLocation",
     url:
-      absoluteUrl(optionalEvent.virtual_url) ||
-      absoluteUrl(optionalEvent.online_url) ||
+      toAbsoluteUrl(optionalEvent.virtual_url, siteUrl) ||
+      toAbsoluteUrl(optionalEvent.online_url, siteUrl) ||
       canonicalEventUrl,
   };
   const physicalLocation = {

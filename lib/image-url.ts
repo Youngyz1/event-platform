@@ -13,6 +13,20 @@ const WILDCARD_IMAGE_HOST_SUFFIXES = [
   ".googleusercontent.com",
 ];
 
+type ProxyUnwrapRule = {
+  matches: (url: URL) => boolean;
+  param: string;
+};
+
+export const PROXY_UNWRAP_RULES: ProxyUnwrapRule[] = [
+  {
+    matches: (url) =>
+      url.hostname.startsWith("www.eventbrite.") &&
+      url.pathname.endsWith("/_next/image"),
+    param: "url",
+  },
+];
+
 function isAllowedImageHost(hostname: string) {
   return (
     EXACT_IMAGE_HOSTS.has(hostname) ||
@@ -20,12 +34,11 @@ function isAllowedImageHost(hostname: string) {
   );
 }
 
-function unwrapKnownImageProxy(url: URL): string | null {
-  if (
-    url.hostname.startsWith("www.eventbrite.") &&
-    url.pathname.endsWith("/_next/image")
-  ) {
-    return url.searchParams.get("url");
+export function unwrapKnownImageProxy(url: URL): string | null {
+  for (const rule of PROXY_UNWRAP_RULES) {
+    if (rule.matches(url)) {
+      return url.searchParams.get(rule.param);
+    }
   }
 
   return null;

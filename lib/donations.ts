@@ -17,6 +17,13 @@ type DonationTotalRow = {
   status?: string | null;
 };
 
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function metadataUserId(value: unknown) {
+  return typeof value === "string" && uuidPattern.test(value) ? value : null;
+}
+
 async function donationExists(paymentIntentId: string) {
   const { data, error } = await supabaseAdmin
     .from("donations")
@@ -91,6 +98,7 @@ export async function recordDonationFromSession(
     fundraiser_id: fundraiserId,
     donor_name: meta.donor_name || "Anonymous",
     donor_email: meta.donor_email || session.customer_email || null,
+    user_id: metadataUserId(meta.user_id),
     message: meta.message || null,
     amount,
     currency: session.currency?.toUpperCase() || "USD",
@@ -107,6 +115,7 @@ export async function recordDonationFromSession(
         target_id: fundraiserId,
         author_name: meta.donor_name || "Anonymous",
         author_email: meta.donor_email || session.customer_email || null,
+        user_id: fullPayload.user_id,
         body: meta.message.trim(),
         status: "approved",
       });
@@ -121,6 +130,7 @@ export async function recordDonationFromSession(
     fundraiser_id: fullPayload.fundraiser_id,
     donor_name: fullPayload.donor_name,
     donor_email: fullPayload.donor_email,
+    user_id: fullPayload.user_id,
     message: fullPayload.message,
     amount: fullPayload.amount,
     status: fullPayload.status,
@@ -134,6 +144,7 @@ export async function recordDonationFromSession(
         target_id: fundraiserId,
         author_name: meta.donor_name || "Anonymous",
         author_email: meta.donor_email || session.customer_email || null,
+        user_id: fullPayload.user_id,
         body: meta.message.trim(),
         status: "approved",
       });

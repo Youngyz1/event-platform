@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { money } from "@/lib/format";
 
 import {
   CreatorField,
@@ -13,6 +14,8 @@ import {
 } from "@/components/CreatorWorkspace";
 import { supabase } from "@/lib/supabase";
 import RichTextEditor from "@/components/editor/RichTextEditor";
+import MediaUrlInput from "@/components/MediaUrlInput";
+import AddressAutocomplete from "@/components/AddressAutocomplete";
 
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), { ssr: false });
@@ -52,9 +55,6 @@ function generateSlug(title: string) {
     .replace(/\s+/g, "-");
 }
 
-function money(value: string | number) {
-  return `$${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-}
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -65,6 +65,7 @@ export default function CreateEventPage() {
   const [checking, setChecking] = useState(true);
   const [email, setEmail] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [importedVideoUrl, setImportedVideoUrl] = useState("");
   const [uploadProgress, setUploadProgress] = useState("");
   const [organizers, setOrganizers] = useState<Organizer[]>([]);
   const [venueTemplate, setVenueTemplate] = useState("none");
@@ -196,7 +197,7 @@ export default function CreateEventPage() {
       return;
     }
 
-    let video_url = null;
+    let video_url = importedVideoUrl || null;
     if (videoFile) {
       setUploadProgress("Uploading video...");
       const ext = videoFile.name.split(".").pop();
@@ -465,10 +466,41 @@ export default function CreateEventPage() {
             <CreatorPanel title="Event Image">
               <div className="grid gap-5">
                 <CreatorField label="Event Banner URL" hint="Use a wide image, ideally 1200 x 630.">
-                  <input name="banner" value={form.banner} onChange={handleChange} type="url" placeholder="https://..." className={inputClass} />
+                  <MediaUrlInput
+                    name="banner"
+                    value={form.banner}
+                    inputClassName={inputClass}
+                    onClear={() => {
+                      setNotice("");
+                      setImportedVideoUrl("");
+                      setForm((current) => ({ ...current, banner: "" }));
+                    }}
+                    onResolved={(result) => {
+                      setNotice("");
+                      if (result.kind === "direct-video-file") {
+                        setImportedVideoUrl(result.url);
+                        setNotice("Video imported and will be attached to the event. Add an image URL for the banner.");
+                        return;
+                      }
+
+                      setImportedVideoUrl("");
+                      setForm((current) => ({ ...current, banner: result.url }));
+                    }}
+                  />
                 </CreatorField>
                 <CreatorField label="Event Video" hint="Optional. MP4, MOV, or AVI uploads are supported by your storage bucket.">
-                  <input type="file" accept="video/*" onChange={(event) => setVideoFile(event.target.files?.[0] || null)} className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm font-semibold" />
+                  <input
+                    type="file"
+                    accept="video/*"
+                    onChange={(event) => {
+                      setImportedVideoUrl("");
+                      setVideoFile(event.target.files?.[0] || null);
+                    }}
+                    className="w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-sm font-semibold"
+                  />
+                  {importedVideoUrl && !videoFile && (
+                    <p className="mt-2 text-xs font-semibold text-zinc-500">Imported video URL ready.</p>
+                  )}
                 </CreatorField>
               </div>
             </CreatorPanel>
@@ -491,6 +523,21 @@ export default function CreateEventPage() {
         {currentStep === 2 && (
           <CreatorPanel title="Location">
             <div className="grid gap-5">
+              <CreatorField label="Address Search">
+                <AddressAutocomplete
+                  inputClassName={inputClass}
+                  onSelect={(result) => {
+                    setNotice("");
+                    setForm((current) => ({
+                      ...current,
+                      latitude: String(result.lat),
+                      longitude: String(result.lng),
+                      city: result.city || current.city,
+                    }));
+                  }}
+                />
+              </CreatorField>
+
               <div className="grid gap-5 md:grid-cols-2">
                 <CreatorField label="Venue">
                   <input name="venue" value={form.venue} onChange={handleChange} type="text" placeholder="Abidjan Stadium" className={inputClass} />

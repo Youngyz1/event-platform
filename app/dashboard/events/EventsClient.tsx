@@ -60,6 +60,7 @@ function EventsClientInner() {
   const [drawerEvent, setDrawerEvent] = useState<DashboardEventDetail | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [confirmAction, setConfirmAction] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DashboardEventRow | DashboardEventDetail | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
   const queryString = useMemo(
@@ -141,6 +142,33 @@ function EventsClientInner() {
     params.delete("per_page");
     const ok = await exportCsv(`/api/dashboard/events/export?${params}`, "events-export.csv");
     if (!ok) setError("Failed to export CSV.");
+  }
+
+  async function deleteEvent() {
+    if (!deleteTarget) return;
+
+    setWorking(`delete:${deleteTarget.id}`);
+    setError("");
+
+    try {
+      const res = await fetch(`/api/dashboard/events/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        setError(data.error ?? "Delete failed.");
+        return;
+      }
+
+      setDeleteTarget(null);
+      if (drawerEvent?.id === deleteTarget.id) {
+        setDrawerEvent(null);
+      }
+      await fetchData();
+    } finally {
+      setWorking(null);
+    }
   }
 
   const allSelected = rows.length > 0 && rows.every((r) => selected.has(r.id));
@@ -351,6 +379,13 @@ function EventsClientInner() {
                       <Link href={`/events/edit/${row.id}`} className="rounded-lg border border-orange-200 bg-white px-2.5 py-1.5 text-xs font-black text-orange-700 hover:bg-orange-50">
                         Edit
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(row)}
+                        className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-black text-red-700 hover:bg-red-50"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -377,6 +412,13 @@ function EventsClientInner() {
               <Link href={`/events/edit/${drawerEvent.id}`} className="rounded-xl border border-orange-200 px-4 py-2 text-sm font-black text-orange-700 hover:bg-orange-50">
                 Edit Event
               </Link>
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(drawerEvent)}
+                className="rounded-xl border border-red-200 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-50"
+              >
+                Delete Event
+              </button>
             </div>
           )
         }
@@ -421,6 +463,17 @@ function EventsClientInner() {
         onConfirm={() => confirmAction && bulkAction(confirmAction)}
         loading={working === "bulk"}
         variant={confirmAction === "delete" ? "danger" : "default"}
+      />
+
+      <AdminConfirmDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        title="Delete Event"
+        description={`Delete "${deleteTarget?.title ?? "this event"}"? Events with paid, pending, or refunded ticket orders are blocked to preserve payment history.`}
+        confirmLabel="Delete"
+        onConfirm={deleteEvent}
+        loading={deleteTarget ? working === `delete:${deleteTarget.id}` : false}
+        variant="danger"
       />
     </div>
   );

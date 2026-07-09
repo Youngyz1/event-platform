@@ -129,6 +129,7 @@ export async function POST(req: NextRequest) {
                 target_id: donation.fundraiser_id,
                 author_name: donation.donor_name || "Anonymous",
                 author_email: donation.donor_email || null,
+                user_id: donation.user_id || null,
                 body: donation.message.trim(),
                 status: "approved",
               });

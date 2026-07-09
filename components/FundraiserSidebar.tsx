@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import Link from "next/link";
 import { TrendingUp, Share2, Check } from "lucide-react";
 
 type Donation = {
@@ -8,6 +9,12 @@ type Donation = {
   donor_name: string | null;
   amount: number;
   created_at: string;
+  user_id?: string | null;
+  profile?: {
+    id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
   isNew?: boolean;
 };
 
@@ -182,9 +189,33 @@ export default function FundraiserSidebar({
                   d.isNew ? "animate-[popIn_0.4s_ease] rounded-xl bg-green-50 p-2 -mx-2" : ""
                 }`}
               >
-                <Avatar name={d.donor_name || "Anonymous"} />
+                {d.profile?.avatar_url && d.donor_name !== "Anonymous" ? (
+                  <img
+                    src={d.profile.avatar_url}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <Avatar name={d.donor_name || "Anonymous"} />
+                )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-bold">{d.donor_name || "Anonymous"}</p>
+                  {d.profile && d.donor_name !== "Anonymous" ? (
+                    <Link
+                      href={`/profile/${d.profile.id}`}
+                      className="block truncate text-sm font-bold hover:underline"
+                    >
+                      {d.profile.display_name || d.donor_name || "Anonymous"}
+                    </Link>
+                  ) : (
+                    <div className="flex min-w-0 items-center gap-2">
+                      <p className="truncate text-sm font-bold">{d.donor_name || "Anonymous"}</p>
+                      {!d.user_id && (
+                        <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-zinc-500">
+                          Guest
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <p className="text-xs text-zinc-400">
                     ${Number(d.amount).toLocaleString()} · {timeAgo(d.created_at)}
                   </p>
