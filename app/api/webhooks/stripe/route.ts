@@ -842,21 +842,6 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
   const subId = typeof (invoice as any).subscription === "string" ? (invoice as any).subscription : null;
   if (!subId) return;
 
-  console.warn(`[webhook] Payment failed for invoice ${invoice.id} on subscription ${subId}`);
-
-  const { data: updated, error } = await supabaseAdmin
-    .from("businesses")
-    .update({
-      status: "expired",
-    })
-    .eq("stripe_subscription_id", subId)
-    .neq("status", "expired")
-    .select("id")
-    .maybeSingle();
-
-  if (error) {
-    console.error(`[webhook] Failed to expire business for failed payment on subscription ${subId}:`, error.message);
-  } else if (updated) {
-    console.log(`[webhook] Expired business for failed payment on subscription ${subId}`);
-  }
+  console.warn(`[webhook] Payment failed for invoice ${invoice.id} on subscription ${subId}. Retaining current status to allow Stripe dunning/retry flow to resolve.`);
 }
+
