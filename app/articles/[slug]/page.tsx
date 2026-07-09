@@ -1,36 +1,36 @@
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { compactJsonLd, jsonLdScriptValue } from "@/lib/structured-data";
 
-export const revalidate = 0; // Dynamic on every request to support real-time scheduling checks
+// force-dynamic + connection() prevents the Turbopack dev streaming bug where
+// HTTP 200 is flushed before notFound() can change it to 404.
+export const dynamic = "force-dynamic";
 
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=1200&auto=format&fit=crop";
+// ---------------------------------------------------------------------------
+// Shared helper: fetch article + perform gate check.
+// Returns the article when access is granted; calls notFound() otherwise.
+// ---------------------------------------------------------------------------
+async function fetchAndGate(slug: string) {
+  // Prevent streaming until this function completes (fixes Turbopack 200 bug).
+  await connection();
 
-export default async function ArticleDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
   const adminClient = createSupabaseAdmin();
   const supabaseServer = await createSupabaseServer();
 
-  // Fetch article with profile info using admin client to bypass RLS for authorization check
   const { data: article } = await adminClient
     .from("articles")
     .select("*, profiles(display_name, avatar_url)")
     .eq("slug", slug)
     .single();
 
-  if (!article) {
-    notFound();
-  }
+  if (!article) notFound();
 
-  // Get current user and check authorization
+  // Get current user
   const {
     data: { user },
   } = await supabaseServer.auth.getUser();
@@ -40,7 +40,6 @@ export default async function ArticleDetailPage({
     if (user.id === article.owner_id) {
       isAuthorized = true;
     } else {
-      // Check if user is active admin
       const { data: profile } = await supabaseServer
         .from("profiles")
         .select("role, status")
@@ -52,7 +51,6 @@ export default async function ArticleDetailPage({
     }
   }
 
-  // Enforcement check
   const now = new Date();
   const isScheduledInFuture =
     article.status === "scheduled" &&
@@ -66,10 +64,48 @@ export default async function ArticleDetailPage({
   const isPrivate = article.visibility === "private";
 
   if (isRestrictedStatus || isScheduledInFuture || isPrivate) {
-    if (!isAuthorized) {
-      notFound();
-    }
+    if (!isAuthorized) notFound();
   }
+
+  return { article, user, isAuthorized, isScheduledInFuture, isRestrictedStatus, isPrivate };
+}
+
+// generateMetadata runs BEFORE the page component streams, so notFound() here
+// guarantees a proper 404 HTTP status even in Turbopack dev mode.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const { article } = await fetchAndGate(slug);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.fund4agoodcause.com";
+  return {
+    title: article.seo_title || article.title,
+    description: article.seo_description || article.excerpt || undefined,
+    alternates: article.canonical_url ? { canonical: article.canonical_url } : undefined,
+    openGraph: {
+      title: article.seo_title || article.title,
+      description: article.seo_description || article.excerpt || undefined,
+      url: `${siteUrl}/articles/${article.slug}`,
+      images: article.cover_image_url ? [{ url: article.cover_image_url }] : [],
+    },
+  };
+}
+
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=1200&auto=format&fit=crop";
+
+export default async function ArticleDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  // fetchAndGate performs auth check (including connection() call) before
+  // any JSX is returned, guaranteeing the 404 fires before streaming starts.
+  const { article, isAuthorized, isScheduledInFuture, isRestrictedStatus, isPrivate } =
+    await fetchAndGate(slug);
 
   const imageSrc = article.cover_image_url || FALLBACK_IMAGE;
   const authorName = (article.profiles as any)?.display_name || "Community Author";

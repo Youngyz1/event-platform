@@ -5,6 +5,9 @@
  * - Session refresh on every request
  * - Protected route enforcement
  * - Suspended account blocking
+ * - Article access-control gate (returns real HTTP 404 before streaming starts,
+ *   per Next.js 16 loading.md § Status Codes which states that notFound() cannot
+ *   change the status once streaming has begun with a 200 header)
  *
  * Admin role enforcement is handled separately by:
  * app/admin/layout.tsx -> requireAdmin()
@@ -12,6 +15,91 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+
+// ---------------------------------------------------------------------------
+// Article access-control helper
+// Runs a lightweight REST API call (no full DB client) to check article
+// visibility before the page component starts streaming.
+// Returns true when the request should be allowed through, false for 404.
+// ---------------------------------------------------------------------------
+async function checkArticleAccess(
+  slug: string,
+  userId: string | null
+): Promise<boolean> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  // Fetch only the columns we need — keep this query minimal.
+  const res = await fetch(
+    `${supabaseUrl}/rest/v1/articles?slug=eq.${encodeURIComponent(slug)}&select=status,visibility,scheduled_for,owner_id&limit=1`,
+    {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      // Edge-compatible; no caching — we need real-time results.
+      cache: "no-store",
+    }
+  );
+
+  if (!res.ok) return true; // On fetch error, let the page handle it gracefully.
+
+  const rows = (await res.json()) as Array<{
+    status: string;
+    visibility: string;
+    scheduled_for: string | null;
+    owner_id: string;
+  }>;
+
+  if (!rows.length) return false; // Article doesn't exist → 404.
+
+  const article = rows[0];
+  const now = new Date();
+
+  const isScheduledInFuture =
+    article.status === "scheduled" &&
+    !!article.scheduled_for &&
+    new Date(article.scheduled_for) > now;
+
+  const isRestricted = ["draft", "archived", "expired", "rejected"].includes(
+    article.status
+  );
+
+  const isPrivate = article.visibility === "private";
+
+  // Publicly accessible — allow through immediately.
+  if (!isRestricted && !isScheduledInFuture && !isPrivate) return true;
+
+  // Restricted — check authorization.
+  if (!userId) return false;
+
+  // Owner always has access to their own articles.
+  if (userId === article.owner_id) return true;
+
+  // Check admin status (second DB call only for restricted articles where the
+  // user is not the owner — uncommon path, acceptable overhead).
+  const profileRes = await fetch(
+    `${supabaseUrl}/rest/v1/profiles?id=eq.${encodeURIComponent(userId)}&select=role,status&limit=1`,
+    {
+      headers: {
+        apikey: serviceKey,
+        Authorization: `Bearer ${serviceKey}`,
+      },
+      cache: "no-store",
+    }
+  );
+
+  if (!profileRes.ok) return false;
+
+  const profiles = (await profileRes.json()) as Array<{
+    role: string;
+    status: string;
+  }>;
+
+  const profile = profiles[0];
+  return profile?.role === "admin" && profile?.status === "active";
+}
 
 export async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
@@ -85,6 +173,31 @@ export async function proxy(req: NextRequest) {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Article access-control gate.
+  // Per Next.js 16 loading.md § "Status Codes": when a page streams, the 200
+  // header is flushed before notFound() can change it. The proxy is the only
+  // place where we can reliably return an HTTP 404 before streaming begins.
+  // -------------------------------------------------------------------------
+  const articleSlugMatch = pathname.match(/^\/articles\/([^/]+)$/);
+  if (articleSlugMatch) {
+    const slug = articleSlugMatch[1];
+    // Skip the gate for known sub-section prefixes that share the pattern
+    // but are handled by their own pages (category/tag are caught by the
+    // matcher only if they happen to match, which they won't due to the
+    // nested path — kept here as a safety belt).
+    if (slug !== "category" && slug !== "tag") {
+      const allowed = await checkArticleAccess(slug, user?.id ?? null);
+      if (!allowed) {
+        // Rewrite to the internal not-found route with an explicit 404 status.
+        // Next.js renders app/not-found.tsx for /_not-found internally.
+        const notFoundUrl = req.nextUrl.clone();
+        notFoundUrl.pathname = "/_not-found";
+        return NextResponse.rewrite(notFoundUrl, { status: 404 });
+      }
+    }
+  }
+
   return res;
 }
 
@@ -98,5 +211,8 @@ export const config = {
     "/create-organizer/:path*",
     "/login",
     "/signup",
+    // Article detail pages — must be in matcher for the access gate to fire.
+    // Excluded: /articles (list), /articles/category/:cat, /articles/tag/:tag.
+    "/articles/:slug([^/]+)",
   ],
 };
