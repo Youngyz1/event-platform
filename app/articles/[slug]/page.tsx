@@ -24,11 +24,21 @@ async function fetchAndGate(slug: string) {
 
   const { data: article } = await adminClient
     .from("articles")
-    .select("*, profiles(display_name, avatar_url)")
+    .select("*")
     .eq("slug", slug)
     .single();
 
   if (!article) notFound();
+
+  // Fetch author profile via a plain query — NOT a PostgREST embed.
+  // articles.owner_id references auth.users(id), not profiles(id), so
+  // PostgREST has no FK to resolve profiles(...) automatically and the
+  // embedded join returns an error, causing data to be null → 404.
+  const { data: authorProfile } = await adminClient
+    .from("profiles")
+    .select("display_name, avatar_url")
+    .eq("id", article.owner_id)
+    .maybeSingle();
 
   // Get current user
   const {
@@ -67,7 +77,7 @@ async function fetchAndGate(slug: string) {
     if (!isAuthorized) notFound();
   }
 
-  return { article, user, isAuthorized, isScheduledInFuture, isRestrictedStatus, isPrivate };
+  return { article, authorProfile, user, isAuthorized, isScheduledInFuture, isRestrictedStatus, isPrivate };
 }
 
 // generateMetadata runs BEFORE the page component streams, so notFound() here
@@ -104,11 +114,11 @@ export default async function ArticleDetailPage({
   const { slug } = await params;
   // fetchAndGate performs auth check (including connection() call) before
   // any JSX is returned, guaranteeing the 404 fires before streaming starts.
-  const { article, isAuthorized, isScheduledInFuture, isRestrictedStatus, isPrivate } =
+  const { article, authorProfile, isAuthorized, isScheduledInFuture, isRestrictedStatus, isPrivate } =
     await fetchAndGate(slug);
 
   const imageSrc = article.cover_image_url || FALLBACK_IMAGE;
-  const authorName = (article.profiles as any)?.display_name || "Community Author";
+  const authorName = authorProfile?.display_name || "Community Author";
   const displayDate = new Date(article.published_at || article.created_at).toLocaleDateString(
     "en-US",
     {
@@ -186,10 +196,10 @@ export default async function ArticleDetailPage({
         {/* Meta info */}
         <div className="mt-6 flex flex-wrap items-center gap-4 border-b border-t border-zinc-100 py-4 text-sm">
           <div className="flex items-center gap-2">
-            {((article.profiles as any)?.avatar_url) ? (
+            {authorProfile?.avatar_url ? (
               <div className="relative h-8 w-8 overflow-hidden rounded-full">
                 <Image
-                  src={(article.profiles as any).avatar_url}
+                  src={authorProfile.avatar_url}
                   alt={authorName}
                   fill
                   className="object-cover"
