@@ -217,6 +217,39 @@ export async function POST(req: NextRequest) {
           console.log(`[crypto webhook] Ticket order ${order.id} is already in status: ${order.status}`);
         }
       }
+      // 3. Check if this is a business listing crypto payment (match by crypto_payment_id = order_id)
+      if (order_id) {
+        const { data: bizPayment } = await supabaseAdmin
+          .from("businesses")
+          .select("id, status, listing_tier")
+          .eq("crypto_payment_id", order_id)
+          .maybeSingle();
+
+        if (bizPayment && bizPayment.status !== "active") {
+          const { error: bizUpdateError } = await supabaseAdmin
+            .from("businesses")
+            .update({
+              status: "active",
+              // For monthly subscriptions set a period of 30 days from now
+              current_period_end:
+                bizPayment.listing_tier === "subscription"
+                  ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                  : null,
+            })
+            .eq("id", bizPayment.id);
+
+          if (bizUpdateError) {
+            console.error(
+              "[crypto webhook] Failed to activate business listing:",
+              bizUpdateError.message
+            );
+          } else {
+            console.log(
+              `[crypto webhook] Business listing ${bizPayment.id} activated via crypto payment`
+            );
+          }
+        }
+      }
     }
 
     return NextResponse.json({ received: true });
