@@ -5,6 +5,7 @@ import { getDashboardContext } from "@/lib/dashboard-context";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { deleteArticle } from "@/lib/actions/articles";
 import { revalidatePath } from "next/cache";
+import ArticleRowActions from "./ArticleRowActions";
 
 export const revalidate = 0; // Fresh dashboard data on every load
 
@@ -213,20 +214,7 @@ export default async function DashboardArticlesPage({
                           >
                             Edit
                           </Link>
-                          <form action={handleDelete} className="inline">
-                            <input type="hidden" name="id" value={article.id} />
-                            <button
-                              type="submit"
-                              onClick={(e) => {
-                                if (!confirm("Are you sure you want to delete this article?")) {
-                                  e.preventDefault();
-                                }
-                              }}
-                              className="text-sm font-bold text-red-600 hover:text-red-700"
-                            >
-                              Delete
-                            </button>
-                          </form>
+                          <ArticleRowActions articleId={article.id} onDelete={handleDelete} />
                         </div>
                       </td>
                     </tr>
