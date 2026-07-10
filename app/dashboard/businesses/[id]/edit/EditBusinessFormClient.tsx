@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { updateBusiness } from "@/lib/actions/businesses";
+import { useImageUpload, ALLOWED_IMAGE_TYPES } from "@/hooks/use-image-upload";
 
 type Business = {
   id: string;
@@ -44,6 +45,12 @@ export default function EditBusinessFormClient({ business }: { business: Busines
     country: business.country || "",
     seo_title: business.seo_title || "",
     seo_description: business.seo_description || "",
+  });
+
+  const { uploading: uploadingLogo, fileInputRef: logoInputRef, triggerUpload: triggerLogoUpload, handleFileChange: handleLogoFileChange } = useImageUpload({
+    folder: "business-logos",
+    onSuccess: (url) => setForm((prev) => ({ ...prev, logo: url })),
+    onError: (msg) => setError(msg),
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -159,12 +166,30 @@ export default function EditBusinessFormClient({ business }: { business: Busines
 
             <div>
               <label className="block text-sm font-black text-zinc-600 mb-1">Logo Image URL</label>
+              {/* Hidden file input wired to the shared upload hook */}
               <input
-                type="url"
-                value={form.logo}
-                onChange={(e) => setForm({ ...form, logo: e.target.value })}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                type="file"
+                ref={logoInputRef}
+                onChange={handleLogoFileChange}
+                accept={ALLOWED_IMAGE_TYPES.join(",")}
+                className="hidden"
               />
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={form.logo}
+                  onChange={(e) => setForm({ ...form, logo: e.target.value })}
+                  className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+                />
+                <button
+                  type="button"
+                  disabled={uploadingLogo}
+                  onClick={triggerLogoUpload}
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-zinc-700 hover:bg-slate-50 disabled:opacity-50 transition"
+                >
+                  {uploadingLogo ? "Uploading..." : "Upload"}
+                </button>
+              </div>
             </div>
           </div>
 

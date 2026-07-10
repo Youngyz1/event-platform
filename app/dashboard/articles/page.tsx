@@ -144,6 +144,7 @@ export default async function DashboardArticlesPage({
                               src={article.cover_image_url || "https://images.unsplash.com/photo-1499750310107-5fef28a66643?q=80&w=120&auto=format&fit=crop"}
                               alt={article.title}
                               fill
+                              unoptimized
                               className="object-cover"
                             />
                           </div>

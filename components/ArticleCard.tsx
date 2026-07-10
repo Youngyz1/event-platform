@@ -1,7 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
-import { normalizeImageUrl } from "@/lib/image-url";
 
 type ArticleCardProps = {
   title: string;
@@ -31,7 +30,8 @@ export default function ArticleCard({
   createdAt,
   className,
 }: ArticleCardProps) {
-  const imageSrc = normalizeImageUrl(coverImage || "", FALLBACK_IMAGE);
+  // Use URL as-is; unoptimized prop below bypasses remotePatterns host checks
+  const imageSrc = coverImage?.trim() || FALLBACK_IMAGE;
   const displayDate = new Date(publishedAt || createdAt).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
@@ -50,6 +50,7 @@ export default function ArticleCard({
           src={imageSrc}
           alt={title}
           fill
+          unoptimized
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover transition duration-500 group-hover:scale-105"
         />
