@@ -66,6 +66,8 @@ const navGroups: NavGroup[] = [
       { label: "Categories",   href: "/admin/homepage?tab=categories",   icon: Grid3x3 },
       { label: "Testimonials", href: "/admin/homepage?tab=testimonials", icon: MessageSquareQuote },
       { label: "Sponsors",     href: "/admin/homepage?tab=sponsors",     icon: Handshake },
+      { label: "Articles",     href: "/admin/articles",    icon: ScrollText },
+      { label: "Businesses",   href: "/admin/businesses",  icon: Building2 },
       { label: "Reviews",      href: "/admin/reviews",     icon: Star },
     ],
   },
