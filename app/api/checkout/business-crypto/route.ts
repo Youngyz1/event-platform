@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { createClient } from "@supabase/supabase-js";
+import { tagCryptoOrderId } from "@/lib/cryptoPayment";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -77,7 +78,10 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         price_amount: amount,
         price_currency: "usd",
-        order_id: orderId,
+        // Tagged with "business" so the IPN webhook can dispatch straight to
+        // the businesses table instead of probing donations/ticket_orders
+        // first. crypto_payment_id below still stores the raw, untagged id.
+        order_id: tagCryptoOrderId("business", orderId),
         order_description: `Business listing (${business.listing_tier}) – ${business.name}`,
         ipn_callback_url: ipnCallbackUrl,
         success_url: successUrl,

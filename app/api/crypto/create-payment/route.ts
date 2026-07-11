@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { tagCryptoOrderId } from "@/lib/cryptoPayment";
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set.");
@@ -144,7 +145,11 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         price_amount: numAmount,
         price_currency: currency.toLowerCase(),
-        order_id: orderId,
+        // Tagged with the kind so the IPN webhook can dispatch to exactly
+        // one table instead of probing donations/ticket_orders in sequence.
+        // The row's own primary key (orderId) is untouched — only what we
+        // send to NOWPayments carries the tag.
+        order_id: tagCryptoOrderId(type === "donation" ? "donation" : "ticket", orderId),
         order_description: orderDescription,
         ipn_callback_url: ipnCallbackUrl,
         success_url: successUrl,
