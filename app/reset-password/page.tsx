@@ -22,37 +22,68 @@ function ResetPasswordForm() {
   useEffect(() => {
     let active = true;
 
-    async function verifyRecoveryLink() {
-      const tokenHash = searchParams.get("token_hash");
-      const type = searchParams.get("type");
-
-      if (!tokenHash || type !== "recovery") {
-        setError(invalidLinkMessage);
-        setCheckingLink(false);
-        return;
-      }
-
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: "recovery",
-      });
-
-      if (!active) return;
-
-      if (verifyError) {
-        setError(invalidLinkMessage);
-        setCheckingLink(false);
-        return;
-      }
-
-      setLinkVerified(true);
+    // Supabase's own /verify endpoint redirects here with these params when
+    // the link is already invalid/expired server-side — nothing to exchange.
+    if (searchParams.get("error") || searchParams.get("error_code")) {
+      setError(invalidLinkMessage);
       setCheckingLink(false);
+      return;
     }
 
-    verifyRecoveryLink();
+    // Legacy email-OTP links (token_hash + type=recovery).
+    const tokenHash = searchParams.get("token_hash");
+    const type = searchParams.get("type");
+
+    if (tokenHash && type === "recovery") {
+      supabase.auth
+        .verifyOtp({ token_hash: tokenHash, type: "recovery" })
+        .then(({ error: verifyError }) => {
+          if (!active) return;
+          if (verifyError) {
+            setError(invalidLinkMessage);
+          } else {
+            setLinkVerified(true);
+          }
+          setCheckingLink(false);
+        });
+
+      return () => {
+        active = false;
+      };
+    }
+
+    // PKCE links (?code=...) — the browser client's detectSessionInUrl
+    // exchanges the code automatically on load. Listen for the
+    // PASSWORD_RECOVERY event instead of re-parsing the code ourselves.
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (!active) return;
+      if (event === "PASSWORD_RECOVERY") {
+        setLinkVerified(true);
+        setCheckingLink(false);
+      }
+    });
+
+    // Covers the case where the exchange finished before this listener
+    // attached (e.g. detectSessionInUrl ran during client construction).
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active || !session) return;
+      setLinkVerified(true);
+      setCheckingLink(false);
+    });
+
+    const timeout = setTimeout(() => {
+      if (!active) return;
+      setCheckingLink((current) => {
+        if (!current) return current;
+        setError(invalidLinkMessage);
+        return false;
+      });
+    }, 5000);
 
     return () => {
       active = false;
+      listener.subscription.unsubscribe();
+      clearTimeout(timeout);
     };
   }, [searchParams]);
 
