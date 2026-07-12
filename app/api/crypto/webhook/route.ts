@@ -5,6 +5,7 @@ import { processDonationCertificate } from "@/lib/certificate";
 import { processDonationReceipt } from "@/lib/receipt";
 import { recalculateFundraiserRaised } from "@/lib/donations";
 import { parseCryptoOrderId } from "@/lib/cryptoPayment";
+import { markProductOrderPaid } from "@/lib/productOrders";
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set.");
@@ -320,6 +321,8 @@ export async function POST(req: NextRequest) {
           await activateTicketOrder(tagged.id, payment_id, baseUrl);
         } else if (tagged.kind === "business") {
           await activateBusinessListing(tagged.id);
+        } else if (tagged.kind === "product") {
+          await markProductOrderPaid(tagged.id, { cryptoPaymentId: payment_id });
         }
       } else {
         console.warn(

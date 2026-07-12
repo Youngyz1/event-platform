@@ -47,7 +47,28 @@ async function findRecordByOrderId(orderId: string) {
     };
   }
 
-  // 3. Legacy lookup: in donations by payment_intent_id
+  // 3. Look up in product_orders by ID (orderId UUID) — the row's own id is
+  // always the crypto correlation id for products (tagged, never a bare
+  // legacy id), so no legacy payment_intent_id fallback is needed here.
+  const { data: productOrder } = await supabaseAdmin
+    .from("product_orders")
+    .select("id, status, product_id, product_name, crypto_payment_id, product:products(slug)")
+    .eq("id", orderId)
+    .maybeSingle();
+
+  if (productOrder) {
+    return {
+      id: productOrder.id,
+      status: productOrder.status,
+      type: "product" as const,
+      slug: (productOrder.product as any)?.slug || null,
+      qrCode: null,
+      paymentIntentId: productOrder.crypto_payment_id,
+      productName: productOrder.product_name,
+    };
+  }
+
+  // 4. Legacy lookup: in donations by payment_intent_id
   const { data: donationLegacy } = await supabaseAdmin
     .from("donations")
     .select("id, status, fundraiser_id, payment_intent_id, fundraiser:fundraisers(slug)")
@@ -65,7 +86,7 @@ async function findRecordByOrderId(orderId: string) {
     };
   }
 
-  // 4. Legacy lookup: in ticket_orders by stripe_payment_intent_id
+  // 5. Legacy lookup: in ticket_orders by stripe_payment_intent_id
   const { data: orderLegacy } = await supabaseAdmin
     .from("ticket_orders")
     .select("id, status, event_id, qr_code, stripe_payment_intent_id, event:events(slug)")
@@ -101,13 +122,14 @@ export async function GET(req: NextRequest) {
 
     // 1. Check if we already have a confirmed record in our database
     let record = await findRecordByOrderId(orderId);
-    if (record && (record.status === "completed" || record.status === "valid" || record.status === "succeeded")) {
+    if (record && (record.status === "completed" || record.status === "valid" || record.status === "succeeded" || record.status === "paid")) {
       return NextResponse.json({
         status: "confirmed",
         type: record.type,
         recordId: record.id,
         slug: record.slug,
         qrCode: record.qrCode,
+        productName: (record as any).productName || null,
       });
     }
 
@@ -162,7 +184,7 @@ export async function GET(req: NextRequest) {
       finalStatus = "confirmed";
     } else if (nowpaymentsStatus === "failed" || nowpaymentsStatus === "expired") {
       finalStatus = "failed";
-    } else if (record && (record.status === "completed" || record.status === "valid" || record.status === "succeeded")) {
+    } else if (record && (record.status === "completed" || record.status === "valid" || record.status === "succeeded" || record.status === "paid")) {
       finalStatus = "confirmed";
     }
 
@@ -172,6 +194,7 @@ export async function GET(req: NextRequest) {
       recordId: record?.id || null,
       slug: record?.slug || null,
       qrCode: record?.qrCode || null,
+      productName: (record as any)?.productName || null,
     });
   } catch (err: unknown) {
     console.error("crypto/status route error:", err);

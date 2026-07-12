@@ -12,9 +12,9 @@
  * `parseCryptoOrderId`.
  */
 
-export type CryptoPaymentKind = "donation" | "ticket" | "business";
+export type CryptoPaymentKind = "donation" | "ticket" | "business" | "product";
 
-const KNOWN_KINDS: readonly CryptoPaymentKind[] = ["donation", "ticket", "business"];
+const KNOWN_KINDS: readonly CryptoPaymentKind[] = ["donation", "ticket", "business", "product"];
 
 export function tagCryptoOrderId(kind: CryptoPaymentKind, id: string): string {
   return `${kind}:${id}`;

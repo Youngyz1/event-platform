@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# throwaway debug/simulation scripts — often contain hardcoded secrets
+/scratch/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

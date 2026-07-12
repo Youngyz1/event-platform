@@ -11,15 +11,17 @@ function CryptoPendingContent() {
 
   const [status, setStatus] = useState<"loading" | "waiting" | "confirmed" | "failed">("loading");
   const [paymentDetails, setPaymentDetails] = useState<{
-    type: "donation" | "ticket" | null;
+    type: "donation" | "ticket" | "product" | null;
     recordId: string | null;
     slug: string | null;
     qrCode: string | null;
+    productName: string | null;
   }>({
     type: null,
     recordId: null,
     slug: null,
     qrCode: null,
+    productName: null,
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +63,7 @@ function CryptoPendingContent() {
             recordId: data.recordId,
             slug: data.slug,
             qrCode: data.qrCode,
+            productName: data.productName,
           });
           clearInterval(pollInterval);
         } else if (data.status === "failed") {
@@ -73,6 +76,7 @@ function CryptoPendingContent() {
             recordId: data.recordId,
             slug: data.slug,
             qrCode: data.qrCode,
+            productName: data.productName,
           });
         }
       } catch (err) {
@@ -121,6 +125,7 @@ function CryptoPendingContent() {
 
   if (status === "confirmed") {
     const isDonation = paymentDetails.type === "donation";
+    const isProduct = paymentDetails.type === "product";
 
     return (
       <div className="w-full max-w-md mx-auto rounded-3xl border border-zinc-200 bg-white p-10 text-center shadow-2xl relative overflow-hidden">
@@ -135,6 +140,8 @@ function CryptoPendingContent() {
         <p className="mt-3 text-sm text-zinc-500 leading-relaxed">
           {isDonation
             ? "Your crypto donation has been successfully processed. Thank you for your support!"
+            : isProduct
+            ? `Your order${paymentDetails.productName ? ` for "${paymentDetails.productName}"` : ""} has been confirmed. A confirmation email has been sent.`
             : "Your tickets have been successfully booked. A confirmation email has been sent."}
         </p>
 
@@ -161,6 +168,23 @@ function CryptoPendingContent() {
                 Back to Fundraiser
               </Link>
             )}
+          </div>
+        ) : isProduct ? (
+          <div className="space-y-4">
+            {paymentDetails.slug && (
+              <Link
+                href={`/products/${paymentDetails.slug}`}
+                className="flex items-center justify-center gap-2 w-full rounded-2xl bg-orange-500 hover:bg-orange-600 py-4 text-sm font-black text-white transition shadow-md"
+              >
+                View Product →
+              </Link>
+            )}
+            <Link
+              href="/products"
+              className="block text-sm font-bold text-zinc-500 hover:text-zinc-800 transition py-2"
+            >
+              Back to Shop
+            </Link>
           </div>
         ) : (
           <div className="space-y-4">

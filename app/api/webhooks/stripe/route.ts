@@ -5,6 +5,7 @@ import { recordDonationFromSession } from "@/lib/donations";
 import { processDonationReceipt } from "@/lib/receipt";
 import { processDonationCertificate } from "@/lib/certificate";
 import { Resend } from "resend";
+import { markProductOrderPaid } from "@/lib/productOrders";
 
 // Service role: bypasses RLS — admin operations only
 const supabaseAdmin = createClient(
@@ -676,6 +677,20 @@ async function handleCheckoutSessionCompleted(
       console.log(`[webhook] Successfully activated business ${businessId}`);
     }
 
+    return;
+  }
+
+  if (meta.kind === "product") {
+    const orderId = meta.product_order_id;
+    if (!orderId) {
+      console.error("[webhook] Missing product_order_id in product checkout session metadata");
+      return;
+    }
+
+    const piId =
+      typeof session.payment_intent === "string" ? session.payment_intent : undefined;
+
+    await markProductOrderPaid(orderId, { stripePaymentIntentId: piId });
     return;
   }
 
