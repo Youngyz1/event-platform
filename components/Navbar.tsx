@@ -12,6 +12,7 @@ import {
   Menu,
   Plus,
   Search,
+  ShoppingBag,
   Ticket,
   User,
   X,
@@ -31,6 +32,7 @@ const NAV_LINKS = [
   { label: "Find Tickets", href: "/find-tickets", icon: Ticket },
   { label: "Articles", href: "/articles", icon: BookOpen },
   { label: "Businesses", href: "/businesses", icon: Building2 },
+  { label: "Shop", href: "/products", icon: ShoppingBag },
 ] as const;
 
 const CREATE_LINKS = [

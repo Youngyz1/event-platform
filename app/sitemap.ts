@@ -32,6 +32,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/sponsors`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${BASE_URL}/reviews`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
     { url: `${BASE_URL}/businesses`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${BASE_URL}/products`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
   ];
 
   // ── Dynamic: public events ───────────────────────────────────────
@@ -127,5 +128,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...eventUrls, ...fundraiserUrls, ...organizerUrls, ...cityUrls, ...articleUrls, ...businessUrls];
+  // ── Dynamic: public active/out-of-stock products ─────────────────────────
+  const { data: products } = await supabase
+    .from("products")
+    .select("slug, updated_at")
+    .in("status", ["active", "out_of_stock"])
+    .order("created_at", { ascending: false })
+    .limit(5000);
+
+  const productUrls: MetadataRoute.Sitemap = (products ?? []).map((p) => ({
+    url: `${BASE_URL}/products/${p.slug}`,
+    lastModified: p.updated_at ? new Date(p.updated_at) : now,
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...eventUrls, ...fundraiserUrls, ...organizerUrls, ...cityUrls, ...articleUrls, ...businessUrls, ...productUrls];
 }
