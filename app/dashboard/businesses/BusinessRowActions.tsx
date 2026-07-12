@@ -9,6 +9,7 @@ type Business = {
   slug: string;
   status: string;
   listing_tier: string;
+  is_featured: boolean;
 };
 
 type PaymentMethod = "card" | "crypto";
@@ -30,8 +31,11 @@ export default function BusinessRowActions({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Payment is now an optional Featured upgrade, decoupled from publish
+  // status — offer it whenever the owner picked a paid tier but hasn't
+  // actually paid yet, regardless of whether the listing itself is live.
   const needsPayment =
-    business.status === "pending_payment" || business.status === "expired";
+    business.listing_tier !== "free" && !business.is_featured;
 
   async function handlePay() {
     setLoading(true);
@@ -81,17 +85,17 @@ export default function BusinessRowActions({
             onClick={() => setShowModal(true)}
             className="inline-flex items-center justify-center rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-black text-white hover:bg-orange-700 transition"
           >
-            {business.status === "expired" ? "Renew" : "Pay & Activate"}
+            Upgrade to Featured
           </button>
         )}
 
-        {business.status === "active" && (
+        {(business.status === "active" || business.status === "pending_review") && (
           <Link
             href={`/businesses/${business.slug}`}
             target="_blank"
             className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 transition"
           >
-            View Public
+            {business.status === "active" ? "View Public" : "Preview"}
           </Link>
         )}
 
@@ -134,7 +138,7 @@ export default function BusinessRowActions({
             <div className="border-b border-slate-100 px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="text-base font-black text-slate-900">
-                  Activate Listing
+                  Upgrade to Featured
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {business.name} — {tierLabel}{" "}

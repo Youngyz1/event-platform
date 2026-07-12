@@ -86,9 +86,11 @@ export async function createBusiness(input: BusinessInput) {
 
   const slug = await getUniqueSlug(trimmedName, supabase);
 
-  // Free tier listings activate immediately. Paid tiers start pending_payment.
-  const status = input.listing_tier === "free" ? "active" : "pending_payment";
-
+  // Listing is free, but publicly going live requires admin approval — see
+  // migration_38_content_approval_workflow.sql. listing_tier no longer gates
+  // status at all; it only records which Featured upgrade (if any) the owner
+  // has purchased, tracked separately via is_featured (set only by the
+  // Stripe/crypto payment webhooks, never by this action).
   const { data, error } = await supabase
     .from("businesses")
     .insert({
@@ -107,7 +109,7 @@ export async function createBusiness(input: BusinessInput) {
       state: input.state || null,
       country: input.country || null,
       listing_tier: input.listing_tier,
-      status,
+      status: "pending_review",
       is_flagged: false,
     })
     .select("id, slug")

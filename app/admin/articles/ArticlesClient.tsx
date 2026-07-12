@@ -7,6 +7,8 @@ import { Loader2, ScrollText, Eye, Ban, Trash2 } from "lucide-react";
 import AdminStatsCards from "@/components/admin/AdminStatsCards";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminManagementToolbar from "@/components/admin/AdminManagementToolbar";
+import ApprovalActionButtons from "@/components/admin/ApprovalActionButtons";
+import { useApprovalAction } from "@/hooks/use-approval-action";
 import { formatAdminDate } from "@/lib/admin-query";
 
 type ArticleRow = {
@@ -18,23 +20,29 @@ type ArticleRow = {
   created_at: string;
   author_name: string;
   author_email: string;
+  rejection_reason: string | null;
 };
 
 type ArticleStats = {
   total: number;
+  pending_review: number;
   published: number;
   draft: number;
   scheduled: number;
+  rejected: number;
 };
 
 const STATUS_TABS = [
   { value: "all", label: "All" },
+  { value: "pending_review", label: "Pending Review" },
   { value: "published", label: "Published" },
   { value: "draft", label: "Draft" },
   { value: "scheduled", label: "Scheduled" },
+  { value: "rejected", label: "Rejected" },
 ];
 
 const statusBadgeStyles: Record<string, string> = {
+  pending_review: "bg-amber-50 text-amber-700 border-amber-200",
   draft: "bg-zinc-100 text-zinc-700 border-zinc-200",
   published: "bg-emerald-50 text-emerald-700 border-emerald-200",
   scheduled: "bg-blue-50 text-blue-700 border-blue-200",
@@ -54,6 +62,7 @@ export default function ArticlesClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [working, setWorking] = useState<string | null>(null);
+  const { updateStatus } = useApprovalAction("/api/admin/articles");
 
   const page = Number(searchParams.get("page") ?? "1");
   const perPage = Number(searchParams.get("per_page") ?? "25");
@@ -149,11 +158,31 @@ export default function ArticlesClient() {
     }
   }
 
+  async function handleApprove(id: string) {
+    setWorking(id);
+    setError("");
+    const result = await updateStatus(id, { status: "published" });
+    if (!result.success) setError(result.error || "Failed to approve article.");
+    else await fetchData();
+    setWorking(null);
+  }
+
+  async function handleReject(id: string, reason: string) {
+    setWorking(id);
+    setError("");
+    const result = await updateStatus(id, { status: "rejected", rejection_reason: reason || null });
+    if (!result.success) setError(result.error || "Failed to reject article.");
+    else await fetchData();
+    setWorking(null);
+  }
+
   const statItems = [
     { label: "Total Articles", value: stats?.total ?? 0 },
+    { label: "Pending Review", value: stats?.pending_review ?? 0, accent: "text-amber-600" },
     { label: "Published", value: stats?.published ?? 0, accent: "text-emerald-600" },
     { label: "Drafts", value: stats?.draft ?? 0, accent: "text-zinc-500" },
     { label: "Scheduled", value: stats?.scheduled ?? 0, accent: "text-blue-600" },
+    { label: "Rejected", value: stats?.rejected ?? 0, accent: "text-red-600" },
   ];
 
   return (
@@ -190,9 +219,11 @@ export default function ArticlesClient() {
             value: effectiveStatus,
             options: [
               { value: "all", label: "All Statuses" },
+              { value: "pending_review", label: "Pending Review" },
               { value: "published", label: "Published" },
               { value: "draft", label: "Draft" },
               { value: "scheduled", label: "Scheduled" },
+              { value: "rejected", label: "Rejected" },
             ],
             onChange: (v) =>
               updateParams({
@@ -239,11 +270,12 @@ export default function ArticlesClient() {
                     </td>
                     <td className="py-4 pr-4">
                       <span
+                        title={row.status === "rejected" ? row.rejection_reason || undefined : undefined}
                         className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold uppercase ${
                           statusBadgeStyles[row.status] || "bg-zinc-100 text-zinc-700 border-zinc-200"
                         }`}
                       >
-                        {row.status}
+                        {row.status.replace("_", " ")}
                       </span>
                     </td>
                     <td className="py-4 pr-4">
@@ -273,7 +305,14 @@ export default function ArticlesClient() {
                           <Eye className="h-3.5 w-3.5" />
                           View
                         </Link>
-                        {row.status !== "draft" && (
+                        {row.status === "pending_review" && (
+                          <ApprovalActionButtons
+                            disabled={working === row.id}
+                            onApprove={() => handleApprove(row.id)}
+                            onReject={(reason) => handleReject(row.id, reason)}
+                          />
+                        )}
+                        {row.status !== "draft" && row.status !== "pending_review" && (
                           <button
                             type="button"
                             disabled={working === row.id}

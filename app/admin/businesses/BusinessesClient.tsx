@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, Eye, Flag, Trash2 } from "lucide-react";
+import { Loader2, Eye, Flag, Trash2, Star } from "lucide-react";
 import AdminStatsCards from "@/components/admin/AdminStatsCards";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminManagementToolbar from "@/components/admin/AdminManagementToolbar";
+import ApprovalActionButtons from "@/components/admin/ApprovalActionButtons";
+import { useApprovalAction } from "@/hooks/use-approval-action";
 import { formatAdminDate } from "@/lib/admin-query";
 
 type BusinessRow = {
@@ -16,6 +18,8 @@ type BusinessRow = {
   listing_tier: string;
   status: string;
   is_flagged: boolean;
+  is_featured: boolean;
+  rejection_reason: string | null;
   created_at: string;
   owner_name: string;
   owner_email: string;
@@ -23,17 +27,20 @@ type BusinessRow = {
 
 type BusinessStats = {
   total: number;
+  pending_review: number;
   active: number;
-  pending_payment: number;
-  expired: number;
+  rejected: number;
+  archived: number;
+  featured: number;
   flagged: number;
 };
 
 const STATUS_TABS = [
   { value: "all", label: "All" },
+  { value: "pending_review", label: "Pending Review" },
   { value: "active", label: "Active" },
-  { value: "pending_payment", label: "Pending Payment" },
-  { value: "expired", label: "Expired" },
+  { value: "rejected", label: "Rejected" },
+  { value: "archived", label: "Archived" },
   { value: "flagged", label: "Flagged" },
 ];
 
@@ -44,9 +51,10 @@ const tierBadgeStyles: Record<string, string> = {
 };
 
 const statusBadgeStyles: Record<string, string> = {
-  pending_payment: "bg-amber-50 text-amber-700 border-amber-200",
+  pending_review: "bg-amber-50 text-amber-700 border-amber-200",
   active: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  expired: "bg-red-50 text-red-700 border-red-200",
+  rejected: "bg-red-50 text-red-700 border-red-200",
+  archived: "bg-zinc-100 text-zinc-600 border-zinc-200",
 };
 
 export default function BusinessesClient() {
@@ -60,6 +68,7 @@ export default function BusinessesClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [working, setWorking] = useState<string | null>(null);
+  const { updateStatus } = useApprovalAction("/api/admin/businesses");
 
   const page = Number(searchParams.get("page") ?? "1");
   const perPage = Number(searchParams.get("per_page") ?? "25");
@@ -155,11 +164,30 @@ export default function BusinessesClient() {
     }
   }
 
+  async function handleApprove(id: string) {
+    setWorking(id);
+    setError("");
+    const result = await updateStatus(id, { status: "active" });
+    if (!result.success) setError(result.error || "Failed to approve business.");
+    else await fetchData();
+    setWorking(null);
+  }
+
+  async function handleReject(id: string, reason: string) {
+    setWorking(id);
+    setError("");
+    const result = await updateStatus(id, { status: "rejected", rejection_reason: reason || null });
+    if (!result.success) setError(result.error || "Failed to reject business.");
+    else await fetchData();
+    setWorking(null);
+  }
+
   const statItems = [
     { label: "Total Listings", value: stats?.total ?? 0 },
-    { label: "Active Partners", value: stats?.active ?? 0, accent: "text-emerald-600" },
-    { label: "Pending Payment", value: stats?.pending_payment ?? 0, accent: "text-amber-600" },
-    { label: "Expired", value: stats?.expired ?? 0, accent: "text-red-500" },
+    { label: "Pending Review", value: stats?.pending_review ?? 0, accent: "text-amber-600" },
+    { label: "Active", value: stats?.active ?? 0, accent: "text-emerald-600" },
+    { label: "Featured", value: stats?.featured ?? 0, accent: "text-orange-500" },
+    { label: "Rejected", value: stats?.rejected ?? 0, accent: "text-red-600" },
     { label: "Flagged", value: stats?.flagged ?? 0, accent: "text-red-700" },
   ];
 
@@ -197,9 +225,10 @@ export default function BusinessesClient() {
             value: effectiveStatus,
             options: [
               { value: "all", label: "All Statuses" },
+              { value: "pending_review", label: "Pending Review" },
               { value: "active", label: "Active" },
-              { value: "pending_payment", label: "Pending Payment" },
-              { value: "expired", label: "Expired" },
+              { value: "rejected", label: "Rejected" },
+              { value: "archived", label: "Archived" },
               { value: "flagged", label: "Flagged" },
             ],
             onChange: (v) =>
@@ -231,6 +260,7 @@ export default function BusinessesClient() {
                   <th className="py-3 pr-4">Owner</th>
                   <th className="py-3 pr-4">Listing Tier</th>
                   <th className="py-3 pr-4">Status</th>
+                  <th className="py-3 pr-4">Featured</th>
                   <th className="py-3 pr-4">Flagged</th>
                   <th className="py-3 pr-4">Created</th>
                   <th className="px-6 py-3 text-right">Actions</th>
@@ -257,12 +287,25 @@ export default function BusinessesClient() {
                     </td>
                     <td className="py-4 pr-4">
                       <span
+                        title={row.status === "rejected" ? row.rejection_reason || undefined : undefined}
                         className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold uppercase ${
                           statusBadgeStyles[row.status] || "bg-zinc-100 text-zinc-700 border-zinc-200"
                         }`}
                       >
                         {row.status.replace("_", " ")}
                       </span>
+                    </td>
+                    <td className="py-4 pr-4">
+                      {row.is_featured ? (
+                        <span className="inline-flex items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2 py-0.5 text-[10px] font-black uppercase text-orange-600">
+                          <Star className="h-3 w-3 fill-orange-500 text-orange-500" />
+                          Featured
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[10px] font-black uppercase text-zinc-400">
+                          —
+                        </span>
+                      )}
                     </td>
                     <td className="py-4 pr-4">
                       {row.is_flagged ? (
@@ -286,6 +329,13 @@ export default function BusinessesClient() {
                           <Eye className="h-3.5 w-3.5" />
                           View
                         </Link>
+                        {row.status === "pending_review" && (
+                          <ApprovalActionButtons
+                            disabled={working === row.id}
+                            onApprove={() => handleApprove(row.id)}
+                            onReject={(reason) => handleReject(row.id, reason)}
+                          />
+                        )}
                         <button
                           type="button"
                           disabled={working === row.id}
@@ -314,7 +364,7 @@ export default function BusinessesClient() {
                 ))}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="py-12 text-center text-sm font-semibold text-zinc-400 bg-white">
+                    <td colSpan={8} className="py-12 text-center text-sm font-semibold text-zinc-400 bg-white">
                       No businesses found.
                     </td>
                   </tr>

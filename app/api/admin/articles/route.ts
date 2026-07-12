@@ -15,13 +15,25 @@ export async function GET(req: NextRequest) {
   const search = sp.get("search") ?? "";
 
   try {
-    // 1. Fetch articles with owner profile
+    // 1. Fetch articles
     const { data: articles, error } = await supabaseAdmin
       .from("articles")
-      .select("*, profiles:owner_id(id, display_name, account_info)")
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
+
+    // Fetch profiles for the owners of these articles
+    const ownerIds = [...new Set((articles ?? []).map((art) => art.owner_id))];
+    let profilesMap = new Map();
+    if (ownerIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, display_name, account_info")
+        .in("id", ownerIds);
+      if (profilesError) throw new Error(profilesError.message);
+      profilesMap = new Map(profiles?.map((p) => [p.id, p]));
+    }
 
     // 2. Fetch all auth users to match emails
     const authResult = await listAllAuthUsers();
@@ -34,8 +46,9 @@ export async function GET(req: NextRequest) {
     const mapped = (articles ?? []).map((art) => {
       const authUser = authUserMap.get(art.owner_id);
       const email = emailMap.get(art.owner_id) ?? "";
+      const profile = profilesMap.get(art.owner_id) ?? null;
       const authorName = authUser
-        ? getUserDisplayName(art.profiles ?? null, authUser)
+        ? getUserDisplayName(profile, authUser)
         : "Unknown";
 
       return {
@@ -47,6 +60,7 @@ export async function GET(req: NextRequest) {
         created_at: art.created_at,
         author_name: authorName,
         author_email: email,
+        rejection_reason: art.rejection_reason ?? null,
       };
     });
 
@@ -74,9 +88,11 @@ export async function GET(req: NextRequest) {
     // 7. Stats (calculated on the pre-status-filtered search results so counts are accurate for the current search context)
     const stats = {
       total: filtered.length,
+      pending_review: filtered.filter((a) => a.status === "pending_review").length,
       published: filtered.filter((a) => a.status === "published").length,
       draft: filtered.filter((a) => a.status === "draft").length,
       scheduled: filtered.filter((a) => a.status === "scheduled").length,
+      rejected: filtered.filter((a) => a.status === "rejected").length,
     };
 
     return NextResponse.json({

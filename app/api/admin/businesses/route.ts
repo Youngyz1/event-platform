@@ -15,13 +15,25 @@ export async function GET(req: NextRequest) {
   const search = sp.get("search") ?? "";
 
   try {
-    // 1. Fetch businesses with owner profile
+    // 1. Fetch businesses
     const { data: businesses, error } = await supabaseAdmin
       .from("businesses")
-      .select("*, profiles:owner_id(id, display_name, account_info)")
+      .select("*")
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
+
+    // Fetch profiles for the owners of these businesses
+    const ownerIds = [...new Set((businesses ?? []).map((biz) => biz.owner_id))];
+    let profilesMap = new Map();
+    if (ownerIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabaseAdmin
+        .from("profiles")
+        .select("id, display_name, account_info")
+        .in("id", ownerIds);
+      if (profilesError) throw new Error(profilesError.message);
+      profilesMap = new Map(profiles?.map((p) => [p.id, p]));
+    }
 
     // 2. Fetch all auth users to match emails
     const authResult = await listAllAuthUsers();
@@ -34,8 +46,9 @@ export async function GET(req: NextRequest) {
     const mapped = (businesses ?? []).map((biz) => {
       const authUser = authUserMap.get(biz.owner_id);
       const email = emailMap.get(biz.owner_id) ?? "";
+      const profile = profilesMap.get(biz.owner_id) ?? null;
       const ownerName = authUser
-        ? getUserDisplayName(biz.profiles ?? null, authUser)
+        ? getUserDisplayName(profile, authUser)
         : "Unknown";
 
       return {
@@ -45,6 +58,8 @@ export async function GET(req: NextRequest) {
         listing_tier: biz.listing_tier,
         status: biz.status,
         is_flagged: biz.is_flagged ?? false,
+        is_featured: biz.is_featured ?? false,
+        rejection_reason: biz.rejection_reason ?? null,
         created_at: biz.created_at,
         owner_name: ownerName,
         owner_email: email,
@@ -76,9 +91,11 @@ export async function GET(req: NextRequest) {
     // 7. Stats (calculated on the pre-tab-filtered search results so counts are accurate for the current search context)
     const stats = {
       total: filtered.length,
+      pending_review: filtered.filter((b) => b.status === "pending_review").length,
       active: filtered.filter((b) => b.status === "active").length,
-      pending_payment: filtered.filter((b) => b.status === "pending_payment").length,
-      expired: filtered.filter((b) => b.status === "expired").length,
+      rejected: filtered.filter((b) => b.status === "rejected").length,
+      archived: filtered.filter((b) => b.status === "archived").length,
+      featured: filtered.filter((b) => b.is_featured).length,
       flagged: filtered.filter((b) => b.is_flagged).length,
     };
 

@@ -93,8 +93,18 @@ export async function createArticle(input: ArticleInput) {
   const slug = await getUniqueSlug(trimmedTitle, supabase);
   const readingTime = calculateReadingTime(trimmedBody);
 
-  // Set published_at if status is 'published'
-  const publishedAt = input.status === "published" ? new Date().toISOString() : null;
+  // Publishing requires admin approval — see
+  // migration_38_content_approval_workflow.sql. This action always runs as
+  // the owner's own session (never admin), so 'published'/'rejected' are
+  // never valid here; the DB-level trigger would reject them too, but
+  // clamping here avoids surfacing a raw RLS/trigger error to the owner.
+  // 'scheduled' still submits for review — approval decides whether it goes
+  // live immediately or stays scheduled. published_at is only ever set by
+  // the admin approve action, never here.
+  const effectiveStatus =
+    input.status === "published" || input.status === "rejected"
+      ? "pending_review"
+      : input.status;
 
   const insertData = {
     owner_id: user.id,
@@ -109,12 +119,12 @@ export async function createArticle(input: ArticleInput) {
     seo_description: input.seo_description || null,
     canonical_url: input.canonical_url || null,
     visibility: input.visibility,
-    status: input.status,
-    scheduled_for: input.status === "scheduled" ? input.scheduled_for : null,
+    status: effectiveStatus,
+    scheduled_for: effectiveStatus === "scheduled" ? input.scheduled_for : null,
     reading_time: readingTime,
     business_id: input.business_id || null,
     organizer_id: input.organizer_id || null,
-    published_at: publishedAt,
+    published_at: null,
   };
 
   const { data, error } = await supabase
@@ -183,6 +193,16 @@ export async function updateArticle(id: string, input: ArticleInput) {
   const slug = await getUniqueSlug(trimmedTitle, supabase, id);
   const readingTime = calculateReadingTime(trimmedBody);
 
+  // Same approval-workflow clamp as createArticle — but here the caller may
+  // genuinely be an admin (checked above), in which case 'published'/
+  // 'rejected' are legitimate and left as-is; the DB trigger permits it too,
+  // since this runs on the admin's own authenticated session, not
+  // service-role. Only a non-admin owner's attempt gets clamped.
+  const effectiveStatus =
+    !isAdmin && (input.status === "published" || input.status === "rejected")
+      ? "pending_review"
+      : input.status;
+
   const updateData = {
     title: trimmedTitle,
     slug,
@@ -195,8 +215,8 @@ export async function updateArticle(id: string, input: ArticleInput) {
     seo_description: input.seo_description || null,
     canonical_url: input.canonical_url || null,
     visibility: input.visibility,
-    status: input.status,
-    scheduled_for: input.status === "scheduled" ? input.scheduled_for : null,
+    status: effectiveStatus,
+    scheduled_for: effectiveStatus === "scheduled" ? input.scheduled_for : null,
     reading_time: readingTime,
     business_id: input.business_id || null,
     organizer_id: input.organizer_id || null,

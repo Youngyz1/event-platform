@@ -11,25 +11,50 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const { is_flagged } = await req.json();
+  const body = await req.json();
 
-  if (typeof is_flagged !== "boolean") {
-    return NextResponse.json(
-      { error: "Invalid parameters. is_flagged must be a boolean." },
-      { status: 400 }
-    );
+  // Existing flag/unflag moderation action — unchanged.
+  if (typeof body.is_flagged === "boolean") {
+    const { error } = await supabaseAdmin
+      .from("businesses")
+      .update({ is_flagged: body.is_flagged })
+      .eq("id", id);
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ success: true });
   }
 
-  const { error } = await supabaseAdmin
-    .from("businesses")
-    .update({ is_flagged })
-    .eq("id", id);
+  // Approve/reject — only valid from pending_review.
+  if (body.status === "active" || body.status === "rejected") {
+    const updatePayload: Record<string, unknown> = { status: body.status };
+    updatePayload.rejection_reason = body.status === "rejected" ? (body.rejection_reason || null) : null;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const { data: updated, error } = await supabaseAdmin
+      .from("businesses")
+      .update(updatePayload)
+      .eq("id", id)
+      .eq("status", "pending_review")
+      .select("id")
+      .maybeSingle();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    if (!updated) {
+      return NextResponse.json(
+        { error: "Business is not pending review (already decided or archived)." },
+        { status: 409 }
+      );
+    }
+    return NextResponse.json({ success: true });
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json(
+    { error: "Invalid parameters. Provide is_flagged (boolean), or status (active/rejected)." },
+    { status: 400 }
+  );
 }
 
 export async function DELETE(
