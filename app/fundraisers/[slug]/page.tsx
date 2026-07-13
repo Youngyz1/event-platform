@@ -27,6 +27,7 @@ import {
   getOptionalFundraiserFields,
 } from "@/lib/fundraiser-data";
 import { getSiteUrl } from "@/lib/site-url";
+import { truncateWords, stripHtml } from "@/lib/text";
 
 export async function generateMetadata({
   params,
@@ -303,14 +304,6 @@ export default async function FundraiserPage({
           type: item.type,
         }))
       : [{ url: coverImage, type: "image" }];
-  // Shareable social-graphic slide: the auto-generated OG card, appended as a
-  // regular image slide. Must be an absolute URL — the slider's safeUrl()
-  // falls back to a stock placeholder for anything not starting with "http".
-  media.push({
-    id: "share-card",
-    url: `${getSiteUrl()}/fundraisers/${fundraiser.slug}/opengraph-image`,
-    type: "image",
-  });
   const updates = (updatesResult.data ?? []) as UpdateRow[];
   const recentDonors = (donationsResult.data ?? []) as DonationRow[];
   const publicProfileById = await getPublicProfileMap(
@@ -330,6 +323,44 @@ export default async function FundraiserPage({
     optionalFundraiser.short_description ||
     "";
   void commentsResult.count;
+
+  // Story-overlay slide: excerpt + donor cluster, reusing the same donor
+  // display-name resolution DonorList uses (profile display name, then the
+  // raw donor_name, then Anonymous) — no new query, just the data already
+  // fetched above for the sidebar donor list.
+  const donorDisplayNames = recentDonors.map(
+    (donation) =>
+      (donation.user_id && publicProfileById.get(donation.user_id)?.display_name) ||
+      donation.donor_name ||
+      "Anonymous"
+  );
+  const storyExcerpt = truncateWords(
+    stripHtml(optionalFundraiser.short_description || description) ||
+      "Read the full story.",
+    160
+  );
+  // Shareable social-graphic slide: the auto-generated OG card, appended as a
+  // regular image slide. Must be an absolute URL — the slider's safeUrl()
+  // falls back to a stock placeholder for anything not starting with "http".
+  // Ordered before the story-overlay slide to match GoFundMe's own sequence
+  // (photos -> share-card -> story-overlay).
+  media.push({
+    id: "share-card",
+    url: `${getSiteUrl()}/fundraisers/${fundraiser.slug}/opengraph-image`,
+    type: "image",
+  });
+  media.push({
+    id: "story-overlay",
+    // No photo — this slide renders a solid brand-color backdrop instead.
+    url: null,
+    type: "image",
+    story: {
+      excerpt: storyExcerpt,
+      donorCount: donationCount,
+      donorNames: donorDisplayNames,
+      scrollTargetId: "fundraiser-story",
+    },
+  });
   const beneficiaryName: string =
     optionalFundraiser.beneficiary ||
     optionalFundraiser.beneficiary_name ||

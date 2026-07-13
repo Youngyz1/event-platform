@@ -66,7 +66,7 @@ export default function FundraiserStory({
     : "";
 
   return (
-    <section className="border-b border-zinc-200 pb-8">
+    <section id="fundraiser-story" className="border-b border-zinc-200 pb-8">
       {/* Content wrapper with CSS-based clamping */}
       <div
         ref={contentRef}

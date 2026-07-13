@@ -8,6 +8,7 @@ import {
   getFundraiserCardData,
 } from "@/lib/fundraiser-data";
 import { money } from "@/lib/format";
+import { truncateWords } from "@/lib/text";
 
 // Node.js runtime (not edge) so we can read the local font/logo files below.
 export const runtime = "nodejs";
@@ -29,14 +30,6 @@ const BRAND = {
   emeraldSoft: "#ECFDF5",
   track: "#E5E7EB",
 };
-
-function truncate(text: string, max: number) {
-  const trimmed = text.trim();
-  if (trimmed.length <= max) return trimmed;
-  const cut = trimmed.slice(0, max);
-  const lastSpace = cut.lastIndexOf(" ");
-  return `${(lastSpace > max * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
-}
 
 async function readFontFile(filename: string) {
   return readFile(join(process.cwd(), "assets", "fonts", filename));
@@ -111,8 +104,8 @@ export default async function Image({
   }
 
   const photo = await resolveCardPhoto(card.coverImage);
-  const title = truncate(card.title, 70);
-  const organizerLabel = truncate(card.organizerName, 40);
+  const title = truncateWords(card.title, 70);
+  const organizerLabel = truncateWords(card.organizerName, 40);
   const raisedLabel = money(card.raised);
   const goalLabel = money(card.goal);
 
