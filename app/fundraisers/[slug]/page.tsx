@@ -14,7 +14,7 @@ import { supabase } from "@/lib/supabase";
 import { recordDonationFromStripeSessionId } from "@/lib/donations";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Flag } from "lucide-react";
+import { Flag, Zap, HeartHandshake, ShieldCheck } from "lucide-react";
 import FundraiserFloatingActions, { ShareFundraiserButton } from "./FundraiserActions";
 import StarRating from "@/components/StarRating";
 import { normalizeImageUrl } from "@/lib/image-url";
@@ -676,6 +676,39 @@ export default async function FundraiserPage({
           </div>
         </aside>
       </div>
+
+      {/* ── Trust triad ─────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+        <div className="grid gap-8 sm:grid-cols-3">
+          <div className="text-center sm:text-left">
+            <Zap className="mx-auto h-8 w-8 text-emerald-600 sm:mx-0" />
+            <h3 className="mt-3 text-lg font-black text-zinc-950">Easy</h3>
+            <p className="mt-1 text-sm text-zinc-600">
+              Donate quickly and securely
+            </p>
+          </div>
+          <div className="text-center sm:text-left">
+            <HeartHandshake className="mx-auto h-8 w-8 text-emerald-600 sm:mx-0" />
+            <h3 className="mt-3 text-lg font-black text-zinc-950">Powerful</h3>
+            <p className="mt-1 text-sm text-zinc-600">
+              Send help directly to the people and causes you care about
+            </p>
+          </div>
+          <div className="text-center sm:text-left">
+            <ShieldCheck className="mx-auto h-8 w-8 text-emerald-600 sm:mx-0" />
+            <h3 className="mt-3 text-lg font-black text-zinc-950">Trusted</h3>
+            <p className="mt-1 text-sm text-zinc-600">
+              Every fundraiser is reviewed —{" "}
+              <Link
+                href="/reviews"
+                className="font-bold text-emerald-700 hover:underline"
+              >
+                see what real donors are saying
+              </Link>
+            </p>
+          </div>
+        </div>
+      </section>
 
       {/* ── Related fundraisers ─────────────────────────────────────── */}
       {relatedFundraisers.length > 0 && (
