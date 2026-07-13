@@ -21,20 +21,12 @@ import { normalizeImageUrl } from "@/lib/image-url";
 import { jsonLdScriptValue } from "@/lib/structured-data";
 import { money } from "@/lib/format";
 import DonorList from "@/components/DonorList";
-
-import { cache } from "react";
-
-/** Deduplicated cache helper for querying fundraiser details. */
-const getFundraiserBySlug = cache(async (slug: string) => {
-  const { data: fundraiser } = await supabase
-    .from("fundraisers")
-    .select(
-      "id, title, slug, banner, image_url, goal, raised, raised_amount, organizer_id, organizer, story, category, created_at, review_count, average_rating"
-    )
-    .eq("slug", slug)
-    .maybeSingle();
-  return fundraiser;
-});
+import {
+  FUNDRAISER_FALLBACK_IMAGE,
+  getFundraiserBySlug,
+  getOptionalFundraiserFields,
+} from "@/lib/fundraiser-data";
+import { getSiteUrl } from "@/lib/site-url";
 
 export async function generateMetadata({
   params,
@@ -74,8 +66,7 @@ export async function generateMetadata({
   };
 }
 
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1600&auto=format&fit=crop";
+const FALLBACK_IMAGE = FUNDRAISER_FALLBACK_IMAGE;
 
 type DonationRow = {
   id: string;
@@ -109,34 +100,6 @@ type PublicProfileRow = {
   display_name: string | null;
   avatar_url: string | null;
 };
-
-type OptionalFundraiserFields = {
-  description?: string | null;
-  goal_amount?: number | string | null;
-  short_description?: string | null;
-  beneficiary?: string | null;
-  beneficiary_name?: string | null;
-};
-
-const OPTIONAL_FUNDRAISER_FIELDS = [
-  "description", "goal_amount", "short_description",
-  "beneficiary", "beneficiary_name",
-] as const;
-
-const getOptionalFundraiserFields = cache(async (fundraiserId: string) => {
-  const { data, error } = await supabase
-    .from("fundraisers")
-    .select(OPTIONAL_FUNDRAISER_FIELDS.join(", "))
-    .eq("id", fundraiserId)
-    .maybeSingle();
-
-  if (error || !data) {
-    return Object.fromEntries(
-      OPTIONAL_FUNDRAISER_FIELDS.map((f) => [f, null])
-    ) as OptionalFundraiserFields;
-  }
-  return data as unknown as OptionalFundraiserFields;
-});
 
 function initial(value: string) {
   return (value.trim() || "A").charAt(0).toUpperCase();
@@ -340,6 +303,14 @@ export default async function FundraiserPage({
           type: item.type,
         }))
       : [{ url: coverImage, type: "image" }];
+  // Shareable social-graphic slide: the auto-generated OG card, appended as a
+  // regular image slide. Must be an absolute URL — the slider's safeUrl()
+  // falls back to a stock placeholder for anything not starting with "http".
+  media.push({
+    id: "share-card",
+    url: `${getSiteUrl()}/fundraisers/${fundraiser.slug}/opengraph-image`,
+    type: "image",
+  });
   const updates = (updatesResult.data ?? []) as UpdateRow[];
   const recentDonors = (donationsResult.data ?? []) as DonationRow[];
   const publicProfileById = await getPublicProfileMap(
@@ -503,7 +474,10 @@ export default async function FundraiserPage({
             </section>
           )}
 
-          <FundraiserShare title={fundraiser.title} imageUrl={coverImage} />
+          <FundraiserShare
+            title={fundraiser.title}
+            imageUrl={`${getSiteUrl()}/fundraisers/${fundraiser.slug}/opengraph-image`}
+          />
 
           {/* ── Organiser & Beneficiary ─────────────────────────── */}
           <section className="border-t border-zinc-200 pt-8">
