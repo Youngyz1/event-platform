@@ -53,10 +53,13 @@ export default function TicketCheckout({
   event,
   tickets,
   lowestPrice,
+  defaultCountry,
 }: {
   event: Event;
   tickets: Ticket[];
   lowestPrice: number | null;
+  /** Server-resolved visitor country (see lib/request-geo.ts) for the Stripe PaymentElement's billing address default. */
+  defaultCountry?: string;
 }) {
   const searchParams = useSearchParams();
   const [isOpen, setIsOpen] = useState(false);
@@ -805,6 +808,7 @@ export default function TicketCheckout({
                               setCheckoutAttemptId(null);
                               setQrCode(null);
                             }}
+                            defaultCountry={defaultCountry}
                           />
                         </StripeProvider>
                       ) : (

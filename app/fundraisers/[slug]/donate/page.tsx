@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import { notFound } from "next/navigation";
+import { getVisitorCountry } from "@/lib/request-geo";
 import DonatePage from "./DonatePage";
 
 export default async function FundraiserDonatePage({
@@ -9,11 +10,14 @@ export default async function FundraiserDonatePage({
 }) {
   const { slug } = await params;
 
-  const { data: fundraiser } = await supabase
-    .from("fundraisers")
-    .select("id, title, slug, organizer, banner, raised, goal")
-    .eq("slug", slug)
-    .single();
+  const [{ data: fundraiser }, defaultCountry] = await Promise.all([
+    supabase
+      .from("fundraisers")
+      .select("id, title, slug, organizer, banner, raised, goal")
+      .eq("slug", slug)
+      .single(),
+    getVisitorCountry(),
+  ]);
 
   if (!fundraiser) return notFound();
 
@@ -28,6 +32,7 @@ export default async function FundraiserDonatePage({
       }
       raised={fundraiser.raised ?? 0}
       goal={fundraiser.goal ?? 0}
+      defaultCountry={defaultCountry}
     />
   );
 }

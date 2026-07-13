@@ -25,6 +25,8 @@ type DonatePageProps = {
   banner: string;
   raised: number;
   goal: number;
+  /** Server-resolved visitor country (see lib/request-geo.ts) for the Stripe PaymentElement's billing address default. */
+  defaultCountry?: string;
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -36,6 +38,7 @@ export default function DonatePage({
   banner,
   raised,
   goal,
+  defaultCountry,
 }: DonatePageProps) {
   // Amount selection
   const [selectedPreset, setSelectedPreset] = useState(50);
@@ -524,6 +527,7 @@ export default function DonatePage({
             // billing_details are populated without duplicating the fields
             collectName={false}
             collectEmail={false}
+            defaultCountry={defaultCountry}
           />
         </StripeProvider>
       )}

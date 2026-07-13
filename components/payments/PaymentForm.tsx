@@ -38,6 +38,14 @@ type Props = {
   disabled?: boolean;
   /** Hide our own custom inputs for Name/Email if they are already collected beforehand */
   hideInputs?: boolean;
+  /**
+   * ISO 3166-1 alpha-2 country to pre-select in the PaymentElement's billing
+   * address country field. Without this, Stripe falls back to its own
+   * client-side IP geolocation, which is unreliable behind VPNs/proxies —
+   * pass the server-resolved value from lib/request-geo.ts's
+   * getVisitorCountry() rather than omitting this.
+   */
+  defaultCountry?: string;
 };
 
 export default function PaymentForm({
@@ -53,6 +61,7 @@ export default function PaymentForm({
   onEmailChange,
   disabled = false,
   hideInputs = false,
+  defaultCountry = "US",
 }: Props) {
   const stripe = useStripe();
   const elements = useElements();
@@ -214,6 +223,16 @@ export default function PaymentForm({
                 billingDetails: {
                   name: collectName ? "never" : "auto",
                   email: collectEmail ? "never" : "auto",
+                },
+              },
+              // Pre-select the billing country from our own server-resolved
+              // geolocation instead of leaving it to Stripe's client-side IP
+              // detection (unreliable behind VPNs/proxies).
+              defaultValues: {
+                billingDetails: {
+                  address: {
+                    country: defaultCountry,
+                  },
                 },
               },
             }}

@@ -12,6 +12,7 @@ import AboutSection from "./AboutSection";
 import StarRating from "@/components/StarRating";
 import { normalizeImageUrl } from "@/lib/image-url";
 import { getSiteUrl } from "@/lib/site-url";
+import { getVisitorCountry } from "@/lib/request-geo";
 import {
   absoluteUrl as toAbsoluteUrl,
   compactJsonLd,
@@ -178,6 +179,7 @@ export default async function EventPage({
 
   if (!event) return notFound();
   const optionalEvent = await getOptionalEventFields(event.id);
+  const defaultCountry = await getVisitorCountry();
   const eventImage = normalizeImageUrl(event.banner, FALLBACK_EVENT_IMAGE);
 
   if (event.visibility === "private") {
@@ -935,6 +937,7 @@ export default async function EventPage({
               event={{ ...event, source_url: optionalEvent.source_url ?? null }}
               tickets={tickets || []}
               lowestPrice={lowestPrice}
+              defaultCountry={defaultCountry}
             />
           </div>
         </div>
