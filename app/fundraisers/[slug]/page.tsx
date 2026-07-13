@@ -734,7 +734,13 @@ export default async function FundraiserPage({
       )}
 
       {/* Sticky bottom actions bar on mobile */}
-      <FundraiserFloatingActions title={fundraiser.title} slug={fundraiser.slug} />
+      <FundraiserFloatingActions
+        title={fundraiser.title}
+        slug={fundraiser.slug}
+        raised={raised}
+        goal={goal}
+        percentage={percentage}
+      />
     </main>
   );
 }

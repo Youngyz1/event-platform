@@ -2,6 +2,7 @@
 
 import { Check, Share2 } from "lucide-react";
 import { useState } from "react";
+import { money } from "@/lib/format";
 
 export function ShareFundraiserButton({
   title,
@@ -42,20 +43,40 @@ export function ShareFundraiserButton({
   );
 }
 
-export default function FundraiserFloatingActions({ title, slug }: { title: string; slug: string }) {
+export default function FundraiserFloatingActions({
+  title,
+  slug,
+  raised,
+  goal,
+  percentage,
+}: {
+  title: string;
+  slug: string;
+  raised: number;
+  goal: number;
+  percentage: number;
+}) {
   return (
     <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 px-3 py-3 shadow-[0_-12px_30px_rgba(15,23,42,0.12)] backdrop-blur md:hidden">
-      <div className="mx-auto flex max-w-md gap-3">
-        <ShareFundraiserButton
-          title={title}
-          className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-black text-zinc-800 shadow-sm"
-        />
-        <a
-          href={`/fundraisers/${slug}/donate`}
-          className="flex flex-1 items-center justify-center rounded-2xl bg-green-500 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-green-600"
-        >
-          Donate
-        </a>
+      <div className="mx-auto max-w-md">
+        <div className="mb-2 flex items-center justify-between text-xs font-bold text-zinc-700">
+          <span>
+            {money(raised)} raised of {money(goal)}
+          </span>
+          <span className="text-emerald-600">{percentage}% funded</span>
+        </div>
+        <div className="flex gap-3">
+          <ShareFundraiserButton
+            title={title}
+            className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm font-black text-zinc-800 shadow-sm"
+          />
+          <a
+            href={`/fundraisers/${slug}/donate`}
+            className="flex flex-1 items-center justify-center rounded-2xl bg-green-500 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-green-600"
+          >
+            Donate
+          </a>
+        </div>
       </div>
     </div>
   );
