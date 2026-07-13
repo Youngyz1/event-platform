@@ -382,9 +382,16 @@ export default async function FundraiserPage({
         dangerouslySetInnerHTML={{ __html: jsonLdScriptValue(jsonLd) }}
       />
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-6 lg:grid-cols-3 lg:py-10">
-        {/* Main content column */}
-        <div className="min-w-0 space-y-8 lg:col-span-2">
-          <header>
+        {/* Main content column — `contents` below `lg` dissolves this div's own
+            box so its children become direct items of the outer grid above,
+            letting each one carry its own `order-*` value (see below) that
+            interleaves with the aside. DOM order is untouched — `contents`
+            only affects the box/layout tree, not the DOM or accessibility
+            tree — so this is a visual-only reorder, same as the `order-first`
+            trick it replaces. At `lg` the div becomes a normal box again,
+            restoring today's two-column sidebar layout unchanged. */}
+        <div className="contents lg:block lg:min-w-0 lg:space-y-8 lg:col-span-2">
+          <header className="order-4 lg:order-none">
             {fundraiserCategory && (
               <span className="inline-block rounded-full bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-wide text-emerald-700 mb-3">
                 {fundraiserCategory}
@@ -406,7 +413,7 @@ export default async function FundraiserPage({
             )}
           </header>
 
-          <section className="border-b border-zinc-200 pb-8">
+          <section className="order-1 border-b border-zinc-200 pb-8 lg:order-none">
             <FundraiserMediaSlider media={media} title={fundraiser.title} />
             <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
@@ -431,10 +438,12 @@ export default async function FundraiserPage({
             </div>
           </section>
 
-          <FundraiserStory description={description} />
+          <div className="order-3 lg:order-none">
+            <FundraiserStory description={description} />
+          </div>
 
           {updates.length > 0 && (
-            <section className="border-b border-zinc-200 pb-8">
+            <section className="order-6 border-b border-zinc-200 pb-8 lg:order-none">
               <h2 className="text-2xl font-bold text-zinc-950 break-words">
                 Updates {updates.length}
               </h2>
@@ -474,13 +483,15 @@ export default async function FundraiserPage({
             </section>
           )}
 
-          <FundraiserShare
-            title={fundraiser.title}
-            imageUrl={`${getSiteUrl()}/fundraisers/${fundraiser.slug}/opengraph-image`}
-          />
+          <div className="order-7 lg:order-none">
+            <FundraiserShare
+              title={fundraiser.title}
+              imageUrl={`${getSiteUrl()}/fundraisers/${fundraiser.slug}/opengraph-image`}
+            />
+          </div>
 
           {/* ── Organiser & Beneficiary ─────────────────────────── */}
-          <section className="border-t border-zinc-200 pt-8">
+          <section className="order-5 border-t border-zinc-200 pt-8 lg:order-none">
             <h2 className="text-lg font-black text-zinc-950 break-words">
               Organiser and beneficiary
             </h2>
@@ -572,14 +583,18 @@ export default async function FundraiserPage({
           </section>
 
           {/* ── Words of Support — always visible ───────────────── */}
-          <div className="border-t border-zinc-200 pt-8">
+          <div className="order-8 border-t border-zinc-200 pt-8 lg:order-none">
             <SupportMessages fundraiserId={fundraiser.id} />
           </div>
 
         </div>
 
-        {/* Aside */}
-        <aside className="min-w-0 lg:col-span-1">
+        {/* Aside — order-2 below `lg` (hero carousel first, then this
+            progress/donate card, then the story — see the `contents` wrapper
+            above), since the sidebar grid itself only kicks in at `lg`; DOM
+            order is untouched, so SEO/accessibility order matches the
+            desktop reading order at every width). */}
+        <aside className="order-2 min-w-0 lg:order-none lg:col-span-1">
           <div className="space-y-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
             <section className="text-center">
               <div className="flex justify-center">
