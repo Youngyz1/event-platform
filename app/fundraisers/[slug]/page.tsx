@@ -21,10 +21,12 @@ import { normalizeImageUrl } from "@/lib/image-url";
 import { jsonLdScriptValue } from "@/lib/structured-data";
 import { money } from "@/lib/format";
 import DonorList from "@/components/DonorList";
+import RelatedFundraiserCarousel from "@/components/RelatedFundraiserCarousel";
 import {
   FUNDRAISER_FALLBACK_IMAGE,
   getFundraiserBySlug,
   getOptionalFundraiserFields,
+  getRelatedFundraisers,
 } from "@/lib/fundraiser-data";
 import { getSiteUrl } from "@/lib/site-url";
 import { truncateWords, stripHtml } from "@/lib/text";
@@ -235,6 +237,7 @@ export default async function FundraiserPage({
     donationsResult,
     organizerResult,
     commentsResult,
+    relatedFundraisers,
   ] = await Promise.all([
     supabase
       .from("fundraiser_media")
@@ -268,6 +271,7 @@ export default async function FundraiserPage({
       .eq("target_type", "fundraiser")
       .eq("target_id", fundraiser.id)
       .eq("status", "approved"),
+    getRelatedFundraisers(fundraiser.id, 10),
   ]);
 
   const organizer = organizerResult.data as OrganizerRow | null;
@@ -672,6 +676,29 @@ export default async function FundraiserPage({
           </div>
         </aside>
       </div>
+
+      {/* ── Related fundraisers ─────────────────────────────────────── */}
+      {relatedFundraisers.length > 0 && (
+        <section className="bg-emerald-950 py-12">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="mb-8">
+              <p className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                Making a Difference
+              </p>
+              <h2 className="mt-1 text-3xl font-black text-white">
+                More ways to make a difference
+              </h2>
+              <p className="mt-1 text-sm font-medium text-emerald-100/70">
+                Other fundraisers you might want to support.
+              </p>
+            </div>
+            <RelatedFundraiserCarousel
+              fundraisers={relatedFundraisers}
+              excludeId={fundraiser.id}
+            />
+          </div>
+        </section>
+      )}
 
       {/* Sticky bottom actions bar on mobile */}
       <FundraiserFloatingActions title={fundraiser.title} slug={fundraiser.slug} />

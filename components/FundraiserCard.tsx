@@ -14,6 +14,7 @@ type FundraiserCardProps = {
   daysLeft?: number | null;
   featured?: boolean;
   category?: string | null;
+  organizer?: string | null;
 };
 
 const FALLBACK_IMAGE =
@@ -29,6 +30,7 @@ export default function FundraiserCard({
   daysLeft,
   featured = false,
   category,
+  organizer,
 }: FundraiserCardProps) {
   const progress = goal ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
   const imageSrc = normalizeImageUrl(image, FALLBACK_IMAGE);
@@ -67,6 +69,11 @@ export default function FundraiserCard({
         </div>
         <div className="flex flex-1 flex-col p-4 sm:p-5">
           <h3 className="line-clamp-2 text-base font-black leading-snug text-zinc-950 sm:text-lg">{title}</h3>
+          {organizer && (
+            <p className="mt-1 truncate text-xs font-semibold text-zinc-500">
+              by {organizer}
+            </p>
+          )}
 
           <div className="mt-3">
             <div className="flex items-baseline justify-between gap-2">
