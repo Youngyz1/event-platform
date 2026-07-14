@@ -47,7 +47,13 @@ export async function generateMetadata({
   const description =
     fundraiser?.story ||
     `${raised} raised of ${goal} goal. Support this fundraiser on Fund4Good.`;
-  const image = normalizeImageUrl(fundraiser?.banner, "/og-image.png");
+  // Use the auto-generated live-data campaign card (opengraph-image.tsx),
+  // same as the hero-carousel share-card slide and FundraiserShare's
+  // preview — not the raw banner photo, so social previews always show
+  // current raised/goal/percentage rather than just the cover image.
+  const image = fundraiser
+    ? `${getSiteUrl()}/fundraisers/${fundraiser.slug}/opengraph-image`
+    : normalizeImageUrl(null, "/og-image.png");
 
   return {
     metadataBase: new URL("https://www.fund4agoodcause.com"),
