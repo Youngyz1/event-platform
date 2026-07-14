@@ -76,7 +76,7 @@ export default function DonorList({
 
   return (
     <>
-      <ul className="mt-4 space-y-4">
+      <ul className="mt-3 space-y-3 lg:mt-4 lg:space-y-4">
         {donations.map((donation) => {
           const displayName = donation.donor_name || "Anonymous";
           const amount = Number(donation.amount ?? 0);
@@ -91,8 +91,8 @@ export default function DonorList({
             donation.profile?.display_name || displayName;
 
           return (
-            <li key={donation.id} className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-sm font-black text-zinc-600">
+            <li key={donation.id} className="flex items-center gap-2 lg:gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-sm font-black text-zinc-600 lg:h-10 lg:w-10">
                 {initial(displayName)}
               </div>
               <div className="min-w-0 flex-1">
@@ -131,7 +131,7 @@ export default function DonorList({
           type="button"
           onClick={loadMore}
           disabled={loading}
-          className="mt-4 w-full rounded-full border border-zinc-300 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50"
+          className="mt-3 w-full rounded-full border border-zinc-300 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 lg:mt-4"
         >
           {loading ? "Loading..." : "Load more"}
         </button>

@@ -177,7 +177,7 @@ function ProgressRing({ percentage }: { percentage: number }) {
   const offset = circumference - (percentage / 100) * circumference;
 
   return (
-    <svg viewBox="0 0 100 100" className="h-28 w-28">
+    <svg viewBox="0 0 100 100" className="h-20 w-20 lg:h-28 lg:w-28">
       <circle
         cx="50"
         cy="50"
@@ -636,37 +636,37 @@ export default async function FundraiserPage({
             order is untouched, so SEO/accessibility order matches the
             desktop reading order at every width). */}
         <aside className="order-2 min-w-0 lg:order-none lg:col-span-1">
-          <div className="space-y-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm lg:sticky lg:top-24">
+          <div className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm lg:space-y-6 lg:p-6 lg:sticky lg:top-24">
             <section className="text-center">
               <div className="flex justify-center">
                 <ProgressRing percentage={percentage} />
               </div>
-              <p className="mt-4 text-3xl font-black text-zinc-950">
+              <p className="mt-3 text-2xl font-black text-zinc-950 lg:mt-4 lg:text-3xl">
                 {money(raised)} raised
               </p>
               <p className="mt-1 text-sm font-medium text-zinc-500">
                 of {money(goal)} goal
               </p>
-              <p className="mt-3 text-sm font-bold text-zinc-700">
+              <p className="mt-2 text-sm font-bold text-zinc-700 lg:mt-3">
                 {donationCount.toLocaleString()} donation
                 {donationCount === 1 ? "" : "s"}
               </p>
             </section>
 
-            <section className="space-y-3">
+            <section className="space-y-2 lg:space-y-3">
               <a
                 href={`/fundraisers/${fundraiser.slug}/donate`}
-                className="flex w-full items-center justify-center rounded-lg bg-emerald-600 px-5 py-3.5 text-base font-black text-white transition hover:bg-emerald-700"
+                className="flex w-full items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 lg:py-3.5 lg:text-base"
               >
                 Donate now
               </a>
               <ShareFundraiserButton
                 title={fundraiser.title}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 px-5 py-3.5 text-base font-black text-white transition hover:bg-slate-900"
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-black text-white transition hover:bg-slate-900 lg:py-3.5 lg:text-base"
               />
             </section>
 
-            <section className="border-t border-zinc-200 pt-5">
+            <section className="border-t border-zinc-200 pt-4 lg:pt-5">
   <h2 className="text-base font-bold text-zinc-950">
     Recent donors
   </h2>
