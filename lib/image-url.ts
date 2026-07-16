@@ -2,6 +2,7 @@ const EXACT_IMAGE_HOSTS = new Set([
   "images.unsplash.com",
   "img.evbuc.com",
   "s1.ticketm.net",
+  "seatgeekimages.com",
   "images.gofundme.com",
   "d2g8igdw686xgo.cloudfront.net",
   "lh3.googleusercontent.com",
@@ -12,6 +13,11 @@ const WILDCARD_IMAGE_HOST_SUFFIXES = [
   ".supabase.in",
   ".googleusercontent.com",
 ];
+
+// A URL can sit on an allowed host yet not be an image at all — e.g. a campaign
+// whose `banner` column holds a video file. next/image would try to optimize it
+// and fail (SSRF guard / decode error), so reject known non-image file types.
+const NON_IMAGE_FILE_EXTENSION = /\.(mp4|m4v|mov|webm|mkv|avi|ogv|mp3|wav|m4a|flac)$/i;
 
 type ProxyUnwrapRule = {
   matches: (url: URL) => boolean;
@@ -64,6 +70,7 @@ export function normalizeImageUrl(
 
     if (url.protocol !== "https:") return fallback;
     if (!isAllowedImageHost(url.hostname)) return fallback;
+    if (NON_IMAGE_FILE_EXTENSION.test(url.pathname)) return fallback;
     return url.toString();
   } catch {
     return fallback;

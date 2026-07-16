@@ -204,6 +204,7 @@ export default function NearbyEvents() {
                         })
                       : "Date TBA"
                   }
+                  eventDate={e.event_date}
                   location={e.city || city || ""}
                   image={
                     e.banner ||

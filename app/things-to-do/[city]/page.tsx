@@ -1,8 +1,15 @@
 
 import type { Metadata } from "next";
 import EventCard from "@/components/EventCard";
+import ExternalEventCard, { ExternalSourceCredit } from "@/components/events/ExternalEventCard";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { searchExternalEvents } from "@/lib/external-events";
+
+// Live external results are fetched per request and cached for 5 minutes inside
+// the lib; revalidate the page on the same cadence so a statically-rendered city
+// page never serves stale (or build-frozen) external data.
+export const revalidate = 300;
 
 // Generate static params for known cities
 export async function generateStaticParams() {
@@ -59,6 +66,10 @@ export default async function ThingsToDoPage({
     .ilike("city", `%${decodedCity}%`)
     .order("event_date", { ascending: true })
     .limit(20);
+
+  // Live external events happening in this city (Ticketmaster + SeatGeek).
+  // Fetched per view, never stored; cap the block at 9.
+  const externalEvents = (await searchExternalEvents({ location: decodedCity })).slice(0, 9);
 
   // Attraction categories to show
   const attractionCategories = [
@@ -134,6 +145,7 @@ export default async function ThingsToDoPage({
                       day: "numeric",
                     })
                   : "Date TBA"}
+                eventDate={event.event_date}
                 location={event.city || event.venue || "Location TBA"}
                 image={
                   event.banner ||
@@ -152,6 +164,25 @@ export default async function ThingsToDoPage({
           </div>
         )}
       </section>
+
+      {/* Live external events happening in this city */}
+      {externalEvents.length > 0 && (
+        <section className="max-w-7xl mx-auto px-6 py-8">
+          <div className="mb-6">
+            <p className="text-xs font-black uppercase tracking-wider text-orange-500">Beyond Fund4Good</p>
+            <h2 className="text-2xl font-black mt-1">🎟️ Happening in {decodedCity}</h2>
+            <p className="text-sm font-medium text-zinc-500 mt-1">
+              Live from other platforms — tickets are sold on the source site.
+            </p>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {externalEvents.map((event) => (
+              <ExternalEventCard key={event.id} event={event} />
+            ))}
+          </div>
+          <ExternalSourceCredit sources={externalEvents.map((e) => e.source)} />
+        </section>
+      )}
 
       {/* More things to do - external suggestions */}
       <section className="bg-white py-12">

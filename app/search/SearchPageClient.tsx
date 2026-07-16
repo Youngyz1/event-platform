@@ -7,6 +7,8 @@ import PublicEmptyState from "@/components/public/PublicEmptyState";
 import EventCard from "@/components/EventCard";
 import FundraiserCard from "@/components/FundraiserCard";
 import OrganizerCard from "@/components/public/OrganizerCard";
+import ExternalEventCard, { ExternalSourceCredit } from "@/components/events/ExternalEventCard";
+import type { ExternalEvent } from "@/lib/external-events";
 import Link from "next/link";
 
 type SearchResultsProps = {
@@ -38,10 +40,12 @@ type SearchResultsProps = {
     banner: string | null;
     status: string | null;
   }>;
+  externalEvents: ExternalEvent[];
 };
 
-function SearchResultsContent({ query, events, fundraisers, organizers }: SearchResultsProps) {
+function SearchResultsContent({ query, events, fundraisers, organizers, externalEvents }: SearchResultsProps) {
   const total = events.length + fundraisers.length + organizers.length;
+  const hasAnyResults = total > 0 || externalEvents.length > 0;
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950">
@@ -51,7 +55,9 @@ function SearchResultsContent({ query, events, fundraisers, organizers }: Search
           title={query ? `Results for “${query}”` : "Search the platform"}
           description={
             query
-              ? `${total} result${total === 1 ? "" : "s"} across events, fundraisers, and organizers.`
+              ? `${total} result${total === 1 ? "" : "s"} across events, fundraisers, and organizers${
+                  externalEvents.length > 0 ? ", plus events from other platforms" : ""
+                }.`
               : "Find events near you, support causes, and discover organizers."
           }
         />
@@ -64,7 +70,7 @@ function SearchResultsContent({ query, events, fundraisers, organizers }: Search
           className="mb-10 max-w-2xl"
         />
 
-        {total === 0 ? (
+        {!hasAnyResults ? (
           <PublicEmptyState
             icon="🔍"
             title={query ? "No results found" : "Start searching"}
@@ -100,6 +106,7 @@ function SearchResultsContent({ query, events, fundraisers, organizers }: Search
                             })
                           : "Date TBA"
                       }
+                      eventDate={event.event_date}
                       location={event.city || event.venue || "Location TBA"}
                       image={
                         event.banner ||
@@ -109,6 +116,23 @@ function SearchResultsContent({ query, events, fundraisers, organizers }: Search
                     />
                   ))}
                 </div>
+              </section>
+            )}
+
+            {externalEvents.length > 0 && (
+              <section>
+                <div className="mb-5">
+                  <h2 className="text-xl font-black text-zinc-950">Events elsewhere</h2>
+                  <p className="mt-1 text-sm font-medium text-zinc-500">
+                    Live from other platforms — tickets are sold on the source site.
+                  </p>
+                </div>
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {externalEvents.map((event) => (
+                    <ExternalEventCard key={event.id} event={event} />
+                  ))}
+                </div>
+                <ExternalSourceCredit sources={externalEvents.map((e) => e.source)} />
               </section>
             )}
 

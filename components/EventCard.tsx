@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -13,6 +16,9 @@ type EventCardProps = {
   price?: string | null;
   category?: string | null;
   variant?: "default" | "homepage" | "compact";
+  /** Raw event date (ISO). When it's in the past, the card shows a muted "Past"
+   *  label and hides the price (you can't buy tickets to a past event). */
+  eventDate?: string | null;
 };
 
 const FALLBACK_IMAGE =
@@ -28,9 +34,13 @@ export default function EventCard({
   price,
   category,
   variant = "default",
+  eventDate,
 }: EventCardProps) {
   const compact = variant === "compact";
-  const imageSrc = normalizeImageUrl(image, FALLBACK_IMAGE);
+  const isPast = eventDate ? new Date(eventDate).getTime() < Date.now() : false;
+  // A normalized, allowed-host URL can still fail at runtime (dead link, 403);
+  // swap to the fallback on error so the card never shows a broken frame.
+  const [imageSrc, setImageSrc] = useState(() => normalizeImageUrl(image, FALLBACK_IMAGE));
 
   const card = (
     <article
@@ -46,14 +56,26 @@ export default function EventCard({
           fill
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           className="object-cover transition duration-500 group-hover:scale-105"
+          onError={() => {
+            if (imageSrc !== FALLBACK_IMAGE) setImageSrc(FALLBACK_IMAGE);
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 transition group-hover:opacity-100" />
-        {badge && (
-          <span className="absolute left-3 top-3 rounded-full bg-orange-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow">
-            {badge}
-          </span>
+        {(isPast || badge) && (
+          <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
+            {isPast && (
+              <span className="rounded-full bg-zinc-800/85 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow backdrop-blur">
+                Past
+              </span>
+            )}
+            {badge && (
+              <span className="rounded-full bg-orange-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white shadow">
+                {badge}
+              </span>
+            )}
+          </div>
         )}
-        {price && (
+        {price && !isPast && (
           <span className="absolute bottom-3 right-3 rounded-lg bg-white/95 px-2.5 py-1 text-xs font-black text-zinc-950 shadow-sm backdrop-blur">
             {price}
           </span>

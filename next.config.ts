@@ -39,6 +39,7 @@ const cspDirectives = [
     supabaseOrigin,
     "https://img.evbuc.com",
     "https://s1.ticketm.net",
+    "https://seatgeekimages.com",
     "https://images.gofundme.com",
     "https://d2g8igdw686xgo.cloudfront.net",
     "https://*.tile.openstreetmap.org",
@@ -107,6 +108,7 @@ const nextConfig: NextConfig = {
       // External event sources
       { protocol: "https", hostname: "img.evbuc.com" },
       { protocol: "https", hostname: "s1.ticketm.net" },
+      { protocol: "https", hostname: "seatgeekimages.com" },
       { protocol: "https", hostname: "images.gofundme.com" },
       { protocol: "https", hostname: "d2g8igdw686xgo.cloudfront.net" },
       // Google / misc avatars that may appear in reviews/testimonials
