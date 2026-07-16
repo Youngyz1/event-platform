@@ -64,6 +64,18 @@ function cityOf(location?: string | null): string | null {
   return city || null;
 }
 
+/**
+ * Normalize a source-provided category. Ticketmaster returns the literal string
+ * "Undefined" as the segment name for uncategorized events (e.g. watch parties),
+ * which must never surface as a visible badge. Treat that — and blank values — as
+ * "no category" so the card omits the badge.
+ */
+function cleanCategory(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed || trimmed.toLowerCase() === "undefined") return null;
+  return trimmed;
+}
+
 function keywordOf(query?: string | null, category?: string | null): string {
   return [query, category].filter(Boolean).join(" ").trim();
 }
@@ -100,7 +112,7 @@ function mapTicketmaster(e: TmEvent, fallbackCity: string | null): ExternalEvent
       e.images?.find((img) => img.ratio === "16_9" && (img.width ?? 0) > 500)?.url ||
       e.images?.[0]?.url ||
       null,
-    category: e.classifications?.[0]?.segment?.name || null,
+    category: cleanCategory(e.classifications?.[0]?.segment?.name),
     url: e.url ?? null,
     source: "ticketmaster",
   };
@@ -173,7 +185,7 @@ function titleCase(value: string): string {
 
 function mapSeatGeek(e: SgEvent, fallbackCity: string | null): ExternalEvent {
   const performer = e.performers?.[0];
-  const rawCategory = e.type || e.taxonomies?.[0]?.name || null;
+  const rawCategory = cleanCategory(e.type) ?? cleanCategory(e.taxonomies?.[0]?.name);
   return {
     id: `sg_${e.id}`,
     slug: null,
