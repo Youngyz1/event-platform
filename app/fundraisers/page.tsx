@@ -1,14 +1,24 @@
-import FundraiserCard from "@/components/FundraiserCard";
-import PublicEmptyState from "@/components/public/PublicEmptyState";
-import PublicSearchBar from "@/components/public/PublicSearchBar";
 import PublicPagination from "@/components/public/PublicPagination";
-import FundraisersFilterSidebar from "@/components/public/FundraisersFilterSidebar";
+import CampaignShowcase, {
+  type CampaignShowcaseItem,
+} from "@/components/fundraisers/CampaignShowcase";
+import LandingHero from "@/components/fundraisers/LandingHero";
+import HowFundraisingWorks from "@/components/fundraisers/HowFundraisingWorks";
+import WhyFund4Good from "@/components/fundraisers/WhyFund4Good";
+import FundraiserFeaturedTopics from "@/components/fundraisers/FundraiserFeaturedTopics";
+import TrustSection from "@/components/fundraisers/TrustSection";
 import { supabase } from "@/lib/supabase";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { HOMEPAGE_SETTING_KEYS, getHomepageSettings } from "@/lib/homepage-hero";
+import {
+  getFundraiserList,
+  getCuratedFundraiserImages,
+  type FundraiserSmartFilter,
+} from "@/lib/fundraiser-data";
+import { CURATED_HERO_FUNDRAISER_SLUGS } from "@/lib/fundraiser-hero-curation";
+import { normalizeImageUrl } from "@/lib/image-url";
+import { money } from "@/lib/format";
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +41,7 @@ const PAGE_SIZE = 12;
 export default async function FundraisersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sort?: string; page?: string; categories?: string }>;
+  searchParams: Promise<{ q?: string; sort?: string; page?: string; categories?: string; filter?: string }>;
 }) {
   const filters = await searchParams;
   const query = filters.q?.trim();
@@ -41,66 +51,52 @@ export default async function FundraisersPage({
     ? filters.categories.split(",").map((c) => c.trim()).filter(Boolean)
     : [];
 
+  const SMART_FILTERS = ["close-to-target", "just-launched", "needs-momentum", "trending"] as const;
+  const smartFilter: FundraiserSmartFilter =
+    (SMART_FILTERS as readonly string[]).includes(filters.filter ?? "")
+      ? (filters.filter as FundraiserSmartFilter)
+      : "all";
+
   const adminClient = createSupabaseAdmin();
 
-  // 1. Fetch CMS Settings & statistics
-  const [
-    { data: cmsRows },
-    { count: activeCampaignsCount },
-    { data: raisedData },
-    { count: totalDonorsCount }
-  ] = await Promise.all([
+  // 1. Fetch CMS Settings & the live total-raised figure for the hero stat
+  const [{ data: cmsRows }, { data: raisedData }] = await Promise.all([
     adminClient.from("platform_settings").select("key, value").in("key", HOMEPAGE_SETTING_KEYS),
-    adminClient.from("fundraisers").select("id", { count: "exact", head: true }),
     adminClient.from("fundraisers").select("raised"),
-    adminClient.from("donations").select("id", { count: "exact", head: true }).in("status", ["succeeded", "completed"])
   ]);
 
   const cms = getHomepageSettings(cmsRows);
-  const activeCampaigns = activeCampaignsCount ?? 0;
   const totalRaisedAmount = raisedData?.reduce((sum, f) => sum + Number(f.raised || 0), 0) || 0;
-  const totalDonors = totalDonorsCount ?? 0;
 
-  // 2. Fetch Featured Campaigns (Step 2) when browsing without filters
-  const { data: featuredFundraisers } = !query
-    ? await supabase
-        .from("fundraisers")
-        .select("id, title, slug, goal, raised, banner, is_featured")
-        .eq("is_featured", true)
-        .order("raised", { ascending: false })
-        .limit(3)
-    : { data: null };
+  // 2. Pick a single featured campaign (by highest amount raised) when browsing
+  // the default view without a search query — excluded from the grid below so
+  // the same campaign never renders twice. Behavioural smart filters skip the
+  // featured pin so the ranked results stand on their own.
+  const sortParam = sort === "raised" || sort === "goal" ? sort : "newest";
 
-  // 3. Fetch main query campaigns (Step 3)
-  let fundraisersQuery = supabase
-    .from("fundraisers")
-    .select("id, title, slug, goal, raised, banner, category, created_at, is_featured", {
-      count: "exact",
-    });
+  const featuredItem =
+    !query && smartFilter === "all"
+      ? (await getFundraiserList({ featuredOnly: true, sort: "raised", pageSize: 1 }))
+          .fundraisers[0] ?? null
+      : null;
 
-  if (query) {
-    fundraisersQuery = fundraisersQuery.or(`title.ilike.%${query}%,category.ilike.%${query}%`);
-  }
+  // 3. Fetch the browse grid (Step 3), excluding the featured pick so it
+  // can't appear twice on the same page load.
+  const { fundraisers, total: totalCount } = await getFundraiserList({
+    categories: selectedCategories,
+    excludeIds: featuredItem ? [featuredItem.id] : undefined,
+    searchQuery: query,
+    sort: sortParam,
+    smartFilter,
+    page,
+    pageSize: PAGE_SIZE,
+  });
 
-  if (selectedCategories.length > 0) {
-    fundraisersQuery = fundraisersQuery.in("category", selectedCategories);
-  }
-
-  if (sort === "raised") {
-    fundraisersQuery = fundraisersQuery.order("raised", { ascending: false });
-  } else if (sort === "goal") {
-    fundraisersQuery = fundraisersQuery.order("goal", { ascending: false });
-  } else {
-    fundraisersQuery = fundraisersQuery.order("created_at", { ascending: false });
-  }
-
-  const from = (page - 1) * PAGE_SIZE;
-  fundraisersQuery = fundraisersQuery.range(from, from + PAGE_SIZE - 1);
-
-  const { data: fundraisers, count: totalCount } = await fundraisersQuery;
-
-  // Fetch donor counts for each fundraiser
-  const fundraiserIds = (fundraisers ?? []).map((f) => f.id);
+  // Fetch donor counts for each fundraiser (including the featured pick)
+  const fundraiserIds = [
+    ...(featuredItem ? [featuredItem.id] : []),
+    ...fundraisers.map((f) => f.id),
+  ];
   const donorCounts = new Map<string, number>();
 
   if (fundraiserIds.length > 0) {
@@ -119,216 +115,92 @@ export default async function FundraisersPage({
 
   const totalPages = Math.max(1, Math.ceil((totalCount ?? 0) / PAGE_SIZE));
 
+  const showcaseFeatured: CampaignShowcaseItem | null = featuredItem
+    ? {
+        id: featuredItem.id,
+        slug: featuredItem.slug,
+        title: featuredItem.title,
+        raised: featuredItem.raised,
+        goal: featuredItem.goal,
+        image: featuredItem.image,
+        category: featuredItem.category,
+        organizer: featuredItem.organizer,
+        donorCount: donorCounts.get(featuredItem.id),
+      }
+    : null;
+
+  const showcaseItems: CampaignShowcaseItem[] = fundraisers.map((f) => ({
+    id: f.id,
+    slug: f.slug,
+    title: f.title,
+    raised: f.raised,
+    goal: f.goal,
+    image: f.image,
+    category: f.category,
+    organizer: f.organizer,
+    donorCount: donorCounts.get(f.id),
+  }));
+
+  // Hero imagery: admin-managed via /admin/homepage → Fundraisers Landing →
+  // Hero Photo Fan (stored in the `fundraisers_hero_images` platform setting).
+  // When unset, fall back to the editorially-curated default set so the fan is
+  // never empty pre-configuration. Order is preserved; failed URLs drop/reflow
+  // client-side in LandingHeroImagery.
+  const adminHeroImages = cms.fundraisersHeroImages
+    .map((url) => normalizeImageUrl(url, ""))
+    .filter((url): url is string => url.length > 0);
+  const heroImages =
+    adminHeroImages.length > 0
+      ? adminHeroImages
+      : await getCuratedFundraiserImages(CURATED_HERO_FUNDRAISER_SLUGS);
+
   function buildHref(updates: Record<string, string>) {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (sort !== "newest") params.set("sort", sort);
     if (selectedCategories.length > 0) params.set("categories", selectedCategories.join(","));
+    if (smartFilter !== "all") params.set("filter", smartFilter);
     Object.entries(updates).forEach(([k, v]) => params.set(k, v));
     return `/fundraisers?${params.toString()}`;
   }
 
-  const FALLBACK =
-    "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1200&auto=format&fit=crop";
-
-  function money(value: number) {
-    return `$${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-  }
-
-  // 4. Fetch Success Stories (Step 4)
-  const { data: allCampaigns } = await adminClient
-    .from("fundraisers")
-    .select("id, title, slug, goal, raised, banner");
-  
-  const successStories = (allCampaigns ?? [])
-    .filter((f) => Number(f.raised || 0) >= Number(f.goal || 1))
-    .slice(0, 4);
-
-  if (successStories.length < 4) {
-    const successIds = new Set(successStories.map(s => s.id));
-    const fallbacks = (allCampaigns ?? [])
-      .filter(f => !successIds.has(f.id))
-      .sort((a, b) => {
-        const percentA = Number(a.raised || 0) / Number(a.goal || 1);
-        const percentB = Number(b.raised || 0) / Number(b.goal || 1);
-        return percentB - percentA;
-      })
-      .slice(0, 4 - successStories.length);
-    successStories.push(...fallbacks);
-  }
-
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950 pb-16">
-      {/* ── CMS Hero Banner (Step 1) ── */}
-      <section
-        className="relative flex min-h-[360px] items-center justify-center bg-cover bg-center px-4 py-16 text-center sm:min-h-[420px] sm:px-12 sm:py-20 lg:min-h-[460px]"
-        style={{
-          backgroundImage: `url("${cms.fundraisersHeroImageUrl || cms.imageUrl}")`,
-        }}
-      >
-        <div className="absolute inset-0 bg-black/65" />
-        <div className="relative w-full max-w-4xl text-white">
-          <span className="inline-block rounded-full bg-emerald-600/30 border border-emerald-500/40 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-emerald-300 backdrop-blur-sm">
-            {cms.fundraisersHeroEyebrow}
-          </span>
-          <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-            {cms.fundraisersHeroHeadlineLine1}
-            {cms.fundraisersHeroHeadlineLine2 && (
-              <>
-                <br />
-                <span className="text-emerald-400">{cms.fundraisersHeroHeadlineLine2}</span>
-              </>
-            )}
-          </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-zinc-300 sm:text-lg">
-            {cms.fundraisersHeroDescription}
-          </p>
+      {/* ── Hero (CMS text preserved; layout redesigned) ── */}
+      <LandingHero
+        eyebrow={cms.fundraisersHeroEyebrow}
+        headline={cms.fundraisersHeroHeadlineLine1}
+        headlineAccent={cms.fundraisersHeroHeadlineLine2 || undefined}
+        primaryCta={{ label: "Start a Fundraiser", href: "/create-fundraiser" }}
+        images={heroImages}
+        benefitBadge="No platform fee to start"
+        impactStatValue={money(totalRaisedAmount)}
+        impactStatCaption="raised so far by people rallying behind the causes they care about."
+        impactDescription="Get started in just a few minutes - with helpful new tools, it’s easier than ever to pick the perfect title, write a compelling story, and share it with the world."
+      />
 
-          {/* Dynamic statistics */}
-          <div className="mx-auto mt-8 flex max-w-md flex-wrap justify-center gap-x-6 gap-y-2 border-t border-white/10 pt-6 text-xs font-bold text-zinc-400 sm:text-sm">
-            <span>{activeCampaigns.toLocaleString()} Campaigns</span>
-            <span>•</span>
-            <span>{money(totalRaisedAmount)} Raised</span>
-            <span>•</span>
-            <span>{totalDonors.toLocaleString()} Donors</span>
-          </div>
-        </div>
-      </section>
+      {/* ── How fundraising works (organizer-focused, between Hero and Browse) ── */}
+      <HowFundraisingWorks />
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
-        {/* ── Featured Campaigns Section (Step 2) ── */}
-        {!query && featuredFundraisers && featuredFundraisers.length > 0 && (
-          <div className="mb-14">
-            <div className="mb-6">
-              <p className="text-xs font-black uppercase tracking-wider text-emerald-600">Featured Projects</p>
-              <h2 className="text-2xl font-black text-zinc-950 sm:text-3xl mt-1">Featured Campaigns</h2>
-            </div>
-            <div className="grid gap-6 md:grid-cols-3">
-              {featuredFundraisers.map((f) => (
-                <FundraiserCard
-                  key={f.id}
-                  slug={f.slug}
-                  title={f.title}
-                  raised={f.raised ?? 0}
-                  goal={f.goal ?? 0}
-                  image={f.banner || FALLBACK}
-                  featured
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Browse Campaigns Section (Step 3) ── */}
-        <div className="mb-8 border-b border-zinc-200 pb-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">Browse Campaigns</h2>
-              <p className="text-sm font-medium text-zinc-500 mt-1">Explore all community fundraisers and find causes to support.</p>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <PublicSearchBar
-              action="/fundraisers"
-              defaultQuery={query || ""}
-              placeholder="Search fundraisers…"
-              showLocation={false}
-              className="max-w-xl"
-            />
-          </div>
+        {/* ── Browse Campaigns Section ── */}
+        <div id="browse-campaigns" className="mb-8 scroll-mt-24">
+          <h2 className="text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">Browse Campaigns</h2>
+          <p className="text-sm font-medium text-zinc-500 mt-1">Explore all community fundraisers and find causes to support.</p>
         </div>
 
-        <div className="flex flex-col gap-8 lg:flex-row">
-          {/* Sidebar */}
-          <div className="hidden lg:block w-56 flex-shrink-0">
-            <Suspense>
-              <FundraisersFilterSidebar
-                activeCategories={selectedCategories}
-                activeSort={sort}
-                resultCount={totalCount ?? 0}
-              />
-            </Suspense>
-          </div>
-
-          {/* Card Grid */}
-          <div className="flex-1 min-w-0">
-            {/* Mobile: inline category chips */}
-            <div className="mb-5 flex flex-wrap gap-2 lg:hidden">
-              {["All", ...selectedCategories].map((cat, i) =>
-                i === 0 ? (
-                  <Link
-                    key="all"
-                    href="/fundraisers"
-                    className={`rounded-full px-4 py-1.5 text-xs font-black ring-1 transition ${
-                      selectedCategories.length === 0
-                        ? "bg-emerald-600 text-white ring-emerald-600"
-                        : "bg-white text-zinc-600 ring-zinc-200"
-                    }`}
-                  >
-                    All
-                  </Link>
-                ) : (
-                  <Link
-                    key={cat}
-                    href={`/fundraisers?categories=${selectedCategories.filter((c) => c !== cat).join(",")}`}
-                    className="rounded-full bg-emerald-600 px-4 py-1.5 text-xs font-black text-white"
-                  >
-                    {cat} ×
-                  </Link>
-                )
-              )}
-            </div>
-
-            {fundraisers && fundraisers.length > 0 ? (
-              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {fundraisers.map((fundraiser) => (
-                  <FundraiserCard
-                    key={fundraiser.id}
-                    slug={fundraiser.slug}
-                    title={fundraiser.title}
-                    raised={fundraiser.raised ?? 0}
-                    goal={fundraiser.goal ?? 0}
-                    image={fundraiser.banner || FALLBACK}
-                    donorCount={donorCounts.get(fundraiser.id)}
-                    featured={fundraiser.is_featured === true}
-                    category={fundraiser.category ?? undefined}
-                  />
-                ))}
-              </div>
-            ) : (
-              <PublicEmptyState
-                icon="💚"
-                title="No fundraisers found"
-                description="Try adjusting your keywords or selecting a different category."
-                action={{ label: "Start a fundraiser", href: "/create-fundraiser" }}
-              />
-            )}
-          </div>
-        </div>
-
-        {/* ── Success Stories Section (Step 4) ── */}
-        {successStories.length > 0 && (
-          <section className="mt-20 border-t border-zinc-200 pt-16">
-            <div className="mb-8">
-              <p className="text-xs font-black uppercase tracking-wider text-emerald-600">Making a Difference</p>
-              <h2 className="text-3xl font-black text-zinc-950 mt-1">Success Stories</h2>
-              <p className="text-sm font-medium text-zinc-500 mt-1">Campaigns that successfully reached or exceeded their goals.</p>
-            </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {successStories.map((f) => (
-                <FundraiserCard
-                  key={f.id}
-                  slug={f.slug}
-                  title={f.title}
-                  raised={f.raised ?? 0}
-                  goal={f.goal ?? 0}
-                  image={f.banner || FALLBACK}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+        <CampaignShowcase
+          basePath="/fundraisers"
+          activeFilter={smartFilter}
+          featured={showcaseFeatured}
+          items={showcaseItems}
+          emptyState={{
+            icon: "💚",
+            title: "No fundraisers found",
+            description: "Try a different filter to discover more campaigns to support.",
+            action: { label: "Start a fundraiser", href: "/create-fundraiser" },
+          }}
+        />
 
         {/* ── Pagination Section (Step 5) ── */}
         {fundraisers && fundraisers.length > 0 && (
@@ -341,6 +213,15 @@ export default async function FundraisersPage({
           </div>
         )}
       </div>
+
+      {/* ── Why Fund4Good (coral reassurance band; TrustSection follows later) ── */}
+      <WhyFund4Good />
+
+      {/* ── Featured topics (on page background, below the coral band) ── */}
+      <FundraiserFeaturedTopics />
+
+      {/* ── Trust band (teal; FAQ + final CTA follow later, before the footer) ── */}
+      <TrustSection />
     </main>
   );
 }

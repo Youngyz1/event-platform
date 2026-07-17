@@ -78,7 +78,7 @@ function LoginForm() {
     if (data.user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("status")
+        .select("status, deleted_at, purge_at")
         .eq("id", data.user.id)
         .maybeSingle();
 
@@ -87,6 +87,21 @@ function LoginForm() {
         setError(
           "Your account is suspended. Please contact support for help."
         );
+        setLoading(false);
+        return;
+      }
+
+      // Account is in the 14-day recovery grace period
+      if (profile?.deleted_at && profile?.purge_at) {
+        const purgeAt = new Date(profile.purge_at);
+        if (purgeAt > new Date()) {
+          // Still recoverable — send to recovery page
+          router.push("/recover-account");
+          return;
+        }
+        // Grace period has expired — sign out and block
+        await supabase.auth.signOut();
+        setError("This account has been permanently deleted.");
         setLoading(false);
         return;
       }

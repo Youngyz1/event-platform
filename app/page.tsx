@@ -15,6 +15,7 @@ import HomepageSponsors from "@/components/HomepageSponsors";
 import AboutUsSection from "@/components/ui/about-us-section";
 import { Gallery4, type Gallery4Item } from "@/components/ui/gallery4";
 import TrustBar from "@/components/public/TrustBar";
+import RuixenFeaturedImageSection from "@/components/ui/ruixen-featured-image-section";
 import {
   Briefcase,
   GraduationCap,
@@ -265,6 +266,7 @@ export default async function HomePage() {
       .from("events")
       .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
       .eq("is_homepage_featured", true)
+      .is("deleted_at", null)
       .order("homepage_position", { ascending: true })
       .limit(6);
 
@@ -273,6 +275,7 @@ export default async function HomePage() {
         .from("events")
         .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
         .eq("is_homepage_featured", true)
+        .is("deleted_at", null)
         .limit(6);
       featuredEvents = fallback ?? [];
     } else {
@@ -289,6 +292,7 @@ export default async function HomePage() {
       .from("fundraisers")
       .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner, category")
       .eq("is_homepage_featured", true)
+      .is("deleted_at", null)
       .order("homepage_position", { ascending: true })
       .limit(6);
 
@@ -297,6 +301,7 @@ export default async function HomePage() {
         .from("fundraisers")
         .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner, category")
         .eq("is_homepage_featured", true)
+        .is("deleted_at", null)
         .limit(6);
       featuredFundraisers = fallback ?? [];
     } else {
@@ -321,6 +326,7 @@ export default async function HomePage() {
       : supabase
           .from("events")
           .select("id, title, slug, date:event_date, location:city, image_url:banner, category")
+          .is("deleted_at", null)
           .order("created_at", { ascending: false })
           .limit(5)
           .then(({ data }) => data ?? []),
@@ -329,6 +335,7 @@ export default async function HomePage() {
       : supabase
           .from("fundraisers")
           .select("id, title, slug, goal_amount:goal, raised_amount:raised, image_url:banner, category")
+          .is("deleted_at", null)
           .order("created_at", { ascending: false })
           .limit(5)
           .then(({ data }) => data ?? []),
@@ -342,12 +349,14 @@ export default async function HomePage() {
       .select("id, title, slug, event_date, city, venue, banner, visibility, status")
       .eq("visibility", "public")
       .eq("status", "approved")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(12)
       .then(({ data }) => data ?? []),
     supabase
       .from("fundraisers")
       .select("id, title, slug, goal, raised, banner, category")
+      .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(3)
       .then(({ data }) => data ?? []),
@@ -496,6 +505,7 @@ export default async function HomePage() {
                       })
                     : "Date TBA"
                 }
+                eventDate={event.event_date}
                 location={event.city || event.venue || "Location TBA"}
                 image={
                   event.banner ||
@@ -521,6 +531,8 @@ export default async function HomePage() {
         description="Campaigns can tell a story, show progress, collect donations, and keep supporters engaged."
         items={fundraiserGalleryItems}
       />
+
+      <RuixenFeaturedImageSection />
 
       <HomepageSponsors sponsors={sponsorsResult} />
 

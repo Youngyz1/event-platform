@@ -30,6 +30,7 @@ export const getFundraiserBySlug = cache(async (slug: string) => {
       "id, title, slug, banner, image_url, goal, raised, raised_amount, organizer_id, organizer, story, category, created_at, review_count, average_rating"
     )
     .eq("slug", slug)
+    .is("deleted_at", null)
     .maybeSingle();
   return fundraiser;
 });
@@ -251,4 +252,333 @@ export async function getRelatedFundraisers(
   return pickedIds
     .map((id) => rowsById.get(id))
     .filter((row): row is RelatedFundraiser => Boolean(row));
+}
+
+export type FundraiserListItem = {
+  id: string;
+  title: string;
+  slug: string;
+  goal: number;
+  raised: number;
+  image: string;
+  category: string | null;
+  organizer: string | null;
+  isFeatured: boolean;
+  createdAt: string | null;
+};
+
+export type FundraiserListSort = "newest" | "raised" | "goal";
+
+/**
+ * Behavioural "smart" filters for the /fundraisers discovery dropdown. Unlike
+ * `sort`, these both filter and rank on computed signals (raised/goal ratio,
+ * age, donation velocity) that PostgREST can't express, so they route through
+ * a JS-side ranking path — see getSmartFilteredFundraiserList.
+ */
+export type FundraiserSmartFilter =
+  | "all"
+  | "close-to-target"
+  | "just-launched"
+  | "needs-momentum"
+  | "trending";
+
+export type FundraiserListParams = {
+  categories?: string[];
+  excludeIds?: string[];
+  featuredOnly?: boolean;
+  searchQuery?: string;
+  sort?: FundraiserListSort;
+  smartFilter?: FundraiserSmartFilter;
+  page?: number;
+  pageSize?: number;
+};
+
+export type FundraiserListResult = {
+  fundraisers: FundraiserListItem[];
+  total: number;
+};
+
+/**
+ * PostgREST's `.or()` filter string treats `,` `.` `(` `)` as grammar
+ * (clause separators / grouping), not literal characters — passing raw user
+ * input straight into the template lets someone break out of the intended
+ * `title.ilike.%x%,category.ilike.%x%` filter and inject additional clauses.
+ * Wrapping the value in double quotes makes PostgREST treat everything
+ * inside literally; only `\` and `"` then need escaping so the value can't
+ * terminate the quoted string early.
+ */
+export function escapePostgrestOrValue(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+}
+
+type FundraiserListRow = {
+  id: string;
+  title: string;
+  slug: string;
+  goal: number | string | null;
+  raised: number | string | null;
+  raised_amount: number | string | null;
+  banner: string | null;
+  image_url: string | null;
+  category: string | null;
+  organizer: string | null;
+  created_at: string | null;
+  is_featured: boolean | null;
+};
+
+/** Shared row → card mapping, used by both the SQL and smart-filter paths. */
+function mapFundraiserRow(row: FundraiserListRow): FundraiserListItem {
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    goal: Number(row.goal ?? 0),
+    raised: Number(row.raised_amount ?? row.raised ?? 0),
+    image: normalizeImageUrl(row.image_url || row.banner, FUNDRAISER_FALLBACK_IMAGE),
+    category: row.category ?? null,
+    organizer: row.organizer ?? null,
+    isFeatured: row.is_featured === true,
+    createdAt: row.created_at,
+  };
+}
+
+/**
+ * Shared browse/list query for the `/fundraisers` grid and `CampaignShowcase`.
+ * Every sort adds `id` as a secondary tie-breaker — without it, rows with
+ * equal `raised`/`goal` values (e.g. many campaigns sitting at 0) have no
+ * guaranteed stable order across separate `.range()` page requests, so a
+ * tied campaign can shuffle onto the wrong page and appear twice (or be
+ * skipped) when paginating. `excludeIds` lets callers keep a featured pick
+ * out of the grid below it, rather than fetching both independently and
+ * letting the same campaign render in two sections at once.
+ */
+export async function getFundraiserList(
+  params: FundraiserListParams = {}
+): Promise<FundraiserListResult> {
+  // Behavioural filters rank on computed signals PostgREST can't express, so
+  // they take a dedicated JS-side path; the SQL path below is left untouched.
+  const smartFilter = params.smartFilter ?? "all";
+  if (smartFilter !== "all") {
+    return getSmartFilteredFundraiserList(smartFilter, params);
+  }
+
+  const categories = params.categories;
+  const excludeIds = params.excludeIds;
+  const featuredOnly = params.featuredOnly ?? false;
+  const searchQuery = params.searchQuery;
+  const sort = params.sort ?? "newest";
+  const page = params.page ?? 1;
+  const pageSize = params.pageSize ?? 12;
+
+  let query = supabase
+    .from("fundraisers")
+    .select(
+      "id, title, slug, goal, raised, raised_amount, banner, image_url, category, organizer, created_at, is_featured",
+      { count: "exact" }
+    )
+    .is("deleted_at", null);
+
+  if (searchQuery) {
+    const safeSearchQuery = escapePostgrestOrValue(searchQuery);
+    query = query.or(
+      `title.ilike."%${safeSearchQuery}%",category.ilike."%${safeSearchQuery}%"`
+    );
+  }
+  if (categories && categories.length > 0) {
+    query = query.in("category", categories);
+  }
+  if (featuredOnly) {
+    query = query.eq("is_featured", true);
+  }
+  if (excludeIds && excludeIds.length > 0) {
+    query = query.not("id", "in", `(${excludeIds.join(",")})`);
+  }
+
+  if (sort === "raised") {
+    query = query.order("raised", { ascending: false }).order("id", { ascending: true });
+  } else if (sort === "goal") {
+    query = query.order("goal", { ascending: false }).order("id", { ascending: true });
+  } else {
+    query = query.order("created_at", { ascending: false }).order("id", { ascending: true });
+  }
+
+  const from = (page - 1) * pageSize;
+  const { data, count } = await query.range(from, from + pageSize - 1);
+
+  const rows = (data ?? []) as unknown as FundraiserListRow[];
+  const fundraisers = rows.map(mapFundraiserRow);
+
+  return { fundraisers, total: count ?? 0 };
+}
+
+// Smart-filter thresholds — deliberately tuned for the current small catalogue
+// (~11 campaigns; newest ~2 weeks old; all but one under 20% funded). They are
+// intentionally wide so no bucket is empty today, and are meant to tighten as
+// real volume arrives (e.g. "just launched" back down toward 7 days). See the
+// data snapshot in the PR that introduced this.
+const SMART_CLOSE_TO_TARGET_RATIO = 0.9;
+const SMART_JUST_LAUNCHED_MAX_AGE_DAYS = 30;
+const SMART_NEEDS_MOMENTUM_MAX_RATIO = 0.2;
+// Kept >= the "just launched" window so the two buckets stay disjoint: a
+// 2-week-old campaign at 0% is new, not stalled.
+const SMART_NEEDS_MOMENTUM_MIN_AGE_DAYS = 30;
+const DAY_MS = 1000 * 60 * 60 * 24;
+
+/** Displayed raised value — matches mapFundraiserRow (`raised_amount ?? raised`). */
+function rowEffectiveRaised(row: FundraiserListRow): number {
+  return Number(row.raised_amount ?? row.raised ?? 0);
+}
+
+function rowRatio(row: FundraiserListRow): number {
+  const goal = Number(row.goal ?? 0);
+  if (goal <= 0) return 0;
+  return rowEffectiveRaised(row) / goal;
+}
+
+function rowAgeDays(row: FundraiserListRow): number {
+  if (!row.created_at) return Number.POSITIVE_INFINITY;
+  return (Date.now() - new Date(row.created_at).getTime()) / DAY_MS;
+}
+
+/**
+ * Donation counts per fundraiser (succeeded/completed only) — mirrors the
+ * `donorCounts` query in `app/fundraisers/page.tsx`, reusing existing donation
+ * data rather than any new tracking. Only fetched for the "trending" bucket.
+ */
+async function fetchDonationCounts(ids: string[]): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  if (ids.length === 0) return counts;
+
+  const { data } = await supabase
+    .from("donations")
+    .select("fundraiser_id")
+    .in("fundraiser_id", ids)
+    .in("status", ["succeeded", "completed"]);
+
+  for (const row of (data ?? []) as { fundraiser_id: string | null }[]) {
+    if (row.fundraiser_id) {
+      counts.set(row.fundraiser_id, (counts.get(row.fundraiser_id) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+function rankSmartFilter(
+  rows: FundraiserListRow[],
+  smartFilter: Exclude<FundraiserSmartFilter, "all">,
+  donationCounts: Map<string, number>
+): FundraiserListRow[] {
+  switch (smartFilter) {
+    case "close-to-target":
+      return rows
+        .filter((row) => rowRatio(row) >= SMART_CLOSE_TO_TARGET_RATIO)
+        .sort((a, b) => rowRatio(b) - rowRatio(a));
+    case "just-launched":
+      return rows
+        .filter((row) => rowAgeDays(row) <= SMART_JUST_LAUNCHED_MAX_AGE_DAYS)
+        .sort((a, b) => rowAgeDays(a) - rowAgeDays(b));
+    case "needs-momentum":
+      return rows
+        .filter(
+          (row) =>
+            rowRatio(row) < SMART_NEEDS_MOMENTUM_MAX_RATIO &&
+            rowAgeDays(row) >= SMART_NEEDS_MOMENTUM_MIN_AGE_DAYS
+        )
+        // Lowest progress first; oldest breaks ties — the most stalled surface first.
+        .sort((a, b) => rowRatio(a) - rowRatio(b) || rowAgeDays(b) - rowAgeDays(a));
+    case "trending": {
+      // Donations per day since launch — rewards recent traction over raw totals.
+      const velocity = (row: FundraiserListRow) =>
+        (donationCounts.get(row.id) ?? 0) / Math.max(rowAgeDays(row), 1);
+      return rows
+        .filter((row) => (donationCounts.get(row.id) ?? 0) > 0)
+        .sort((a, b) => velocity(b) - velocity(a));
+    }
+  }
+}
+
+/**
+ * JS-side ranking path for the behavioural smart filters. Fetches the (small)
+ * catalogue once and ranks in memory — the same fetch-all-then-rank approach
+ * as getRelatedFundraisers, and for the same reason: ratio/velocity ordering
+ * isn't expressible in PostgREST without an RPC. Returns the same shape as the
+ * SQL path so callers are agnostic. The SQL path's dedup, featured-only, and
+ * injection-safe search logic are untouched by this.
+ */
+async function getSmartFilteredFundraiserList(
+  smartFilter: Exclude<FundraiserSmartFilter, "all">,
+  params: FundraiserListParams
+): Promise<FundraiserListResult> {
+  const categories = params.categories;
+  const excludeIds = params.excludeIds;
+  const page = params.page ?? 1;
+  const pageSize = params.pageSize ?? 12;
+
+  let query = supabase
+    .from("fundraisers")
+    .select(
+      "id, title, slug, goal, raised, raised_amount, banner, image_url, category, organizer, created_at, is_featured"
+    );
+  if (categories && categories.length > 0) {
+    query = query.in("category", categories);
+  }
+
+  const { data } = await query;
+  let rows = (data ?? []) as unknown as FundraiserListRow[];
+
+  if (excludeIds && excludeIds.length > 0) {
+    const excluded = new Set(excludeIds);
+    rows = rows.filter((row) => !excluded.has(row.id));
+  }
+
+  const donationCounts =
+    smartFilter === "trending"
+      ? await fetchDonationCounts(rows.map((row) => row.id))
+      : new Map<string, number>();
+
+  const ranked = rankSmartFilter(rows, smartFilter, donationCounts);
+  const from = (page - 1) * pageSize;
+  const pageRows = ranked.slice(from, from + pageSize);
+
+  return { fundraisers: pageRows.map(mapFundraiserRow), total: ranked.length };
+}
+
+/**
+ * Resolve an editorially-curated, ordered list of campaign slugs to their
+ * display images — used by the Hero, which is intentionally hand-picked, not
+ * algorithmic (see lib/fundraiser-hero-curation.ts).
+ *
+ * Order is preserved (`.in()` does not preserve it, so we re-map by slug).
+ * Any slug that is missing, or whose image doesn't resolve to a real,
+ * allowed-host URL, is skipped — so a curated-but-image-less campaign simply
+ * doesn't appear rather than rendering a stock placeholder.
+ */
+export async function getCuratedFundraiserImages(
+  slugs: readonly string[]
+): Promise<string[]> {
+  if (slugs.length === 0) return [];
+
+  const { data } = await supabase
+    .from("fundraisers")
+    .select("slug, banner, image_url")
+    .in("slug", slugs as string[]);
+
+  const bySlug = new Map(
+    ((data ?? []) as { slug: string; banner: string | null; image_url: string | null }[]).map(
+      (row) => [row.slug, row]
+    )
+  );
+
+  const images: string[] = [];
+  for (const slug of slugs) {
+    const row = bySlug.get(slug);
+    if (!row) continue;
+    // Empty-string fallback: an unusable/disallowed image resolves to "" and is
+    // dropped, rather than substituting the stock fallback image.
+    const normalized = normalizeImageUrl(row.image_url || row.banner, "");
+    if (normalized && normalized !== FUNDRAISER_FALLBACK_IMAGE) {
+      images.push(normalized);
+    }
+  }
+  return images;
 }

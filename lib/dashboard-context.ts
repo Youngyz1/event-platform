@@ -36,6 +36,14 @@ export const getDashboardContext = cache(async (): Promise<DashboardContext | nu
   const user = await getCurrentUser();
   if (!user) return null;
 
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("deleted_at")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile || profile.deleted_at) return null;
+
   const { data: organizers } = await supabaseAdmin
     .from('organizers')
     .select('id, name, bio, photo')

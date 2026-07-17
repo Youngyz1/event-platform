@@ -55,12 +55,14 @@ export default async function SearchPage({
         .select("id, title, slug, event_date, city, venue, banner, category")
         .eq("visibility", "public")
         .eq("status", "approved")
+        .is("deleted_at", null)
         .ilike("title", pattern)
         .order("event_date", { ascending: true })
         .limit(8),
       supabase
         .from("fundraisers")
         .select("id, title, slug, goal, raised, banner, category")
+        .is("deleted_at", null)
         .or(`title.ilike.${pattern},category.ilike.${pattern}`)
         .order("created_at", { ascending: false })
         .limit(8),
@@ -69,6 +71,7 @@ export default async function SearchPage({
         .select("id, name, bio, photo, banner, status")
         .eq("visibility", "public")
         .in("status", ["pending", "verified"])
+        .is("deleted_at", null)
         .ilike("name", pattern)
         .order("name", { ascending: true })
         .limit(6),

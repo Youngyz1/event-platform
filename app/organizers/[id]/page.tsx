@@ -14,6 +14,7 @@ export async function generateMetadata({
     .from("organizers")
     .select("name, bio, photo, banner")
     .eq("id", id)
+    .is("deleted_at", null)
     .maybeSingle();
 
   const title = organizer?.name
@@ -57,7 +58,8 @@ export default async function OrganizerProfilePage({
     .from("organizers")
     .select("*")
     .eq("id", id)
-    .single();
+    .is("deleted_at", null)
+    .maybeSingle(); // Use maybeSingle instead of single so that if it returns null, we handle it elegantly rather than throwing.
 
   if (!organizer) {
     return notFound();

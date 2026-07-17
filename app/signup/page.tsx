@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -13,11 +14,19 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [form, setForm] = useState({
     email: "",
     password: "",
     confirmPassword: "",
   });
+
+  const password = form.password;
+  const isMinLength = password.length >= 8;
+  const hasCapitalLetter = /[A-Z]/.test(password);
+  const hasLetter = /[a-zA-Z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecialChar = /[^a-zA-Z0-9]/.test(password);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -51,12 +60,52 @@ export default function SignupPage() {
     setError("");
     setSuccess(false);
 
+    const isMinLength = form.password.length >= 8;
+    const hasCapitalLetter = /[A-Z]/.test(form.password);
+    const hasLetter = /[a-zA-Z]/.test(form.password);
+    const hasNumber = /[0-9]/.test(form.password);
+    const hasSpecialChar = /[^a-zA-Z0-9]/.test(form.password);
+
+    if (!isMinLength || !hasCapitalLetter || !hasLetter || !hasNumber || !hasSpecialChar) {
+      setError("Password does not meet the security requirements.");
+      return;
+    }
+
     if (form.password !== form.confirmPassword) {
       setError("Passwords do not match.");
       return;
     }
 
     setLoading(true);
+
+    // Guard: block re-registration if email is in pending-deletion grace period
+    try {
+      const guardRes = await fetch("/api/signup-guard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email }),
+      });
+      if (guardRes.ok) {
+        const guardData = await guardRes.json();
+        if (guardData.isPendingDeletion) {
+          const purgeDate = guardData.purgeAt
+            ? new Date(guardData.purgeAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+            : "soon";
+          setError(
+            `An account with this email is currently scheduled for deletion (purge date: ${purgeDate}). ` +
+              `Please log in to recover it, or wait until after the deletion date to register again.`
+          );
+          setLoading(false);
+          return;
+        }
+      }
+    } catch {
+      // Guard API failure is non-fatal; proceed with signup
+    }
 
     const emailRedirectTo =
       typeof window !== "undefined"
@@ -277,9 +326,11 @@ export default function SignupPage() {
                         name="password"
                         value={form.password}
                         onChange={handleChange}
+                        onFocus={() => setIsPasswordFocused(true)}
+                        onBlur={() => setIsPasswordFocused(false)}
                         required
                         type={showPassword ? "text" : "password"}
-                        placeholder="Min. 6 characters"
+                        placeholder="Min. 8 characters"
                         className="w-full border border-zinc-300 rounded-2xl px-5 py-4 pr-12 outline-none focus:border-orange-500 bg-white"
                       />
                       <button
@@ -299,6 +350,86 @@ export default function SignupPage() {
                         )}
                       </button>
                     </div>
+
+                    <AnimatePresence>
+                      {(isPasswordFocused || password.length > 0) && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                          animate={{ opacity: 1, height: "auto", marginTop: 8 }}
+                          exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="bg-zinc-50 border border-zinc-200 rounded-2xl p-4 space-y-2.5 text-xs text-zinc-600">
+                            <p className="font-bold text-zinc-700 mb-1">Password must contain:</p>
+                            <div className="flex items-center gap-2">
+                              {isMinLength ? (
+                                <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+                                </div>
+                              )}
+                              <span className={isMinLength ? "text-emerald-700 font-semibold" : "text-zinc-500"}>At least 8 characters</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {hasCapitalLetter ? (
+                                <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+                                </div>
+                              )}
+                              <span className={hasCapitalLetter ? "text-emerald-700 font-semibold" : "text-zinc-500"}>At least 1 capital letter</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {hasLetter ? (
+                                <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+                                </div>
+                              )}
+                              <span className={hasLetter ? "text-emerald-700 font-semibold" : "text-zinc-500"}>At least 1 letter</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {hasNumber ? (
+                                <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+                                </div>
+                              )}
+                              <span className={hasNumber ? "text-emerald-700 font-semibold" : "text-zinc-500"}>At least 1 number</span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              {hasSpecialChar ? (
+                                <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <div className="w-4 h-4 flex items-center justify-center shrink-0">
+                                  <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
+                                </div>
+                              )}
+                              <span className={hasSpecialChar ? "text-emerald-700 font-semibold" : "text-zinc-500"}>At least 1 special character</span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   <div>

@@ -1,17 +1,23 @@
 import EventCard from "@/components/EventCard";
-import MapSection from "@/components/MapSection";
-import EventsHeaderControls from "@/app/events/EventsHeaderControls";
-import EventsFilterSidebar from "@/components/public/EventsFilterSidebar";
+import EventsWhenToggle from "@/app/events/EventsWhenToggle";
+import HowHostingWorks from "@/components/events/HowHostingWorks";
+import TopDestinations from "@/components/events/TopDestinations";
+import ExternalEventsCarousel from "@/components/events/ExternalEventsCarousel";
+import EventsFilterControls from "@/components/public/EventsFilterControls";
 import PublicEmptyState from "@/components/public/PublicEmptyState";
 import PublicPagination from "@/components/public/PublicPagination";
 import PublicSearchBar from "@/components/public/PublicSearchBar";
-import { supabase } from "@/lib/supabase";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { HOMEPAGE_SETTING_KEYS, getHomepageSettings } from "@/lib/homepage-hero";
+import {
+  getEventList,
+  type EventListItem,
+  type EventListSort,
+} from "@/lib/event-data";
+import { searchExternalEvents, type ExternalEvent } from "@/lib/external-events";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Image from "next/image";
 import { unstable_cache } from "next/cache";
 import {
   Briefcase,
@@ -83,7 +89,7 @@ const getCachedEventsCategories = unstable_cache(
   { revalidate: 300 }
 );
 
-const getCachedTrendingEvents = unstable_cache(
+const getCachedTrendingRankedEventIds = unstable_cache(
   async () => {
     const adminClient = createSupabaseAdmin();
     const { data: ticketSalesForTrending } = await adminClient
@@ -98,42 +104,13 @@ const getCachedTrendingEvents = unstable_cache(
       }
     }
 
-    const trendingEventIds = Object.keys(salesMap)
-      .sort((a, b) => salesMap[b] - salesMap[a])
-      .slice(0, 4);
-
-    let trendingEvents: any[] = [];
-    if (trendingEventIds.length > 0) {
-      const { data: dbTrending } = await adminClient
-        .from("events")
-        .select("id, title, slug, event_date, city, venue, banner, category")
-        .in("id", trendingEventIds)
-        .eq("visibility", "public")
-        .eq("status", "approved");
-      trendingEvents = dbTrending ?? [];
-    }
-
-    if (trendingEvents.length < 4) {
-      const skipIds = trendingEvents.map(e => e.id);
-      let fallbackQuery = adminClient
-        .from("events")
-        .select("id, title, slug, event_date, city, venue, banner, category")
-        .eq("visibility", "public")
-        .eq("status", "approved");
-      
-      if (skipIds.length > 0) {
-        fallbackQuery = fallbackQuery.not("id", "in", `(${skipIds.join(",")})`);
-      }
-      const { data: dbFallback } = await fallbackQuery
-        .order("event_date", { ascending: true })
-        .limit(4 - trendingEvents.length);
-      if (dbFallback) {
-        trendingEvents = [...trendingEvents, ...dbFallback];
-      }
-    }
-    return trendingEvents;
+    // Event IDs ranked by all-time ticket sales (descending). Only the
+    // (expensive) sales aggregation is cached — the event rows are fetched
+    // per-request via getEventList so Trending can be filtered to upcoming-only
+    // and de-duplicated against Featured/Browse.
+    return Object.keys(salesMap).sort((a, b) => salesMap[b] - salesMap[a]);
   },
-  ["events-page-trending-events"],
+  ["events-page-trending-ranked-ids"],
   { revalidate: 600 }
 );
 
@@ -199,7 +176,6 @@ export default async function EventsPage({
     q?: string;
     location?: string;
     category?: string;
-    view?: string;
     when?: string;
     sort?: string;
     page?: string;
@@ -209,73 +185,40 @@ export default async function EventsPage({
   const query = filters.q?.trim();
   const location = filters.location?.trim();
   const category = filters.category?.trim();
-  const view = filters.view || "list";
   const activeWhen = filters.when === "weekend" ? "weekend" : "all";
   const sort = filters.sort || "date_asc";
   const page = Math.max(1, parseInt(filters.page || "1", 10) || 1);
   const weekendRange = activeWhen === "weekend" ? getWeekendRange() : null;
   const hasFilters = Boolean(query || location || category || weekendRange);
 
-  const adminClient = createSupabaseAdmin();
-
   // 1. Fetch CMS settings and statistics (via cached helper)
   const { cms, totalEvents, ticketsSold, activeOrganizers } = await getEventsPageCmsAndStats();
 
-  // 2. Fetch featured events (step 2) when browsing without filters
-  const { data: featuredEvents } = !hasFilters
-    ? await supabase
-        .from("events")
-        .select("id, title, slug, event_date, city, venue, banner, category, is_featured")
-        .eq("visibility", "public")
-        .eq("status", "approved")
-        .eq("is_featured", true)
-        .order("event_date", { ascending: true })
-        .limit(4)
-    : { data: null };
+  // 2. Featured events (step 2) — upcoming featured picks, shown only when
+  //    browsing without filters. `upcoming: true` keeps past events out of the
+  //    most prominent slot.
+  const featured: EventListItem[] = !hasFilters
+    ? (await getEventList({ featuredOnly: true, upcoming: true, sort: "date_asc", pageSize: 4 })).events
+    : [];
 
-  // 3. Fetch main query events (step 3) - explicit column selection instead of select("*")
-  let eventsQuery = supabase
-    .from("events")
-    .select("id, slug, title, event_date, city, venue, banner, category, latitude, longitude", { count: "exact" })
-    .eq("visibility", "public")
-    .eq("status", "approved");
+  // 3. Browse grid (step 3) — the shared list query, excluding the Featured
+  //    picks so the same event never renders in both sections.
+  const sortParam: EventListSort =
+    sort === "date_desc" || sort === "newest" ? sort : "date_asc";
+  const { events: browseEvents, total: totalCount } = await getEventList({
+    category,
+    searchQuery: query,
+    location,
+    dateFrom: weekendRange ? `${weekendRange.start}T00:00:00` : undefined,
+    dateTo: weekendRange ? `${weekendRange.end}T23:59:59` : undefined,
+    excludeIds: featured.map((e) => e.id),
+    sort: sortParam,
+    page,
+    pageSize: PAGE_SIZE,
+  });
 
-  if (query) eventsQuery = eventsQuery.ilike("title", `%${query}%`);
-  if (category) eventsQuery = eventsQuery.ilike("category", `%${category}%`);
-  if (location)
-    eventsQuery = eventsQuery.or(
-      `city.ilike.%${location}%,venue.ilike.%${location}%`
-    );
-  if (weekendRange) {
-    eventsQuery = eventsQuery
-      .gte("event_date", `${weekendRange.start}T00:00:00`)
-      .lte("event_date", `${weekendRange.end}T23:59:59`);
-  }
-
-  if (sort === "date_desc") {
-    eventsQuery = eventsQuery.order("event_date", { ascending: false });
-  } else if (sort === "newest") {
-    eventsQuery = eventsQuery.order("created_at", { ascending: false });
-  } else {
-    eventsQuery = eventsQuery.order("event_date", { ascending: true });
-  }
-
-  const from = (page - 1) * PAGE_SIZE;
-  eventsQuery = eventsQuery.range(from, from + PAGE_SIZE - 1);
-
-  const { data: supabaseEvents, count: totalCount } = await eventsQuery;
-
-  // 4. Fetch external events (Ticketmaster API)
-  type ExternalEvent = {
-    id: string;
-    title: string;
-    event_date?: string | null;
-    city?: string | null;
-    banner?: string | null;
-    url: string;
-    source: "ticketmaster";
-  };
-
+  // 4. Fetch external events (Ticketmaster + SeatGeek, live). `ExternalEvent`
+  //    is imported from lib/external-events — the shared multi-source module.
   type LocalEvent = {
     id: string;
     slug: string;
@@ -290,57 +233,58 @@ export default async function EventsPage({
     source: "local";
   };
 
+  // Call the multi-source lib directly (server-to-server) rather than
+  // self-fetching /api/eventbrite — an SSR self-fetch returns empty in dev and
+  // adds a needless HTTP hop. Caching + rate-limit handling live in the lib.
   let externalEvents: ExternalEvent[] = [];
   if (query || location || category || weekendRange) {
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-      const datesToFetch = weekendRange?.dates ?? [null];
-      const responses = await Promise.all(
-        datesToFetch.map(async (eventDate) => {
-          const ebParams = new URLSearchParams();
-          if (query) ebParams.set("q", query);
-          if (location) ebParams.set("location", location);
-          if (category) ebParams.set("category", category);
-          if (eventDate) ebParams.set("date", eventDate);
-
-          const res = await fetch(
-            `${baseUrl}/api/eventbrite?${ebParams.toString()}`,
-            { next: { revalidate: 300 } }
-          );
-          const data = (await res.json()) as { events?: ExternalEvent[] };
-          return data.events || [];
-        })
-      );
-      externalEvents = responses.flat();
-    } catch (e) {
-      console.error("Failed to fetch external events:", e);
-    }
+    const datesToFetch = weekendRange?.dates ?? [null];
+    const responses = await Promise.all(
+      datesToFetch.map((eventDate) =>
+        searchExternalEvents({ query, location, category, date: eventDate })
+      )
+    );
+    externalEvents = responses.flat();
   }
 
-  const supabaseNormalized: LocalEvent[] = (supabaseEvents || []).map((e) => ({
+  const supabaseNormalized: LocalEvent[] = browseEvents.map((e) => ({
     id: e.id,
-    slug: e.slug || e.id,
+    slug: e.slug,
     title: e.title,
-    event_date: e.event_date ?? null,
+    event_date: e.eventDate,
     city: e.city ?? e.venue ?? null,
-    banner: e.banner ?? null,
-    category: e.category ?? null,
-    latitude: e.latitude ?? null,
-    longitude: e.longitude ?? null,
+    banner: e.banner,
+    category: e.category,
+    latitude: e.latitude,
+    longitude: e.longitude,
     url: null,
     source: "local",
   }));
 
-  const seenEventKeys = new Set<string>();
-  const allEvents: Array<LocalEvent | ExternalEvent> = [...supabaseNormalized, ...externalEvents]
-    .filter((event) => {
-      const key = `${event.title.toLowerCase().trim()}-${event.event_date || ""}`;
-      if (seenEventKeys.has(key)) return false;
-      seenEventKeys.add(key);
-      return true;
-    });
+  // External (Ticketmaster + SeatGeek) results render in their own section, not
+  // merged into the paginated local grid. Drop any that duplicate a local result
+  // on this page (or each other) by title+date, then cap the block at 8.
+  const eventKey = (e: { title: string; event_date?: string | null }) =>
+    `${e.title.toLowerCase().trim()}-${e.event_date || ""}`;
+  const seenEventKeys = new Set<string>(supabaseNormalized.map(eventKey));
+  const externalResults: ExternalEvent[] = [];
+  for (const event of externalEvents) {
+    const key = eventKey(event);
+    if (seenEventKeys.has(key)) continue;
+    seenEventKeys.add(key);
+    externalResults.push(event);
+    if (externalResults.length >= 8) break;
+  }
 
-  const totalPages = Math.max(1, Math.ceil((totalCount ?? allEvents.length) / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil((totalCount ?? 0) / PAGE_SIZE));
+
+  // When a search matches 0 local events but external results exist, the filter
+  // sidebar (When / Category / Sort) has nothing to act on — those filters only
+  // apply to Fund4Good events. Drop it so the "no local matches" note and the
+  // external results section use the full width instead of sitting next to a
+  // tall, irrelevant sidebar.
+  const hideEventsSidebar =
+    supabaseNormalized.length === 0 && externalResults.length > 0;
 
   const buildQuery = (extra: Record<string, string>) => {
     const params = new URLSearchParams();
@@ -364,8 +308,40 @@ export default async function EventsPage({
     }));
   }
 
-  // 6. Fetch trending events (cached)
-  const trendingEvents = await getCachedTrendingEvents();
+  // 6. Trending events (step 5) — top upcoming events by all-time ticket sales,
+  //    excluding anything already shown in Featured or the current Browse page,
+  //    then topped up with soonest-upcoming events as a fallback. All fetched
+  //    through the shared getEventList (single source of truth).
+  const rankedEventIds = await getCachedTrendingRankedEventIds();
+  const trendingExcludeIds = [
+    ...featured.map((e) => e.id),
+    ...browseEvents.map((e) => e.id),
+  ];
+
+  let trendingEvents: EventListItem[] = [];
+  if (rankedEventIds.length > 0) {
+    const { events: rankedEvents } = await getEventList({
+      ids: rankedEventIds.slice(0, 50),
+      upcoming: true,
+      excludeIds: trendingExcludeIds,
+      pageSize: 50,
+    });
+    // `.in(...)` doesn't preserve order, so re-rank by ticket sales.
+    const byId = new Map(rankedEvents.map((e) => [e.id, e]));
+    trendingEvents = rankedEventIds
+      .map((id) => byId.get(id))
+      .filter((e): e is EventListItem => Boolean(e))
+      .slice(0, 4);
+  }
+  if (trendingEvents.length < 4) {
+    const { events: fallback } = await getEventList({
+      upcoming: true,
+      excludeIds: [...trendingExcludeIds, ...trendingEvents.map((e) => e.id)],
+      sort: "date_asc",
+      pageSize: 4 - trendingEvents.length,
+    });
+    trendingEvents = [...trendingEvents, ...fallback];
+  }
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950 pb-16">
@@ -405,23 +381,23 @@ export default async function EventsPage({
         </div>
       </section>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         {/* ── Featured Events Section (Step 2) ── */}
-        {!hasFilters && featuredEvents && featuredEvents.length > 0 && (
+        {!hasFilters && featured.length > 0 && (
           <div className="mb-14">
             <div className="mb-6">
               <p className="text-xs font-black uppercase tracking-wider text-orange-600">Handpicked Recommendations</p>
               <h2 className="text-2xl font-black text-zinc-950 sm:text-3xl mt-1">Featured Experiences</h2>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {featuredEvents.map((event) => (
+              {featured.map((event) => (
                 <EventCard
                   key={event.id}
                   slug={event.slug}
                   title={event.title}
                   date={
-                    event.event_date
-                      ? new Date(event.event_date).toLocaleDateString("en-US", {
+                    event.eventDate
+                      ? new Date(event.eventDate).toLocaleDateString("en-US", {
                           weekday: "short",
                           month: "short",
                           day: "numeric",
@@ -441,34 +417,41 @@ export default async function EventsPage({
           </div>
         )}
 
-        {/* ── Browse Events Section (Step 3) ── */}
-        <div className="mb-8 border-b border-zinc-200 pb-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 className="text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">Browse Events</h2>
-              <p className="text-sm font-medium text-zinc-500 mt-1">Find experiences near you by location, date, or category.</p>
-            </div>
-            <div className="flex items-center gap-1 rounded-xl border border-zinc-200 bg-white p-1 shadow-sm shrink-0">
+        {/* ── Categories Section (moved directly under Featured, above Browse) ── */}
+        <section className="mb-10 sm:mb-14">
+          <div className="mb-6 text-center sm:mb-8">
+            <p className="text-xs font-black uppercase tracking-wider text-orange-600 font-bold">Diverse Options</p>
+            <h2 className="text-2xl font-black text-zinc-950 mt-1 sm:text-3xl">Search by Category</h2>
+          </div>
+          {/* Mobile: single swipeable horizontal row (shared overflow-x scroll
+              pattern). sm+ keeps the multi-column grid. */}
+          <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide sm:grid sm:grid-cols-4 sm:gap-4 sm:overflow-visible sm:pb-0 lg:grid-cols-8">
+            {categories.map(({ name, icon: Icon }) => (
               <Link
-                href={buildQuery({ view: "list" })}
-                className={`rounded-lg px-3.5 py-1.5 text-xs font-black transition ${
-                  view === "list" ? "bg-orange-600 text-white" : "text-zinc-500 hover:text-zinc-800"
-                }`}
+                key={name}
+                href={`/events?category=${encodeURIComponent(name)}`}
+                className="group flex w-[72px] shrink-0 flex-col items-center text-center transition sm:w-auto"
               >
-                List
+                <span className="flex h-16 w-16 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 transition group-hover:border-orange-200 group-hover:bg-orange-50 group-hover:text-orange-600 sm:h-20 sm:w-20">
+                  <Icon className="h-6 w-6 sm:h-8 sm:w-8" strokeWidth={1.6} />
+                </span>
+                <span className="mt-3 text-xs font-bold leading-tight text-zinc-950 group-hover:text-orange-600">{name}</span>
               </Link>
-              <Link
-                href={buildQuery({ view: "map" })}
-                className={`rounded-lg px-3.5 py-1.5 text-xs font-black transition ${
-                  view === "map" ? "bg-orange-600 text-white" : "text-zinc-500 hover:text-zinc-800"
-                }`}
-              >
-                Map
-              </Link>
-            </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Browse Events Section (Step 3) — one merged header: heading +
+            subtext + search bar + When toggle ── */}
+        <div className="mb-5 border-b border-zinc-200 pb-4 sm:mb-6 sm:pb-5">
+          <div>
+            <h2 className="text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">Browse Events</h2>
+            {/* Subtext restates the heading + fields below it, so drop it on
+                mobile to reclaim vertical space; keep it on sm+. */}
+            <p className="mt-1 hidden text-sm font-medium text-zinc-500 sm:block">Find experiences near you by location, date, or category.</p>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-4 sm:mt-5">
             <PublicSearchBar
               action="/events"
               defaultQuery={query || ""}
@@ -476,73 +459,55 @@ export default async function EventsPage({
               className="max-w-3xl"
             />
           </div>
+
+          <div className="mt-3 sm:mt-4">
+            <EventsWhenToggle activeWhen={activeWhen} />
+          </div>
         </div>
 
-        <EventsHeaderControls location={location || ""} activeWhen={activeWhen} />
-
-        {view === "list" ? (
-          <div className="grid gap-8 lg:grid-cols-[220px_1fr] xl:grid-cols-[240px_1fr]">
-            <Suspense fallback={null}>
-              <EventsFilterSidebar
-                activeCategory={category}
-                activeSort={sort}
-                activeWhen={activeWhen}
-                resultCount={totalCount ?? allEvents.length}
-              />
-            </Suspense>
-
+        {hideEventsSidebar ? (
+          // 0 local matches, external results exist: render nothing here (no
+          // sidebar to filter, no message box) — flow straight into the
+          // "More events elsewhere" carousel below.
+          null
+        ) : (
             <div>
-              {allEvents.length > 0 ? (
-                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                  {allEvents.map((event) =>
-                    event.source === "ticketmaster" ? (
-                      <Link
-                        key={event.id}
-                        href={`/external-events/ticketmaster/${encodeURIComponent(event.id.replace(/^tm_/, ""))}`}
-                        className="block"
-                      >
-                        <EventCard
-                          slug={null}
-                          title={event.title}
-                          date={
-                            event.event_date
-                              ? new Date(event.event_date).toLocaleDateString("en-US", {
-                                  weekday: "short",
-                                  month: "short",
-                                  day: "numeric",
-                                })
-                              : "Date TBA"
-                          }
-                          location={event.city || "Location TBA"}
-                          image={
-                            event.banner ||
-                            "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop"
-                          }
-                        />
-                      </Link>
-                    ) : (
-                      <EventCard
-                        key={event.id}
-                        slug={event.slug ?? null}
-                        title={event.title}
-                        date={
-                          event.event_date
-                            ? new Date(event.event_date).toLocaleDateString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                              })
-                            : "Date TBA"
-                        }
-                        location={event.city || "Location TBA"}
-                        image={
-                          event.banner ||
-                          "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop"
-                        }
-                        category={"category" in event ? event.category : null}
-                      />
-                    )
-                  )}
+              {/* Compact filter dropdowns in a header row replace the old sidebar
+                  column, so the results grid runs full-width below. */}
+              <div className="mb-4 flex flex-col gap-2 sm:mb-6 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+                <p className="text-sm font-bold text-zinc-500">
+                  {totalCount ?? 0} {(totalCount ?? 0) === 1 ? "event" : "events"}
+                </p>
+                <Suspense fallback={null}>
+                  <EventsFilterControls activeCategory={category} activeSort={sort} />
+                </Suspense>
+              </div>
+
+              {supabaseNormalized.length > 0 ? (
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {supabaseNormalized.map((event) => (
+                    <EventCard
+                      key={event.id}
+                      slug={event.slug ?? null}
+                      title={event.title}
+                      date={
+                        event.event_date
+                          ? new Date(event.event_date).toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "Date TBA"
+                      }
+                      eventDate={event.event_date}
+                      location={event.city || "Location TBA"}
+                      image={
+                        event.banner ||
+                        "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop"
+                      }
+                      category={event.category}
+                    />
+                  ))}
                 </div>
               ) : (
                 <PublicEmptyState
@@ -553,47 +518,21 @@ export default async function EventsPage({
                 />
               )}
             </div>
-          </div>
-        ) : (
-          <div className="overflow-hidden rounded-2xl border border-zinc-200">
-            <MapSection
-              events={supabaseNormalized.map((e) => ({
-                id: e.id,
-                slug: e.slug,
-                title: e.title,
-                latitude: e.latitude ?? null,
-                longitude: e.longitude ?? null,
-                event_date: e.event_date ?? null,
-                city: e.city ?? null,
-                banner: e.banner ?? null,
-                category: e.category ?? null,
-              }))}
-              height="580px"
-            />
-          </div>
+          )
+        }
+
+        {/* ── Live external results (Ticketmaster + SeatGeek) — page 1 only ── */}
+        {page === 1 && externalResults.length > 0 && (
+          // When there are no local results the carousel is the primary content,
+          // so keep it tight under the header; when it follows a local grid, give
+          // it more breathing room to read as a distinct section.
+          <section className={hideEventsSidebar ? "mt-4" : "mt-14"}>
+            <ExternalEventsCarousel events={externalResults} />
+          </section>
         )}
 
-        {/* ── Categories Section (Step 4) ── */}
-        <section className="mt-20 border-t border-zinc-200 pt-16">
-          <div className="mb-8 text-center">
-            <p className="text-xs font-black uppercase tracking-wider text-orange-600 font-bold">Diverse Options</p>
-            <h2 className="text-3xl font-black text-zinc-950 mt-1">Search by Category</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
-            {categories.map(({ name, icon: Icon }) => (
-              <Link
-                key={name}
-                href={`/events?category=${encodeURIComponent(name)}`}
-                className="group flex flex-col items-center text-center transition"
-              >
-                <span className="flex h-16 w-16 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 transition group-hover:border-orange-200 group-hover:bg-orange-50 group-hover:text-orange-600 sm:h-20 sm:w-20">
-                  <Icon className="h-6 w-6 sm:h-8 sm:w-8" strokeWidth={1.6} />
-                </span>
-                <span className="mt-3 text-xs font-bold leading-tight text-zinc-950 group-hover:text-orange-600">{name}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
+        {/* ── Top Destinations (explore by city; between Categories and Trending) ── */}
+        <TopDestinations />
 
         {/* ── Trending Events Section (Step 5) ── */}
         {trendingEvents.length > 0 && (
@@ -611,8 +550,8 @@ export default async function EventsPage({
                   slug={event.slug}
                   title={event.title}
                   date={
-                    event.event_date
-                      ? new Date(event.event_date).toLocaleDateString("en-US", {
+                    event.eventDate
+                      ? new Date(event.eventDate).toLocaleDateString("en-US", {
                           weekday: "short",
                           month: "short",
                           day: "numeric",
@@ -632,7 +571,7 @@ export default async function EventsPage({
         )}
 
         {/* ── Pagination Section (Step 6) ── */}
-        {view === "list" && allEvents.length > 0 && (
+        {browseEvents.length > 0 && (
           <div className="mt-12 flex justify-center border-t border-zinc-150 pt-8">
             <PublicPagination
               currentPage={page}
@@ -642,6 +581,9 @@ export default async function EventsPage({
           </div>
         )}
       </div>
+
+      {/* ── How hosting works (organizer storytelling; "Why Host" follows next) ── */}
+      <HowHostingWorks />
     </main>
   );
 }
