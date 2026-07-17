@@ -653,16 +653,16 @@ export default async function FundraiserPage({
               </p>
             </section>
 
-            <section className="space-y-2 lg:space-y-3">
+            <section className="flex gap-2 lg:gap-3">
               <a
                 href={`/fundraisers/${fundraiser.slug}/donate`}
-                className="flex w-full items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 lg:py-3.5 lg:text-base"
+                className="flex flex-1 items-center justify-center rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 lg:py-3.5 lg:text-base"
               >
                 Donate now
               </a>
               <ShareFundraiserButton
                 title={fundraiser.title}
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-black text-white transition hover:bg-slate-900 lg:py-3.5 lg:text-base"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-black text-white transition hover:bg-slate-900 lg:py-3.5 lg:text-base"
               />
             </section>
 

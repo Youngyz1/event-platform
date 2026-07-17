@@ -8,6 +8,7 @@ import {
   getFundraiserCardData,
 } from "@/lib/fundraiser-data";
 import { money } from "@/lib/format";
+import { getSiteUrl } from "@/lib/site-url";
 import { truncateWords } from "@/lib/text";
 
 // Node.js runtime (not edge) so we can read the local font/logo files below.
@@ -36,24 +37,46 @@ async function readFontFile(filename: string) {
 }
 
 async function readLogoDataUri() {
-  const buffer = await readFile(join(process.cwd(), "public", "logo.png"));
+  // Pre-resized to the card's actual display height (see assets/og-logo.png
+  // vs. the multi-hundred-KB public/logo.png shared with the rest of the
+  // site) — this file gets read on every request regardless of which
+  // fundraiser is being rendered, so it's optimized once ahead of time
+  // rather than resized per-request like the campaign photo below.
+  const buffer = await readFile(join(process.cwd(), "assets", "og-logo.png"));
   return `data:image/png;base64,${buffer.toString("base64")}`;
 }
 
 /**
- * Fetches a remote image and inlines it as a data URI so Satori always has
- * real bytes to render. There's no onError DOM event in a server-rendered
- * image, so a missing/broken campaign photo falls back to the same stock
- * placeholder FundraiserMediaSlider.tsx uses, resolved the same way.
+ * Fetches a remote image already downsized to the card's actual rendered
+ * width via Next's own built-in image optimizer (/_next/image) and inlines
+ * it as a data URI so Satori always has real bytes to render. Routed
+ * through /_next/image rather than calling sharp directly in this file (or
+ * even in a separate route): sharp's native module (libvips) and next/og's
+ * own native rasterizer (resvg) cannot coexist in the same running Node
+ * process — once sharp has been loaded anywhere in-process, ImageResponse
+ * crashes the worker at runtime with a native colourspace error, even when
+ * they're only ever invoked from completely separate requests/routes.
+ * Next's own image optimizer already uses sharp internally but is
+ * engineered by the framework to coexist safely with everything else
+ * Next does, including next/og, so this sidesteps the conflict entirely.
+ * Without downsizing, ImageResponse rasterizes the whole card losslessly
+ * as PNG regardless of source format, so an unresized original photo
+ * (often several MB straight off a phone) bloats the final file far past
+ * WhatsApp's stricter size/timeout budget even though Facebook's own
+ * debugger tolerates it. There's no onError DOM event in a server-rendered
+ * image, so a missing/broken/unprocessable campaign photo falls back to
+ * the same stock placeholder FundraiserMediaSlider.tsx uses, resolved the
+ * same way.
  */
 async function resolveCardPhoto(url: string): Promise<string | null> {
   for (const candidate of [url, FUNDRAISER_FALLBACK_IMAGE]) {
     try {
-      const res = await fetch(candidate, { signal: AbortSignal.timeout(5000) });
+      const proxyUrl = `${getSiteUrl()}/_next/image?url=${encodeURIComponent(candidate)}&w=640&q=75`;
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
       if (!res.ok) continue;
       const contentType = res.headers.get("content-type") || "image/jpeg";
-      const buffer = await res.arrayBuffer();
-      return `data:${contentType};base64,${Buffer.from(buffer).toString("base64")}`;
+      const buffer = Buffer.from(await res.arrayBuffer());
+      return `data:${contentType};base64,${buffer.toString("base64")}`;
     } catch {
       continue;
     }

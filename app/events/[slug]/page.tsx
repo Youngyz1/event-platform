@@ -53,6 +53,7 @@ const getEventBySlug = cache(async (slug: string) => {
     .from("events")
     .select("id, title, slug, description, banner, city, venue, event_date, category, organizer_id, visibility, user_id, latitude, longitude, review_count, average_rating, source_organizer_name, source_organizer_url, created_at, status")
     .eq("slug", slug)
+    .is("deleted_at", null)
     .maybeSingle();
   return event;
 });

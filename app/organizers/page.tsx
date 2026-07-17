@@ -108,9 +108,9 @@ export default async function OrganizersDirectoryPage({
     { data: raisedData }
   ] = await Promise.all([
     adminClient.from("platform_settings").select("key, value").in("key", HOMEPAGE_SETTING_KEYS),
-    adminClient.from("organizers").select("id", { count: "exact", head: true }).eq("status", "verified").eq("visibility", "public"),
-    adminClient.from("events").select("id", { count: "exact", head: true }).eq("visibility", "public").eq("status", "approved"),
-    adminClient.from("fundraisers").select("raised")
+    adminClient.from("organizers").select("id", { count: "exact", head: true }).eq("status", "verified").eq("visibility", "public").is("deleted_at", null),
+    adminClient.from("events").select("id", { count: "exact", head: true }).eq("visibility", "public").eq("status", "approved").is("deleted_at", null),
+    adminClient.from("fundraisers").select("raised").is("deleted_at", null)
   ]);
 
   const cms = getHomepageSettings(cmsRows);
@@ -122,7 +122,8 @@ export default async function OrganizersDirectoryPage({
   let organizersQuery = supabase
     .from("organizers")
     .select("*", { count: "exact" })
-    .eq("visibility", "public");
+    .eq("visibility", "public")
+    .is("deleted_at", null);
 
   if (statusFilter === "verified") {
     organizersQuery = organizersQuery.eq("status", "verified");
@@ -154,6 +155,7 @@ export default async function OrganizersDirectoryPage({
         .select("*")
         .eq("visibility", "public")
         .eq("status", "verified")
+        .is("deleted_at", null)
         .order("created_at", { ascending: false })
         .limit(3)
     : { data: null };

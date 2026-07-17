@@ -24,6 +24,8 @@ export type HomepageSettings = {
   fundraisersHeroHeadlineLine1: string;
   fundraisersHeroHeadlineLine2: string;
   fundraisersHeroDescription: string;
+  /** Ordered hero photo-fan image URLs (max 5), admin-managed. */
+  fundraisersHeroImages: string[];
   // Organizers landing
   organizersHeroImageUrl: string;
   organizersHeroEyebrow: string;
@@ -63,6 +65,7 @@ export const DEFAULT_HOMEPAGE_SETTINGS: HomepageSettings = {
   fundraisersHeroHeadlineLine1: "Support Causes That Matter",
   fundraisersHeroHeadlineLine2: "",
   fundraisersHeroDescription: "Help communities, charities, and individuals reach their goals.",
+  fundraisersHeroImages: [],
   // Organizers defaults
   organizersHeroImageUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1800&auto=format&fit=crop",
   organizersHeroEyebrow: "ORGANIZER DIRECTORY",
@@ -99,6 +102,7 @@ export const HOMEPAGE_SETTING_KEYS = [
   "fundraisers_hero_headline_line_1",
   "fundraisers_hero_headline_line_2",
   "fundraisers_hero_description",
+  "fundraisers_hero_images",
   // Organizers Landing keys
   "organizers_hero_image_url",
   "organizers_hero_eyebrow",
@@ -108,6 +112,27 @@ export const HOMEPAGE_SETTING_KEYS = [
 ] as const;
 
 export const HOMEPAGE_HERO_SETTING_KEYS = HOMEPAGE_SETTING_KEYS;
+
+export const MAX_HERO_FAN_IMAGES = 5;
+
+/**
+ * Parse the stored `fundraisers_hero_images` value (a JSON array of URLs) into a
+ * sanitized, capped list. Anything malformed collapses to an empty list so a
+ * bad value can never crash the hero.
+ */
+export function parseHeroImages(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((u): u is string => typeof u === "string" && u.trim().length > 0)
+      .map((u) => u.trim())
+      .slice(0, MAX_HERO_FAN_IMAGES);
+  } catch {
+    return [];
+  }
+}
 
 export function getHomepageSettings(
   rows: { key: string; value: string | null }[] | null | undefined
@@ -154,6 +179,7 @@ export function getHomepageSettings(
   if (dbSettings.fundraisers_hero_headline_line_1) settings.fundraisersHeroHeadlineLine1 = dbSettings.fundraisers_hero_headline_line_1;
   if (dbSettings.fundraisers_hero_headline_line_2 !== undefined) settings.fundraisersHeroHeadlineLine2 = dbSettings.fundraisers_hero_headline_line_2;
   if (dbSettings.fundraisers_hero_description) settings.fundraisersHeroDescription = dbSettings.fundraisers_hero_description;
+  settings.fundraisersHeroImages = parseHeroImages(dbSettings.fundraisers_hero_images);
 
   // Bind Organizers Landing values
   if (dbSettings.organizers_hero_image_url) settings.organizersHeroImageUrl = dbSettings.organizers_hero_image_url;
@@ -220,6 +246,7 @@ export function homepageSettingsToRows(settings: HomepageSettings) {
     { key: "fundraisers_hero_headline_line_1", value: settings.fundraisersHeroHeadlineLine1 },
     { key: "fundraisers_hero_headline_line_2", value: settings.fundraisersHeroHeadlineLine2 },
     { key: "fundraisers_hero_description", value: settings.fundraisersHeroDescription },
+    { key: "fundraisers_hero_images", value: JSON.stringify(settings.fundraisersHeroImages ?? []) },
     // Organizers Landing keys
     { key: "organizers_hero_image_url", value: settings.organizersHeroImageUrl },
     { key: "organizers_hero_eyebrow", value: settings.organizersHeroEyebrow },
@@ -261,6 +288,10 @@ export function normalizeHomepageSettings(settings: HomepageSettings): HomepageS
     fundraisersHeroHeadlineLine1: settings.fundraisersHeroHeadlineLine1.trim(),
     fundraisersHeroHeadlineLine2: settings.fundraisersHeroHeadlineLine2.trim(),
     fundraisersHeroDescription: settings.fundraisersHeroDescription.trim(),
+    fundraisersHeroImages: (settings.fundraisersHeroImages ?? [])
+      .map((u) => u.trim())
+      .filter(Boolean)
+      .slice(0, MAX_HERO_FAN_IMAGES),
     // Organizers
     organizersHeroImageUrl: settings.organizersHeroImageUrl.trim(),
     organizersHeroEyebrow: settings.organizersHeroEyebrow.trim(),

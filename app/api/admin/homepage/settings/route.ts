@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { isAdmin, getCurrentUser } from "@/lib/auth";
-import { HOMEPAGE_SETTING_KEYS } from "@/lib/homepage-hero";
+import { HOMEPAGE_SETTING_KEYS, parseHeroImages } from "@/lib/homepage-hero";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,7 +39,12 @@ export async function POST(req: NextRequest) {
   const now = new Date().toISOString();
   const rows = body.settings.map((s) => ({
     key: s.key,
-    value: String(s.value),
+    // The hero photo-fan list is structured JSON — sanitize/cap it rather than
+    // storing whatever the client sent verbatim.
+    value:
+      s.key === "fundraisers_hero_images"
+        ? JSON.stringify(parseHeroImages(String(s.value)))
+        : String(s.value),
     updated_at: now,
     updated_by: user?.id ?? null,
   }));

@@ -1,6 +1,7 @@
 import EventCard from "@/components/EventCard";
 import EventsWhenToggle from "@/app/events/EventsWhenToggle";
-import HowHostingWorks from "@/components/events/HowHostingWorks";
+import EventsHeroSearch from "@/app/events/EventsHeroSearch";
+import TrendingCarousel from "@/app/events/TrendingCarousel";
 import TopDestinations from "@/components/events/TopDestinations";
 import ExternalEventsCarousel from "@/components/events/ExternalEventsCarousel";
 import EventsFilterControls from "@/components/public/EventsFilterControls";
@@ -15,11 +16,13 @@ import {
   type EventListSort,
 } from "@/lib/event-data";
 import { searchExternalEvents, type ExternalEvent } from "@/lib/external-events";
+import { getVisitorCity } from "@/lib/request-geo";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { unstable_cache } from "next/cache";
 import {
+  ArrowRight,
   Briefcase,
   GraduationCap,
   HandHeart,
@@ -191,15 +194,46 @@ export default async function EventsPage({
   const weekendRange = activeWhen === "weekend" ? getWeekendRange() : null;
   const hasFilters = Boolean(query || location || category || weekendRange);
 
-  // 1. Fetch CMS settings and statistics (via cached helper)
-  const { cms, totalEvents, ticketsSold, activeOrganizers } = await getEventsPageCmsAndStats();
+  // 1. Fetch CMS settings (via cached helper; the hero stats row was removed).
+  const { cms } = await getEventsPageCmsAndStats();
+
+  // Recurring events are stored as many separate rows sharing one title (e.g.
+  // "30-Day Financial Glow-Up" has 19 monthly occurrences). Collapse them to a
+  // single card per title so the same event can't appear twice in a rail.
+  const normalizeTitle = (title: string) => title.toLowerCase().replace(/\s+/g, " ").trim();
+
+  // Promo banner event (reuses the homepage CMS `is_homepage_featured` flag) —
+  // the single pinned event surfaced in the hero. Null when none is flagged.
+  const promoAdmin = createSupabaseAdmin();
+  const { data: promoRows } = await promoAdmin
+    .from("events")
+    .select("title, slug")
+    .eq("is_homepage_featured", true)
+    .eq("visibility", "public")
+    .eq("status", "approved")
+    .is("deleted_at", null)
+    .order("homepage_position", { ascending: true })
+    .limit(1);
+  const promo = promoRows?.[0] ?? null;
+
+  // Location-aware heading source (Vercel edge city; null → "Popular Events").
+  const visitorCity = await getVisitorCity();
 
   // 2. Featured events (step 2) — upcoming featured picks, shown only when
   //    browsing without filters. `upcoming: true` keeps past events out of the
-  //    most prominent slot.
-  const featured: EventListItem[] = !hasFilters
-    ? (await getEventList({ featuredOnly: true, upcoming: true, sort: "date_asc", pageSize: 4 })).events
+  //    most prominent slot. Over-fetch, then dedupe by title to 4.
+  const featuredRaw: EventListItem[] = !hasFilters
+    ? (await getEventList({ featuredOnly: true, upcoming: true, sort: "date_asc", pageSize: 16 })).events
     : [];
+  const featured: EventListItem[] = [];
+  const seenFeaturedTitles = new Set<string>();
+  for (const event of featuredRaw) {
+    const key = normalizeTitle(event.title);
+    if (seenFeaturedTitles.has(key)) continue;
+    seenFeaturedTitles.add(key);
+    featured.push(event);
+    if (featured.length >= 4) break;
+  }
 
   // 3. Browse grid (step 3) — the shared list query, excluding the Featured
   //    picks so the same event never renders in both sections.
@@ -308,52 +342,88 @@ export default async function EventsPage({
     }));
   }
 
-  // 6. Trending events (step 5) — top upcoming events by all-time ticket sales,
-  //    excluding anything already shown in Featured or the current Browse page,
-  //    then topped up with soonest-upcoming events as a fallback. All fetched
-  //    through the shared getEventList (single source of truth).
+  // 6. Trending events (step 5) — ranked by all-time ticket sales, topped up
+  //    with the most recently added events, then paginated in the client
+  //    carousel. Deduped by BOTH id and normalized title, and excluded (id +
+  //    title) against Featured so the same event can't sit in both prominent
+  //    rails. Browse is intentionally NOT excluded here: the distinct-title
+  //    pool is small (recurring events collapse to one card), and excluding the
+  //    whole Browse page by title starves the rail — mild overlap with the grid
+  //    below is fine for a "trending" strip.
+  const TRENDING_TARGET = 12;
   const rankedEventIds = await getCachedTrendingRankedEventIds();
-  const trendingExcludeIds = [
-    ...featured.map((e) => e.id),
-    ...browseEvents.map((e) => e.id),
-  ];
 
-  let trendingEvents: EventListItem[] = [];
+  const excludeTrendingIds = new Set<string>(featured.map((e) => e.id));
+  const excludeTrendingTitles = new Set<string>(
+    featured.map((e) => normalizeTitle(e.title))
+  );
+
+  const trendingEvents: EventListItem[] = [];
+  const seenTrendingTitles = new Set<string>();
+  const addTrending = (candidates: EventListItem[]) => {
+    for (const event of candidates) {
+      if (trendingEvents.length >= TRENDING_TARGET) break;
+      const titleKey = normalizeTitle(event.title);
+      if (excludeTrendingIds.has(event.id)) continue;
+      if (excludeTrendingTitles.has(titleKey) || seenTrendingTitles.has(titleKey)) continue;
+      seenTrendingTitles.add(titleKey);
+      trendingEvents.push(event);
+    }
+  };
+
   if (rankedEventIds.length > 0) {
     const { events: rankedEvents } = await getEventList({
-      ids: rankedEventIds.slice(0, 50),
-      upcoming: true,
-      excludeIds: trendingExcludeIds,
-      pageSize: 50,
+      ids: rankedEventIds.slice(0, 60),
+      pageSize: 60,
     });
     // `.in(...)` doesn't preserve order, so re-rank by ticket sales.
     const byId = new Map(rankedEvents.map((e) => [e.id, e]));
-    trendingEvents = rankedEventIds
-      .map((id) => byId.get(id))
-      .filter((e): e is EventListItem => Boolean(e))
-      .slice(0, 4);
+    addTrending(
+      rankedEventIds
+        .map((id) => byId.get(id))
+        .filter((e): e is EventListItem => Boolean(e))
+    );
   }
-  if (trendingEvents.length < 4) {
+  if (trendingEvents.length < TRENDING_TARGET) {
+    // Over-fetch (title-dedupe shrinks the set) to fill remaining slots with
+    // the most recently added events.
     const { events: fallback } = await getEventList({
-      upcoming: true,
-      excludeIds: [...trendingExcludeIds, ...trendingEvents.map((e) => e.id)],
-      sort: "date_asc",
-      pageSize: 4 - trendingEvents.length,
+      excludeIds: [...excludeTrendingIds, ...trendingEvents.map((e) => e.id)],
+      sort: "newest",
+      pageSize: TRENDING_TARGET * 4,
     });
-    trendingEvents = [...trendingEvents, ...fallback];
+    addTrending(fallback);
   }
+
+  const trendingItems = trendingEvents.map((event) => ({
+    id: event.id,
+    slug: event.slug,
+    title: event.title,
+    eventDate: event.eventDate,
+    city: event.city,
+    venue: event.venue,
+    banner: event.banner,
+    category: event.category,
+  }));
+
+  const locationHeading = visitorCity ? `Events near ${visitorCity}` : "Popular Events";
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950 pb-16">
-      {/* ── CMS Hero Banner (Step 1) ── */}
-      <section
-        className="relative flex min-h-[360px] items-center justify-center bg-cover bg-center px-4 py-16 text-center sm:min-h-[420px] sm:px-12 sm:py-20 lg:min-h-[460px]"
-        style={{
-          backgroundImage: `url("${cms.eventsHeroImageUrl || cms.imageUrl}")`,
-        }}
-      >
-        <div className="absolute inset-0 bg-black/65" />
-        <div className="relative w-full max-w-4xl text-white">
+      {/* ── Hero: badge + headline + subtitle + search + promo banner ── */}
+      <section className="relative overflow-hidden px-4 py-16 text-center sm:px-12 sm:py-20 lg:py-24">
+        {/* Radial gradient glow — Fund4Good dark tones with a soft warm glow
+            bleeding in from a corner (not a copy of SeatGeek's red gradient). */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(58% 75% at 82% 12%, rgba(249,115,22,0.30), transparent 60%)," +
+              "radial-gradient(55% 70% at 8% 96%, rgba(22,163,74,0.16), transparent 62%)," +
+              "#0a0a0b",
+          }}
+        />
+        <div className="relative z-10 mx-auto w-full max-w-3xl text-white">
           <span className="inline-block rounded-full bg-orange-600/30 border border-orange-500/40 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-orange-300 backdrop-blur-sm">
             {cms.eventsHeroEyebrow}
           </span>
@@ -370,18 +440,43 @@ export default async function EventsPage({
             {cms.eventsHeroDescription}
           </p>
 
-          {/* Dynamic statistics */}
-          <div className="mx-auto mt-8 flex max-w-md flex-wrap justify-center gap-x-6 gap-y-2 border-t border-white/10 pt-6 text-xs font-bold text-zinc-400 sm:text-sm">
-            <span>{totalEvents.toLocaleString()} Events</span>
-            <span>•</span>
-            <span>{ticketsSold.toLocaleString()} Tickets Sold</span>
-            <span>•</span>
-            <span>{activeOrganizers.toLocaleString()} Organizers</span>
+          {/* Search — the visual centerpiece (wired to the nav /search endpoint). */}
+          <div className="mx-auto mt-8 max-w-2xl">
+            <EventsHeroSearch />
           </div>
+
+          {/* Promo banner — the pinned featured event (is_homepage_featured);
+              hidden entirely when nothing is flagged. */}
+          {promo && (
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-2 text-sm sm:text-base">
+              <span className="text-zinc-300">
+                <span className="font-black text-white">{promo.title}</span> is here
+              </span>
+              <Link
+                href={`/events/${promo.slug}`}
+                className="inline-flex items-center gap-1.5 rounded-full bg-orange-600 px-4 py-1.5 text-xs font-black text-white transition hover:bg-orange-700 sm:text-sm"
+              >
+                Reserve your seat
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+        {/* ── Location-aware heading + Trending Events (paginated in groups of
+            4). Heading personalizes to the visitor's city, else "Popular
+            Events". ── */}
+        {trendingItems.length > 0 && (
+          <div className="mb-14">
+            <h2 className="mb-6 text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">
+              {locationHeading}
+            </h2>
+            <TrendingCarousel items={trendingItems} />
+          </div>
+        )}
+
         {/* ── Featured Events Section (Step 2) ── */}
         {!hasFilters && featured.length > 0 && (
           <div className="mb-14">
@@ -405,10 +500,7 @@ export default async function EventsPage({
                       : "Date TBA"
                   }
                   location={event.city || event.venue || "Location TBA"}
-                  image={
-                    event.banner ||
-                    "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop"
-                  }
+                  image={event.banner || ""}
                   badge="Featured"
                   category={event.category}
                 />
@@ -451,16 +543,20 @@ export default async function EventsPage({
             <p className="mt-1 hidden text-sm font-medium text-zinc-500 sm:block">Find experiences near you by location, date, or category.</p>
           </div>
 
-          <div className="mt-4 sm:mt-5">
+          {/* Search fields temporarily hidden (not deleted) — remove the
+              `hidden` class to restore the keyword/location search on the
+              Browse Events header. */}
+          <div className="mt-4 hidden sm:mt-5">
             <PublicSearchBar
               action="/events"
               defaultQuery={query || ""}
               defaultLocation={location || ""}
               className="max-w-3xl"
+              collapsibleOnMobile
             />
           </div>
 
-          <div className="mt-3 sm:mt-4">
+          <div className="mt-4 sm:mt-5">
             <EventsWhenToggle activeWhen={activeWhen} />
           </div>
         </div>
@@ -501,10 +597,7 @@ export default async function EventsPage({
                       }
                       eventDate={event.event_date}
                       location={event.city || "Location TBA"}
-                      image={
-                        event.banner ||
-                        "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop"
-                      }
+                      image={event.banner || ""}
                       category={event.category}
                     />
                   ))}
@@ -531,44 +624,8 @@ export default async function EventsPage({
           </section>
         )}
 
-        {/* ── Top Destinations (explore by city; between Categories and Trending) ── */}
+        {/* ── Top Destinations (explore by city; below the results, above pagination) ── */}
         <TopDestinations />
-
-        {/* ── Trending Events Section (Step 5) ── */}
-        {trendingEvents.length > 0 && (
-          <section className="mt-20 border-t border-zinc-200 pt-16">
-            <div className="mb-8 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-black uppercase tracking-wider text-orange-600">Highly Anticipated</p>
-                <h2 className="text-3xl font-black text-zinc-950 mt-1">Trending Events</h2>
-              </div>
-            </div>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-              {trendingEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  slug={event.slug}
-                  title={event.title}
-                  date={
-                    event.eventDate
-                      ? new Date(event.eventDate).toLocaleDateString("en-US", {
-                          weekday: "short",
-                          month: "short",
-                          day: "numeric",
-                        })
-                      : "Date TBA"
-                  }
-                  location={event.city || event.venue || "Location TBA"}
-                  image={
-                    event.banner ||
-                    "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1200&auto=format&fit=crop"
-                  }
-                  category={event.category}
-                />
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* ── Pagination Section (Step 6) ── */}
         {browseEvents.length > 0 && (
@@ -581,9 +638,6 @@ export default async function EventsPage({
           </div>
         )}
       </div>
-
-      {/* ── How hosting works (organizer storytelling; "Why Host" follows next) ── */}
-      <HowHostingWorks />
     </main>
   );
 }

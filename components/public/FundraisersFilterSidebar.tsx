@@ -17,12 +17,14 @@ type FundraisersFilterSidebarProps = {
   activeCategories?: string[];
   activeSort?: string;
   resultCount?: number;
+  showCategoryFilter?: boolean;
 };
 
 export default function FundraisersFilterSidebar({
   activeCategories = [],
   activeSort = "newest",
   resultCount,
+  showCategoryFilter = true,
 }: FundraisersFilterSidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -60,6 +62,7 @@ export default function FundraisersFilterSidebar({
       )}
 
       {/* Category Filter */}
+      {showCategoryFilter && (
       <div>
         <button
           type="button"
@@ -110,6 +113,7 @@ export default function FundraisersFilterSidebar({
           </div>
         )}
       </div>
+      )}
 
       {/* Sort Filter */}
       <div>

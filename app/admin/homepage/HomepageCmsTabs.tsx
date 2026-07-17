@@ -28,6 +28,7 @@ import {
   UserCircle2,
 } from "lucide-react";
 import { HomepageSettings } from "@/lib/homepage-hero";
+import HeroFanManager from "./HeroFanManager";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -509,6 +510,7 @@ export default function HomepageCmsTabs({
 
       {/* ══════════════ FUNDRAISERS LANDING TAB ══════════════ */}
       {activeTab === "fundraisers_landing" && (
+        <div className="space-y-6">
         <div className="grid gap-6 lg:grid-cols-[1fr_1.1fr]">
           <form onSubmit={saveSettings} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6 space-y-4">
             <h2 className="text-base font-black text-zinc-950 font-bold">Fundraisers Landing Hero</h2>
@@ -561,6 +563,8 @@ export default function HomepageCmsTabs({
               </div>
             </div>
           </div>
+        </div>
+          <HeroFanManager initialImages={initialSettings.fundraisersHeroImages} />
         </div>
       )}
 

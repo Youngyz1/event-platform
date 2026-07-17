@@ -25,3 +25,23 @@ export async function getVisitorCountry(): Promise<string> {
   }
   return DEFAULT_COUNTRY;
 }
+
+/**
+ * Best-effort visitor city, from the same Vercel edge geolocation as
+ * `getVisitorCountry` — Vercel injects `x-vercel-ip-city` (URL-encoded, e.g.
+ * "New%20York") at the edge for every request. Returns `null` when the header
+ * is absent (local dev, or hosting elsewhere) so callers can fall back to a
+ * non-personalized label rather than guessing.
+ */
+export async function getVisitorCity(): Promise<string | null> {
+  const headerList = await headers();
+  const raw = headerList.get("x-vercel-ip-city");
+  if (!raw) return null;
+  try {
+    const decoded = decodeURIComponent(raw).trim();
+    return decoded.length > 0 ? decoded : null;
+  } catch {
+    const trimmed = raw.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+}
