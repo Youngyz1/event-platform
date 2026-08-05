@@ -157,7 +157,7 @@ export default function AboutUsSection({
   variants={item}
 >
   Fund4Good helps individuals, nonprofits, and organizers raise funds
-  and connect with sponsors—all in one platform. Everything you need to
+  and connect with sponsors. Everything you need to
   grow your cause, engage supporters, and create meaningful impact.
 </motion.p>
 

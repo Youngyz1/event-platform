@@ -416,11 +416,6 @@ export default function HomepageCmsTabs({
                 <p className="text-sm font-medium text-zinc-300 max-w-md">{settings.organizersHeroDescription}</p>
                 {/* Dynamic Stats Row mock in preview */}
                 <div className="pt-3 text-xs font-bold text-zinc-400 border-t border-white/10 mt-6 flex gap-3 flex-wrap">
-                  <span>1,500 Organizers</span>
-                  <span>•</span>
-                  <span>12,000 Events Hosted</span>
-                  <span>•</span>
-                  <span>$2.4M Community Raised</span>
                 </div>
               </div>
             </div>
@@ -514,16 +509,16 @@ export default function HomepageCmsTabs({
             <h2 className="text-base font-black text-zinc-950">SEO &amp; Social</h2>
             <div>
               <FieldLabel>Meta Title</FieldLabel>
-              <Input value={settings.seoTitle} onChange={e => setSettings({...settings, seoTitle: e.target.value})} placeholder="Fund4Good — Buy Tickets…" />
+              <Input value={settings.seoTitle} onChange={e => setSettings({...settings, seoTitle: e.target.value})} placeholder="Fund4Good — Create & Support Fundraising Campaigns" />
               <p className="mt-1 text-xs text-zinc-400">{settings.seoTitle.length} / 60 chars</p>
             </div>
             <div>
               <FieldLabel>Meta Description</FieldLabel>
-              <Textarea rows={3} value={settings.seoDescription} onChange={e => setSettings({...settings, seoDescription: e.target.value})} placeholder="Discover events, buy tickets, support causes." />
+              <Textarea rows={3} value={settings.seoDescription} onChange={e => setSettings({...settings, seoDescription: e.target.value})} placeholder="Create fundraising campaigns, accept secure donations, and help communities, nonprofits, schools, and individuals raise money online." />
               <p className="mt-1 text-xs text-zinc-400">{settings.seoDescription.length} / 160 chars</p>
             </div>
             <div>
-              <FieldLabel>Open Graph / Twitter Image URL</FieldLabel>
+              <FieldLabel>Social Preview Image</FieldLabel>
               <Input type="url" value={settings.seoOgImageUrl} onChange={e => setSettings({...settings, seoOgImageUrl: e.target.value})} placeholder="https://…" />
             </div>
             <SaveBtn saving={saving} label="Save SEO Settings" />
@@ -535,7 +530,7 @@ export default function HomepageCmsTabs({
             <div className="space-y-2">
               <span className="text-xs font-black uppercase tracking-wide text-zinc-400">Google Snippet Preview</span>
               <div className="rounded-xl border border-zinc-200 bg-white p-5 space-y-1">
-                <p className="text-[11px] text-zinc-400">https://fund4good.com</p>
+                <p className="text-[11px] text-zinc-400">https://fund4agoodcause.com</p>
                 <p className="text-lg font-medium text-blue-700 hover:underline cursor-pointer">{settings.seoTitle || "Your title here"}</p>
                 <p className="text-sm text-zinc-600 leading-relaxed">{settings.seoDescription || "Your meta description here."}</p>
               </div>
@@ -551,7 +546,7 @@ export default function HomepageCmsTabs({
                   {!settings.seoOgImageUrl && <div className="flex h-full items-center justify-center"><ImageIcon className="h-10 w-10 text-zinc-300" /></div>}
                 </div>
                 <div className="border-t border-zinc-100 bg-zinc-50 px-4 py-3">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">fund4good.com</p>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">fund4agoodcause.com</p>
                   <p className="mt-0.5 truncate text-sm font-black text-zinc-800">{settings.seoTitle}</p>
                   <p className="truncate text-xs text-zinc-500">{settings.seoDescription}</p>
                 </div>
