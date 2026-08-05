@@ -16,7 +16,7 @@ export default function DashboardEmptyState({
   actionHref,
 }: Props) {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50/60 px-6 py-14 text-center sm:rounded-2xl sm:px-8 sm:py-20">
+    <div className="flex flex-col items-center gap-4 px-6 py-14 text-center sm:px-8 sm:py-20">
       <p className="text-xl font-black text-zinc-950 sm:text-2xl">{title}</p>
       <p className="max-w-md text-xs font-medium text-zinc-500 sm:text-sm">{description}</p>
       {actionLabel && actionHref && (

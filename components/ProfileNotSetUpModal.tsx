@@ -46,7 +46,7 @@ export default function ProfileNotSetUpModal({
         </div>
 
         {/* Activity card */}
-        <div className="mt-5 rounded-xl border border-zinc-100 bg-zinc-50 p-4 text-left">
+        <div className="mt-5 rounded-xl bg-zinc-50 p-4 text-left">
           {activity.type === "donation" ? (
             <div>
               <p className="text-xs font-bold uppercase tracking-wide text-zinc-400">

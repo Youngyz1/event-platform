@@ -18,9 +18,9 @@ export default function WhyFund4Good() {
       stillHaveQuestions={{ label: "Read the FAQ", href: "#faq" }}
     >
       From{" "}
-      <Link href="/fundraisers?filter=trending">trending campaigns</Link>{" "}
+      <Link href="/?filter=trending">trending campaigns</Link>{" "}
       building real momentum to{" "}
-      <Link href="/fundraisers?filter=just-launched">newly launched causes</Link>{" "}
+      <Link href="/?filter=just-launched">newly launched causes</Link>{" "}
       finding their first backers, Fund4Good hands every organizer the tools to
       go from idea to funded. When you&apos;re ready,{" "}
       <Link href="/create-fundraiser">start your fundraiser</Link> — it takes

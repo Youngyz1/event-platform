@@ -209,7 +209,7 @@ export default function GoFundMeSyncPage() {
 
         <div className="grid gap-8 lg:grid-cols-[420px_1fr]">
           <aside className="space-y-6">
-            <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <div className="rounded-xl border border-zinc-200 bg-white p-6">
               <h2 className="text-2xl font-black">Add Fundraiser</h2>
 
               <label className="mt-5 block">
@@ -258,7 +258,7 @@ export default function GoFundMeSyncPage() {
             </div>
           </aside>
 
-          <section className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <section className="rounded-xl border border-zinc-200 bg-white p-6">
             <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-center">
               <div>
                 <h2 className="text-3xl font-black">Sources</h2>
@@ -274,7 +274,7 @@ export default function GoFundMeSyncPage() {
             </div>
 
             {sources.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-8 py-20 text-center">
+              <div className="px-8 py-20 text-center">
                 <h3 className="text-2xl font-black">No GoFundMe sources yet.</h3>
               </div>
             ) : (

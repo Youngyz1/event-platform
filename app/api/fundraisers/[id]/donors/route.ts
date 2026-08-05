@@ -17,6 +17,7 @@ export async function GET(
     .eq("fundraiser_id", id)
     .in("status", ["succeeded", "completed"])
     .order("created_at", { ascending: false })
+    .order("id", { ascending: true })
     .range(offset, offset + limit - 1);
 
   if (error) {

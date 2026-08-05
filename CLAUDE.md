@@ -13,12 +13,7 @@ This repo pins `next@16.2.6`, a version with breaking changes from what you like
 
 ## Commands
 
-```bash
-npm run dev      # start dev server (Turbopack, forces IPv4 DNS resolution)
-npm run build    # production build
-npm run start    # run production build
-npm run lint     # eslint
-```
+Standard `npm run` scripts (see `package.json`). Note: `dev` sets `NODE_OPTIONS=--dns-result-order=ipv4first`, forcing IPv4 DNS resolution.
 
 There is no configured test runner (`playwright` is a devDependency but there is no `playwright.config.*` or spec files in the repo, and no `test` script). Don't assume `npm test` works — verify manually or ask before adding a test framework.
 
@@ -28,7 +23,7 @@ There is no configured test runner (`playwright` is a devDependency but there is
 
 ### Auth & access control (three layers)
 
-1. **`proxy.ts`** (root) — runs on every matched request. Refreshes the Supabase session, redirects unauthenticated users away from protected routes (`/dashboard`, `/admin`, `/create-event`, `/create-fundraiser`, `/create-organizer`, `/my-tickets`), blocks suspended accounts, and bounces logged-in users away from `/login`/`/signup`. It also gates `/articles/:slug` — it does a lightweight REST fetch (service role, no full DB client) to decide visibility before the page starts streaming, because per this Next.js version's streaming semantics, `notFound()` can no longer change the HTTP status code once the response has started streaming with 200.
+1. **`proxy.ts`** (root) — runs on every matched request. Refreshes the Supabase session, redirects unauthenticated users away from protected routes (`/dashboard`, `/admin`, `/create-event`, `/create-fundraiser`, `/create-organizer`), blocks suspended accounts, and bounces logged-in users away from `/login`/`/signup`. (It previously also gated `/articles/:slug` and `/external-events/ticketmaster/:id` with a pre-streaming existence/visibility check, per this Next.js version's streaming semantics where `notFound()` can no longer change the HTTP status code once the response has started streaming with 200 — both gates were removed along with their now-deleted pages.)
 2. **`app/admin/layout.tsx`** — calls `requireAdmin()` (from `lib/auth.ts`) for role enforcement on everything under `/admin`.
 3. **`lib/auth.ts`** — server-only RBAC helpers (`getCurrentUser`, `getCurrentUserProfile`, `isAdmin`, `isOrganizer`, `requireAdmin`, `requireAuth`). Role/status checks use a service-role Supabase client to bypass RLS for the `profiles` lookup; never import these in client components.
 
@@ -41,12 +36,12 @@ There is no configured test runner (`playwright` is a devDependency but there is
 
 ### Domain areas (mirrors `app/` route groups and `app/api/`)
 
-- **Events & fundraisers**: core marketplace listings, each with a create flow (`create-event`, `create-fundraiser`, `create-organizer`), dashboard management, and public detail pages.
-- **Businesses**: newer listing type (see `migration_36_business_listings.sql`) with its own crypto + unified payment selector modal (`components/payments`), moderated via the admin panel.
-- **Articles**: CMS-style content with `draft`/`scheduled`/`archived`/`expired`/`rejected` statuses and `public`/`private` visibility, access-controlled in `proxy.ts` (see above). Server actions in `lib/actions/articles.ts`.
-- **Payments**: Stripe (`@stripe/stripe-js`, `@stripe/react-stripe-js`) plus a custom crypto payment path; webhook handling under `app/api/webhooks/stripe`. Order/ticket flow spans `create-payment-intent`, `checkout`, `seats`, `send-ticket`, `receipts`, `certificates`.
-- **External imports**: Eventbrite and GoFundMe sync (`app/api/eventbrite`, `app/api/eventbrite-sync`, `app/api/gofundme-sync`, `db/eventbrite_sources_schema.sql`, `db/gofundme_sources_schema.sql`) plus a generic `import-url` endpoint, all feeding `app/external-events` and `app/import`.
-- **Admin**: `app/admin/*` (articles, businesses, events, fundraisers, organizers, payments, reviews, settings, users) — moderation panels with stats/filters/search/row actions, gated by `requireAdmin()`.
+- **Fundraisers**: core listings, with a create flow (`create-fundraiser`), dashboard management, and public detail pages at `/fundraisers/[slug]`.
+- **Organizers**: public profile pages at `/org/[slug]` — Organizer, Business, Event Organizer, and Community are all the same `organizers` table, differentiated only by an `org_type` badge — plus a create flow (`create-organizer`) and dashboard management. A separate `businesses` table exists (`migration_36_business_listings.sql`) but has no pages built against it yet.
+- **Events**: the platform has pivoted to fundraising-only. Public event browsing, `create-event`, and admin event management have all been removed; the `events`/`ticket_orders` tables and their historical data remain (referenced by admin stats and per-organizer/user counts only — not a live, manageable domain).
+- **Payments**: Stripe (`@stripe/stripe-js`, `@stripe/react-stripe-js`) plus a custom crypto payment path; webhook handling under `app/api/webhooks/stripe`. Flow spans `create-payment-intent`, `receipts`, `certificates`.
+- **External imports**: GoFundMe sync (`app/api/gofundme-sync`, `db/gofundme_sources_schema.sql`) plus a generic `import-url` endpoint, feeding `app/import`. Eventbrite sync and Ticketmaster external-events browsing have been removed.
+- **Admin**: `app/admin/*` (fundraisers, organizers, payments, reviews, settings, users, homepage CMS) — moderation panels with stats/filters/search/row actions, gated by `requireAdmin()`.
 - **Scheduled jobs** (`vercel.json` crons): `/api/cron/daily-post` (14:00 UTC) and `/api/cron/promotion-engine` (18:00 UTC); logic lives in `lib/promotionEngine.js` and related `lib/*` modules.
 
 ### Security headers / CSP

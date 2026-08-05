@@ -4,7 +4,6 @@
  * and a form allowing signed-in users to leave or edit their own review.
  *
  * Usage:
- *   <ReviewSection targetType="event" targetId={event.id} accentColor="orange" />
  *   <ReviewSection targetType="fundraiser" targetId={fundraiser.id} accentColor="green" />
  *   <ReviewSection targetType="organizer" targetId={organizer.id} accentColor="violet" />
  */
@@ -15,7 +14,7 @@ import StarRating from "@/components/StarRating";
 import ReviewForm, { type ReviewFormValues } from "@/components/ReviewForm";
 import { supabase } from "@/lib/supabase";
 
-type ReviewTarget = "event" | "fundraiser" | "organizer" | "platform";
+type ReviewTarget = "fundraiser" | "organizer" | "platform";
 type AccentColor = "orange" | "violet" | "green";
 
 interface ReviewItem {
@@ -40,14 +39,12 @@ interface ReviewSectionProps {
 
 // Query param key for each target type (excluding platform)
 const paramKey: Record<Exclude<ReviewTarget, "platform">, string> = {
-  event: "event_id",
   fundraiser: "fundraiser_id",
   organizer: "organizer_id",
 };
 
 // Human-readable target label
 const targetLabel: Record<ReviewTarget, string> = {
-  event: "event",
   fundraiser: "campaign",
   organizer: "organizer",
   platform: "platform",

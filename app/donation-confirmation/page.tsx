@@ -136,7 +136,7 @@ function DonationConfirmationContent() {
 
   return (
     <main className="min-h-screen bg-zinc-50 px-4 pt-6 pb-12 text-zinc-950">
-      <section className="mx-auto max-w-xl rounded-lg border border-zinc-200 bg-white p-6 shadow-sm sm:p-8">
+      <section className="mx-auto max-w-xl rounded-xl border border-zinc-200 bg-white p-6 sm:p-8">
         <div className="flex justify-center">
           <CheckCircle2 className="h-16 w-16 text-emerald-600" />
         </div>

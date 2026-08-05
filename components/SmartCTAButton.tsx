@@ -5,7 +5,7 @@
  * "Get Started" CTA that adapts its destination based on auth state:
  *  - Not logged in              → /signup
  *  - Logged in, no organizer   → /create-organizer
- *  - Logged in, has organizer  → /create-event
+ *  - Logged in, has organizer  → /create-fundraiser
  *
  * Uses the browser Supabase client (no server fetch needed).
  */
@@ -20,13 +20,13 @@ type State = "loading" | "guest" | "no-org" | "has-org";
 const DEST: Record<Exclude<State, "loading">, string> = {
   guest:   "/signup",
   "no-org": "/create-organizer",
-  "has-org": "/create-event",
+  "has-org": "/create-fundraiser",
 };
 
 const LABEL: Record<Exclude<State, "loading">, string> = {
   guest:    "Get Started",
   "no-org": "Create Organizer Profile",
-  "has-org": "Create an Event",
+  "has-org": "Start a Fundraiser",
 };
 
 interface SmartCTAButtonProps {

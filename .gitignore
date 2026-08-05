@@ -42,3 +42,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# logs & temporary reports
+*.log
+*.html
+parity_report.*
+parity-check.js
+.mcp.json

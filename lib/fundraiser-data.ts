@@ -1,10 +1,10 @@
 import { cache } from "react";
 
-import { normalizeImageUrl } from "@/lib/image-url";
+import { calculateFundraisingPercentage } from "@/lib/fundraising-progress";
+import { safeImageSrc, normalizeImageUrl } from "@/lib/image-url";
 import { supabase } from "@/lib/supabase";
 
-export const FUNDRAISER_FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1600&auto=format&fit=crop";
+export const FUNDRAISER_FALLBACK_IMAGE: string | null = null;
 
 type OptionalFundraiserFields = {
   description?: string | null;
@@ -78,15 +78,11 @@ export async function getFundraiserCardData(slug: string) {
     fundraiser.title ||
     "This Cause";
 
-  const coverImage = normalizeImageUrl(
-    fundraiser.image_url || fundraiser.banner,
-    FUNDRAISER_FALLBACK_IMAGE
-  );
+  const coverImage = safeImageSrc(fundraiser.image_url || fundraiser.banner);
 
-  const raised = Number(fundraiser.raised_amount ?? fundraiser.raised ?? 0);
+  const raised = Number(fundraiser.raised ?? 0);
   const goal = Number(optionalFundraiser.goal_amount ?? fundraiser.goal ?? 0);
-  const percentage =
-    goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
+  const percentage = calculateFundraisingPercentage(raised, goal);
 
   return {
     title: fundraiser.title as string,
@@ -143,7 +139,7 @@ const CHARITY_CATEGORY_VALUE = "Charity";
 function fundraiserRatio(row: RelatedFundraiserCandidate): number {
   const goal = Number(row.goal ?? 0);
   if (goal <= 0) return 0;
-  return Number(row.raised_amount ?? row.raised ?? 0) / goal;
+  return Number(row.raised ?? 0) / goal;
 }
 
 function fundraiserAgeDays(row: RelatedFundraiserCandidate): number {
@@ -260,7 +256,7 @@ export type FundraiserListItem = {
   slug: string;
   goal: number;
   raised: number;
-  image: string;
+  image: string | null;
   category: string | null;
   organizer: string | null;
   isFeatured: boolean;
@@ -333,7 +329,7 @@ function mapFundraiserRow(row: FundraiserListRow): FundraiserListItem {
     title: row.title,
     slug: row.slug,
     goal: Number(row.goal ?? 0),
-    raised: Number(row.raised_amount ?? row.raised ?? 0),
+    raised: Number(row.raised ?? 0),
     image: normalizeImageUrl(row.image_url || row.banner, FUNDRAISER_FALLBACK_IMAGE),
     category: row.category ?? null,
     organizer: row.organizer ?? null,
@@ -376,7 +372,8 @@ export async function getFundraiserList(
       "id, title, slug, goal, raised, raised_amount, banner, image_url, category, organizer, created_at, is_featured",
       { count: "exact" }
     )
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .eq("status", "published");
 
   if (searchQuery) {
     const safeSearchQuery = escapePostgrestOrValue(searchQuery);
@@ -424,9 +421,9 @@ const SMART_NEEDS_MOMENTUM_MAX_RATIO = 0.2;
 const SMART_NEEDS_MOMENTUM_MIN_AGE_DAYS = 30;
 const DAY_MS = 1000 * 60 * 60 * 24;
 
-/** Displayed raised value — matches mapFundraiserRow (`raised_amount ?? raised`). */
+/** Displayed raised value — matches mapFundraiserRow (`raised`). */
 function rowEffectiveRaised(row: FundraiserListRow): number {
-  return Number(row.raised_amount ?? row.raised ?? 0);
+  return Number(row.raised ?? 0);
 }
 
 function rowRatio(row: FundraiserListRow): number {
@@ -518,7 +515,9 @@ async function getSmartFilteredFundraiserList(
     .from("fundraisers")
     .select(
       "id, title, slug, goal, raised, raised_amount, banner, image_url, category, organizer, created_at, is_featured"
-    );
+    )
+    .is("deleted_at", null)
+    .eq("status", "published");
   if (categories && categories.length > 0) {
     query = query.in("category", categories);
   }
@@ -573,11 +572,9 @@ export async function getCuratedFundraiserImages(
   for (const slug of slugs) {
     const row = bySlug.get(slug);
     if (!row) continue;
-    // Empty-string fallback: an unusable/disallowed image resolves to "" and is
-    // dropped, rather than substituting the stock fallback image.
-    const normalized = normalizeImageUrl(row.image_url || row.banner, "");
-    if (normalized && normalized !== FUNDRAISER_FALLBACK_IMAGE) {
-      images.push(normalized);
+    const safe = safeImageSrc(row.image_url || row.banner);
+    if (safe) {
+      images.push(safe);
     }
   }
   return images;

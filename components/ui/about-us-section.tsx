@@ -9,8 +9,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-  Ticket, Megaphone, Heart, Users, Award, Calendar,
-  TrendingUp, Zap,
+  FileText, Megaphone, Heart, Users, Award,
+  HandCoins, TrendingUp, Zap,
 } from "lucide-react";
 import {
   motion, useScroll, useTransform, useInView, useSpring,
@@ -27,6 +27,7 @@ export interface AboutStat {
   value:  number;
   label:  string;
   suffix: string;
+  prefix?: string;
 }
 
 export interface AboutService {
@@ -41,9 +42,9 @@ export interface AboutService {
 
 const DEFAULT_SERVICES: AboutService[] = [
   {
-    icon: <Ticket className="w-5 h-5" />,
-    title: "Ticketing",
-    description: "Sell tickets with QR codes, manage capacity, and handle check-ins seamlessly for events of any size.",
+    icon: <FileText className="w-5 h-5" />,
+    title: "Campaign Pages",
+    description: "Build a beautiful campaign page with your story, goal, and progress — ready to share in minutes.",
     position: "left",
   },
   {
@@ -55,7 +56,7 @@ const DEFAULT_SERVICES: AboutService[] = [
   {
     icon: <Megaphone className="w-5 h-5" />,
     title: "Promotion",
-    description: "Get your events and campaigns discovered by thousands of attendees and donors in your area.",
+    description: "Get your campaigns discovered by thousands of donors in your area.",
     position: "left",
   },
   {
@@ -67,22 +68,22 @@ const DEFAULT_SERVICES: AboutService[] = [
   {
     icon: <Users className="w-5 h-5" />,
     title: "Community",
-    description: "Build a following around your brand. Attendees save, share, and return for every event you host.",
+    description: "Build a following around your cause. Supporters save, share, and return for every campaign you run.",
     position: "right",
   },
   {
     icon: <TrendingUp className="w-5 h-5" />,
     title: "Analytics",
-    description: "Track ticket sales, donation progress, and attendee data through a beautiful organizer dashboard.",
+    description: "Track donation progress and donor data through a beautiful organizer dashboard.",
     position: "right",
   },
 ];
 
 const DEFAULT_STATS: AboutStat[] = [
-  { icon: <Award className="w-6 h-6" />,    value: 150,  label: "Events Hosted",    suffix: "+" },
-  { icon: <Users className="w-6 h-6" />,    value: 3200, label: "Happy Attendees",  suffix: "+" },
-  { icon: <Calendar className="w-6 h-6" />, value: 3,    label: "Years Running",    suffix: "" },
-  { icon: <Heart className="w-6 h-6" />,    value: 98,   label: "Satisfaction Rate", suffix: "%" },
+  { icon: <Heart className="w-6 h-6" />,       value: 0, label: "Active Campaigns", suffix: "+" },
+  { icon: <HandCoins className="w-6 h-6" />,   value: 0, label: "Funds Raised",     suffix: "", prefix: "$" },
+  { icon: <Award className="w-6 h-6" />,       value: 0, label: "Donations Made",   suffix: "+" },
+  { icon: <Users className="w-6 h-6" />,       value: 0, label: "Organizers",       suffix: "+" },
 ];
 
 // ── Main component ────────────────────────────────────────────────────────────
@@ -96,7 +97,7 @@ interface AboutUsSectionProps {
 export default function AboutUsSection({
   services = DEFAULT_SERVICES,
   stats    = DEFAULT_STATS,
-  ctaHref  = "/create-event",
+  ctaHref  = "/create-fundraiser",
 }: AboutUsSectionProps) {
   const sectionRef  = useRef<HTMLDivElement>(null);
   const statsRef    = useRef<HTMLDivElement>(null);
@@ -155,10 +156,9 @@ export default function AboutUsSection({
   className="text-center max-w-2xl mx-auto mb-16 text-zinc-500 text-lg leading-relaxed"
   variants={item}
 >
-  Fund4Good helps individuals, nonprofits, and event organizers raise funds,
-  host events, sell tickets, and connect with sponsors—all in one platform.
-  Everything you need to grow your cause, engage supporters, and create
-  meaningful impact.
+  Fund4Good helps individuals, nonprofits, and organizers raise funds
+  and connect with sponsors—all in one platform. Everything you need to
+  grow your cause, engage supporters, and create meaningful impact.
 </motion.p>
 
         {/* Accordion + image layout */}
@@ -214,8 +214,8 @@ export default function AboutUsSection({
           transition={{ duration: 0.8, delay: 0.4 }}
         >
           <div>
-            <h3 className="text-2xl font-black mb-1">Ready to host your next event?</h3>
-            <p className="text-zinc-400">Join thousands of organizers already using Fund4Good.</p>
+            <h3 className="text-2xl font-black mb-1">Ready to start your fundraiser?</h3>
+            <p className="text-zinc-400">Join organizers already raising funds with Fund4Good.</p>
           </div>
           <SmartCTAButton className="shrink-0" />
         </motion.div>
@@ -257,12 +257,12 @@ function ServiceItem({
   );
 }
 
-function StatCounter({ icon, value, label, suffix, delay }: AboutStat & { delay: number }) {
+function StatCounter({ icon, value, label, suffix, prefix, delay }: AboutStat & { delay: number }) {
   const ref        = useRef(null);
   const isInView   = useInView(ref, { once: false });
   const [animated, setAnimated] = useState(false);
   const spring     = useSpring(0, { stiffness: 50, damping: 10 });
-  const display    = useTransform(spring, (v) => Math.floor(v));
+  const display    = useTransform(spring, (v) => Math.floor(v).toLocaleString());
 
   useEffect(() => {
     if (isInView && !animated) { spring.set(value); setAnimated(true); }
@@ -287,6 +287,7 @@ function StatCounter({ icon, value, label, suffix, delay }: AboutStat & { delay:
         {icon}
       </motion.div>
       <div ref={ref} className="text-3xl font-black text-zinc-950 flex items-center">
+        {prefix && <span>{prefix}</span>}
         <motion.span>{display}</motion.span>
         <span>{suffix}</span>
       </div>

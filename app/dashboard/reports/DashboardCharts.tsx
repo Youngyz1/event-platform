@@ -19,7 +19,7 @@ export type NamedValue = { name: string; value: number };
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-zinc-200/80 bg-white p-3 shadow-sm sm:rounded-2xl sm:p-6">
+    <div className="rounded-xl border border-zinc-200 bg-white p-3 sm:p-6">
       <h2 className="mb-3 text-[10px] font-black uppercase tracking-wide text-zinc-500 sm:mb-5 sm:text-sm">{title}</h2>
       {children}
     </div>
@@ -45,7 +45,13 @@ export function TicketsChart({ data }: { data: DailyPoint[] }) {
   if (!data.length) return <EmptyChart message="No ticket sales in the last 30 days." />;
   return (
     <div className="h-44 sm:h-56">
-      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minWidth={0}
+        minHeight={1}
+        initialDimension={{ width: -1, height: 176 }}
+      >
         <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <CartesianGrid {...gridProps} vertical={false} />
           <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
@@ -69,7 +75,13 @@ export function RevenueChart({ data }: { data: DailyPoint[] }) {
   if (!data.length) return <EmptyChart message="No revenue data in the last 30 days." />;
   return (
     <div className="h-44 sm:h-56">
-      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minWidth={0}
+        minHeight={1}
+        initialDimension={{ width: -1, height: 176 }}
+      >
         <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <CartesianGrid {...gridProps} vertical={false} />
           <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
@@ -86,7 +98,13 @@ export function DonationsChart({ data }: { data: DailyPoint[] }) {
   if (!data.length) return <EmptyChart message="No donations in the last 30 days." />;
   return (
     <div className="h-44 sm:h-56">
-      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minWidth={0}
+        minHeight={1}
+        initialDimension={{ width: -1, height: 176 }}
+      >
         <LineChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
           <CartesianGrid {...gridProps} vertical={false} />
           <XAxis dataKey="date" tick={tickStyle} tickLine={false} axisLine={false} />
@@ -143,7 +161,13 @@ export function NamedBarChart({ data, valuePrefix = "" }: { data: NamedValue[]; 
   if (!data.length) return <EmptyChart message="No data for this period." />;
   return (
     <div className="h-44 sm:h-56">
-      <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={1}>
+      <ResponsiveContainer
+        width="100%"
+        height="100%"
+        minWidth={0}
+        minHeight={1}
+        initialDimension={{ width: -1, height: 176 }}
+      >
         <BarChart data={data} layout="vertical" margin={{ top: 4, right: 4, left: 8, bottom: 0 }}>
           <CartesianGrid {...gridProps} horizontal={false} />
           <XAxis type="number" tick={tickStyle} tickLine={false} axisLine={false} tickFormatter={(v) => `${valuePrefix}${v}`} />

@@ -3,43 +3,33 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import {
-  Bell,
-  Building2,
-  CalendarDays,
   ChevronDown,
-  Heart,
   Menu,
-  Plus,
   Search,
-  ShoppingBag,
-  Ticket,
-  User,
   X,
-  BookOpen,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import BrandMark from "@/components/BrandMark";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { cn } from "@/lib/utils";
 
 type Account = {
+  id: string;
   displayName: string;
 };
 
-const NAV_LINKS = [
-  { label: "Events", href: "/events", icon: CalendarDays },
-  { label: "Fundraisers", href: "/fundraisers", icon: Heart },
-  { label: "Find Tickets", href: "/find-tickets", icon: Ticket },
-  { label: "Articles", href: "/articles", icon: BookOpen },
-  { label: "Businesses", href: "/businesses", icon: Building2 },
-  { label: "Shop", href: "/products", icon: ShoppingBag },
-] as const;
+type DropdownLink = { label: string; href: string };
+type DropdownSection = { label?: string; items: DropdownLink[] };
 
-const CREATE_LINKS = [
-  { label: "Create event", href: "/create-event", icon: CalendarDays },
-  { label: "Start fundraiser", href: "/create-fundraiser", icon: Heart },
-  { label: "Become organizer", href: "/create-organizer", icon: User },
-] as const;
+const DISCOVER_TOP_LINKS: DropdownLink[] = [
+  { label: "Browse Fundraisers", href: "/fundraisers" },
+];
+
+const DISCOVER_BOTTOM_LINKS: DropdownLink[] = [
+  { label: "Organizers", href: "/organizers" },
+];
 
 function NavLink({
   href,
@@ -68,25 +58,104 @@ function NavLink({
   );
 }
 
+function NavDropdown({ label, sections }: { label: string; sections: DropdownSection[] }) {
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger
+        className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-bold text-zinc-700 outline-none transition hover:bg-zinc-50 hover:text-orange-600 data-[state=open]:bg-zinc-50 data-[state=open]:text-orange-600"
+      >
+        {label}
+        <ChevronDown className="h-3.5 w-3.5" />
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Portal>
+        <DropdownMenu.Content
+          align="start"
+          sideOffset={8}
+          className="z-50 max-h-[70vh] min-w-[240px] overflow-y-auto rounded-2xl border border-zinc-200 bg-white p-1.5 shadow-xl"
+        >
+          {sections.map((section, i) => (
+            <div key={i}>
+              {i > 0 && <DropdownMenu.Separator className="my-1.5 h-px bg-zinc-100" />}
+              {section.label && (
+                <p className="px-3 pb-1 pt-2 text-[11px] font-black uppercase tracking-wider text-zinc-400">
+                  {section.label}
+                </p>
+              )}
+              {section.items.map((item) => (
+                <DropdownMenu.Item key={item.href} asChild>
+                  <Link
+                    href={item.href}
+                    className="block cursor-pointer rounded-xl px-3 py-2 text-sm font-bold text-zinc-700 outline-none transition hover:bg-zinc-50 hover:text-orange-600"
+                  >
+                    {item.label}
+                  </Link>
+                </DropdownMenu.Item>
+              ))}
+            </div>
+          ))}
+        </DropdownMenu.Content>
+      </DropdownMenu.Portal>
+    </DropdownMenu.Root>
+  );
+}
+
+function MobileDropdownSection({ title, links, onLinkClick }: { title: string; links: DropdownLink[]; onLinkClick: () => void }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="border-t border-zinc-100 pt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between px-3 pb-1 text-[11px] font-black uppercase tracking-wider text-zinc-400"
+      >
+        {title}
+        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform duration-200", open && "rotate-180")} />
+      </button>
+      <div
+        className={cn(
+          "grid overflow-hidden transition-all duration-200 ease-in-out",
+          open ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="grid gap-1 pt-1">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={onLinkClick}
+                className="rounded-lg px-3 py-2 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 hover:text-orange-600"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [account, setAccount] = useState<Account | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [createOpen, setCreateOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const createRef = useRef<HTMLDivElement>(null);
+  const [categories, setCategories] = useState<string[]>([]);
   const accountRef = useRef<HTMLDivElement>(null);
 
-  function accountFromUser(user: { email?: string | null; user_metadata?: Record<string, unknown> } | null | undefined) {
+  function accountFromUser(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> } | null | undefined) {
     if (!user?.email) return null;
     const displayName =
       typeof user.user_metadata?.display_name === "string" && user.user_metadata.display_name.trim()
         ? user.user_metadata.display_name.trim()
         : user.email.split("@")[0];
-    return { displayName };
+    return { id: user.id, displayName };
   }
 
   useEffect(() => {
@@ -99,9 +168,20 @@ export default function Navbar() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  // Live category list for the Discover dropdown — same source as the homepage's category pills.
+  useEffect(() => {
+    supabase
+      .from("homepage_categories")
+      .select("name")
+      .eq("is_visible", true)
+      .order("position", { ascending: true })
+      .then(({ data }) => {
+        if (data && data.length > 0) setCategories(data.map((c) => c.name));
+      });
+  }, []);
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (createRef.current && !createRef.current.contains(e.target as Node)) setCreateOpen(false);
       if (accountRef.current && !accountRef.current.contains(e.target as Node)) setAccountOpen(false);
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -111,7 +191,6 @@ export default function Navbar() {
   useEffect(() => {
     setMenuOpen(false);
     setSearchOpen(false);
-    setCreateOpen(false);
     setAccountOpen(false);
   }, [pathname]);
 
@@ -132,15 +211,25 @@ export default function Navbar() {
   const accountName = account?.displayName ?? "";
   const initials = accountName ? accountName.slice(0, 2).toUpperCase() : "";
 
-  function isActive(href: string) {
-    if (href === "/") return pathname === "/";
-    return pathname.startsWith(href);
-  }
+  const categoryLinks: DropdownLink[] = categories.map((name) => ({
+    label: name,
+    href: `/fundraisers?categories=${encodeURIComponent(name)}`,
+  }));
+
+  const discoverSections: DropdownSection[] = [
+    { items: DISCOVER_TOP_LINKS },
+    ...(categoryLinks.length > 0 ? [{ label: "Categories", items: categoryLinks }] : []),
+    { items: DISCOVER_BOTTOM_LINKS },
+  ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-200/80 bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/80">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-3 px-4 md:gap-4 md:px-6">
-        <Link href="/" className="shrink-0 text-zinc-950">
+        <Link
+          href="/"
+          prefetch={pathname.startsWith("/admin") ? false : undefined}
+          className="shrink-0 text-zinc-950"
+        >
           <BrandMark textClassName="hidden sm:inline text-zinc-950" />
         </Link>
 
@@ -152,17 +241,15 @@ export default function Navbar() {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search events, fundraisers, organizers…"
+              placeholder="Search fundraisers, organizers…"
               className="h-10 w-full rounded-full border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20"
             />
           </label>
         </form>
 
-        {/* Desktop nav links */}
+        {/* Desktop nav dropdowns */}
         <nav className="hidden items-center gap-1 lg:flex">
-          {NAV_LINKS.map(({ label, href }) => (
-            <NavLink key={href} href={href} label={label} active={isActive(href)} />
-          ))}
+          <NavDropdown label="Discover" sections={discoverSections} />
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
@@ -176,44 +263,8 @@ export default function Navbar() {
             <Search className="h-5 w-5" />
           </button>
 
-          {/* Create dropdown */}
-          <div className="relative" ref={createRef}>
-            <button
-              type="button"
-              onClick={() => setCreateOpen((o) => !o)}
-              className="hidden items-center gap-1.5 rounded-full bg-orange-600 px-4 py-2 text-sm font-black text-white transition hover:bg-orange-700 sm:inline-flex"
-            >
-              <Plus className="h-4 w-4" />
-              Create
-              <ChevronDown className={cn("h-4 w-4 transition", createOpen && "rotate-180")} />
-            </button>
-            {createOpen && (
-              <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200 bg-white py-2 shadow-xl">
-                {CREATE_LINKS.map(({ label, href, icon: Icon }) => (
-                  <Link
-                    key={href}
-                    href={href}
-                    onClick={() => setCreateOpen(false)}
-                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-zinc-700 transition hover:bg-orange-50 hover:text-orange-700"
-                  >
-                    <Icon className="h-4 w-4 text-orange-600" />
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Notifications placeholder */}
-          <button
-            type="button"
-            aria-label="Notifications (coming soon)"
-            title="Notifications coming soon"
-            className="relative hidden h-10 w-10 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition hover:border-orange-200 hover:text-orange-600 sm:flex"
-          >
-            <Bell className="h-5 w-5" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-white" />
-          </button>
+          {/* Notifications */}
+          {account && <NotificationBell userId={account.id} />}
 
           {account ? (
             <div className="relative" ref={accountRef}>
@@ -236,10 +287,6 @@ export default function Navbar() {
                   <div className="my-1 border-t border-zinc-100" />
                   <Link href="/dashboard" className="block px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 hover:text-orange-600">
                     Dashboard
-                  </Link>
-                  <Link href="/my-tickets" className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 hover:text-orange-600">
-                    <Ticket className="h-4 w-4" />
-                    My tickets
                   </Link>
                   <Link href="/dashboard/settings/profile" className="block px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 hover:text-orange-600">
                     Account settings
@@ -303,45 +350,28 @@ export default function Navbar() {
 
       {/* Mobile menu panel */}
       {menuOpen && (
-        <div className="border-t border-zinc-200 bg-white px-4 py-4 lg:hidden">
+        <div className="max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-zinc-200 bg-white px-4 py-4 lg:hidden">
           <nav className="grid gap-1">
             <NavLink href="/" label="Home" active={pathname === "/"} onClick={() => setMenuOpen(false)} />
-            {NAV_LINKS.map(({ label, href }) => (
-              <NavLink key={href} href={href} label={label} active={isActive(href)} onClick={() => setMenuOpen(false)} />
-            ))}
           </nav>
 
-          <div className="my-4 border-t border-zinc-100 pt-4">
-            <p className="mb-2 px-3 text-xs font-black uppercase tracking-widest text-zinc-400">Create</p>
-            <div className="grid gap-1">
-              {CREATE_LINKS.map(({ label, href, icon: Icon }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold text-zinc-700 hover:bg-orange-50"
-                >
-                  <Icon className="h-4 w-4 text-orange-600" />
-                  {label}
-                </Link>
-              ))}
-            </div>
-          </div>
+          <MobileDropdownSection
+            title="Discover"
+            links={[...DISCOVER_TOP_LINKS, ...categoryLinks, ...DISCOVER_BOTTOM_LINKS]}
+            onLinkClick={() => setMenuOpen(false)}
+          />
 
           {account ? (
-            <div className="grid gap-1 border-t border-zinc-100 pt-4">
+            <div className="grid gap-1 border-t border-zinc-100 pt-4 mt-3">
               <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50">
                 Dashboard
-              </Link>
-              <Link href="/my-tickets" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50">
-                My tickets
               </Link>
               <button type="button" onClick={handleLogout} className="rounded-lg px-3 py-2.5 text-left text-sm font-bold text-red-600 hover:bg-red-50">
                 Log out
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2 border-t border-zinc-100 pt-4">
+            <div className="grid grid-cols-2 gap-2 border-t border-zinc-100 pt-4 mt-3">
               <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-xl bg-zinc-100 py-3 text-center text-sm font-bold">
                 Log in
               </Link>

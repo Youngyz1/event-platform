@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
+import { generateUUID } from "@/lib/uuid";
+import { safeImageSrc } from "@/lib/image-url";
+import LocalBrandedPlaceholder from "@/components/ui/LocalBrandedPlaceholder";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import {
@@ -10,6 +14,8 @@ import {
   CheckoutShell,
   formatMoney,
 } from "@/components/payments";
+import ProgressBar from "@/components/ui/ProgressBar";
+import { calculateFundraisingPercentage } from "@/lib/fundraising-progress";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -59,8 +65,6 @@ export default function DonatePage({
   const [preparingPayment, setPreparingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  // UUID minted each time the user clicks "Proceed" — one per checkout attempt
-  const [checkoutAttemptId, setCheckoutAttemptId] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "crypto">("card");
   const [isRedirecting, setIsRedirecting] = useState(false);
 
@@ -127,7 +131,7 @@ export default function DonatePage({
   })();
 
   const total = donationAmount + tipAmount;
-  const pct = goal > 0 ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
+  const pct = calculateFundraisingPercentage(raised, goal);
 
   // ─── Create PaymentIntent ────────────────────────────────────────────────────
 
@@ -172,8 +176,7 @@ export default function DonatePage({
 
     // Mint a fresh UUID for this attempt so the idempotency key is
     // unique per-click, preventing StripeIdempotencyError on retry.
-    const attemptId = crypto.randomUUID();
-    setCheckoutAttemptId(attemptId);
+    const attemptId = generateUUID();
     setPreparingPayment(true);
 
     try {
@@ -213,7 +216,7 @@ export default function DonatePage({
   if (success) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
-        <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-10 text-center shadow-sm">
+        <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-10 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <svg
               className="h-8 w-8 text-green-600"
@@ -289,11 +292,19 @@ export default function DonatePage({
     <>
       {/* Fundraiser banner */}
       <div className="flex items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-4">
-        <img
-          src={banner}
-          alt={fundraiserTitle}
-          className="h-16 w-20 shrink-0 rounded-xl object-cover sm:w-24"
-        />
+        <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-xl bg-zinc-100 sm:w-24">
+          {safeImageSrc(banner) ? (
+            <Image
+              src={safeImageSrc(banner)!}
+              alt={fundraiserTitle}
+              fill
+              sizes="(max-width: 640px) 80px, 96px"
+              className="object-cover"
+            />
+          ) : (
+            <LocalBrandedPlaceholder variant="fundraiser" title={fundraiserTitle} />
+          )}
+        </div>
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">
             You&apos;re supporting
@@ -521,7 +532,6 @@ export default function DonatePage({
             onSuccess={() => setSuccess(true)}
             onBack={() => {
               setClientSecret(null);
-              setCheckoutAttemptId(null); // next attempt gets a new UUID
             }}
             // Pass the name/email the user already entered so Stripe
             // billing_details are populated without duplicating the fields
@@ -572,12 +582,7 @@ export default function DonatePage({
             </span>
             <span className="font-black text-green-700">{pct}%</span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
-            <div
-              className="h-full rounded-full bg-green-500 transition-all"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
+          <ProgressBar percentage={pct} height={8} />
           {goal > 0 && (
             <p className="text-xs text-zinc-400">
               Goal: ${goal.toLocaleString()}

@@ -12,12 +12,6 @@ export type HomepageSettings = {
   seoTitle: string;
   seoDescription: string;
   seoOgImageUrl: string;
-  // Events landing
-  eventsHeroImageUrl: string;
-  eventsHeroEyebrow: string;
-  eventsHeroHeadlineLine1: string;
-  eventsHeroHeadlineLine2: string;
-  eventsHeroDescription: string;
   // Fundraisers landing
   fundraisersHeroImageUrl: string;
   fundraisersHeroEyebrow: string;
@@ -40,25 +34,19 @@ export type HomepageHeroSettings = HomepageSettings;
 export const DEFAULT_HOMEPAGE_SETTINGS: HomepageSettings = {
   imageUrl:
     "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1800&auto=format&fit=crop",
-  eyebrow: "EVENTS • FUNDRAISING • SPONSORSHIPS",
-  headlineLine1: "Sell Tickets. Raise Funds.",
-  headlineLine2: "Find Sponsors.",
-  title: "Sell Tickets. Raise Funds.",
-  subtitle: "EVENTS • FUNDRAISING • SPONSORSHIPS",
-  buttonText: "Browse Events",
-  buttonHref: "/events",
-  secondaryButtonText: "Create Event",
-  secondaryButtonHref: "/create-event",
-  seoTitle: "Fund4Good — Buy Tickets, Run Events & Fundraise",
-  seoDescription: "Discover events, buy tickets, support causes.",
+  eyebrow: "FUNDRAISING • COMMUNITY",
+  headlineLine1: "Raise Funds.",
+  headlineLine2: "Support Causes.",
+  title: "Raise Funds.",
+  subtitle: "FUNDRAISING • COMMUNITY",
+  buttonText: "Browse Fundraisers",
+  buttonHref: "/fundraisers",
+  secondaryButtonText: "Start a Fundraiser",
+  secondaryButtonHref: "/create-fundraiser",
+  seoTitle: "Fund4Good — Support Causes, Start a Fundraiser",
+  seoDescription: "Discover fundraisers and support causes that matter.",
   seoOgImageUrl:
     "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1800&auto=format&fit=crop",
-  // Events landing defaults
-  eventsHeroImageUrl: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?q=80&w=1800&auto=format&fit=crop",
-  eventsHeroEyebrow: "LIVE EXPERIENCES",
-  eventsHeroHeadlineLine1: "Find Your Next Event",
-  eventsHeroHeadlineLine2: "",
-  eventsHeroDescription: "Concerts, conferences, workshops, festivals, and local experiences.",
   // Fundraisers landing defaults
   fundraisersHeroImageUrl: "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1800&auto=format&fit=crop",
   fundraisersHeroEyebrow: "COMMUNITY FUNDRAISING",
@@ -90,12 +78,6 @@ export const HOMEPAGE_SETTING_KEYS = [
   "homepage_seo_title",
   "homepage_seo_description",
   "homepage_seo_og_image_url",
-  // Events Landing keys
-  "events_hero_image_url",
-  "events_hero_eyebrow",
-  "events_hero_headline_line_1",
-  "events_hero_headline_line_2",
-  "events_hero_description",
   // Fundraisers Landing keys
   "fundraisers_hero_image_url",
   "fundraisers_hero_eyebrow",
@@ -152,26 +134,19 @@ export function getHomepageSettings(
   if (dbSettings.homepage_hero_headline_line_1) settings.headlineLine1 = dbSettings.homepage_hero_headline_line_1;
   if (dbSettings.homepage_hero_headline_line_2) settings.headlineLine2 = dbSettings.homepage_hero_headline_line_2;
   
-  settings.title = dbSettings.homepage_hero_title || settings.headlineLine1 || "Sell Tickets. Raise Funds.";
-  settings.subtitle = dbSettings.homepage_hero_subtitle || settings.eyebrow || "EVENTS • FUNDRAISING • SPONSORSHIPS";
-  
+  settings.title = dbSettings.homepage_hero_title || settings.headlineLine1 || "Raise Funds.";
+  settings.subtitle = dbSettings.homepage_hero_subtitle || settings.eyebrow || "FUNDRAISING • COMMUNITY";
+
   if (dbSettings.homepage_hero_button_text) settings.buttonText = dbSettings.homepage_hero_button_text;
   if (dbSettings.homepage_hero_button_href) settings.buttonHref = dbSettings.homepage_hero_button_href;
-  
-  settings.secondaryButtonText = dbSettings.homepage_hero_secondary_button_text ?? "Create Event";
-  settings.secondaryButtonHref = dbSettings.homepage_hero_secondary_button_href ?? "/create-event";
+
+  settings.secondaryButtonText = dbSettings.homepage_hero_secondary_button_text ?? "Start a Fundraiser";
+  settings.secondaryButtonHref = dbSettings.homepage_hero_secondary_button_href ?? "/create-fundraiser";
 
   // SEO settings
-  settings.seoTitle = dbSettings.homepage_seo_title || "Fund4Good — Buy Tickets, Run Events & Fundraise";
-  settings.seoDescription = dbSettings.homepage_seo_description || "Discover events, buy tickets, support causes.";
+  settings.seoTitle = dbSettings.homepage_seo_title || "Fund4Good — Support Causes, Start a Fundraiser";
+  settings.seoDescription = dbSettings.homepage_seo_description || "Discover fundraisers and support causes that matter.";
   settings.seoOgImageUrl = dbSettings.homepage_seo_og_image_url || settings.imageUrl;
-
-  // Bind Events Landing values
-  if (dbSettings.events_hero_image_url) settings.eventsHeroImageUrl = dbSettings.events_hero_image_url;
-  if (dbSettings.events_hero_eyebrow) settings.eventsHeroEyebrow = dbSettings.events_hero_eyebrow;
-  if (dbSettings.events_hero_headline_line_1) settings.eventsHeroHeadlineLine1 = dbSettings.events_hero_headline_line_1;
-  if (dbSettings.events_hero_headline_line_2 !== undefined) settings.eventsHeroHeadlineLine2 = dbSettings.events_hero_headline_line_2;
-  if (dbSettings.events_hero_description) settings.eventsHeroDescription = dbSettings.events_hero_description;
 
   // Bind Fundraisers Landing values
   if (dbSettings.fundraisers_hero_image_url) settings.fundraisersHeroImageUrl = dbSettings.fundraisers_hero_image_url;
@@ -203,9 +178,6 @@ export function getHomepageSettings(
   }
 
   // URL fallback validations for landing images
-  if (settings.eventsHeroImageUrl && !settings.eventsHeroImageUrl.startsWith("http")) {
-    settings.eventsHeroImageUrl = DEFAULT_HOMEPAGE_SETTINGS.eventsHeroImageUrl;
-  }
   if (settings.fundraisersHeroImageUrl && !settings.fundraisersHeroImageUrl.startsWith("http")) {
     settings.fundraisersHeroImageUrl = DEFAULT_HOMEPAGE_SETTINGS.fundraisersHeroImageUrl;
   }
@@ -234,12 +206,6 @@ export function homepageSettingsToRows(settings: HomepageSettings) {
     { key: "homepage_seo_title", value: settings.seoTitle },
     { key: "homepage_seo_description", value: settings.seoDescription },
     { key: "homepage_seo_og_image_url", value: settings.seoOgImageUrl },
-    // Events Landing keys
-    { key: "events_hero_image_url", value: settings.eventsHeroImageUrl },
-    { key: "events_hero_eyebrow", value: settings.eventsHeroEyebrow },
-    { key: "events_hero_headline_line_1", value: settings.eventsHeroHeadlineLine1 },
-    { key: "events_hero_headline_line_2", value: settings.eventsHeroHeadlineLine2 },
-    { key: "events_hero_description", value: settings.eventsHeroDescription },
     // Fundraisers Landing keys
     { key: "fundraisers_hero_image_url", value: settings.fundraisersHeroImageUrl },
     { key: "fundraisers_hero_eyebrow", value: settings.fundraisersHeroEyebrow },
@@ -276,12 +242,6 @@ export function normalizeHomepageSettings(settings: HomepageSettings): HomepageS
     seoTitle: settings.seoTitle.trim(),
     seoDescription: settings.seoDescription.trim(),
     seoOgImageUrl: settings.seoOgImageUrl.trim(),
-    // Events
-    eventsHeroImageUrl: settings.eventsHeroImageUrl.trim(),
-    eventsHeroEyebrow: settings.eventsHeroEyebrow.trim(),
-    eventsHeroHeadlineLine1: settings.eventsHeroHeadlineLine1.trim(),
-    eventsHeroHeadlineLine2: settings.eventsHeroHeadlineLine2.trim(),
-    eventsHeroDescription: settings.eventsHeroDescription.trim(),
     // Fundraisers
     fundraisersHeroImageUrl: settings.fundraisersHeroImageUrl.trim(),
     fundraisersHeroEyebrow: settings.fundraisersHeroEyebrow.trim(),

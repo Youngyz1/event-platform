@@ -11,7 +11,7 @@ export interface CampaignShowcaseItem {
   title: string;
   raised: number;
   goal: number;
-  image: string;
+  image: string | null;
   category?: string | null;
   organizer?: string | null;
   donorCount?: number;

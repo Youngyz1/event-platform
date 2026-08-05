@@ -9,13 +9,13 @@ import Image from "next/image";
  * Cards are laid out as a fanned arch: uniform horizontal gaps (so no photo is
  * covered by its neighbor), a parabolic arc where the center card sits highest
  * and the outer cards drop lower, and rotation that increases toward the edges.
- * Images are assigned center-out: image 0 is the peak (and the single photo
- * shown on mobile), the rest fan outward alternating sides.
+ * Images are assigned center-out: image 0 is the peak, the rest fan outward
+ * alternating sides.
  *
  * A URL can pass the caller's stock/fallback filter and still fail to load
- * (dead link, 403, blocked host). Failed sources are dropped and the survivors
- * re-flow, so the fan never shows a broken frame. If every image fails, the
- * block renders nothing and the layout adapts.
+ * (dead link, 403, blocked host). Failed sources are dropped and backfilled with
+ * high-quality community fallbacks so the photo fan always maintains a complete
+ * fanned layout across all devices.
  */
 
 type FanLayout = {
@@ -34,10 +34,18 @@ type FanLayout = {
 };
 
 const LAYOUTS: Record<"mobile" | "tablet" | "desktop", FanLayout> = {
-  mobile: { max: 1, cardWidth: 168, gap: 0, arcDepth: 0, maxRotate: 0, height: 290 },
+  mobile: { max: 3, cardWidth: 144, gap: 16, arcDepth: 40, maxRotate: 8, height: 260 },
   tablet: { max: 3, cardWidth: 168, gap: 40, arcDepth: 74, maxRotate: 11, height: 340 },
   desktop: { max: 5, cardWidth: 168, gap: 40, arcDepth: 112, maxRotate: 15, height: 380 },
 };
+
+const DEFAULT_FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1593113598332-cd288d649433?w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1509099836639-18ba1795216d?w=800&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&auto=format&fit=crop",
+];
 
 type Placement = { x: number; y: number; rotate: number; z: number };
 
@@ -88,18 +96,28 @@ export default function LandingHeroImagery({ images }: { images: string[] }) {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  const survivors = images.filter((src) => !failed.has(src));
-  const shown = survivors.slice(0, layout.max);
-  if (shown.length === 0) return null;
-
-  const placements = arcPlacements(shown.length, layout);
-
   const markFailed = (src: string) =>
     setFailed((prev) => {
       const next = new Set(prev);
       next.add(src);
       return next;
     });
+
+  // Filter out any failed passed images
+  const validPassed = (images || []).filter((src) => !failed.has(src));
+
+  // Combine passed images with high-quality fallback pool so fan is never empty/collapsing
+  const pool = [...validPassed];
+  for (const fb of DEFAULT_FALLBACK_IMAGES) {
+    if (!failed.has(fb) && !pool.includes(fb)) {
+      pool.push(fb);
+    }
+  }
+
+  const shown = pool.slice(0, layout.max);
+  if (shown.length === 0) return null;
+
+  const placements = arcPlacements(shown.length, layout);
 
   return (
     <div

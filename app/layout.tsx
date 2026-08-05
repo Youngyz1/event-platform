@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import NavbarWrapper from "@/components/NavbarWrapper";
@@ -6,6 +6,12 @@ import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import { getSiteUrl } from "@/lib/site-url";
 import { GoogleAnalytics } from "@next/third-parties/google";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
 
 const font = Plus_Jakarta_Sans({
   subsets: ["latin"],

@@ -7,10 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isAdmin } from '@/lib/auth';
 import { supabaseAdmin } from '@/lib/admin-data';
 
-const VALID_STATUSES = ['pending', 'verified', 'rejected', 'suspended'] as const;
+type OrganizerStatus = 'pending' | 'verified' | 'rejected' | 'suspended';
 const VALID_ACTIONS = ['verify', 'reject', 'suspend', 'restore'] as const;
 
-const ACTION_TO_STATUS: Record<(typeof VALID_ACTIONS)[number], (typeof VALID_STATUSES)[number]> = {
+const ACTION_TO_STATUS: Record<(typeof VALID_ACTIONS)[number], OrganizerStatus> = {
   verify: 'verified',
   reject: 'rejected',
   suspend: 'suspended',

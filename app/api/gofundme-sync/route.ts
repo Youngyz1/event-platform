@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { normalizeImageUrl } from "@/lib/image-url";
 
 type SyncBody = {
   sourceId?: string;
@@ -26,7 +27,8 @@ type JsonValue =
 
 type JsonObject = { [key: string]: JsonValue };
 
-const optionalFundraiserFields = ["source_url", "gofundme_source_id"];
+/** Postgres unique_violation — see fundraisers_gofundme_source_id_key (migration_47). */
+const UNIQUE_VIOLATION = "23505";
 
 function stripHtml(value: string) {
   return value
@@ -153,19 +155,6 @@ function findMoneyValue(html: string, names: string[]) {
   return null;
 }
 
-function isMissingOptionalColumn(message: string) {
-  const normalized = message.toLowerCase();
-  return optionalFundraiserFields.some((field) => normalized.includes(field));
-}
-
-function omitOptionalFields<T extends Record<string, unknown>>(row: T) {
-  const copy = { ...row };
-  optionalFundraiserFields.forEach((field) => {
-    delete copy[field];
-  });
-  return copy;
-}
-
 function slugify(title: string) {
   return title
     .toLowerCase()
@@ -252,7 +241,7 @@ async function syncSource(source: SourceRow, userId: string) {
     goal: fundraiser.goal,
     raised: fundraiser.raised,
     organizer: fundraiser.organizer || "",
-    banner: fundraiser.banner || "",
+    banner: normalizeImageUrl(fundraiser.banner, ""),
     video_url: null,
     user_id: userId,
     organizer_id: organizerId,
@@ -283,12 +272,14 @@ async function syncSource(source: SourceRow, userId: string) {
     if (updateError) throw new Error(updateError.message);
     updated = 1;
   } else {
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("fundraisers")
       .select("id")
-      .eq("source_url", source.source_url)
+      .eq("gofundme_source_id", source.id)
       .eq("user_id", userId)
       .maybeSingle();
+
+    if (existingError) throw new Error(existingError.message);
 
     if (existing) {
       localFundraiserId = existing.id;
@@ -309,18 +300,28 @@ async function syncSource(source: SourceRow, userId: string) {
       if (updateError) throw new Error(updateError.message);
       updated = 1;
     } else {
-      let { data: inserted, error: insertError } = await supabase.from("fundraisers").insert(payload).select().single();
+      const { data: inserted, error: insertError } = await supabase.from("fundraisers").insert(payload).select().single();
 
-      if (insertError && isMissingOptionalColumn(insertError.message)) {
-        const retry = await supabase.from("fundraisers").insert(omitOptionalFields(payload)).select().single();
-        inserted = retry.data;
-        insertError = retry.error;
+      if (insertError) {
+        // Concurrent sync already inserted this fundraiser between our check
+        // and our insert — treat it as already-synced rather than failing.
+        if (insertError.code === UNIQUE_VIOLATION) {
+          const { data: existingAfterRace } = await supabase
+            .from("fundraisers")
+            .select("id")
+            .eq("gofundme_source_id", source.id)
+            .eq("user_id", userId)
+            .maybeSingle();
+          localFundraiserId = existingAfterRace?.id;
+          updated = 1;
+        } else {
+          throw new Error(insertError.message);
+        }
+      } else {
+        if (!inserted) throw new Error("Fundraiser was not created.");
+        localFundraiserId = inserted.id;
+        imported = 1;
       }
-
-      if (insertError) throw new Error(insertError.message);
-      if (!inserted) throw new Error("Fundraiser was not created.");
-      localFundraiserId = inserted.id;
-      imported = 1;
     }
   }
 

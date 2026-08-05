@@ -14,14 +14,14 @@ export default function NotFound() {
         <h1 className="mt-4 text-2xl font-black">Page not found</h1>
         <p className="mt-3 text-zinc-500 leading-7">
           The page you are looking for might have been removed, renamed, or
-          never existed. Check the URL or head back to discover events near you.
+          never existed. Check the URL or head back to discover fundraisers near you.
         </p>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            href="/events"
+            href="/fundraisers"
             className="w-full sm:w-auto rounded-xl bg-orange-500 px-6 py-3 font-black text-white hover:bg-orange-600 transition"
           >
-            Browse events
+            Browse fundraisers
           </Link>
           <Link
             href="/"

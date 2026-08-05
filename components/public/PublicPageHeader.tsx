@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import PageHeader from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 
 type PublicPageHeaderProps = {
   eyebrow?: string;
@@ -17,30 +18,19 @@ export default function PublicPageHeader({
   className,
 }: PublicPageHeaderProps) {
   return (
-    <div className={cn("mb-8 sm:mb-10", className)}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          {eyebrow && (
-            <p className="text-xs font-black uppercase tracking-widest text-orange-600 sm:text-sm">
-              {eyebrow}
-            </p>
-          )}
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-zinc-950 sm:text-4xl lg:text-5xl">
-            {title}
-          </h1>
-          {description && (
-            <p className="mt-3 max-w-2xl text-base text-zinc-600 sm:text-lg">{description}</p>
-          )}
-        </div>
-        {action && (
-          <Link
-            href={action.href}
-            className="inline-flex shrink-0 items-center justify-center rounded-full bg-orange-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-orange-700"
-          >
-            {action.label}
-          </Link>
-        )}
-      </div>
-    </div>
+    <PageHeader
+      eyebrow={eyebrow}
+      title={title}
+      description={description}
+      size="large"
+      className={className ? `mb-8 sm:mb-10 ${className}` : "mb-8 sm:mb-10"}
+      action={
+        action ? (
+          <Button asChild size="lg">
+            <Link href={action.href}>{action.label}</Link>
+          </Button>
+        ) : undefined
+      }
+    />
   );
 }

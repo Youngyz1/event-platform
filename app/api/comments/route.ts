@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { createNotification } from "@/lib/notifications";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await supabaseAdmin
     .from("comments")
-    .select("id, author_name, author_email, body, created_at, user_id")
+    .select("id, author_name, author_email, body, created_at, user_id, likes")
     .eq("target_type", targetType)
     .eq("target_id", targetId)
     .eq("status", "approved")
@@ -124,6 +125,32 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Real like counts (added on top of the imported baseline) + whether THIS
+  // visitor (by their visitor_id cookie) has already liked each comment, so the
+  // UI can pre-fill hearts on load.
+  const commentIds = comments.map((c) => c.id);
+  const realLikeCount = new Map<string, number>();
+  const likedByVisitor = new Set<string>();
+  if (commentIds.length > 0) {
+    const { data: counts } = await supabaseAdmin.rpc("get_comment_like_counts", {
+      ids: commentIds,
+    });
+    for (const row of (counts ?? []) as { comment_id: string; cnt: number }[]) {
+      realLikeCount.set(row.comment_id, Number(row.cnt));
+    }
+    const visitorCookie = request.cookies.get("visitor_id")?.value;
+    if (visitorCookie && uuidPattern.test(visitorCookie)) {
+      const { data: mine } = await supabaseAdmin
+        .from("comment_likes")
+        .select("comment_id")
+        .eq("cookie_id", visitorCookie)
+        .in("comment_id", commentIds);
+      for (const row of (mine ?? []) as { comment_id: string }[]) {
+        likedByVisitor.add(row.comment_id);
+      }
+    }
+  }
+
   const safeComments = comments.map((comment) => {
     const emailKey = comment.author_email?.toLowerCase();
     const profile = comment.user_id ? profileByUserId.get(comment.user_id) ?? null : null;
@@ -133,6 +160,8 @@ export async function GET(request: NextRequest) {
       body: comment.body,
       created_at: comment.created_at,
       user_id: comment.user_id,
+      likes: Number(comment.likes ?? 0) + (realLikeCount.get(comment.id) ?? 0),
+      liked: likedByVisitor.has(comment.id),
       donor_amount: emailKey ? (amountByEmail.get(emailKey) ?? null) : null,
       author_profile: profile,
     };
@@ -264,11 +293,60 @@ export async function POST(request: NextRequest) {
         .maybeSingle()
     : { data: null };
 
+  notifyFundraiserOwnerOfComment({
+    fundraiserId: targetId,
+    commentId: data.id,
+    commenterUserId: currentUserId,
+    commenterName: authorName,
+    body,
+  }).catch((err) => console.error("[comments] Failed to notify fundraiser owner:", err));
+
   return NextResponse.json({
     comment: {
       ...data,
+      likes: 0,
+      liked: false,
       donor_amount: Number(verifiedDonation?.amount ?? 0),
       author_profile: profile,
     }
   }, { status: 201 });
+}
+
+async function notifyFundraiserOwnerOfComment(params: {
+  fundraiserId: string;
+  commentId: string;
+  commenterUserId: string | null;
+  commenterName: string;
+  body: string;
+}) {
+  const { data: fundraiser } = await supabaseAdmin
+    .from("fundraisers")
+    .select("title, slug, organizer_id, user_id")
+    .eq("id", params.fundraiserId)
+    .maybeSingle();
+
+  if (!fundraiser) return;
+
+  let ownerUserId = fundraiser.user_id;
+  if (fundraiser.organizer_id) {
+    const { data: organizer } = await supabaseAdmin
+      .from("organizers")
+      .select("user_id")
+      .eq("id", fundraiser.organizer_id)
+      .maybeSingle();
+    if (organizer?.user_id) ownerUserId = organizer.user_id;
+  }
+
+  if (!ownerUserId || ownerUserId === params.commenterUserId) return;
+
+  await createNotification({
+    userId: ownerUserId,
+    actorId: params.commenterUserId,
+    type: "comment",
+    title: "New comment on your fundraiser",
+    body: `${params.commenterName}: "${params.body.slice(0, 140)}"`,
+    link: fundraiser.slug ? `/fundraisers/${fundraiser.slug}` : null,
+    relatedType: "comment",
+    relatedId: params.commentId,
+  });
 }

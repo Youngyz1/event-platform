@@ -33,7 +33,6 @@ type EventsFilterControlsProps = {
  * `<select>` treatment reused from Fundraisers' `ShowcaseControls`, in Events'
  * orange accent. Purely presentational over the URL: writes `category` / `sort`
  * (cleared on their defaults), resets `page`, and preserves every other param.
- * The "when" filter stays a pill in `EventsWhenToggle`.
  */
 export default function EventsFilterControls({
   activeCategory,

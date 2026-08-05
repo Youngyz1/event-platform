@@ -41,6 +41,7 @@ export type DashboardFundraiserRow = {
   donor_count: number;
   progress: number;
   status: 'active' | 'completed';
+  review_status: 'pending_review' | 'published' | 'rejected';
   created_at: string;
 };
 

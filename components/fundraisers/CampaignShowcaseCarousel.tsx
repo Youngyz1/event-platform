@@ -16,7 +16,7 @@ export default function CampaignShowcaseCarousel({
   const cards = featured ? [featured, ...items] : items;
 
   return (
-    <Carousel opts={{ align: "start", dragFree: true }}>
+    <Carousel opts={{ align: "start", dragFree: true, dragThreshold: 15 }}>
       <CarouselContent className="-ml-4">
         {cards.map((item) => (
           <CarouselItem key={item.id} className="basis-[85%] pl-4">

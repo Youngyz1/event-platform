@@ -1,14 +1,20 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Users } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { normalizeImageUrl } from "@/lib/image-url";
+import { safeImageSrc } from "@/lib/image-url";
+import ProgressBar from "@/components/ui/ProgressBar";
+import { calculateFundraisingPercentage } from "@/lib/fundraising-progress";
+import LocalBrandedPlaceholder from "@/components/ui/LocalBrandedPlaceholder";
 
 type FundraiserCardProps = {
   title: string;
   raised: number;
   goal: number;
-  image: string;
+  image?: string | null;
   slug: string;
   donorCount?: number;
   daysLeft?: number | null;
@@ -16,9 +22,6 @@ type FundraiserCardProps = {
   category?: string | null;
   organizer?: string | null;
 };
-
-const FALLBACK_IMAGE =
-  "https://images.unsplash.com/photo-1529390079861-591de354faf5?q=80&w=1200&auto=format&fit=crop";
 
 export default function FundraiserCard({
   title,
@@ -32,8 +35,9 @@ export default function FundraiserCard({
   category,
   organizer,
 }: FundraiserCardProps) {
-  const progress = goal ? Math.min(Math.round((raised / goal) * 100), 100) : 0;
-  const imageSrc = normalizeImageUrl(image, FALLBACK_IMAGE);
+  const [imgError, setImgError] = useState(false);
+  const progress = calculateFundraisingPercentage(raised, goal);
+  const imageSrc = !imgError ? safeImageSrc(image) : null;
 
   return (
     <Link href={`/fundraisers/${slug}`}>
@@ -43,14 +47,20 @@ export default function FundraiserCard({
           featured ? "border-emerald-200 ring-1 ring-emerald-100" : "border-zinc-200"
         )}
       >
-        <div className="relative h-44 w-full bg-zinc-100 sm:h-52">
-          <Image
-            src={imageSrc}
-            alt={title}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition duration-500 group-hover:scale-105"
-          />
+        <div className="relative h-44 w-full overflow-hidden bg-zinc-100 sm:h-52">
+          {imageSrc ? (
+            <Image
+              src={imageSrc}
+              alt={title}
+              fill
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+              className="object-cover transition duration-500 group-hover:scale-105"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <LocalBrandedPlaceholder variant="fundraiser" title={title} />
+          )}
+
           {featured && (
             <span className="absolute left-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
               Featured
@@ -76,25 +86,21 @@ export default function FundraiserCard({
           )}
 
           <div className="mt-3">
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="text-lg font-black text-emerald-700">${raised.toLocaleString()}</p>
-              <p className="text-xs font-semibold text-zinc-500">of ${goal.toLocaleString()}</p>
+            <div className="flex items-baseline justify-between gap-2 mb-1.5">
+              <p className="text-sm font-semibold text-zinc-600 truncate">
+                <span className="font-black text-zinc-950">${raised.toLocaleString()}</span> raised of ${goal.toLocaleString()}
+              </p>
+              <span className="shrink-0 text-xs font-black text-zinc-950">{progress}%</span>
             </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-100">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between text-xs font-bold text-zinc-500">
-              <span>{progress}% funded</span>
-              {donorCount !== undefined && donorCount > 0 && (
+            <ProgressBar percentage={progress} height={8} />
+            {donorCount !== undefined && donorCount > 0 && (
+              <div className="mt-2 flex items-center justify-end text-xs font-semibold text-zinc-500">
                 <span className="inline-flex items-center gap-1">
                   <Users className="h-3.5 w-3.5" />
                   {donorCount} donors
                 </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           <span className="mt-4 block w-full rounded-xl bg-emerald-600 py-2.5 text-center text-sm font-black text-white transition group-hover:bg-emerald-700">

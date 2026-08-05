@@ -77,7 +77,7 @@ export default function AdminUserActions({
         <button
           disabled={working !== null}
           onClick={resetPassword}
-          className="rounded-xl border border-violet-200 bg-white px-4 py-2 text-sm font-black text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+          className="rounded-xl border border-orange-200 bg-white px-4 py-2 text-sm font-black text-orange-700 hover:bg-orange-50 disabled:opacity-50"
         >
           {working === "reset" ? "Sending..." : "Reset Password"}
         </button>

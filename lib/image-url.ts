@@ -2,9 +2,11 @@ const EXACT_IMAGE_HOSTS = new Set([
   "images.unsplash.com",
   "img.evbuc.com",
   "s1.ticketm.net",
+  "seatgeek.com",
   "seatgeekimages.com",
   "images.gofundme.com",
   "d2g8igdw686xgo.cloudfront.net",
+  "upload.wikimedia.org",
   "lh3.googleusercontent.com",
 ]);
 
@@ -12,11 +14,11 @@ const WILDCARD_IMAGE_HOST_SUFFIXES = [
   ".supabase.co",
   ".supabase.in",
   ".googleusercontent.com",
+  ".seatgeek.com",
+  ".seatgeekimages.com",
 ];
 
-// A URL can sit on an allowed host yet not be an image at all — e.g. a campaign
-// whose `banner` column holds a video file. next/image would try to optimize it
-// and fail (SSRF guard / decode error), so reject known non-image file types.
+// Rejects known non-image media files (videos, audio).
 const NON_IMAGE_FILE_EXTENSION = /\.(mp4|m4v|mov|webm|mkv|avi|ogv|mp3|wav|m4a|flac)$/i;
 
 type ProxyUnwrapRule = {
@@ -30,6 +32,18 @@ export const PROXY_UNWRAP_RULES: ProxyUnwrapRule[] = [
       url.hostname.startsWith("www.eventbrite.") &&
       url.pathname.endsWith("/_next/image"),
     param: "url",
+  },
+  {
+    matches: (url) =>
+      (url.hostname === "google.com" || url.hostname.endsWith(".google.com")) &&
+      url.pathname.startsWith("/imgres"),
+    param: "imgurl",
+  },
+  {
+    matches: (url) =>
+      (url.hostname === "bing.com" || url.hostname.endsWith(".bing.com")) &&
+      url.pathname.startsWith("/images/search"),
+    param: "mediaurl",
   },
 ];
 
@@ -50,12 +64,13 @@ export function unwrapKnownImageProxy(url: URL): string | null {
   return null;
 }
 
-export function normalizeImageUrl(
-  value: string | null | undefined,
-  fallback: string
-) {
+/**
+ * Returns a valid, allowed, direct image URL string, or null if invalid/missing.
+ * Does not substitute remote fallbacks or placeholders.
+ */
+export function safeImageSrc(value: string | null | undefined): string | null {
   const trimmed = value?.trim();
-  if (!trimmed) return fallback;
+  if (!trimmed) return null;
 
   if (trimmed.startsWith("/") && !trimmed.startsWith("//")) {
     return trimmed;
@@ -65,14 +80,34 @@ export function normalizeImageUrl(
     const url = new URL(trimmed);
     const unwrapped = unwrapKnownImageProxy(url);
     if (unwrapped) {
-      return normalizeImageUrl(decodeURIComponent(unwrapped), fallback);
+      return safeImageSrc(decodeURIComponent(unwrapped));
     }
 
-    if (url.protocol !== "https:") return fallback;
-    if (!isAllowedImageHost(url.hostname)) return fallback;
-    if (NON_IMAGE_FILE_EXTENSION.test(url.pathname)) return fallback;
+    if (url.protocol !== "https:") return null;
+    if (!isAllowedImageHost(url.hostname)) return null;
+    if (NON_IMAGE_FILE_EXTENSION.test(url.pathname)) return null;
     return url.toString();
   } catch {
-    return fallback;
+    return null;
   }
+}
+
+/**
+ * Normalizes an image URL. If fallback is provided, returns fallback when invalid.
+ * If fallback is omitted or null, returns null when invalid.
+ */
+export function normalizeImageUrl(
+  value: string | null | undefined,
+  fallback?: string | null
+): string | null {
+  const safe = safeImageSrc(value);
+  if (safe !== null) return safe;
+  return fallback ?? null;
+}
+
+/**
+ * Returns true if the provided value is a valid, allowed, direct image URL.
+ */
+export function isValidImageUrl(value: string | null | undefined): boolean {
+  return safeImageSrc(value) !== null;
 }

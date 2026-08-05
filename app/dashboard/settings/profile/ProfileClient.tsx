@@ -269,13 +269,13 @@ export default function ProfileClient({
       >
         <div className="space-y-6">
           {/* Address Tabs */}
-          <div className="flex border-b border-zinc-150">
+          <div className="flex overflow-x-auto border-b border-zinc-100">
             {(["home", "billing", "shipping", "work"] as const).map((tab) => (
               <button
                 key={tab}
                 type="button"
                 onClick={() => setActiveAddressTab(tab)}
-                className={`relative px-4 py-2.5 text-xs font-black capitalize transition-all duration-200 ${
+                className={`relative shrink-0 whitespace-nowrap px-4 py-2.5 text-xs font-black capitalize transition-all duration-200 ${
                   activeAddressTab === tab
                     ? "text-orange-600 border-b-2 border-orange-500"
                     : "text-zinc-500 hover:text-zinc-800"

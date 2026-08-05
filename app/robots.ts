@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/dashboard", "/api/", "/my-tickets", "/create-event", "/create-fundraiser", "/create-organizer"],
+        disallow: ["/admin", "/dashboard", "/api/"],
       },
     ],
     sitemap: "https://www.fund4agoodcause.com/sitemap.xml",

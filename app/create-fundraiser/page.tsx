@@ -432,7 +432,6 @@ export default function CreateFundraiserPage() {
 
   return (
     <CreatorWorkspace
-      active="Fundraisers"
       accent="green"
       title="Create Fundraiser"
       description="Set up your fundraiser and start making an impact."

@@ -29,7 +29,12 @@ function timeAgo(value: string) {
   const days = Math.floor(
     (Date.now() - new Date(value).getTime()) / (1000 * 60 * 60 * 24)
   );
-  if (days < 1) return "today";
+  if (days < 1) {
+    return new Date(value).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  }
   if (days === 1) return "yesterday";
   return `${days} days ago`;
 }
@@ -64,7 +69,13 @@ export default function DonorList({
     );
     const data = await res.json();
     if (data.ok) {
-      setDonations((current) => [...current, ...data.donations]);
+      setDonations((current) => {
+        const existingIds = new Set(current.map((d) => d.id));
+        const newDonations = (data.donations as Donation[]).filter(
+          (d) => !existingIds.has(d.id)
+        );
+        return [...current, ...newDonations];
+      });
       setHasMore(data.hasMore);
     }
     setLoading(false);

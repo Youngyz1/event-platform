@@ -17,7 +17,7 @@ function Toggle({
   description: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-zinc-150 py-4 last:border-0 sm:gap-6">
+    <div className="flex items-center justify-between gap-4 border-b border-zinc-100 py-4 last:border-0 sm:gap-6">
       <div className="min-w-0">
         <p className="text-sm font-bold text-zinc-900 sm:text-base">{label}</p>
         <p className="mt-0.5 text-xs leading-normal text-zinc-500 sm:text-sm">{description}</p>
@@ -97,7 +97,7 @@ export default function PrivacyClient({
         description="Choose who can search for your profile and view your credentials."
       >
         <div className="space-y-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-150 pb-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-zinc-100 pb-5">
             <div>
               <p className="text-sm font-bold text-zinc-900 sm:text-base">Profile Status</p>
               <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm leading-normal">

@@ -2,13 +2,13 @@
 
 /**
  * app/create-organizer/page.tsx
- * Creates a new organizer profile owned by the current user.
- * Existing organizer profiles are edited from /organizers/[id]/edit.
+ * Creates a new organization profile owned by the current user.
  */
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { getImageDimensions, MIN_BANNER_WIDTH, MIN_BANNER_HEIGHT } from "@/lib/image-dimensions";
 
 type FormState = {
   name:     string;
@@ -17,7 +17,27 @@ type FormState = {
   twitter:  string;
   website:  string;
   visibility: "public" | "private";
+  slug:     string;
+  org_type: string;
+  contact_email: string;
+  instagram: string;
+  linkedin: string;
+  youtube: string;
+  tiktok: string;
 };
+
+const ORG_TYPES = [
+  { value: "nonprofit", label: "Nonprofit" },
+  { value: "business", label: "Business" },
+  { value: "church", label: "Church" },
+  { value: "school", label: "School" },
+  { value: "creator", label: "Creator" },
+  { value: "community", label: "Community" },
+  { value: "government", label: "Government" },
+  { value: "restaurant", label: "Restaurant" },
+  { value: "sports_club", label: "Sports Club" },
+  { value: "other", label: "Other" },
+];
 
 export default function CreateOrganizerPage() {
   const router = useRouter();
@@ -37,6 +57,13 @@ export default function CreateOrganizerPage() {
     twitter:  "",
     website:  "",
     visibility: "public",
+    slug:     "",
+    org_type: "nonprofit", // Default required type
+    contact_email: "",
+    instagram: "",
+    linkedin: "",
+    youtube: "",
+    tiktok: "",
   });
 
   // On mount: require an authenticated user.
@@ -62,9 +89,22 @@ export default function CreateOrganizerPage() {
   }, [router]);
 
   function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => {
+      const updated = { ...prev, [name]: value };
+      // Auto-generate slug from name if the slug hasn't been edited manually yet,
+      // or if they are in sync
+      if (name === "name") {
+        const generatedSlug = value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+        updated.slug = generatedSlug;
+      }
+      return updated;
+    });
   }
 
   function setVisibility(visibility: FormState["visibility"]) {
@@ -77,10 +117,29 @@ export default function CreateOrganizerPage() {
     if (file) setPhotoPreview(URL.createObjectURL(file));
   }
 
-  function handleBanner(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleBanner(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
+    if (!file) {
+      setBannerFile(null);
+      return;
+    }
+
+    try {
+      const { width, height } = await getImageDimensions(file);
+      if (width < MIN_BANNER_WIDTH || height < MIN_BANNER_HEIGHT) {
+        setError(
+          `Banner image is too small (${width}x${height}px). Use at least ${MIN_BANNER_WIDTH}x${MIN_BANNER_HEIGHT}px so it doesn't blur when stretched across the banner.`
+        );
+        e.target.value = "";
+        return;
+      }
+    } catch {
+      // Couldn't read dimensions — let it through rather than block upload.
+    }
+
+    setError("");
     setBannerFile(file);
-    if (file) setBannerPreview(URL.createObjectURL(file));
+    setBannerPreview(URL.createObjectURL(file));
   }
 
   async function uploadFile(file: File, bucket: string, prefix: string) {
@@ -111,42 +170,72 @@ export default function CreateOrganizerPage() {
       return;
     }
 
-    let photo:  string | null = null;
-    let banner: string | null = null;
+    // Auto-generate/clean slug
+    let baseSlug = form.slug.trim() || form.name.trim();
+    baseSlug = baseSlug.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    if (!baseSlug) baseSlug = "organization";
+
+    // Auto-resolve collisions
+    let resolvedSlug = baseSlug;
+    let counter = 2;
+    let isUnique = false;
 
     try {
+      while (!isUnique) {
+        const { data: existing } = await supabase
+          .from("organizers")
+          .select("id")
+          .eq("slug", resolvedSlug)
+          .maybeSingle();
+
+        if (!existing) {
+          isUnique = true;
+        } else {
+          resolvedSlug = `${baseSlug}-${counter}`;
+          counter++;
+        }
+      }
+
+      let photo:  string | null = null;
+      let banner: string | null = null;
+
       if (photoFile)  photo  = await uploadFile(photoFile,  "organizer-images",  "photo");
       if (bannerFile) banner = await uploadFile(bannerFile, "organizer-banners", "banner");
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Upload failed");
+
+      const payload = {
+        name:     form.name,
+        slug:     resolvedSlug,
+        org_type: form.org_type,
+        contact_email: form.contact_email,
+        bio:      form.bio,
+        facebook: form.facebook,
+        twitter:  form.twitter,
+        website:  form.website,
+        instagram: form.instagram,
+        linkedin: form.linkedin,
+        youtube:  form.youtube,
+        tiktok:   form.tiktok,
+        visibility: form.visibility,
+        photo,
+        banner,
+        user_id:  session.user.id,
+      };
+
+      const { data: newOrg, error: insertErr } = await supabase
+        .from("organizers")
+        .insert(payload)
+        .select()
+        .single();
+
+      if (insertErr) {
+        throw new Error(insertErr.message);
+      }
+
+      router.push(`/dashboard/org/${newOrg.id}/overview`);
+    } catch (err: any) {
+      setError(err?.message || "An error occurred.");
       setLoading(false);
-      return;
     }
-
-    const payload = {
-      name:     form.name,
-      bio:      form.bio,
-      facebook: form.facebook,
-      twitter:  form.twitter,
-      website:  form.website,
-      visibility: form.visibility,
-      photo,
-      banner,
-      user_id:  session.user.id,
-    };
-
-    const { data: newOrg, error: insertErr } = await supabase
-      .from("organizers")
-      .insert(payload)
-      .select()
-      .single();
-
-    if (insertErr) {
-      setError(insertErr.message);
-      setLoading(false);
-      return;
-    }
-    router.push(`/organizers/${newOrg.id}`);
   }
 
   if (checking) {
@@ -164,18 +253,18 @@ export default function CreateOrganizerPage() {
         {/* Header */}
         <div className="mb-12">
           <p className="mb-3 font-semibold text-orange-500">
-            Organizer Setup
+            Organization Setup
           </p>
           <h1 className="text-5xl font-black">
-            Create Organizer Profile
+            Create Organization Profile
           </h1>
           <p className="mt-4 text-lg text-zinc-600">
-            Set up the public organizer profile people will see on your events and fundraisers.
+            Set up the profile page and management workspace for your nonprofit, business, church, school, or community group.
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-600">
+          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-red-600 font-bold">
             {error}
           </div>
         )}
@@ -184,7 +273,7 @@ export default function CreateOrganizerPage() {
 
           {/* BANNER */}
           <div>
-            <label className="mb-3 block font-semibold">Banner Image</label>
+            <label className="mb-3 block font-semibold text-sm text-zinc-700">Banner Image (Min 1200x300px)</label>
             <div
               className="relative flex h-48 w-full cursor-pointer items-center justify-center overflow-hidden rounded-2xl bg-zinc-200 hover:opacity-90 transition"
               style={
@@ -216,13 +305,13 @@ export default function CreateOrganizerPage() {
 
           {/* PHOTO */}
           <div>
-            <label className="mb-3 block font-semibold">Profile Photo</label>
+            <label className="mb-3 block font-semibold text-sm text-zinc-700">Profile Logo / Photo</label>
             <div className="flex items-center gap-8">
-              <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-zinc-200 shadow">
+              <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-zinc-200 shadow">
                 {photoPreview ? (
                   <img src={photoPreview} alt="preview" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-4xl text-zinc-400">👤</span>
+                  <span className="text-4xl text-zinc-400">🏢</span>
                 )}
               </div>
               <div>
@@ -234,53 +323,107 @@ export default function CreateOrganizerPage() {
                   id="photo-upload"
                 />
                 <label
-                htmlFor="photo-upload"
-                className="cursor-pointer rounded-xl bg-zinc-100 px-5 py-3 font-semibold transition hover:bg-zinc-200"
-              >
-                  Upload Photo
+                  htmlFor="photo-upload"
+                  className="cursor-pointer rounded-xl bg-zinc-100 px-5 py-3 font-semibold transition hover:bg-zinc-200"
+                >
+                  Upload Logo
                 </label>
                 <p className="mt-2 text-sm text-zinc-400">JPG, PNG recommended</p>
               </div>
             </div>
           </div>
 
-          {/* NAME */}
+          {/* NAME & TYPE */}
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div>
+              <label className="mb-3 block font-semibold text-sm text-zinc-700">Organization Name *</label>
+              <input
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                required
+                type="text"
+                placeholder="Greenwood Alliance"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              />
+            </div>
+
+            <div>
+              <label className="mb-3 block font-semibold text-sm text-zinc-700">Organization Type *</label>
+              <select
+                name="org_type"
+                value={form.org_type}
+                onChange={handleChange}
+                required
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              >
+                {ORG_TYPES.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* SLUG */}
           <div>
-            <label className="mb-3 block font-semibold">Company / Organization</label>
+            <label className="mb-3 block font-semibold text-sm text-zinc-700">URL Handle / Slug *</label>
+            <div className="flex rounded-2xl border border-zinc-300 overflow-hidden bg-white focus-within:border-orange-500">
+              <span className="flex items-center bg-zinc-100 px-4 text-sm font-semibold text-zinc-500 border-r border-zinc-200 select-none">
+                /org/
+              </span>
+              <input
+                name="slug"
+                value={form.slug}
+                onChange={handleChange}
+                required
+                type="text"
+                placeholder="greenwood-alliance"
+                className="w-full px-5 py-4 outline-none bg-transparent"
+              />
+            </div>
+            <p className="mt-2 text-xs text-zinc-400">Lowercase letters, numbers, and dashes. Auto-generated from name.</p>
+          </div>
+
+          {/* EMAIL */}
+          <div>
+            <label className="mb-3 block font-semibold text-sm text-zinc-700">Contact Email *</label>
             <input
-              name="name"
-              value={form.name}
+              name="contact_email"
+              value={form.contact_email}
               onChange={handleChange}
               required
-              type="text"
-              placeholder="AfroWave Entertainment"
-              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+              type="email"
+              placeholder="contact@greenwoodalliance.org"
+              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
             />
+            <p className="mt-2 text-xs text-zinc-400">Exposed publicly so users and donors can contact you.</p>
           </div>
 
           {/* BIO */}
           <div>
-            <label className="mb-3 block font-semibold">Organizer Bio</label>
+            <label className="mb-3 block font-semibold text-sm text-zinc-700">Bio / About</label>
             <textarea
               name="bio"
               value={form.bio}
               onChange={handleChange}
               rows={4}
-              placeholder="Tell people about your organization..."
-              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+              placeholder="Tell people about your organization's mission and cause..."
+              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
             />
           </div>
 
           {/* VISIBILITY */}
-          <fieldset className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+          <fieldset className="border-t border-zinc-200 pt-6">
             <legend className="text-lg font-black text-zinc-950">Profile Visibility</legend>
             <p className="mt-1 text-sm font-semibold text-zinc-500">
-              Choose whether this organizer profile should be public or private.
+              Choose whether this profile should be public or private.
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {[
-                ["public", "Public", "People can browse this organizer and follow updates."],
-                ["private", "Private", "Only you can view and edit this organizer profile."],
+                ["public", "Public", "People can browse this organization and follow updates."],
+                ["private", "Private", "Only you can view and edit this organization profile."],
               ].map(([value, label, detail]) => (
                 <label key={value} className="flex cursor-pointer gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
                   <input
@@ -299,33 +442,67 @@ export default function CreateOrganizerPage() {
             </div>
           </fieldset>
 
-          {/* SOCIAL */}
+          {/* SOCIAL & WEBSITE */}
           <div className="space-y-4">
-            <label className="block font-semibold">Website & Social Media Links</label>
-            <input
-              name="facebook"
-              value={form.facebook}
-              onChange={handleChange}
-              type="text"
-              placeholder="Facebook URL"
-              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
-            />
-            <input
-              name="twitter"
-              value={form.twitter}
-              onChange={handleChange}
-              type="text"
-              placeholder="Twitter/X URL"
-              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
-            />
-            <input
-              name="website"
-              value={form.website}
-              onChange={handleChange}
-              type="text"
-              placeholder="Website URL"
-              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
-            />
+            <label className="block font-semibold text-sm text-zinc-700">Website & Social Media Links</label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <input
+                name="website"
+                value={form.website}
+                onChange={handleChange}
+                type="text"
+                placeholder="Website URL (e.g. greenwoodalliance.org)"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              />
+              <input
+                name="facebook"
+                value={form.facebook}
+                onChange={handleChange}
+                type="text"
+                placeholder="Facebook URL"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              />
+              <input
+                name="twitter"
+                value={form.twitter}
+                onChange={handleChange}
+                type="text"
+                placeholder="Twitter/X URL"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              />
+              <input
+                name="instagram"
+                value={form.instagram}
+                onChange={handleChange}
+                type="text"
+                placeholder="Instagram URL"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              />
+              <input
+                name="linkedin"
+                value={form.linkedin}
+                onChange={handleChange}
+                type="text"
+                placeholder="LinkedIn URL"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              />
+              <input
+                name="youtube"
+                value={form.youtube}
+                onChange={handleChange}
+                type="text"
+                placeholder="YouTube Channel URL"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              />
+              <input
+                name="tiktok"
+                value={form.tiktok}
+                onChange={handleChange}
+                type="text"
+                placeholder="TikTok URL"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              />
+            </div>
           </div>
 
           <div className="flex gap-4">
@@ -336,7 +513,7 @@ export default function CreateOrganizerPage() {
             >
               {loading
                 ? "Creating…"
-                : "Create Organizer Profile"}
+                : "Create Organization Profile"}
             </button>
           </div>
 

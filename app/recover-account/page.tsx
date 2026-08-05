@@ -84,7 +84,7 @@ export default function RecoverAccountPage() {
         </div>
 
         {/* Recovery card */}
-        <div className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-zinc-200 bg-white p-6">
           <h2 className="text-base font-black text-zinc-900 mb-1">Changed your mind?</h2>
           <p className="text-sm font-medium text-zinc-500 mb-5">
             Click below to cancel the deletion and restore your account immediately. All your

@@ -59,7 +59,6 @@ export async function POST(req: NextRequest) {
 
   // Bust the cached homepage and events page so changes are visible immediately
   revalidatePath("/", "page");
-  revalidatePath("/events", "page");
 
   return NextResponse.json({ success: true, count: rows.length });
 }

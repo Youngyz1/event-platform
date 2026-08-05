@@ -8,6 +8,7 @@ import AdminStatsCards from "@/components/admin/AdminStatsCards";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminManagementToolbar from "@/components/admin/AdminManagementToolbar";
 import AdminDrawer from "@/components/admin/AdminDrawer";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
 import { ModerationBadge, StatusBadge } from "@/components/admin/ModerationBadge";
 import { formatAdminDate, formatAdminMoney } from "@/lib/admin-query";
@@ -51,7 +52,7 @@ const ACTION_STYLES: Record<string, string> = {
   verify: "border-emerald-200 text-emerald-700 hover:bg-emerald-50",
   reject: "border-red-200 text-red-600 hover:bg-red-50",
   suspend: "border-zinc-200 text-zinc-600 hover:bg-zinc-50",
-  restore: "border-violet-200 text-violet-700 hover:bg-violet-50",
+  restore: "border-orange-200 text-orange-700 hover:bg-orange-50",
 };
 
 export default function OrganizersClient() {
@@ -322,13 +323,11 @@ export default function OrganizersClient() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <header className="rounded-xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:rounded-2xl sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-violet-600">Admin</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Organizers</h1>
-        <p className="mt-2 text-sm font-medium text-zinc-500">
-          Moderate organizer profiles with search, filters, and bulk actions.
-        </p>
-      </header>
+      <DashboardPageHeader
+        eyebrow="Admin"
+        title="Organizers"
+        description="Moderate organizer profiles with search, filters, and bulk actions."
+      />
 
       {stats && <AdminStatsCards items={statItems} />}
 
@@ -400,7 +399,7 @@ export default function OrganizersClient() {
                 key={action}
                 type="button"
                 onClick={() => setConfirmAction(action)}
-                className="rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-black text-violet-700 hover:bg-violet-100"
+                className="rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-black text-orange-700 hover:bg-orange-100"
               >
                 {ACTION_LABELS[action]}
               </button>
@@ -419,10 +418,10 @@ export default function OrganizersClient() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-sm sm:rounded-2xl">
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -464,7 +463,7 @@ export default function OrganizersClient() {
                           <button
                             type="button"
                             onClick={() => openDrawer(row.id)}
-                            className="font-black text-zinc-900 hover:text-violet-700 hover:underline"
+                            className="font-black text-zinc-900 hover:text-orange-700 hover:underline"
                           >
                             {row.name}
                           </button>
@@ -541,7 +540,7 @@ export default function OrganizersClient() {
           drawerOrg && (
             <div className="flex flex-wrap gap-2">
               <Link
-                href={`/organizers/${drawerOrg.id}`}
+                href={`/org/${drawerOrg.slug ?? drawerOrg.id}`}
                 className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-black text-zinc-700 hover:bg-white"
               >
                 Public Profile
@@ -563,15 +562,15 @@ export default function OrganizersClient() {
       >
         {drawerLoading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
           </div>
         ) : drawerOrg ? (
           <div className="space-y-6">
             <section>
-              <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400">Organizer Profile</h3>
+              <h3 className="text-sm font-bold text-zinc-900">Organizer Profile</h3>
               <p className="mt-2 text-sm font-semibold text-zinc-700">{drawerOrg.bio || "No bio provided."}</p>
               {drawerOrg.website && (
-                <a href={drawerOrg.website} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-bold text-violet-700 hover:underline">
+                <a href={drawerOrg.website} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-bold text-orange-700 hover:underline">
                   {drawerOrg.website}
                 </a>
               )}
@@ -584,7 +583,7 @@ export default function OrganizersClient() {
                 ["Followers", (drawerOrg.follower_count || 0) + (drawerOrg.follower_offset || 0)],
                 ["Revenue", formatAdminMoney(drawerOrg.revenue)],
               ].map(([label, value]) => (
-                <div key={String(label)} className="rounded-xl bg-zinc-50 p-3 ring-1 ring-zinc-200/70">
+                <div key={String(label)} className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
                   <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">{label}</p>
                   <p className="mt-1 font-black text-zinc-950">{value}</p>
                 </div>
@@ -593,8 +592,8 @@ export default function OrganizersClient() {
 
             {/* Visibility Boost Section */}
             <section className="rounded-xl border border-zinc-200 bg-white p-4 space-y-4">
-              <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-zinc-400">
-                <TrendingUp className="h-4 w-4 text-violet-500" />
+              <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900">
+                <TrendingUp className="h-4 w-4 text-orange-500" />
                 Visibility Boost
               </h3>
               <p className="text-xs text-zinc-500">
@@ -616,7 +615,7 @@ export default function OrganizersClient() {
                       setVisibilityError("");
                       setVisibilitySuccess(false);
                     }}
-                    className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold focus:border-violet-500 focus:outline-none"
+                    className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold focus:border-orange-500 focus:outline-none"
                     placeholder="0"
                   />
                   <p className="mt-1 text-[10px] text-zinc-400">
@@ -638,7 +637,7 @@ export default function OrganizersClient() {
                       setVisibilityError("");
                       setVisibilitySuccess(false);
                     }}
-                    className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold focus:border-violet-500 focus:outline-none"
+                    className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold focus:border-orange-500 focus:outline-none"
                     placeholder="0"
                   />
                   <p className="mt-1 text-[10px] text-zinc-400">
@@ -667,7 +666,7 @@ export default function OrganizersClient() {
                       eventsOffsetInput === String(drawerOrg.events_offset ?? 0))
                   }
                   onClick={saveVisibilityBoost}
-                  className="flex-1 rounded-lg bg-violet-600 px-3 py-2 text-xs font-black text-white hover:bg-violet-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="flex-1 rounded-lg bg-orange-600 px-3 py-2 text-xs font-black text-white hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   {visibilitySaving ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -693,7 +692,7 @@ export default function OrganizersClient() {
             {/* Visibility Boost Change History */}
             {drawerOrg.visibility_history && drawerOrg.visibility_history.length > 0 && (
               <section className="space-y-3">
-                <h3 className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-zinc-400">
+                <h3 className="flex items-center gap-1.5 text-sm font-bold text-zinc-900">
                   <History className="h-4 w-4" />
                   Change History
                 </h3>
@@ -719,7 +718,7 @@ export default function OrganizersClient() {
             )}
 
             <section>
-              <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400">Owner Information</h3>
+              <h3 className="text-sm font-bold text-zinc-900">Owner Information</h3>
               <dl className="mt-3 space-y-2 text-sm">
                 <div><dt className="text-xs font-bold text-zinc-400">Name</dt><dd className="font-semibold">{drawerOrg.owner_name}</dd></div>
                 <div><dt className="text-xs font-bold text-zinc-400">Email</dt><dd className="font-semibold">{drawerOrg.email}</dd></div>
@@ -728,7 +727,7 @@ export default function OrganizersClient() {
             </section>
 
             <section>
-              <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400">Status History</h3>
+              <h3 className="text-sm font-bold text-zinc-900">Status History</h3>
               <div className="mt-3 space-y-2">
                 {drawerOrg.status_history.map((entry, i) => (
                   <div key={`${entry.status}-${i}`} className="flex items-center justify-between rounded-lg border border-zinc-100 px-3 py-2 text-sm">

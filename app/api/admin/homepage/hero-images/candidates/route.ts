@@ -44,7 +44,9 @@ export async function GET(req: NextRequest) {
       slug: row.slug as string,
       image: normalizeImageUrl(row.image_url || row.banner, ""),
     }))
-    .filter((c) => c.image.length > 0)
+    .filter((c): c is { id: string; title: string; slug: string; image: string } =>
+      typeof c.image === "string" && c.image.length > 0
+    )
     .slice(0, 40);
 
   return NextResponse.json({ candidates });

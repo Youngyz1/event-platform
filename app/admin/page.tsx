@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader';
 
 // Service role: bypasses RLS — admin operations only
 const supabaseAdmin = createClient(
@@ -24,10 +25,10 @@ function StatCard({
   label: string;
   value: string;
   detail?: string;
-  tone: 'violet' | 'orange' | 'green' | 'zinc' | 'blue' | 'rose';
+  tone: 'indigo' | 'orange' | 'green' | 'zinc' | 'blue' | 'rose';
 }) {
   const iconClasses: Record<string, string> = {
-    violet: 'bg-violet-50 text-violet-700',
+    indigo: 'bg-indigo-50 text-indigo-700',
     orange: 'bg-orange-50 text-orange-700',
     green:  'bg-emerald-50 text-emerald-700',
     zinc:   'bg-zinc-100 text-zinc-700',
@@ -36,7 +37,7 @@ function StatCard({
   };
 
   return (
-    <div className="flex min-h-32 flex-col justify-between rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm shadow-zinc-200/60">
+    <div className="flex min-h-32 flex-col justify-between rounded-xl border border-zinc-200 bg-white p-5">
       <p className={`w-fit rounded-full px-2 py-1 text-xs font-black uppercase tracking-wide ${iconClasses[tone]}`}>
         {label}
       </p>
@@ -54,6 +55,8 @@ export default async function AdminOverviewPage() {
     { count: organizerCount },
     { count: eventCount },
     { count: fundraiserCount },
+    { count: activeFundraiserCount },
+    { count: pendingFundraiserCount },
     { count: ticketCount },
     { data: donationTotal },
   ] = await Promise.all([
@@ -61,6 +64,8 @@ export default async function AdminOverviewPage() {
     supabaseAdmin.from('organizers').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('events').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('fundraisers').select('*', { count: 'exact', head: true }),
+    supabaseAdmin.from('fundraisers').select('*', { count: 'exact', head: true }).eq('status', 'published'),
+    supabaseAdmin.from('fundraisers').select('*', { count: 'exact', head: true }).eq('status', 'pending_review'),
     supabaseAdmin.from('ticket_orders').select('*', { count: 'exact', head: true }).eq('status', 'valid'),
     supabaseAdmin.from('donations').select('amount').in('status', ['succeeded', 'completed']),
   ]);
@@ -72,17 +77,19 @@ export default async function AdminOverviewPage() {
 
   return (
     <div className="space-y-8">
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm shadow-zinc-200/60 sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-violet-600">Admin</p>
-        <h1 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">Platform Overview</h1>
-        <p className="mt-2 text-sm font-medium text-zinc-500">Live platform-wide metrics.</p>
-      </header>
+      <DashboardPageHeader
+        eyebrow="Admin"
+        title="Platform Overview"
+        description="Live platform-wide metrics."
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <StatCard label="Total Users"        value={String(userCount ?? 0)}      tone="violet" />
+        <StatCard label="Total Users"        value={String(userCount ?? 0)}      tone="indigo" />
         <StatCard label="Organizers"         value={String(organizerCount ?? 0)} tone="blue"   />
         <StatCard label="Total Events"       value={String(eventCount ?? 0)}     tone="orange" />
         <StatCard label="Total Fundraisers"  value={String(fundraiserCount ?? 0)} tone="green" />
+        <StatCard label="Active Fundraisers" value={String(activeFundraiserCount ?? 0)} tone="green" />
+        <StatCard label="Pending Fundraisers" value={String(pendingFundraiserCount ?? 0)} tone="orange" />
         <StatCard label="Tickets Sold"       value={String(ticketCount ?? 0)}    tone="zinc"   />
         <StatCard label="Total Donations"    value={money(totalDonations)}       tone="rose"   />
       </div>

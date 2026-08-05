@@ -102,7 +102,7 @@ export default function UpdatesClient({
         </div>
       )}
 
-      <form onSubmit={postUpdate} className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <form onSubmit={postUpdate} className="rounded-xl border border-zinc-200 bg-white p-5">
         <h2 className="text-xl font-black">Post new update</h2>
         <div className="mt-5 space-y-4">
           <input
@@ -131,7 +131,7 @@ export default function UpdatesClient({
         </div>
       </form>
 
-      <section className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <section className="rounded-xl border border-zinc-200 bg-white p-5">
         <h2 className="text-xl font-black">Existing updates</h2>
         {updates.length === 0 ? (
           <p className="mt-4 text-sm font-semibold text-zinc-500">No updates yet.</p>

@@ -9,6 +9,7 @@ import DashboardToolbar from "@/components/dashboard/DashboardToolbar";
 import DashboardTableCard from "@/components/dashboard/DashboardTableCard";
 import DashboardDrawer from "@/components/dashboard/DashboardDrawer";
 import DashboardEmptyState from "@/components/dashboard/DashboardEmptyState";
+import ProgressBar from "@/components/ui/ProgressBar";
 import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
 import { formatAdminDate, formatAdminMoney } from "@/lib/admin-query";
 import { useDashboardParams } from "@/hooks/use-dashboard-params";
@@ -21,6 +22,24 @@ import type {
 } from "@/types/dashboard-management";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
 
+/** Owner-facing moderation badge — only shown while a campaign isn't public. */
+function ReviewBadge({ status }: { status: string }) {
+  if (status === "published") return null;
+  const label = status === "rejected" ? "Rejected" : "Pending review";
+  const style =
+    status === "rejected" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700";
+  return (
+    <span
+      className={cn(
+        "mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide",
+        style
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
 function FundraisersClientInner() {
   const { page, perPage, search, updateParams, getParam, buildQueryString } = useDashboardParams();
   const { exporting, exportCsv } = useDashboardExport();
@@ -28,7 +47,14 @@ function FundraisersClientInner() {
   const status = getParam("status");
   const category = getParam("category");
   const sort = getParam("sort", "newest");
-  const view = getParam("view", "table");
+  // Distinguish "no explicit choice yet" from an explicit pick, so the
+  // default state can show the mobile-friendly cards below lg while an
+  // explicit "Table" choice is still honored even on a small screen.
+  const viewParam = getParam("view", "");
+  const view = viewParam || "table";
+  const showCards = viewParam === "card";
+  const showTable = viewParam === "table";
+  const showDefault = viewParam === "";
 
   const [rows, setRows] = useState<DashboardFundraiserRow[]>([]);
   const [stats, setStats] = useState<DashboardFundraiserStats | null>(null);
@@ -237,19 +263,20 @@ function FundraisersClientInner() {
           />
         }
       >
-        {view === "card" ? (
-          <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
+        {(showCards || showDefault) && (
+          <div className={cn("grid gap-4 p-4 sm:grid-cols-2 sm:p-6 lg:grid-cols-3", showDefault && "lg:hidden")}>
             {rows.map((row) => (
               <article key={row.id} className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-4">
                 <button type="button" onClick={() => openDrawer(row.id)} className="text-left w-full">
                   <h3 className="font-black text-zinc-950 line-clamp-1">{row.title}</h3>
+                  <ReviewBadge status={row.review_status} />
                   <div className="mt-1 flex items-center justify-between">
                     <span className="text-xs font-bold text-zinc-500 uppercase">{row.category || "Other"}</span>
                     <p className="text-sm font-medium text-emerald-700">{formatAdminMoney(row.raised)} raised</p>
                   </div>
                 </button>
-                <div className="mt-3 h-2 overflow-hidden rounded-full bg-zinc-200">
-                  <div className="h-full rounded-full bg-emerald-500" style={{ width: `${row.progress}%` }} />
+                <div className="mt-3">
+                  <ProgressBar percentage={row.progress} height={6} />
                 </div>
                 <p className="mt-2 text-xs font-bold text-zinc-500">{row.progress}% of {formatAdminMoney(row.goal)}</p>
                 <div className="mt-4 flex flex-wrap gap-1.5">
@@ -259,8 +286,9 @@ function FundraisersClientInner() {
               </article>
             ))}
           </div>
-        ) : (
-          <div className="overflow-x-auto">
+        )}
+        {(showTable || showDefault) && (
+          <div className={cn("overflow-x-auto", showDefault && "hidden lg:block")}>
             <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="border-b border-zinc-200 bg-zinc-50/80 text-xs font-black uppercase tracking-wide text-zinc-400">
                 <tr>
@@ -281,6 +309,7 @@ function FundraisersClientInner() {
                       <button type="button" onClick={() => openDrawer(row.id)} className="font-black text-zinc-900 hover:text-violet-700 hover:underline">
                         {row.title}
                       </button>
+                      <ReviewBadge status={row.review_status} />
                     </td>
                     <td className="py-3 pr-4 text-xs font-bold text-zinc-500 uppercase">{row.category || "Other"}</td>
                     <td className="py-3 pr-4 font-black text-emerald-700">{formatAdminMoney(row.raised)}</td>

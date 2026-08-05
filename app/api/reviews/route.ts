@@ -1,6 +1,5 @@
 /**
  * app/api/reviews/route.ts
- * GET  /api/reviews?event_id=<uuid>          — list approved reviews for an event
  * GET  /api/reviews?fundraiser_id=<uuid>     — list approved reviews for a fundraiser
  * GET  /api/reviews?organizer_id=<uuid>      — list approved reviews for an organizer
  * POST /api/reviews                           — create a new review (auth required)
@@ -25,7 +24,6 @@ function isValidUuid(v: string | null): v is string {
 // ── GET — list reviews ────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams;
-  const eventId = sp.get("event_id");
   const fundraiserId = sp.get("fundraiser_id");
   const organizerId = sp.get("organizer_id");
 
@@ -33,9 +31,7 @@ export async function GET(request: NextRequest) {
   type Target = { column: string; id: string };
   let target: Target | null = null;
 
-  if (isValidUuid(eventId)) {
-    target = { column: "event_id", id: eventId };
-  } else if (isValidUuid(fundraiserId)) {
+  if (isValidUuid(fundraiserId)) {
     target = { column: "fundraiser_id", id: fundraiserId };
   } else if (isValidUuid(organizerId)) {
     target = { column: "organizer_id", id: organizerId };
@@ -102,8 +98,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { event_id, fundraiser_id, organizer_id, review_type, rating, title, review } = body as {
-    event_id?: string;
+  const { fundraiser_id, organizer_id, review_type, rating, title, review } = body as {
     fundraiser_id?: string;
     organizer_id?: string;
     review_type?: string;
@@ -122,16 +117,15 @@ export async function POST(request: NextRequest) {
   }
 
   // Determine if it is a platform review
-  const isPlatform = review_type === "platform" || (!event_id && !fundraiser_id && !organizer_id);
+  const isPlatform = review_type === "platform" || (!fundraiser_id && !organizer_id);
 
   // At least one target required if not platform review
-  const hasEvent = isValidUuid(event_id ?? null);
   const hasFundraiser = isValidUuid(fundraiser_id ?? null);
   const hasOrganizer = isValidUuid(organizer_id ?? null);
 
-  if (!isPlatform && !hasEvent && !hasFundraiser && !hasOrganizer) {
+  if (!isPlatform && !hasFundraiser && !hasOrganizer) {
     return NextResponse.json(
-      { error: "Provide a valid event_id, fundraiser_id, or organizer_id." },
+      { error: "Provide a valid fundraiser_id or organizer_id." },
       { status: 400 }
     );
   }
@@ -142,10 +136,9 @@ export async function POST(request: NextRequest) {
 
   const payload = {
     user_id: user.id,
-    event_id: !isPlatform && hasEvent ? event_id : null,
     fundraiser_id: !isPlatform && hasFundraiser ? fundraiser_id : null,
     organizer_id: !isPlatform && hasOrganizer ? organizer_id : null,
-    review_type: isPlatform ? "platform" : (hasEvent ? "event" : (hasFundraiser ? "fundraiser" : "organizer")),
+    review_type: isPlatform ? "platform" : (hasFundraiser ? "fundraiser" : "organizer"),
     rating: ratingNum,
     title: cleanTitle,
     review: cleanReview,

@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { processDonationCertificate } from "@/lib/certificate";
 import { processDonationReceipt } from "@/lib/receipt";
 import { recalculateFundraiserRaised } from "@/lib/donations";
-import { parseCryptoOrderId } from "@/lib/cryptoPayment";
+import { parseCryptoOrderId, getNowPaymentsConfig } from "@/lib/cryptoPayment";
 import { markProductOrderPaid } from "@/lib/productOrders";
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -16,10 +16,31 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Recursively rebuilds an object/array with object keys sorted at every
+// nesting level (not just the top). NOWPayments' reference implementation
+// signs via Python's json.dumps(obj, sort_keys=True), which sorts keys
+// recursively — JSON.stringify(obj, arrayReplacer) does not: the array acts
+// as a flat allowlist reapplied at every level, silently dropping any nested
+// object's fields whose names aren't also top-level key names. That mismatch
+// is what caused every IPN signature check to fail.
+function sortKeysDeep(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map(sortKeysDeep);
+  }
+  if (value !== null && typeof value === "object") {
+    return Object.keys(value)
+      .sort()
+      .reduce((sorted: Record<string, any>, key) => {
+        sorted[key] = sortKeysDeep(value[key]);
+        return sorted;
+      }, {});
+  }
+  return value;
+}
+
 function verifySignature(reqBody: any, signature: string, ipnSecret: string) {
   try {
-    const sortedKeys = Object.keys(reqBody).sort();
-    const sortedString = JSON.stringify(reqBody, sortedKeys);
+    const sortedString = JSON.stringify(sortKeysDeep(reqBody));
     const hmac = crypto.createHmac("sha512", ipnSecret);
     hmac.update(sortedString);
     const calculatedSignature = hmac.digest("hex");
@@ -288,7 +309,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing x-nowpayments-sig header." }, { status: 400 });
     }
 
-    if (!process.env.NOWPAYMENTS_IPN_SECRET) {
+    const ipnSecret = getNowPaymentsConfig().ipnSecret;
+    if (!ipnSecret) {
       return NextResponse.json({ error: "NOWPayments webhook is not configured." }, { status: 500 });
     }
 
@@ -299,7 +321,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
     }
 
-    const isValid = verifySignature(body, sig, process.env.NOWPAYMENTS_IPN_SECRET);
+    const isValid = verifySignature(body, sig, ipnSecret);
     if (!isValid) {
       console.warn("[crypto webhook] Signature verification failed. Sig:", sig);
       return NextResponse.json({ error: "Invalid webhook signature." }, { status: 400 });

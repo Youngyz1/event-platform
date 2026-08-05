@@ -55,7 +55,7 @@ export default function AdminConfirmDialog({
             className={
               variant === "danger"
                 ? "rounded-xl bg-red-600 px-4 py-2 text-sm font-black text-white hover:bg-red-700 disabled:opacity-50"
-                : "rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white hover:bg-violet-700 disabled:opacity-50"
+                : "rounded-xl bg-orange-600 px-4 py-2 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-50"
             }
           >
             {loading ? "Working…" : confirmLabel}

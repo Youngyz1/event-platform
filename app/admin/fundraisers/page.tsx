@@ -7,24 +7,51 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, CalendarDays, Star, StarOff } from "lucide-react";
 import AdminDrawer from "@/components/admin/AdminDrawer";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminManagementToolbar from "@/components/admin/AdminManagementToolbar";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import { formatAdminDate, formatAdminMoney } from "@/lib/admin-query";
+
+type FundraiserStatus = "pending_review" | "published" | "rejected";
 
 type FundraiserRow = {
   id: string;
   title: string;
+  slug: string | null;
   organizer: string;
   raised: number;
   goal: number;
   is_featured: boolean;
+  status: FundraiserStatus;
+  rejection_reason: string | null;
   created_at: string;
 };
 
 const PAGE_SIZE = 25;
+
+const STATUS_LABELS: Record<string, string> = {
+  pending_review: "Pending",
+  published: "Published",
+  rejected: "Rejected",
+};
+
+function StatusBadge({ status }: { status: string }) {
+  const style =
+    status === "published"
+      ? "bg-emerald-100 text-emerald-700"
+      : status === "rejected"
+      ? "bg-red-100 text-red-700"
+      : "bg-amber-100 text-amber-700";
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-xs font-black uppercase ${style}`}>
+      {STATUS_LABELS[status] ?? status}
+    </span>
+  );
+}
 
 function money(n: number) {
   return formatAdminMoney(n);
@@ -49,6 +76,7 @@ export default function AdminFundraisersPage() {
   const perPage = Number(searchParams.get("per_page") ?? String(PAGE_SIZE));
   const search = searchParams.get("search") ?? "";
   const sort = searchParams.get("sort") ?? "newest";
+  const statusTab = searchParams.get("status") ?? "all";
 
   const [allItems, setAllItems] = useState<FundraiserRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +84,7 @@ export default function AdminFundraisersPage() {
   const [error, setError] = useState("");
   const [drawer, setDrawer] = useState<FundraiserRow | null>(null);
   const [drawerLoading, setDrawerLoading] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
 
   // Date backdate state (per-drawer)
   const [newDate, setNewDate] = useState("");
@@ -102,6 +131,9 @@ export default function AdminFundraisersPage() {
           (f.organizer ?? "").toLowerCase().includes(q)
       );
     }
+    if (statusTab !== "all") {
+      rows = rows.filter((f) => f.status === statusTab);
+    }
     switch (sort) {
       case "oldest":
         rows.sort(
@@ -125,7 +157,17 @@ export default function AdminFundraisersPage() {
         );
     }
     return rows;
-  }, [allItems, search, sort]);
+  }, [allItems, search, sort, statusTab]);
+
+  const statusCounts = useMemo(
+    () => ({
+      all: allItems.length,
+      pending_review: allItems.filter((f) => f.status === "pending_review").length,
+      published: allItems.filter((f) => f.status === "published").length,
+      rejected: allItems.filter((f) => f.status === "rejected").length,
+    }),
+    [allItems]
+  );
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const paged = filtered.slice((page - 1) * perPage, page * perPage);
@@ -136,6 +178,7 @@ export default function AdminFundraisersPage() {
     setNewDate(toDateInputValue(item.created_at));
     setDateError("");
     setDateSuccess(false);
+    setRejectReason("");
   }
 
   function closeDrawer() {
@@ -173,6 +216,18 @@ export default function AdminFundraisersPage() {
     return res.ok;
   }
 
+  async function approveFundraiser(id: string) {
+    await patchFundraiser(id, { status: "published" });
+  }
+
+  async function rejectFundraiser(id: string) {
+    const ok = await patchFundraiser(id, {
+      status: "rejected",
+      rejection_reason: rejectReason.trim() || null,
+    });
+    if (ok) setRejectReason("");
+  }
+
   async function saveDate() {
     if (!drawer) return;
     setDateError("");
@@ -205,23 +260,18 @@ export default function AdminFundraisersPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* ── Header ── */}
-      <header className="rounded-xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:rounded-2xl sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-violet-600">
-          Admin
-        </p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">
-          Fundraisers
-        </h1>
-        <p className="mt-2 text-sm font-medium text-zinc-500">
-          Feature campaigns and manage fundraiser settings including backdating.
-        </p>
-      </header>
+      <DashboardPageHeader
+        eyebrow="Admin"
+        title="Fundraisers"
+        description="Feature campaigns and manage fundraiser settings including backdating."
+      />
 
       {/* ── Stats bar ── */}
       {!loading && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {[
             { label: "Total", value: allItems.length },
+            { label: "Pending", value: statusCounts.pending_review },
             {
               label: "Featured",
               value: allItems.filter((f) => f.is_featured).length,
@@ -234,7 +284,7 @@ export default function AdminFundraisersPage() {
           ].map((s) => (
             <div
               key={s.label}
-              className="rounded-xl border border-zinc-200/80 bg-white px-4 py-3 shadow-sm"
+              className="rounded-xl border border-zinc-200 bg-white px-4 py-3"
             >
               <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">
                 {s.label}
@@ -250,9 +300,14 @@ export default function AdminFundraisersPage() {
         search={search}
         searchPlaceholder="Search fundraisers..."
         onSearchChange={(v) => updateParams({ search: v || null })}
-        tabs={[]}
-        activeTab="all"
-        onTabChange={() => {}}
+        tabs={[
+          { value: "all", label: "All", count: statusCounts.all },
+          { value: "pending_review", label: "Pending", count: statusCounts.pending_review },
+          { value: "published", label: "Published", count: statusCounts.published },
+          { value: "rejected", label: "Rejected", count: statusCounts.rejected },
+        ]}
+        activeTab={statusTab}
+        onTabChange={(v) => updateParams({ status: v === "all" ? null : v })}
         filters={[]}
         sort={{
           id: "sort",
@@ -280,10 +335,10 @@ export default function AdminFundraisersPage() {
       )}
 
       {/* ── Table ── */}
-      <div className="overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-sm sm:rounded-2xl">
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -296,6 +351,7 @@ export default function AdminFundraisersPage() {
                   <th className="py-3 pr-4">Goal</th>
                   <th className="py-3 pr-4">Progress</th>
                   <th className="py-3 pr-4">Created</th>
+                  <th className="py-3 pr-4">Status</th>
                   <th className="py-3 pr-4">Featured</th>
                   <th className="py-3 pr-5">Actions</th>
                 </tr>
@@ -307,7 +363,7 @@ export default function AdminFundraisersPage() {
                       <button
                         type="button"
                         onClick={() => openDrawer(f)}
-                        className="max-w-[200px] truncate text-left font-black text-zinc-900 hover:text-violet-700 hover:underline"
+                        className="max-w-[200px] truncate text-left font-black text-zinc-900 hover:text-orange-700 hover:underline"
                       >
                         {f.title}
                       </button>
@@ -338,6 +394,9 @@ export default function AdminFundraisersPage() {
                       {formatAdminDate(f.created_at)}
                     </td>
                     <td className="py-3 pr-4">
+                      <StatusBadge status={f.status} />
+                    </td>
+                    <td className="py-3 pr-4">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-black uppercase ${
                           f.is_featured
@@ -357,6 +416,22 @@ export default function AdminFundraisersPage() {
                         >
                           View
                         </button>
+                        <Link
+                          href={`/admin/fundraisers/${f.id}`}
+                          className="rounded-lg border border-orange-200 bg-white px-2.5 py-1.5 text-xs font-black text-orange-700 hover:bg-orange-50"
+                        >
+                          Manage
+                        </Link>
+                        {f.status === "pending_review" && (
+                          <button
+                            type="button"
+                            disabled={working === f.id}
+                            onClick={() => approveFundraiser(f.id)}
+                            className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                          >
+                            Approve
+                          </button>
+                        )}
                         <button
                           type="button"
                           disabled={working === f.id}
@@ -382,7 +457,7 @@ export default function AdminFundraisersPage() {
                 {paged.length === 0 && (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={9}
                       className="py-12 text-center text-sm font-semibold text-zinc-400"
                     >
                       No fundraisers match your filters.
@@ -415,14 +490,22 @@ export default function AdminFundraisersPage() {
         footer={
           drawer ? (
             <div className="flex flex-wrap gap-2">
-              <a
-                href={`/fundraisers/${drawer.id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-black text-zinc-700 hover:bg-white"
+              {drawer.slug && (
+                <a
+                  href={`/fundraisers/${drawer.slug}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-black text-zinc-700 hover:bg-white"
+                >
+                  View Public Page
+                </a>
+              )}
+              <Link
+                href={`/admin/fundraisers/${drawer.id}`}
+                className="rounded-xl border border-orange-200 px-4 py-2 text-sm font-black text-orange-700 hover:bg-orange-50"
               >
-                View Public Page
-              </a>
+                Manage / Import
+              </Link>
               <button
                 type="button"
                 disabled={working === drawer.id}
@@ -449,13 +532,57 @@ export default function AdminFundraisersPage() {
       >
         {drawerLoading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
           </div>
         ) : drawer ? (
           <div className="space-y-6">
+            {/* Review status — approve / reject */}
+            <section>
+              <h3 className="text-sm font-bold text-zinc-900">
+                Review Status
+              </h3>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <StatusBadge status={drawer.status} />
+                {drawer.status === "rejected" && drawer.rejection_reason && (
+                  <span className="text-xs font-semibold text-zinc-500">
+                    {drawer.rejection_reason}
+                  </span>
+                )}
+              </div>
+              {drawer.status !== "published" && (
+                <button
+                  type="button"
+                  disabled={working === drawer.id}
+                  onClick={() => approveFundraiser(drawer.id)}
+                  className="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {working === drawer.id ? "Working…" : "Approve & Publish"}
+                </button>
+              )}
+              {drawer.status !== "rejected" && (
+                <div className="mt-3 space-y-2">
+                  <textarea
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    placeholder="Optional reason shown to the owner…"
+                    rows={2}
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100"
+                  />
+                  <button
+                    type="button"
+                    disabled={working === drawer.id}
+                    onClick={() => rejectFundraiser(drawer.id)}
+                    className="w-full rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-black text-red-700 transition hover:bg-red-50 disabled:opacity-50"
+                  >
+                    {working === drawer.id ? "Working…" : "Reject"}
+                  </button>
+                </div>
+              )}
+            </section>
+
             {/* Campaign Stats */}
             <section>
-              <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400">
+              <h3 className="text-sm font-bold text-zinc-900">
                 Campaign Stats
               </h3>
               <div className="mt-3 grid grid-cols-2 gap-3">
@@ -467,7 +594,7 @@ export default function AdminFundraisersPage() {
                 ].map(([label, value]) => (
                   <div
                     key={String(label)}
-                    className="rounded-xl bg-zinc-50 p-3 ring-1 ring-zinc-200/70"
+                    className="rounded-xl border border-zinc-200 bg-zinc-50 p-3"
                   >
                     <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">
                       {label}
@@ -480,7 +607,7 @@ export default function AdminFundraisersPage() {
 
             {/* Date Settings — Backdating */}
             <section>
-              <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-zinc-400">
+              <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900">
                 <CalendarDays className="h-3.5 w-3.5" />
                 Date Settings
               </h3>
@@ -506,7 +633,7 @@ export default function AdminFundraisersPage() {
                       setDateError("");
                       setDateSuccess(false);
                     }}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-100"
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
                   />
                 </div>
 
@@ -525,7 +652,7 @@ export default function AdminFundraisersPage() {
                   type="button"
                   disabled={dateSaving || newDate === toDateInputValue(drawer.created_at)}
                   onClick={saveDate}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-violet-700 disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-orange-700 disabled:opacity-50"
                 >
                   {dateSaving ? (
                     <>
@@ -544,7 +671,7 @@ export default function AdminFundraisersPage() {
 
             {/* Featured Status */}
             <section>
-              <h3 className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-zinc-400">
+              <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900">
                 {drawer.is_featured ? (
                   <Star className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
                 ) : (
@@ -555,7 +682,7 @@ export default function AdminFundraisersPage() {
               <p className="mt-1.5 text-xs text-zinc-500">
                 Featured campaigns appear at the top of the public fundraiser directory.
               </p>
-              <div className="mt-3 rounded-xl bg-zinc-50 p-3 ring-1 ring-zinc-200/70">
+              <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
                 <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">
                   Currently
                 </p>

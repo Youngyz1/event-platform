@@ -96,6 +96,7 @@ export type AdminUserDetail = AdminUserRow & {
   organizers: {
     id: string;
     name: string;
+    slug: string | null;
     status: string;
     created_at: string;
   }[];

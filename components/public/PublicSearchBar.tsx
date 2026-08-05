@@ -23,10 +23,10 @@ type PublicSearchBarProps = {
 };
 
 export default function PublicSearchBar({
-  action = "/events",
+  action = "/search",
   defaultQuery = "",
   defaultLocation = "",
-  placeholder = "Search events, fundraisers, organizers…",
+  placeholder = "Search fundraisers, organizers…",
   showLocation = true,
   className,
   size = "md",

@@ -19,7 +19,7 @@ export default function PublicEmptyState({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-14 text-center sm:px-10 sm:py-16",
+        "px-6 py-14 text-center sm:px-10 sm:py-16",
         className
       )}
     >

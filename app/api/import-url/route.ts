@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-type ImportMode = "events" | "fundraisers";
+import { normalizeImageUrl } from "@/lib/image-url";
 
 type JsonValue =
   | string
@@ -49,11 +48,6 @@ function getMeta(html: string, key: string) {
 function getTitle(html: string) {
   const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   return match?.[1] ? decodeHtml(stripHtml(match[1])) : "";
-}
-
-function getFirstDatetime(html: string) {
-  const match = html.match(/<time[^>]+datetime=["']([^"']+)["'][^>]*>/i);
-  return match?.[1] ? decodeHtml(match[1]) : "";
 }
 
 function absoluteUrl(value: string, baseUrl: URL) {
@@ -157,30 +151,6 @@ function firstImage(value: JsonValue | undefined) {
   return "";
 }
 
-function locationParts(location: JsonValue | undefined) {
-  if (!location || typeof location !== "object" || Array.isArray(location)) {
-    return { venue: "", city: "" };
-  }
-
-  const name = jsonString(location.name);
-  const address = location.address;
-
-  if (!address || typeof address !== "object" || Array.isArray(address)) {
-    return { venue: name, city: "" };
-  }
-
-  const streetAddress = jsonString(address.streetAddress);
-  const locality = jsonString(address.addressLocality);
-  const region = jsonString(address.addressRegion);
-  const country = thingName(address.addressCountry);
-  const city = [locality, region].filter(Boolean).join(", ") || country;
-
-  return {
-    venue: name || streetAddress || jsonString(address.name),
-    city,
-  };
-}
-
 function isType(item: JsonObject, expected: string) {
   const type = item["@type"];
   if (typeof type === "string") return type.toLowerCase().includes(expected);
@@ -188,60 +158,6 @@ function isType(item: JsonObject, expected: string) {
     return type.some((entry) => typeof entry === "string" && entry.toLowerCase().includes(expected));
   }
   return false;
-}
-
-function normalizePrice(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  if (/free/i.test(trimmed)) return "0";
-
-  const match = trimmed.replace(/,/g, "").match(/\d+(?:\.\d+)?/);
-  return match?.[0] ?? "";
-}
-
-function collectOffers(value: JsonValue | undefined): JsonObject[] {
-  return jsonArray(value).flatMap((offer) => {
-    const object = jsonObject(offer);
-    if (!object) return [];
-    return [object, ...collectOffers(object.offers)];
-  });
-}
-
-function getOfferDetails(item: JsonObject | undefined) {
-  const offers = collectOffers(item?.offers);
-
-  for (const offer of offers) {
-    const priceSpecification = jsonObject(offer.priceSpecification);
-    const rawPrice =
-      jsonString(offer.price) ||
-      jsonString(offer.lowPrice) ||
-      jsonString(priceSpecification?.price) ||
-      jsonString(priceSpecification?.minPrice);
-    const price = normalizePrice(rawPrice);
-
-    if (price) {
-      return {
-        name: thingName(offer.name) || thingName(offer.category) || "General Admission",
-        price,
-      };
-    }
-  }
-
-  return { name: "General Admission", price: "0" };
-}
-
-function categoryName(item: JsonObject | undefined) {
-  const keywords = jsonArray(item?.keywords)
-    .map((keyword) => jsonString(keyword))
-    .filter(Boolean);
-
-  return (
-    thingName(item?.eventType) ||
-    thingName(item?.genre) ||
-    thingName(item?.category) ||
-    keywords[0] ||
-    "General"
-  );
 }
 
 function getFaqText(items: JsonObject[]) {
@@ -285,10 +201,10 @@ function sourceOrganizer(item: JsonObject | undefined) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { url, mode } = (await req.json()) as { url?: string; mode?: ImportMode };
+    const { url } = (await req.json()) as { url?: string };
 
-    if (!url || !mode) {
-      return NextResponse.json({ error: "URL and mode are required." }, { status: 400 });
+    if (!url) {
+      return NextResponse.json({ error: "URL is required." }, { status: 400 });
     }
 
     const parsedUrl = new URL(url);
@@ -315,9 +231,7 @@ export async function POST(req: NextRequest) {
 
     const html = await response.text();
     const items = findJsonLd(html);
-    const eventItem = items.find((item) => isType(item, "event"));
-    const fundraiserItem = items.find((item) => isType(item, "fundraiser") || isType(item, "donate"));
-    const selected = mode === "events" ? eventItem : fundraiserItem;
+    const selected = items.find((item) => isType(item, "fundraiser") || isType(item, "donate"));
 
     const title =
       jsonString(selected?.name) ||
@@ -327,41 +241,12 @@ export async function POST(req: NextRequest) {
 
     const description = buildDescription(selected, html, items);
 
-    const image = absoluteUrl(
+    const rawImage = absoluteUrl(
       firstImage(selected?.image) || getMeta(html, "og:image") || getMeta(html, "twitter:image"),
       parsedUrl
     );
-    const { venue, city } = locationParts(selected?.location);
-    const eventDate =
-      jsonString(selected?.startDate) ||
-      jsonString(selected?.doorTime) ||
-      getMeta(html, "event:start_time") ||
-      getMeta(html, "article:published_time") ||
-      getFirstDatetime(html);
-    const offer = getOfferDetails(selected);
+    const image = normalizeImageUrl(rawImage, "");
     const organizer = sourceOrganizer(selected);
-
-    if (mode === "events") {
-      return NextResponse.json({
-        data: {
-          title,
-          description,
-          category: categoryName(selected),
-          event_date: eventDate,
-          venue,
-          city,
-          banner: image,
-          ticket1_name: offer.name,
-          ticket1_price: offer.price,
-          ticket2_name: "",
-          ticket2_price: "",
-          source_organizer_name: organizer.name,
-          source_organizer_url: organizer.url,
-          source_organizer_description: organizer.description,
-          source_url: parsedUrl.toString(),
-        },
-      });
-    }
 
     return NextResponse.json({
       data: {

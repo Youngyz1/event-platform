@@ -26,12 +26,10 @@ import {
 const quickLinks = [
   ["Home", "/"],
   ["About", "/about"],
-  ["Events", "/events"],
   ["Fundraisers", "/fundraisers"],
   ["Organizers", "/organizers"],
   ["Platform Reviews", "/reviews"],
   ["Search", "/search"],
-  ["Create Event", "/create-event"],
   ["Start Fundraiser", "/create-fundraiser"],
   ["Privacy", "/privacy"],
   ["Cookies", "/cookies"],
@@ -74,7 +72,7 @@ function Footerdemo() {
               Stay connected
             </h2>
             <p className="mb-4 mt-2 max-w-xs text-xs leading-5 text-zinc-600 sm:text-sm dark:text-zinc-400">
-              Get event launches, fundraiser updates, and platform news.
+              Get fundraiser updates and platform news.
             </p>
             <form onSubmit={handleSubscribe} className="relative max-w-xs">
               <Input
@@ -116,7 +114,7 @@ function Footerdemo() {
             </h3>
             <address className="max-w-xs space-y-2 text-sm leading-6 text-zinc-600 not-italic dark:text-zinc-400">
               <p>Fund4Good Support</p>
-              <p>Events, fundraising & community commerce.</p>
+              <p>Fundraising & community support.</p>
               <p>
                 Email:{" "}
                 <a

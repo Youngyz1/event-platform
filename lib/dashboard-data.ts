@@ -247,7 +247,7 @@ export async function queryDashboardFundraisers(params: {
 
   const { data: fundraisers, error } = await supabaseAdmin
     .from('fundraisers')
-    .select('id, title, slug, goal, raised, category, created_at')
+    .select('id, title, slug, goal, raised, category, created_at, status')
     .in('organizer_id', organizerIds);
 
   if (error) throw new Error(error.message);
@@ -282,6 +282,7 @@ export async function queryDashboardFundraisers(params: {
       donor_count: donorMap[fr.id] ?? 0,
       progress,
       status: campaignStatus,
+      review_status: (fr.status ?? 'published') as DashboardFundraiserRow['review_status'],
       created_at: fr.created_at,
     };
   });
@@ -332,7 +333,7 @@ export async function getDashboardFundraiserDetail(
 
   const { data: fr } = await supabaseAdmin
     .from('fundraisers')
-    .select('id, title, slug, goal, raised, category, created_at, story, organizer_id, organizers(name)')
+    .select('id, title, slug, goal, raised, category, status, created_at, story, organizer_id, organizers(name)')
     .eq('id', fundraiserId)
     .in('organizer_id', organizerIds)
     .maybeSingle();
@@ -366,6 +367,7 @@ export async function getDashboardFundraiserDetail(
     donor_count: donorCount ?? 0,
     progress,
     status: goal > 0 && raised >= goal ? 'completed' : 'active',
+    review_status: ((fr as unknown as { status?: string }).status ?? 'published') as DashboardFundraiserRow['review_status'],
     created_at: fr.created_at,
     short_description: fr.story ? String(fr.story).slice(0, 200) : null,
     story: fr.story,
@@ -414,14 +416,10 @@ export async function queryDashboardOrganizers(params: {
 
   const ids = (organizers ?? []).map((o) => o.id);
 
-  const [eventsRes, fundraisersRes, followsRes, ordersRes] = await Promise.all([
+  const [eventsRes, fundraisersRes, followsRes] = await Promise.all([
     supabaseAdmin.from('events').select('id, organizer_id').in('organizer_id', ids),
     supabaseAdmin.from('fundraisers').select('id, organizer_id, raised').in('organizer_id', ids),
     supabaseAdmin.from('organizer_follows').select('organizer_id').in('organizer_id', ids),
-    supabaseAdmin
-      .from('events')
-      .select('id, organizer_id')
-      .in('organizer_id', ids),
   ]);
 
   const events = eventsRes.data ?? [];

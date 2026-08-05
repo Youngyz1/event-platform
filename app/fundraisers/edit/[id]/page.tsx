@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { normalizeImageUrl, isValidImageUrl } from "@/lib/image-url";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
@@ -182,7 +183,9 @@ export default function EditFundraiserPage() {
   }
 
   function cleanGalleryItems() {
-    return galleryItems.filter((item) => item.url.trim().startsWith("http"));
+    return galleryItems
+      .filter((item) => isValidImageUrl(item.url))
+      .map((item) => ({ ...item, url: normalizeImageUrl(item.url, "") }));
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -197,6 +200,11 @@ export default function EditFundraiserPage() {
         throw new Error("Choose an organizer profile that belongs to your account.");
       }
 
+      const sanitizedBanner = normalizeImageUrl(form.banner, "");
+      if (form.banner.trim() && !sanitizedBanner) {
+        throw new Error("Banner URL must be a direct image link from an approved host (not a Google Images or search page URL).");
+      }
+
       const { error: updateError } = await supabase
         .from("fundraisers")
         .update({
@@ -206,7 +214,7 @@ export default function EditFundraiserPage() {
           organizer_id: selectedOrganizer.id,
           goal: Number(form.goal),
           raised: Number(form.raised) || 0,
-          banner: form.banner,
+          banner: sanitizedBanner,
           video_url: form.video_url || null,
           story: form.story,
           category: form.category || "Other",
@@ -225,9 +233,9 @@ export default function EditFundraiserPage() {
 
       if (mediaItems.length > 0) {
         const { error: mediaError } = await supabase.from("fundraiser_media").insert(
-          mediaItems.map((item, index) => ({
+        mediaItems.map((item, index) => ({
             fundraiser_id: fundraiserId,
-            url: item.url.trim(),
+            url: (item.url ?? "").trim(),
             caption: item.caption.trim() || form.title,
             position: index,
             type: "image",

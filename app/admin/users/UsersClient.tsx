@@ -8,6 +8,7 @@ import AdminStatsCards from "@/components/admin/AdminStatsCards";
 import AdminPagination from "@/components/admin/AdminPagination";
 import AdminManagementToolbar from "@/components/admin/AdminManagementToolbar";
 import AdminDrawer from "@/components/admin/AdminDrawer";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
 import { RoleBadge, StatusBadge } from "@/components/admin/ModerationBadge";
 import { formatAdminDate, formatAdminMoney } from "@/lib/admin-query";
@@ -202,13 +203,11 @@ export default function UsersClient() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <header className="rounded-xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:rounded-2xl sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-violet-600">Admin</p>
-        <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Users</h1>
-        <p className="mt-2 text-sm font-medium text-zinc-500">
-          Full user management with roles, activity filters, and bulk moderation.
-        </p>
-      </header>
+      <DashboardPageHeader
+        eyebrow="Admin"
+        title="Users"
+        description="Full user management with roles, activity filters, and bulk moderation."
+      />
 
       {stats && <AdminStatsCards items={statItems} />}
 
@@ -275,7 +274,7 @@ export default function UsersClient() {
                 key={action.id}
                 type="button"
                 onClick={() => setConfirmAction(action.id)}
-                className="rounded-lg border border-violet-300 bg-white px-3 py-1.5 text-xs font-black text-violet-700 hover:bg-violet-100"
+                className="rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-black text-orange-700 hover:bg-orange-100"
               >
                 {action.label}
               </button>
@@ -294,10 +293,10 @@ export default function UsersClient() {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-sm sm:rounded-2xl">
+      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -341,7 +340,7 @@ export default function UsersClient() {
                         <button
                           type="button"
                           onClick={() => openDrawer(row.id)}
-                          className="font-black text-zinc-900 hover:text-violet-700 hover:underline"
+                          className="font-black text-zinc-900 hover:text-orange-700 hover:underline"
                         >
                           {row.full_name}
                         </button>
@@ -349,7 +348,7 @@ export default function UsersClient() {
                           <p className="text-xs text-zinc-500">@{row.username}</p>
                         )}
                         {isSelf && (
-                          <span className="mt-1 inline-block rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-black uppercase text-violet-700">
+                          <span className="mt-1 inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-black uppercase text-orange-700">
                             You
                           </span>
                         )}
@@ -395,7 +394,7 @@ export default function UsersClient() {
                               type="button"
                               disabled={working === row.id}
                               onClick={() => patchUser(row.id, { role: "admin" })}
-                              className="rounded-lg border border-violet-200 bg-white px-2.5 py-1.5 text-xs font-black text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+                              className="rounded-lg border border-orange-200 bg-white px-2.5 py-1.5 text-xs font-black text-orange-700 hover:bg-orange-50 disabled:opacity-50"
                             >
                               Promote
                             </button>
@@ -470,7 +469,7 @@ export default function UsersClient() {
                   type="button"
                   disabled={working === drawerUser.id}
                   onClick={() => patchUser(drawerUser.id, { role: "admin" })}
-                  className="rounded-xl border border-violet-200 px-4 py-2 text-sm font-black text-violet-700 hover:bg-violet-50 disabled:opacity-50"
+                  className="rounded-xl border border-orange-200 px-4 py-2 text-sm font-black text-orange-700 hover:bg-orange-50 disabled:opacity-50"
                 >
                   Promote to Admin
                 </button>
@@ -490,7 +489,7 @@ export default function UsersClient() {
       >
         {drawerLoading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-violet-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
           </div>
         ) : drawerUser ? (
           <div className="space-y-6">
@@ -504,7 +503,7 @@ export default function UsersClient() {
                 ["Fundraisers", drawerUser.fundraiser_count],
                 ["Revenue", formatAdminMoney(drawerUser.revenue)],
               ].map(([label, value]) => (
-                <div key={String(label)} className="rounded-xl bg-zinc-50 p-3 ring-1 ring-zinc-200/70">
+                <div key={String(label)} className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
                   <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">{label}</p>
                   <p className="mt-1 font-black text-zinc-950 capitalize">{value}</p>
                 </div>
@@ -512,7 +511,7 @@ export default function UsersClient() {
             </section>
 
             <section>
-              <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400">Full Profile</h3>
+              <h3 className="text-sm font-bold text-zinc-900">Full Profile</h3>
               <dl className="mt-3 space-y-2 text-sm">
                 <div><dt className="text-xs font-bold text-zinc-400">Email</dt><dd className="font-semibold">{drawerUser.email}</dd></div>
                 <div><dt className="text-xs font-bold text-zinc-400">Username</dt><dd className="font-semibold">@{drawerUser.username}</dd></div>
@@ -522,7 +521,7 @@ export default function UsersClient() {
             </section>
 
             <section>
-              <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400">Organizer Profiles</h3>
+              <h3 className="text-sm font-bold text-zinc-900">Organizer Profiles</h3>
               <div className="mt-3 space-y-2">
                 {drawerUser.organizers.length === 0 ? (
                   <p className="text-sm text-zinc-500">No organizer profiles.</p>
@@ -533,11 +532,8 @@ export default function UsersClient() {
                       <StatusBadge status={org.status} />
                     </div>
                     <div className="flex gap-2">
-                      <Link href={`/organizers/${org.id}`} className="text-xs font-black text-violet-700 hover:underline">
+                      <Link href={`/org/${org.slug ?? org.id}`} className="text-xs font-black text-orange-700 hover:underline">
                         View Organizer
-                      </Link>
-                      <Link href="/admin/events" className="text-xs font-black text-zinc-600 hover:underline">
-                        Events
                       </Link>
                       <Link href="/admin/fundraisers" className="text-xs font-black text-zinc-600 hover:underline">
                         Fundraisers
@@ -549,7 +545,7 @@ export default function UsersClient() {
             </section>
 
             <section>
-              <h3 className="text-xs font-black uppercase tracking-wider text-zinc-400">Recent Activity</h3>
+              <h3 className="text-sm font-bold text-zinc-900">Recent Activity</h3>
               <div className="mt-3 space-y-2">
                 {drawerUser.recent_activity.length === 0 ? (
                   <p className="text-sm text-zinc-500">No recent activity.</p>
@@ -565,7 +561,7 @@ export default function UsersClient() {
                     <div className="mt-1 flex items-center justify-between">
                       <span className="text-xs text-zinc-400">{formatAdminDate(item.at)}</span>
                       {item.href && (
-                        <Link href={item.href} className="text-xs font-black text-violet-700 hover:underline">
+                        <Link href={item.href} className="text-xs font-black text-orange-700 hover:underline">
                           View
                         </Link>
                       )}

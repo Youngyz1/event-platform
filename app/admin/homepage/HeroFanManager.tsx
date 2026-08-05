@@ -107,7 +107,7 @@ export default function HeroFanManager({ initialImages }: { initialImages: strin
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm sm:p-6">
+    <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-base font-black text-zinc-950">Hero Photo Fan</h2>
@@ -120,7 +120,7 @@ export default function HeroFanManager({ initialImages }: { initialImages: strin
 
       {/* Current set */}
       {images.length === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center text-sm font-semibold text-zinc-500">
+        <p className="mt-4 px-4 py-6 text-center text-sm font-semibold text-zinc-500">
           No hero images set — the fan currently uses the curated default.
         </p>
       ) : (
@@ -209,7 +209,7 @@ export default function HeroFanManager({ initialImages }: { initialImages: strin
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search campaigns by title…"
-                className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold outline-none focus:border-violet-500"
+                className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold outline-none focus:border-orange-500"
               />
             </div>
             <button
@@ -268,7 +268,7 @@ export default function HeroFanManager({ initialImages }: { initialImages: strin
           type="button"
           onClick={save}
           disabled={saving}
-          className="rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-violet-700 disabled:opacity-60"
+          className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-orange-700 disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save Hero Photos"}
         </button>

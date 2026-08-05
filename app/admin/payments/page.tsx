@@ -4,6 +4,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import DashboardPageHeader from '@/components/dashboard/DashboardPageHeader';
 
 // Service role: bypasses RLS — admin operations only
 const supabaseAdmin = createClient(
@@ -16,7 +17,13 @@ function money(n: number | null) {
 }
 
 function dateLabel(d: string) {
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  return new Date(d).toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  });
 }
 
 const statusClasses: Record<string, string> = {
@@ -45,14 +52,14 @@ export default async function AdminPaymentsPage() {
 
   return (
     <div className="space-y-8">
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-violet-600">Admin</p>
-        <h1 className="mt-1 text-3xl font-black tracking-tight">Payments</h1>
-        <p className="mt-2 text-sm font-medium text-zinc-500">Most recent 50 ticket orders and donations. Read only.</p>
-      </header>
+      <DashboardPageHeader
+        eyebrow="Admin"
+        title="Payments"
+        description="Most recent 50 ticket orders and donations. Read only."
+      />
 
       {/* Ticket Orders */}
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
         <h2 className="mb-4 text-base font-black tracking-tight text-zinc-950">Ticket Orders</h2>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[680px] text-left text-sm">
@@ -93,7 +100,7 @@ export default async function AdminPaymentsPage() {
       </div>
 
       {/* Donations */}
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
         <h2 className="mb-4 text-base font-black tracking-tight text-zinc-950">Donations</h2>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[680px] text-left text-sm">

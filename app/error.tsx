@@ -11,8 +11,14 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log to your error reporting service here
-    console.error("[GlobalError]", error);
+    // Log to your error reporting service here. Swallow logging failures so a
+    // broken/instrumented console.error can never take down the error boundary
+    // itself — that would leave the user with no recovery UI at all.
+    try {
+      console.error("[GlobalError]", error);
+    } catch {
+      // ignore
+    }
   }, [error]);
 
   return (

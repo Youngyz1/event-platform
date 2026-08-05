@@ -1,38 +1,22 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { Home, LayoutDashboard, Building2, Settings } from "lucide-react";
+import DashboardSidebar from "@/app/dashboard/DashboardSidebar";
+import MobilePillNav from "@/components/nav/MobilePillNav";
+import type { NavItem } from "@/components/nav/nav-active";
 
 type Step = {
   label: string;
 };
 
-type SidebarItem = {
-  label: string;
-  href: string;
-};
-
-const sidebarItems: SidebarItem[] = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Events", href: "/dashboard/events" },
-  { label: "Fundraisers", href: "/dashboard/fundraisers" },
-  { label: "Donations", href: "/dashboard/donations" },
-  { label: "Organizers", href: "/dashboard/organizers" },
-  { label: "Reports", href: "/dashboard/reports" },
-  { label: "Settings", href: "/dashboard/settings" },
-];
-
-const mobileDashboardItems: SidebarItem[] = [
-  { label: "Home", href: "/" },
-  { label: "Overview", href: "/dashboard" },
-  { label: "Events", href: "/dashboard/events" },
-  { label: "Fundraisers", href: "/dashboard/fundraisers" },
-  { label: "Donations", href: "/dashboard/donations" },
-  { label: "Attendees", href: "/dashboard/attendees" },
-  { label: "Reports", href: "/dashboard/reports" },
-  { label: "Settings", href: "/dashboard/settings" },
+const mobileDashboardItems: NavItem[] = [
+  { label: "Home", href: "/", icon: Home, exact: true },
+  { label: "Overview", href: "/dashboard", icon: LayoutDashboard, exact: true },
+  { label: "Organizations", href: "/dashboard/organizations", icon: Building2 },
+  { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 export function CreatorWorkspace({
-  active,
   accent,
   title,
   description,
@@ -45,7 +29,6 @@ export function CreatorWorkspace({
   aside,
   footer,
 }: {
-  active: "Events" | "Fundraisers";
   accent: "orange" | "green";
   title: string;
   description: string;
@@ -63,13 +46,11 @@ export function CreatorWorkspace({
       text: "text-orange-600",
       bg: "bg-orange-600",
       soft: "bg-orange-50 text-orange-700",
-      activeNav: "bg-blue-600/20 text-white ring-1 ring-blue-400/20",
     },
     green: {
       text: "text-emerald-600",
       bg: "bg-emerald-600",
       soft: "bg-emerald-50 text-emerald-700",
-      activeNav: "bg-emerald-600/20 text-white ring-1 ring-emerald-400/20",
     },
   };
   const theme = accentClasses[accent];
@@ -77,49 +58,16 @@ export function CreatorWorkspace({
   return (
     <main className="min-h-screen bg-zinc-100 text-zinc-950">
       <div className="mx-auto flex max-w-[1500px] gap-5 px-3 py-4 sm:px-6 sm:py-5 lg:px-8">
-        <aside className="sticky top-5 hidden h-[calc(100vh-2.5rem)] w-56 shrink-0 rounded-2xl bg-slate-950 p-4 text-white shadow-xl shadow-slate-950/15 lg:flex lg:flex-col">
-          <Link href="/" className="mb-8 flex items-center gap-3 px-2">
-            <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${theme.bg} text-lg font-black`}>E</span>
-            <span className="text-sm font-black">EventBrite</span>
-          </Link>
+        <DashboardSidebar />
 
-          <nav className="space-y-1 text-sm font-bold text-slate-300">
-            {sidebarItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition ${
-                  item.label === active ? theme.activeNav : "hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                {item.label}
-              </Link>
-            ))}
-          </nav>
+        <div className="flex min-w-0 flex-1 flex-col gap-5">
+          <div className="lg:hidden">
+            <MobilePillNav items={mobileDashboardItems} ariaLabel="Dashboard navigation" />
+          </div>
 
-          <Link href="/about" className="mt-auto flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-300 hover:bg-white/10 hover:text-white">
-            <span className="h-1.5 w-1.5 rounded-full bg-current" />
-            Help & Support
-          </Link>
-        </aside>
-
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <nav className="grid grid-cols-8 items-center rounded-xl border border-zinc-200/80 bg-white px-1.5 py-2 text-center text-[7px] font-black text-slate-700 shadow-sm sm:flex sm:gap-2 sm:overflow-x-auto sm:rounded-2xl sm:px-4 sm:py-3 sm:text-xs lg:hidden">
-            {mobileDashboardItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="min-w-0 rounded-lg px-0.5 py-2 transition hover:bg-zinc-100 sm:shrink-0 sm:px-3"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-        <section className="min-w-0 flex-1 overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm sm:rounded-2xl">
-          <header className="border-b border-zinc-200 bg-white">
-            <div className="flex flex-col gap-3 px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
+        <div className="min-w-0 flex-1">
+          <header className="border-b border-zinc-200 pb-4">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
               <div className="grid gap-3 sm:grid-cols-[1fr_220px] xl:w-[620px]">
                 <label className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm font-semibold text-zinc-500">
                   <i className="ti ti-search text-lg" aria-hidden="true" />
@@ -132,10 +80,10 @@ export function CreatorWorkspace({
               </div>
 
               <div className="flex items-center justify-between gap-3 xl:justify-end">
-                <button className="hidden rounded-xl p-2.5 text-zinc-500 hover:bg-zinc-50 sm:block" type="button" aria-label="Notifications">
+                <button className="hidden rounded-xl p-2.5 text-zinc-500 hover:bg-zinc-100 sm:block" type="button" aria-label="Notifications">
                   <i className="ti ti-bell text-xl" aria-hidden="true" />
                 </button>
-                <div className="flex h-10 items-center gap-2 rounded-xl bg-zinc-50 px-3 text-sm font-black text-zinc-700 ring-1 ring-zinc-200">
+                <div className="flex h-10 items-center gap-2 rounded-xl bg-zinc-100 px-3 text-sm font-black text-zinc-700">
                   <span className={`flex h-6 w-6 items-center justify-center rounded-full ${theme.bg} text-xs text-white`}>
                     {(email || "U").charAt(0).toUpperCase()}
                   </span>
@@ -144,7 +92,7 @@ export function CreatorWorkspace({
               </div>
             </div>
 
-            <div className="flex flex-col justify-between gap-4 px-5 pb-5 pt-3 xl:flex-row xl:items-end">
+            <div className="mt-4 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
               <div>
                 <h1 className="text-3xl font-black tracking-tight">{title}</h1>
                 <p className="mt-1 text-sm font-medium text-zinc-500">{description}</p>
@@ -159,40 +107,38 @@ export function CreatorWorkspace({
               </div>
             </div>
 
-            <div className="border-t border-zinc-100 px-5 py-4">
-              <div className="grid gap-3 md:grid-cols-5">
-                {steps.map((step, index) => {
-                  const activeStep = index === currentStep;
-                  const complete = index < currentStep;
-                  return (
-                    <button
-                      key={step.label}
-                      onClick={() => onStepChange(index)}
-                      type="button"
-                      className="flex items-center gap-3 text-left"
+            <div className="mt-4 flex gap-3 overflow-x-auto pb-1 sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0">
+              {steps.map((step, index) => {
+                const activeStep = index === currentStep;
+                const complete = index < currentStep;
+                return (
+                  <button
+                    key={step.label}
+                    onClick={() => onStepChange(index)}
+                    type="button"
+                    className="flex shrink-0 items-center gap-3 text-left"
+                  >
+                    <span
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
+                        activeStep || complete ? `${theme.bg} text-white` : "bg-zinc-100 text-zinc-500"
+                      }`}
                     >
-                      <span
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black ${
-                          activeStep || complete ? `${theme.bg} text-white` : "bg-zinc-100 text-zinc-500"
-                        }`}
-                      >
-                        {index + 1}
-                      </span>
-                      <span className={`text-xs font-black ${activeStep ? "text-zinc-950" : "text-zinc-500"}`}>{step.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
+                      {index + 1}
+                    </span>
+                    <span className={`whitespace-nowrap text-xs font-black ${activeStep ? "text-zinc-950" : "text-zinc-500"}`}>{step.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </header>
 
-          <div className="grid gap-5 bg-white p-5 xl:grid-cols-[1fr_320px]">
+          <div className="grid gap-5 py-5 xl:grid-cols-[1fr_320px]">
             <div>{children}</div>
             <aside className="space-y-5">{aside}</aside>
           </div>
 
-          <div className="border-t border-zinc-200 bg-white px-5 py-4">{footer}</div>
-        </section>
+          <div className="border-t border-zinc-200 pt-4">{footer}</div>
+        </div>
         </div>
       </div>
     </main>

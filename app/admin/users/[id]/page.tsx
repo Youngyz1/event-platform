@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
-import { requireAdmin } from "@/lib/auth";
 import AdminUserActions from "./AdminUserActions";
 
 const supabaseAdmin = createClient(
@@ -32,7 +31,7 @@ function statusBadge(status: string) {
 
 function roleBadge(role: string) {
   const classes: Record<string, string> = {
-    admin: "bg-violet-100 text-violet-700",
+    admin: "bg-zinc-900 text-white",
     organizer: "bg-orange-100 text-orange-700",
     user: "bg-zinc-100 text-zinc-600",
   };
@@ -44,7 +43,6 @@ type PageProps = {
 };
 
 export default async function AdminUserDetailPage({ params }: PageProps) {
-  await requireAdmin();
   const { id } = await params;
 
   const [{ data: authUserResult }, { data: profile }] = await Promise.all([
@@ -80,7 +78,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
 
   const { data: organizers } = await supabaseAdmin
     .from("organizers")
-    .select("id, name, bio, photo, banner, website, status, visibility, created_at")
+    .select("id, name, slug, bio, photo, banner, website, status, visibility, created_at")
     .eq("user_id", id)
     .order("created_at", { ascending: false });
 
@@ -145,10 +143,10 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:px-6">
+      <header>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <Link href="/admin/users" className="text-xs font-black uppercase tracking-wide text-violet-600 hover:text-violet-700">
+            <Link href="/admin/users" className="text-xs font-black uppercase tracking-wide text-orange-600 hover:text-orange-700">
               Back to users
             </Link>
             <h1 className="mt-2 text-3xl font-black tracking-tight">{fullName}</h1>
@@ -171,7 +169,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           ["Donation Total", money(donationsTotal)],
           ["Ticket Revenue", money(ticketRevenue)],
         ].map(([label, value]) => (
-          <div key={label} className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm">
+          <div key={label} className="rounded-xl border border-zinc-200 bg-white p-5">
             <p className="text-xs font-black uppercase tracking-wide text-zinc-400">{label}</p>
             <p className="mt-2 text-2xl font-black text-zinc-950">{value}</p>
           </div>
@@ -179,7 +177,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-        <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
+        <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
           <h2 className="text-xl font-black">Profile Information</h2>
           <dl className="mt-5 grid gap-4 text-sm">
             {[
@@ -199,7 +197,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           </dl>
         </div>
 
-        <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
+        <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
           <h2 className="text-xl font-black">Activity Summary</h2>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {[
@@ -210,7 +208,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
               ["Purchased total", money(ticketPurchaseTotal)],
               ["Tickets sold on owned events", `${ticketSales.reduce((sum, order) => sum + Number(order.quantity ?? 0), 0)}`],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-xl bg-zinc-50 p-4 ring-1 ring-zinc-200/70">
+              <div key={label} className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
                 <p className="text-xs font-black uppercase tracking-wide text-zinc-400">{label}</p>
                 <p className="mt-1 text-lg font-black text-zinc-950">{value}</p>
               </div>
@@ -219,7 +217,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
         <SectionHeader title="Organizers Owned By User" href="/admin/organizers" action="Moderate organizers" />
         <div className="mt-5 grid gap-3">
           {organizerRows.length === 0 ? (
@@ -232,7 +230,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                 <p className="mt-2 text-xs font-bold uppercase text-zinc-400">{organizer.status ?? "pending"} / {organizer.visibility ?? "public"}</p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Link href={`/organizers/${organizer.id}`} className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-black text-zinc-700 hover:bg-zinc-50">View Organizer</Link>
+                <Link href={`/org/${organizer.slug ?? organizer.id}`} className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-black text-zinc-700 hover:bg-zinc-50">View Organizer</Link>
                 <Link href={`/organizers/${organizer.id}/edit`} className="rounded-lg border border-orange-200 px-3 py-2 text-xs font-black text-orange-700 hover:bg-orange-50">Edit</Link>
               </div>
             </div>
@@ -242,8 +240,6 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
 
       <TwoColumnSection
         leftTitle="Events Through Organizers"
-        leftAction="View Events"
-        leftHref="/admin/events"
         rightTitle="Fundraisers Through Organizers"
         rightAction="View Fundraisers"
         rightHref="/admin/fundraisers"
@@ -254,8 +250,6 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
               key={event.id}
               title={event.title}
               detail={`${organizerNameById[event.organizer_id] ?? "Organizer"} / ${event.status ?? "approved"} / ${dateLabel(event.event_date)}`}
-              href={event.slug ? `/events/${event.slug}` : undefined}
-              label="View"
             />
           ))}
         </div>
@@ -293,8 +287,6 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                 key={order.id}
                 title={eventRelation?.title || "Ticket order"}
                 detail={`${order.quantity} ticket(s) / ${money(order.total_amount)} / ${order.status}`}
-                href={eventRelation?.slug ? `/events/${eventRelation.slug}` : undefined}
-                label="Event"
               />
             );
           })}
@@ -308,14 +300,14 @@ function SectionHeader({ title, href, action }: { title: string; href?: string; 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <h2 className="text-xl font-black">{title}</h2>
-      {href && action && <Link href={href} className="text-sm font-black text-violet-700 hover:text-violet-800">{action}</Link>}
+      {href && action && <Link href={href} className="text-sm font-black text-orange-700 hover:text-orange-800">{action}</Link>}
     </div>
   );
 }
 
 function Empty({ label }: { label: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-5 py-8 text-center text-sm font-semibold text-zinc-500">
+    <div className="px-5 py-8 text-center text-sm font-semibold text-zinc-500">
       {label}
     </div>
   );
@@ -366,11 +358,11 @@ function TwoColumnSection({
 }) {
   return (
     <section className="grid gap-6 xl:grid-cols-2">
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
         <SectionHeader title={leftTitle} href={leftHref} action={leftAction} />
         <div className="mt-5">{children[0]}</div>
       </div>
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
         <SectionHeader title={rightTitle} href={rightHref} action={rightAction} />
         <div className="mt-5">{children[1]}</div>
       </div>

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const BADGE_STYLES: Record<string, string> = {
   verified: "bg-emerald-100 text-emerald-700",
-  top: "bg-violet-100 text-violet-700",
+  top: "bg-orange-100 text-orange-700",
   revenue: "bg-amber-100 text-amber-700",
   suspended: "bg-red-100 text-red-600",
   pending: "bg-amber-100 text-amber-700",
@@ -76,7 +76,7 @@ export function RoleBadge({
   className?: string;
 }) {
   const styles: Record<string, string> = {
-    admin: "bg-violet-100 text-violet-700",
+    admin: "bg-zinc-900 text-white",
     organizer: "bg-orange-100 text-orange-700",
     user: "bg-zinc-100 text-zinc-600",
   };

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import os from "os";
 
 // isDev is true only when BOTH environment signals agree this is not production.
 // VERCEL_ENV is injected by Vercel's build infrastructure and cannot be
@@ -7,6 +8,24 @@ import type { NextConfig } from "next";
 const isDev =
   process.env.NODE_ENV !== "production" &&
   process.env.VERCEL_ENV !== "production";
+
+// Auto-detects this machine's LAN IPv4 address(es) so the dev server accepts
+// HMR/websocket requests when reached from another device on the network
+// (e.g. testing on a phone at http://192.168.x.x:PORT). Re-evaluated on every
+// dev server start, so it stays correct across network changes (new wifi,
+// DHCP lease renewal, etc.) without manual edits. Dev-only.
+function getLocalNetworkIPs(): string[] {
+  const ips: string[] = [];
+  const interfaces = os.networkInterfaces();
+  for (const addresses of Object.values(interfaces)) {
+    for (const addr of addresses ?? []) {
+      if (addr.family === "IPv4" && !addr.internal) {
+        ips.push(addr.address);
+      }
+    }
+  }
+  return ips;
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseOrigin = supabaseUrl ? new URL(supabaseUrl).origin : "";
@@ -42,6 +61,7 @@ const cspDirectives = [
     "https://seatgeekimages.com",
     "https://images.gofundme.com",
     "https://d2g8igdw686xgo.cloudfront.net",
+    "https://upload.wikimedia.org",
     "https://*.tile.openstreetmap.org",
     "https://*.stripe.com",
     "https://*.link.com",
@@ -69,7 +89,7 @@ const cspDirectives = [
     "https://ipwho.is",
     isDev ? "ws:" : "",
     isDev ? "http://localhost:*" : "",
-    isDev ? "http://127.0.0.1:*" : "",
+    isDev ? "http://127.0.0.4:*" : "",
   ],
   [
     "frame-src",
@@ -98,6 +118,12 @@ const cspDirectives = [
   .join("; ");
 
 const nextConfig: NextConfig = {
+  // Lets the dev server accept HMR/websocket requests when reached over the
+  // local network (e.g. testing on a phone). IPs are auto-detected per
+  // machine/network rather than hardcoded, so this doesn't go stale when the
+  // laptop's IP changes between sessions. Dev-only — has no effect in
+  // production builds.
+  allowedDevOrigins: isDev ? getLocalNetworkIPs() : undefined,
   images: {
     remotePatterns: [
       // Unsplash – used for hero images and fallbacks
@@ -108,15 +134,34 @@ const nextConfig: NextConfig = {
       // External event sources
       { protocol: "https", hostname: "img.evbuc.com" },
       { protocol: "https", hostname: "s1.ticketm.net" },
+      { protocol: "https", hostname: "seatgeek.com" },
+      { protocol: "https", hostname: "*.seatgeek.com" },
       { protocol: "https", hostname: "seatgeekimages.com" },
+      { protocol: "https", hostname: "*.seatgeekimages.com" },
       { protocol: "https", hostname: "images.gofundme.com" },
       { protocol: "https", hostname: "d2g8igdw686xgo.cloudfront.net" },
+      // Wikimedia Commons – TopDestinations landmark photos
+      { protocol: "https", hostname: "upload.wikimedia.org" },
       // Google / misc avatars that may appear in reviews/testimonials
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
       { protocol: "https", hostname: "*.googleusercontent.com" },
     ],
     // Allow unoptimised fallback for blobs (editor-uploaded media)
     dangerouslyAllowSVG: false,
+  },
+  async redirects() {
+    return [
+      {
+        source: "/organizations/:slug*",
+        destination: "/org/:slug*",
+        permanent: true,
+      },
+      {
+        source: "/fundraisers",
+        destination: "/",
+        permanent: true,
+      },
+    ];
   },
   async headers() {
     return [

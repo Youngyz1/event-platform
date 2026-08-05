@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.fund4agoodcause.com"),
   title: "Organizers — Fund4Good",
   description: "Discover event organizers and causes on Fund4Good.",
+  alternates: {
+    canonical: "https://www.fund4agoodcause.com/organizers",
+  },
   openGraph: {
     title: "Organizers — Fund4Good",
     description: "Discover event organizers and causes on Fund4Good.",
@@ -64,11 +67,13 @@ async function getOrganizerStats(ids: string[]) {
 function enrichOrganizers(
   organizers: Array<{
     id: string;
+    slug?: string | null;
     name: string;
     bio: string | null;
     photo: string | null;
     banner: string | null;
     status: string | null;
+    org_type?: string | null;
     follower_offset?: number;
     events_offset?: number;
   }>,
@@ -76,11 +81,13 @@ function enrichOrganizers(
 ): OrganizerCardData[] {
   return organizers.map((org) => ({
     id: org.id,
+    slug: org.slug,
     name: org.name,
     bio: org.bio,
     photo: org.photo,
     banner: org.banner,
     status: org.status,
+    org_type: org.org_type,
     eventCount: (stats.get(org.id)?.events ?? 0) + (org.events_offset ?? 0),
     fundraiserCount: stats.get(org.id)?.fundraisers ?? 0,
     followerCount: (stats.get(org.id)?.followers ?? 0) + (org.follower_offset ?? 0),
@@ -110,7 +117,7 @@ export default async function OrganizersDirectoryPage({
     adminClient.from("platform_settings").select("key, value").in("key", HOMEPAGE_SETTING_KEYS),
     adminClient.from("organizers").select("id", { count: "exact", head: true }).eq("status", "verified").eq("visibility", "public").is("deleted_at", null),
     adminClient.from("events").select("id", { count: "exact", head: true }).eq("visibility", "public").eq("status", "approved").is("deleted_at", null),
-    adminClient.from("fundraisers").select("raised").is("deleted_at", null)
+    adminClient.from("fundraisers").select("raised").eq("status", "published").is("deleted_at", null)
   ]);
 
   const cms = getHomepageSettings(cmsRows);
@@ -190,7 +197,7 @@ export default async function OrganizersDirectoryPage({
       >
         <div className="absolute inset-0 bg-black/65" />
         <div className="relative w-full max-w-4xl text-white">
-          <span className="inline-block rounded-full bg-violet-600/30 border border-violet-500/40 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-violet-300 backdrop-blur-sm">
+          <span className="inline-block rounded-full bg-orange-600/30 border border-orange-500/40 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-orange-300 backdrop-blur-sm">
             {cms.organizersHeroEyebrow}
           </span>
           <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
@@ -198,7 +205,7 @@ export default async function OrganizersDirectoryPage({
             {cms.organizersHeroHeadlineLine2 && (
               <>
                 <br />
-                <span className="text-violet-400">{cms.organizersHeroHeadlineLine2}</span>
+                <span className="text-orange-400">{cms.organizersHeroHeadlineLine2}</span>
               </>
             )}
           </h1>
@@ -292,7 +299,7 @@ export default async function OrganizersDirectoryPage({
 
         {/* ── Pagination Section (Step 5) ── */}
         {enriched.length > 0 && (
-          <div className="mt-12 flex justify-center border-t border-zinc-150 pt-8">
+          <div className="mt-12 flex justify-center border-t border-zinc-200 pt-8">
             <PublicPagination
               currentPage={page}
               totalPages={totalPages}

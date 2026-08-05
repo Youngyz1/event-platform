@@ -598,7 +598,7 @@ export async function getUserDetail(
 
   const { data: organizers } = await supabaseAdmin
     .from('organizers')
-    .select('id, name, status, created_at')
+    .select('id, name, slug, status, created_at')
     .eq('user_id', id)
     .order('created_at', { ascending: false });
 
@@ -629,7 +629,6 @@ export async function getUserDetail(
         title: event.title,
         detail: 'Event created',
         at: event.created_at,
-        href: event.slug ? `/events/${event.slug}` : undefined,
       });
     }
 
@@ -689,6 +688,7 @@ export async function getUserDetail(
     organizers: (organizers ?? []).map((o) => ({
       id: o.id,
       name: o.name,
+      slug: o.slug ?? null,
       status: o.status ?? 'pending',
       created_at: o.created_at,
     })),

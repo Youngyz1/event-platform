@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.fund4agoodcause.com"),
   title: "Privacy Policy — Fund4Good",
   description: "Read Fund4Good's privacy policy.",
+  alternates: {
+    canonical: "https://www.fund4agoodcause.com/privacy",
+  },
   openGraph: {
     title: "Privacy Policy — Fund4Good",
     description: "Read Fund4Good's privacy policy.",
@@ -54,10 +57,10 @@ function slugify(value: string) {
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen bg-white text-zinc-950">
-      <section className="border-b border-zinc-200 bg-zinc-50 px-4 py-10 sm:px-6">
+      <section className="border-b border-zinc-100 px-4 py-10 sm:px-6">
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-bold text-zinc-500">Help Center</p>
-          <div className="mt-5 max-w-2xl rounded-full border border-zinc-200 bg-white px-5 py-3 text-sm font-semibold text-zinc-500 shadow-sm">
+          <p className="text-sm font-medium text-zinc-500">Help Center</p>
+          <div className="mt-5 max-w-2xl rounded-full border border-zinc-200 px-5 py-3 text-sm text-zinc-500">
             Search help articles
           </div>
         </div>
@@ -66,8 +69,8 @@ export default function PrivacyPage() {
       <section className="px-4 py-10 sm:px-6 sm:py-14">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[280px_1fr]">
           <aside className="lg:sticky lg:top-24 lg:self-start">
-            <p className="text-sm font-black text-zinc-500">Help Center</p>
-            <p className="mt-2 text-sm font-black uppercase tracking-wide text-orange-600">
+            <p className="text-sm font-semibold text-zinc-500">Help Center</p>
+            <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-orange-600">
               Terms and policies
             </p>
             <nav className="mt-6 max-h-[calc(100vh-180px)] space-y-2 overflow-auto pr-2 text-sm">
@@ -75,7 +78,7 @@ export default function PrivacyPage() {
                 <a
                   key={section}
                   href={`#${slugify(section)}`}
-                  className="block rounded-lg px-3 py-2 font-semibold text-zinc-600 transition hover:bg-orange-50 hover:text-orange-700"
+                  className="block rounded-lg px-3 py-2 font-medium text-zinc-600 transition hover:bg-orange-50 hover:text-orange-700"
                 >
                   {index + 1}. {section}
                 </a>
@@ -84,17 +87,17 @@ export default function PrivacyPage() {
           </aside>
 
           <article className="max-w-4xl">
-            <div className="border-b border-zinc-200 pb-8">
-              <p className="text-sm font-black uppercase tracking-wide text-orange-600">
+            <div className="border-b border-zinc-100 pb-8">
+              <p className="text-sm font-semibold uppercase tracking-wide text-orange-600">
                 Terms and policies
               </p>
-              <h1 className="mt-3 text-4xl font-black leading-tight sm:text-5xl">
+              <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
                 Fund4Good Privacy Policy
               </h1>
-              <p className="mt-4 text-base font-semibold text-zinc-500">
+              <p className="mt-4 text-base text-zinc-500">
                 Last Updated: June 3, 2026
               </p>
-              <p className="mt-6 text-lg leading-8 text-zinc-700">
+              <p className="mt-6 text-lg leading-8 text-zinc-600">
                 This Privacy Policy explains how Fund4Good collects, uses, discloses,
                 transfers, stores, and protects personal information when people use our
                 event discovery, ticketing, registration, and fundraising services.
@@ -103,16 +106,16 @@ export default function PrivacyPage() {
                 Fund4Good is based in the United States. We do not have a public
                 domain yet. Until a permanent domain and legal mailing address are added,
                 you can contact us at{" "}
-                <a className="font-bold text-orange-600" href="mailto:support@fund4good.com">
+                <a className="font-semibold text-orange-600" href="mailto:support@fund4good.com">
                   support@fund4good.com
                 </a>
                 .
               </p>
             </div>
 
-            <div className="mt-8 rounded-lg border border-orange-200 bg-orange-50 p-5">
-              <h2 className="text-lg font-black">In this article</h2>
-              <ol className="mt-4 grid gap-2 text-sm font-semibold text-zinc-700 sm:grid-cols-2">
+            <div className="mt-8">
+              <h2 className="text-sm font-semibold uppercase tracking-wide text-zinc-500">In this article</h2>
+              <ol className="mt-4 grid gap-2 text-sm text-zinc-600 sm:grid-cols-2">
                 {sections.map((section, index) => (
                   <li key={section}>
                     <a className="hover:text-orange-700" href={`#${slugify(section)}`}>
@@ -125,8 +128,8 @@ export default function PrivacyPage() {
 
             <div className="policy-content mt-10 space-y-10 text-base leading-8 text-zinc-700">
               <section id="who-we-are">
-                <h2 className="text-2xl font-black text-zinc-950">1. Who We Are.</h2>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">1.1 Fund4Good Services.</h3>
+                <h2 className="text-xl font-semibold text-zinc-950">1. Who We Are.</h2>
+                <h3 className="mt-5 text-lg font-semibold text-zinc-950">1.1 Fund4Good Services.</h3>
                 <p className="mt-3">
                   Fund4Good is an event and ticketing platform that helps people create,
                   discover, share, register for, and attend live experiences. Our services may
@@ -135,7 +138,7 @@ export default function PrivacyPage() {
                   that we make available through our website, applications, APIs, and other
                   online services.
                 </p>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">1.2 Who's Who.</h3>
+                <h3 className="mt-5 text-lg font-semibold text-zinc-950">1.2 Who's Who.</h3>
                 <p className="mt-3">
                   "Organizer" means a person or business that creates, lists, imports, manages,
                   promotes, or hosts events or fundraisers on Fund4Good. "Consumer" means a
@@ -147,7 +150,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="our-privacy-statement">
-                <h2 className="text-2xl font-black text-zinc-950">2. Our Privacy Statement.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">2. Our Privacy Statement.</h2>
                 <p className="mt-3">
                   This Privacy Policy applies to personal data that can identify, describe,
                   relate to, or reasonably be linked to a person. It does not apply to
@@ -158,8 +161,8 @@ export default function PrivacyPage() {
               </section>
 
               <section id="personal-data-that-we-collect">
-                <h2 className="text-2xl font-black text-zinc-950">3. Personal Data That We Collect.</h2>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">3.1 Information Collected From All Users.</h3>
+                <h2 className="text-xl font-semibold text-zinc-950">3. Personal Data That We Collect.</h2>
+                <h3 className="mt-5 text-lg font-semibold text-zinc-950">3.1 Information Collected From All Users.</h3>
                 <p className="mt-3">
                   We may collect information you provide directly, such as your name, email
                   address, password, account details, event interests, messages, survey
@@ -171,21 +174,21 @@ export default function PrivacyPage() {
                   browser type, device identifiers, operating system, referring pages, pages
                   viewed, search activity, clicks, approximate location, and similar usage data.
                 </p>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">3.2 Information Collected From Organizers.</h3>
+                <h3 className="mt-5 text-lg font-semibold text-zinc-950">3.2 Information Collected From Organizers.</h3>
                 <p className="mt-3">
                   If you create or manage events, we may collect organizer profile details,
                   event details, payout or tax information, phone numbers, billing details,
                   verification information, and information from payment processors, banks, or
                   fraud prevention partners.
                 </p>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">3.3 Information Collected From Consumers.</h3>
+                <h3 className="mt-5 text-lg font-semibold text-zinc-950">3.3 Information Collected From Consumers.</h3>
                 <p className="mt-3">
                   If you buy or register for a ticket, we may collect attendee names, email
                   addresses, order details, payment status, ticket delivery information, answers
                   to organizer registration questions, and other information needed to complete
                   the transaction.
                 </p>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">3.4 Information From Other Sources.</h3>
+                <h3 className="mt-5 text-lg font-semibold text-zinc-950">3.4 Information From Other Sources.</h3>
                 <p className="mt-3">
                   We may receive information from organizers, payment partners, authentication
                   providers, analytics providers, marketing partners, public sources, social
@@ -194,7 +197,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="how-we-use-your-personal-data">
-                <h2 className="text-2xl font-black text-zinc-950">4. How We Use Your Personal Data.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">4. How We Use Your Personal Data.</h2>
                 <p className="mt-3">We may use personal data to:</p>
                 <ul className="mt-3 list-disc space-y-2 pl-6">
                   <li>Provide, operate, personalize, and improve Fund4Good services.</li>
@@ -215,7 +218,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="how-we-disclose-and-transfer-your-personal-data">
-                <h2 className="text-2xl font-black text-zinc-950">5. How We Disclose And Transfer Your Personal Data.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">5. How We Disclose And Transfer Your Personal Data.</h2>
                 <p className="mt-3">
                   We are not in the business of selling personal data. We may disclose personal
                   data to organizers, payment processors, hosting providers, email providers,
@@ -237,7 +240,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="how-we-store-your-personal-data">
-                <h2 className="text-2xl font-black text-zinc-950">6. How We Store Your Personal Data.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">6. How We Store Your Personal Data.</h2>
                 <p className="mt-3">
                   We may store personal data directly or through trusted third-party service
                   providers. We use reasonable administrative, technical, and organizational
@@ -248,7 +251,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="how-you-can-access-update-correct-or-delete-your-personal-data">
-                <h2 className="text-2xl font-black text-zinc-950">
+                <h2 className="text-xl font-semibold text-zinc-950">
                   7. How You Can Access, Update, Correct or Delete Your Personal Data.
                 </h2>
                 <p className="mt-3">
@@ -268,7 +271,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="how-long-we-retain-your-personal-data">
-                <h2 className="text-2xl font-black text-zinc-950">8. How Long We Retain Your Personal Data.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">8. How Long We Retain Your Personal Data.</h2>
                 <p className="mt-3">
                   We retain personal data for as long as reasonably needed to provide the
                   services, maintain records, resolve disputes, prevent fraud, comply with legal
@@ -285,7 +288,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="cookies-pixel-tags-web-storage-and-similar-technologies">
-                <h2 className="text-2xl font-black text-zinc-950">
+                <h2 className="text-xl font-semibold text-zinc-950">
                   9. Cookies, Pixel Tags, Web Storage And Similar Technologies.
                 </h2>
                 <p className="mt-3">
@@ -298,26 +301,26 @@ export default function PrivacyPage() {
               </section>
 
               <section id="your-choices">
-                <h2 className="text-2xl font-black text-zinc-950">10. Your Choices.</h2>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">10.1 Limit The Personal Data You Provide.</h3>
+                <h2 className="text-xl font-semibold text-zinc-950">10. Your Choices.</h2>
+                <h3 className="mt-5 text-lg font-semibold text-zinc-950">10.1 Limit The Personal Data You Provide.</h3>
                 <p className="mt-3">
                   You may browse some parts of Fund4Good without creating an account. Certain
                   features, including buying tickets, receiving ticket confirmations, creating
                   events, and receiving payouts, require personal data.
                 </p>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">10.2 Opt Out From Electronic Communications.</h3>
+                <h3 className="mt-5 text-lg font-semibold text-zinc-950">10.2 Opt Out From Electronic Communications.</h3>
                 <p className="mt-3">
                   You may unsubscribe from marketing emails by using the unsubscribe link in the
                   message or contacting us. Transactional messages, including ticket receipts,
                   password resets, refund updates, event notices, and security alerts, may still
                   be sent when needed to provide the services.
                 </p>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">10.3 Do Not Track.</h3>
+                <h3 className="mt-5 text-lg font-semibold text-zinc-950">10.3 Do Not Track.</h3>
                 <p className="mt-3">
                   We do not currently respond to browser "Do Not Track" signals unless required
                   by applicable law.
                 </p>
-                <h3 className="mt-5 text-xl font-black text-zinc-950">10.4 Targeted Advertising.</h3>
+                <h3 className="mt-5 text-lg font-semibold text-zinc-950">10.4 Targeted Advertising.</h3>
                 <p className="mt-3">
                   Where we use advertising or analytics partners, you may have choices through
                   your browser, device settings, platform settings, or legally required opt-out
@@ -326,7 +329,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="exclusions">
-                <h2 className="text-2xl font-black text-zinc-950">11. Exclusions.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">11. Exclusions.</h2>
                 <p className="mt-3">
                   This Privacy Policy does not apply to websites, services, payment pages,
                   social platforms, or third-party links that Fund4Good does not own or
@@ -336,7 +339,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="children-children-s-online-privacy-protection-act">
-                <h2 className="text-2xl font-black text-zinc-950">
+                <h2 className="text-xl font-semibold text-zinc-950">
                   12. Children - Children's Online Privacy Protection Act.
                 </h2>
                 <p className="mt-3">
@@ -348,7 +351,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="international-privacy-laws">
-                <h2 className="text-2xl font-black text-zinc-950">13. International Privacy Laws.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">13. International Privacy Laws.</h2>
                 <p className="mt-3">
                   Fund4Good is based in the United States. If you use the services from
                   outside the United States, your information may be processed in the United
@@ -358,7 +361,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="changes-to-this-privacy-policy">
-                <h2 className="text-2xl font-black text-zinc-950">14. Changes To This Privacy Policy.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">14. Changes To This Privacy Policy.</h2>
                 <p className="mt-3">
                   We may update this Privacy Policy from time to time. When we do, we will
                   update the "Last Updated" date above. If changes are material, we may provide
@@ -368,7 +371,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="dispute-resolution">
-                <h2 className="text-2xl font-black text-zinc-950">15. Dispute Resolution.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">15. Dispute Resolution.</h2>
                 <p className="mt-3">
                   If you have a privacy question, concern, or complaint, contact us at{" "}
                   <a className="font-bold text-orange-600" href="mailto:support@fund4good.com">
@@ -379,7 +382,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="eea-switzerland-and-uk-only">
-                <h2 className="text-2xl font-black text-zinc-950">16. EEA, Switzerland And UK Only.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">16. EEA, Switzerland And UK Only.</h2>
                 <p className="mt-3">
                   If you are located in the European Economic Area, Switzerland, or the United
                   Kingdom, you may have additional rights under applicable data protection law,
@@ -396,7 +399,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="residents-of-certain-states">
-                <h2 className="text-2xl font-black text-zinc-950">17. Residents Of Certain States.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">17. Residents Of Certain States.</h2>
                 <p className="mt-3">
                   Residents of some U.S. states may have additional privacy rights, including
                   rights to know, access, correct, delete, opt out of certain data uses, limit
@@ -406,7 +409,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="brazil-only">
-                <h2 className="text-2xl font-black text-zinc-950">18. Brazil Only.</h2>
+                <h2 className="text-xl font-semibold text-zinc-950">18. Brazil Only.</h2>
                 <p className="mt-3">
                   If you are located in Brazil, you may have rights under the Lei Geral de
                   Protecao de Dados, including rights to confirm processing, access data, correct
@@ -416,7 +419,7 @@ export default function PrivacyPage() {
               </section>
 
               <section id="notice-for-people-who-don-t-use-Fund4Good-services">
-                <h2 className="text-2xl font-black text-zinc-950">
+                <h2 className="text-xl font-semibold text-zinc-950">
                   19. Notice For People Who Don't Use Fund4Good Services.
                 </h2>
                 <p className="mt-3">
@@ -428,25 +431,24 @@ export default function PrivacyPage() {
               </section>
             </div>
 
-            <div className="mt-12 rounded-lg border border-zinc-200 bg-zinc-50 p-6">
-              <h2 className="text-xl font-black">Still have questions?</h2>
-              <p className="mt-3 text-base leading-7 text-zinc-700">
+            <div className="mt-12 border-t border-zinc-100 pt-8">
+              <h2 className="text-xl font-semibold">Still have questions?</h2>
+              <p className="mt-3 text-base leading-7 text-zinc-600">
                 Contact Fund4Good support for privacy requests, account questions, and policy
                 questions.
               </p>
               <a
                 href="mailto:support@fund4good.com"
-                className="mt-5 inline-flex rounded-full bg-orange-600 px-6 py-3 font-black text-white transition hover:bg-orange-700"
+                className="mt-5 inline-flex rounded-full bg-orange-600 px-6 py-3 font-semibold text-white transition hover:bg-orange-700"
               >
                 Contact us
               </a>
             </div>
 
-            <div className="mt-10 flex flex-wrap gap-x-5 gap-y-3 border-t border-zinc-200 pt-6 text-sm font-bold text-zinc-500">
+            <div className="mt-10 flex flex-wrap gap-x-5 gap-y-3 border-t border-zinc-100 pt-6 text-sm font-medium text-zinc-500">
               <Link href="/about" className="hover:text-orange-600">About</Link>
-              <Link href="/events" className="hover:text-orange-600">Events</Link>
+              <Link href="/fundraisers" className="hover:text-orange-600">Fundraisers</Link>
               <Link href="/organizers" className="hover:text-orange-600">Organizers</Link>
-              <Link href="/create-event" className="hover:text-orange-600">Create events</Link>
               <Link href="/signup" className="hover:text-orange-600">Create account</Link>
             </div>
           </article>

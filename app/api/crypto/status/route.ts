@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { getNowPaymentsConfig } from "@/lib/cryptoPayment";
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set.");
@@ -116,7 +117,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Missing orderId or paymentId parameter." }, { status: 400 });
     }
 
-    if (!process.env.NOWPAYMENTS_API_KEY) {
+    const nowPayments = getNowPaymentsConfig();
+    if (!nowPayments.apiKey) {
       return NextResponse.json({ error: "NOWPayments is not configured." }, { status: 500 });
     }
 
@@ -140,9 +142,9 @@ export async function GET(req: NextRequest) {
     let nowpaymentsStatus = "waiting";
     let invoiceIdFromPayment = queryId;
 
-    const paymentRes = await fetch(`https://api.nowpayments.io/v1/payment/${queryId}`, {
+    const paymentRes = await fetch(`${nowPayments.baseUrl}/payment/${queryId}`, {
       headers: {
-        "x-api-key": process.env.NOWPAYMENTS_API_KEY,
+        "x-api-key": nowPayments.apiKey,
       },
     });
 
@@ -154,9 +156,9 @@ export async function GET(req: NextRequest) {
       }
     } else {
       // If payment status fails, check GET /v1/invoice/:id
-      const invoiceRes = await fetch(`https://api.nowpayments.io/v1/invoice/${queryId}`, {
+      const invoiceRes = await fetch(`${nowPayments.baseUrl}/invoice/${queryId}`, {
         headers: {
-          "x-api-key": process.env.NOWPAYMENTS_API_KEY,
+          "x-api-key": nowPayments.apiKey,
         },
       });
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { createNotification } from "@/lib/notifications";
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -64,6 +65,23 @@ export async function POST(req: NextRequest) {
       .from("follows")
       .insert({ follower_id: user.id, following_id: targetUserId });
     following = true;
+
+    const { data: followerProfile } = await supabaseAdmin
+      .from("public_profiles")
+      .select("display_name")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    await createNotification({
+      userId: targetUserId,
+      actorId: user.id,
+      type: "follow",
+      title: "New follower",
+      body: `${followerProfile?.display_name || "Someone"} started following you.`,
+      link: `/profile/${user.id}`,
+      relatedType: "profile",
+      relatedId: user.id,
+    });
   }
 
   // ── Return updated follower count ─────────────────────────────────────────

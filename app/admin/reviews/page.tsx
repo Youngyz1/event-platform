@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import StarRating from "@/components/StarRating";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 
 type ReviewRow = {
   id: string;
@@ -92,11 +93,11 @@ export default function AdminReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-violet-600">Admin</p>
-        <h1 className="mt-1 text-3xl font-black tracking-tight">Reviews</h1>
-        <p className="mt-2 text-sm font-medium text-zinc-500">Moderate and manage platform reviews.</p>
-      </header>
+      <DashboardPageHeader
+        eyebrow="Admin"
+        title="Reviews"
+        description="Moderate and manage platform reviews."
+      />
 
       <div className="flex gap-2">
         {(["all", "approved", "hidden"] as const).map((filter) => (
@@ -105,7 +106,7 @@ export default function AdminReviewsPage() {
             onClick={() => setStatusFilter(filter)}
             className={`rounded-xl px-4 py-2 text-xs font-black capitalize transition ${
               statusFilter === filter
-                ? "bg-slate-900 text-white"
+                ? "bg-orange-600 text-white"
                 : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
             }`}
           >
@@ -120,10 +121,10 @@ export default function AdminReviewsPage() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-zinc-200/80 bg-white p-5 shadow-sm sm:p-6">
+      <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-500 border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
           </div>
         ) : (
           <div className="overflow-x-auto">

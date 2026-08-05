@@ -34,25 +34,7 @@ const navGroups = [
     label: "Main",
     links: [
       { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Events", href: "/dashboard/events", icon: Calendar },
-      { label: "Fundraisers", href: "/dashboard/fundraisers", icon: Heart },
-      { label: "Organizers", href: "/dashboard/organizers", icon: Building2 },
-    ],
-  },
-  {
-    label: "Commerce",
-    links: [
-      { label: "Attendees", href: "/dashboard/attendees", icon: Users },
-      { label: "Donations", href: "/dashboard/donations", icon: DollarSign },
-      { label: "Products", href: "/dashboard/products", icon: Package },
-      { label: "Tickets", href: "/my-tickets", icon: Ticket },
-    ],
-  },
-  {
-    label: "Insights",
-    links: [
-      { label: "Reports", href: "/dashboard/reports", icon: BarChart2 },
-      { label: "Articles", href: "/dashboard/articles", icon: Newspaper },
+      { label: "Organizations", href: "/dashboard/organizations", icon: Building2 },
     ],
   },
 ];

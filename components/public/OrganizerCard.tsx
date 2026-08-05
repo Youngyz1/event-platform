@@ -1,14 +1,22 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import { CalendarDays, Heart, Users } from "lucide-react";
+import { safeImageSrc } from "@/lib/image-url";
+import LocalBrandedPlaceholder from "@/components/ui/LocalBrandedPlaceholder";
 
 export type OrganizerCardData = {
   id: string;
+  slug?: string | null;
   name: string;
   bio?: string | null;
   photo?: string | null;
   banner?: string | null;
   status?: string | null;
+  org_type?: string | null;
   eventCount?: number;
   fundraiserCount?: number;
   followerCount?: number;
@@ -21,7 +29,24 @@ export default function OrganizerCard({
   organizer: OrganizerCardData;
   featured?: boolean;
 }) {
+  const [bannerError, setBannerError] = useState(false);
+  const [photoError, setPhotoError] = useState(false);
+
   const verified = organizer.status === "verified";
+  const href = organizer.slug
+    ? `/org/${organizer.slug}`
+    : `/organizers/${organizer.id}`;
+
+  const bannerSrc = !bannerError ? safeImageSrc(organizer.banner) : null;
+  const photoSrc = !photoError ? safeImageSrc(organizer.photo) : null;
+
+  const ORG_TYPE_LABELS: Record<string, string> = {
+    nonprofit: "Nonprofit", business: "Business", church: "Church",
+    school: "School", creator: "Creator", community: "Community",
+    government: "Government", restaurant: "Restaurant",
+    sports_club: "Sports Club", other: "Organization",
+  };
+  const orgTypeLabel = ORG_TYPE_LABELS[organizer.org_type ?? "other"] ?? "Organization";
 
   return (
     <article
@@ -29,15 +54,18 @@ export default function OrganizerCard({
         featured ? "border-orange-200 ring-1 ring-orange-100" : "border-zinc-200"
       }`}
     >
-      <div className="relative h-24 bg-gradient-to-br from-zinc-100 to-zinc-200">
-        {organizer.banner && (
-          <img
-            src={organizer.banner}
+      <div className="relative h-24 overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-200">
+        {bannerSrc ? (
+          <Image
+            src={bannerSrc}
             alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover"
+            onError={() => setBannerError(true)}
           />
+        ) : (
+          <LocalBrandedPlaceholder variant="banner" />
         )}
         {featured && (
           <span className="absolute left-3 top-3 rounded-full bg-orange-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
@@ -48,28 +76,32 @@ export default function OrganizerCard({
 
       <div className="flex flex-1 flex-col px-5 pb-5">
         <div className="-mt-10 mb-3">
-          <div className="mx-auto h-16 w-16 overflow-hidden rounded-full border-4 border-white bg-zinc-200 shadow-md sm:mx-0">
-            {organizer.photo ? (
-              <img
-                src={organizer.photo}
+          <div className="relative mx-auto h-16 w-16 overflow-hidden rounded-full border-4 border-white bg-zinc-200 shadow-md sm:mx-0">
+            {photoSrc ? (
+              <Image
+                src={photoSrc}
                 alt={organizer.name}
-                loading="lazy"
-                decoding="async"
-                className="h-full w-full object-cover"
+                fill
+                sizes="64px"
+                className="object-cover"
+                onError={() => setPhotoError(true)}
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-2xl font-black text-zinc-400">
-                {organizer.name?.charAt(0).toUpperCase()}
-              </span>
+              <LocalBrandedPlaceholder variant="avatar" title={organizer.name} />
             )}
           </div>
         </div>
 
         <div className="flex-1 text-center sm:text-left">
-          <h3 className="flex items-center justify-center gap-2 text-lg font-black text-zinc-950 sm:justify-start">
-            <span className="line-clamp-1">{organizer.name}</span>
+          <h3 className="flex min-w-0 items-center justify-center gap-2 text-lg font-black text-zinc-950 sm:justify-start">
+            <span className="line-clamp-1 min-w-0">{organizer.name}</span>
             <VerifiedBadge verified={verified} size="sm" />
           </h3>
+          {organizer.org_type && organizer.org_type !== "other" && (
+            <span className="mt-1 inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold text-zinc-600">
+              {orgTypeLabel}
+            </span>
+          )}
           <p className="mt-2 line-clamp-2 min-h-[2.5rem] text-sm text-zinc-600">
             {organizer.bio || "Community organizer on Fund4Good."}
           </p>
@@ -97,7 +129,7 @@ export default function OrganizerCard({
         </div>
 
         <Link
-          href={`/organizers/${organizer.id}`}
+          href={href}
           className="mt-5 block w-full rounded-xl bg-zinc-950 py-3 text-center text-sm font-black text-white transition group-hover:bg-orange-600"
         >
           View profile

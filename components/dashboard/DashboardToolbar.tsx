@@ -49,7 +49,7 @@ export default function DashboardToolbar({
   showSearch = true,
 }: Props) {
   return (
-    <div className="sticky top-0 z-20 space-y-3 rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm sm:rounded-2xl sm:p-5">
+    <div className="sticky top-0 z-20 space-y-3 rounded-xl border border-zinc-200 bg-white p-4 sm:p-5">
       {tabs && onTabChange && (
         <div className="flex gap-1 overflow-x-auto pb-1">
           {tabs.map((tab) => (
@@ -58,9 +58,9 @@ export default function DashboardToolbar({
               type="button"
               onClick={() => onTabChange(tab.value)}
               className={cn(
-                "shrink-0 rounded-xl px-3 py-2 text-xs font-black transition",
+                "shrink-0 rounded-full px-3 py-2 text-xs font-black transition",
                 activeTab === tab.value
-                  ? "bg-violet-600 text-white"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               )}
             >

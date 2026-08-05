@@ -29,10 +29,10 @@ export default function DashboardTableCard({
   isEmpty = false,
 }: Props) {
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-200/80 bg-white shadow-sm sm:rounded-2xl">
+    <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : isEmpty && empty ? (
         <div className="p-4 sm:p-6">{empty}</div>

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServer } from "@/lib/supabase-server";
-import { tagCryptoOrderId } from "@/lib/cryptoPayment";
+import { tagCryptoOrderId, getNowPaymentsConfig } from "@/lib/cryptoPayment";
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set.");
@@ -48,7 +48,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!process.env.NOWPAYMENTS_API_KEY) {
+    const nowPayments = getNowPaymentsConfig();
+    if (!nowPayments.apiKey) {
       return NextResponse.json(
         { error: "NOWPayments is not configured on the server." },
         { status: 500 }
@@ -136,10 +137,10 @@ export async function POST(req: NextRequest) {
     });
 
     // Call NOWPayments API to create invoice
-    const nowpaymentsRes = await fetch("https://api.nowpayments.io/v1/invoice", {
+    const nowpaymentsRes = await fetch(`${nowPayments.baseUrl}/invoice`, {
       method: "POST",
       headers: {
-        "x-api-key": process.env.NOWPAYMENTS_API_KEY,
+        "x-api-key": nowPayments.apiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({

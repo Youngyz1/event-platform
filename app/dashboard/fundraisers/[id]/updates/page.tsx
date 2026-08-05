@@ -31,7 +31,7 @@ export default async function FundraiserUpdatesPage({
 
   return (
     <div className="space-y-6">
-      <header className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <header>
         <Link
           href="/dashboard/fundraisers"
           className="text-sm font-black text-emerald-700 hover:text-emerald-800"

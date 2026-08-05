@@ -27,6 +27,9 @@ export async function generateMetadata({
   return {
     title: `${name} - Fund4Good`,
     description: `View ${name}'s public Fund4Good profile.`,
+    alternates: {
+      canonical: `https://www.fund4agoodcause.com/profile/${id}`,
+    },
   };
 }
 

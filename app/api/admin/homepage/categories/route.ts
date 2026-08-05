@@ -62,7 +62,6 @@ export async function POST(req: NextRequest) {
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     revalidatePath("/", "page");
-    revalidatePath("/events", "page");
     return NextResponse.json({ success: true, category: data });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 400 });
@@ -97,7 +96,6 @@ export async function PATCH(req: NextRequest) {
 
     // Otherwise, update a single category
     revalidatePath("/", "page");
-    revalidatePath("/events", "page");
     const { id, name, icon, position, is_visible } = body;
 
     if (!id) {
@@ -147,6 +145,5 @@ export async function DELETE(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   revalidatePath("/", "page");
-  revalidatePath("/events", "page");
   return NextResponse.json({ success: true });
 }

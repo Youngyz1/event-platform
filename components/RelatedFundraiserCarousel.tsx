@@ -11,7 +11,6 @@ import {
   CarouselItem,
 } from "@/components/ui/carousel";
 import {
-  FUNDRAISER_FALLBACK_IMAGE,
   type RelatedFundraiser,
   type RelatedFundraiserCategory,
 } from "@/lib/fundraiser-data";
@@ -40,9 +39,6 @@ export default function RelatedFundraiserCarousel({
   const [fundraisers, setFundraisers] = useState(initialFundraisers);
   const [isLoading, setIsLoading] = useState(false);
 
-  // "Happening worldwide" is the set already rendered server-side on page
-  // load — switching back to it re-uses that data rather than re-fetching a
-  // fresh shuffle, so only the other four categories hit the API route.
   useEffect(() => {
     if (category === "worldwide") {
       setFundraisers(initialFundraisers);
@@ -117,7 +113,7 @@ export default function RelatedFundraiserCarousel({
             : "No fundraisers match this filter right now."}
         </p>
       ) : (
-        <div className="relative">
+        <div className="relative w-full overflow-hidden">
           <Carousel setApi={setApi} opts={{ align: "start", dragFree: true }}>
             <CarouselContent className="-ml-4 sm:-ml-6">
               {fundraisers.map((related) => (
@@ -129,9 +125,9 @@ export default function RelatedFundraiserCarousel({
                     slug={related.slug}
                     title={related.title}
                     organizer={related.organizer}
-                    raised={Number(related.raised_amount ?? related.raised ?? 0)}
+                    raised={Number(related.raised ?? 0)}
                     goal={Number(related.goal ?? 0)}
-                    image={related.image_url || related.banner || FUNDRAISER_FALLBACK_IMAGE}
+                    image={related.image_url || related.banner || null}
                   />
                 </CarouselItem>
               ))}

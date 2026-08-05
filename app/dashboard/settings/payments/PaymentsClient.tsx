@@ -130,7 +130,7 @@ export default function PaymentsClient({
         title="Linked Bank Account"
         description="The account where payouts will be directly transferred."
       >
-        <div className="flex items-center gap-4 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 p-6 text-zinc-500">
+        <div className="flex items-center gap-4 p-1 text-zinc-500">
           <Landmark size={24} className="shrink-0 text-zinc-400" />
           <div>
             <p className="text-sm font-bold text-zinc-700">No bank account linked</p>
@@ -140,15 +140,11 @@ export default function PaymentsClient({
       </SettingsCard>
 
       {/* Payout History / Empty State */}
-      <div className="rounded-xl border border-zinc-200/80 bg-white p-5 sm:rounded-2xl sm:p-6">
-        <h3 className="text-lg font-bold tracking-tight text-zinc-900 sm:text-xl font-sans">
-          Payout Ledger
-        </h3>
-        <p className="mt-1 text-xs text-zinc-500 sm:text-sm">
-          A list of all disbursements processed to your account.
-        </p>
-
-        <div className="mt-6 flex flex-col items-center justify-center rounded-xl border border-zinc-100 p-8 text-center bg-zinc-50/20">
+      <SettingsCard
+        title="Payout Ledger"
+        description="A list of all disbursements processed to your account."
+      >
+        <div className="flex flex-col items-center justify-center py-4 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-orange-500">
             <Sparkles size={20} />
           </div>
@@ -157,7 +153,7 @@ export default function PaymentsClient({
             Once you connect with Stripe and record ticket sales, your payout ledger will accumulate records here.
           </p>
         </div>
-      </div>
+      </SettingsCard>
     </div>
   );
 }

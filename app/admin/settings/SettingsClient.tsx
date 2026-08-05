@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SettingsCard } from "@/components/ui/settings-card";
+import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import {
   PLATFORM_SETTING_GROUPS,
   mergePlatformSettings,
@@ -10,7 +11,7 @@ import {
 } from "@/types/platform-settings";
 
 const fieldClass =
-  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-200";
+  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-orange-500 focus:ring-1 focus:ring-orange-200";
 
 export default function SettingsClient() {
   const [settings, setSettings] = useState<Record<PlatformSettingKey, string>>(
@@ -63,13 +64,11 @@ export default function SettingsClient() {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:px-6">
-        <p className="text-xs font-black uppercase tracking-wide text-violet-600">Admin</p>
-        <h1 className="mt-1 text-3xl font-black tracking-tight">Platform Settings</h1>
-        <p className="mt-2 text-sm font-medium text-zinc-500">
-          Configure platform fees, moderation rules, email, branding, and security.
-        </p>
-      </header>
+      <DashboardPageHeader
+        eyebrow="Admin"
+        title="Platform Settings"
+        description="Configure platform fees, moderation rules, email, branding, and security."
+      />
 
       {toast && (
         <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700">
@@ -84,7 +83,7 @@ export default function SettingsClient() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-violet-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
         </div>
       ) : (
         <form onSubmit={handleSave} className="space-y-6">
@@ -109,7 +108,7 @@ export default function SettingsClient() {
                           type="checkbox"
                           checked={settings[field.key] === "true"}
                           onChange={(e) => onChange(field.key, e.target.checked ? "true" : "false")}
-                          className="h-5 w-5 rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                          className="h-5 w-5 rounded border-zinc-300 text-orange-600 focus:ring-orange-500"
                         />
                       </label>
                     ) : field.inputType === "color" ? (
@@ -120,7 +119,7 @@ export default function SettingsClient() {
                         <div className="flex items-center gap-3">
                           <input
                             type="color"
-                            value={settings[field.key] || "#7c3aed"}
+                            value={settings[field.key] || "#ea580c"}
                             onChange={(e) => onChange(field.key, e.target.value)}
                             className="h-11 w-14 cursor-pointer rounded-lg border border-zinc-200 bg-white p-1"
                           />
@@ -129,7 +128,7 @@ export default function SettingsClient() {
                             value={settings[field.key]}
                             onChange={(e) => onChange(field.key, e.target.value)}
                             className={fieldClass}
-                            placeholder="#7c3aed"
+                            placeholder="#ea580c"
                           />
                         </div>
                       </label>
@@ -159,7 +158,7 @@ export default function SettingsClient() {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-xl bg-violet-600 px-6 py-3 text-sm font-black text-white hover:bg-violet-700 disabled:opacity-60"
+              className="rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save Settings"}
             </button>

@@ -18,7 +18,7 @@ const tabs = [
     icon: LayoutDashboard,
     title: "Dashboard Overview",
     description:
-      "A centralized hub to monitor your events, fundraisers, revenue, and ticket sales — all in real-time.",
+      "A centralized hub to monitor your fundraisers, donations, and revenue — all in real-time.",
     isNew: false,
     backgroundPositionX: 0,
     backgroundPositionY: 0,
@@ -26,9 +26,9 @@ const tabs = [
   },
   {
     icon: Rocket,
-    title: "Launch Events Fast",
+    title: "Launch Campaigns Fast",
     description:
-      "Create, publish, and sell tickets for any event in minutes. Manage capacity, seats, and pricing with ease.",
+      "Create, publish, and share a fundraiser in minutes. Set your goal and start collecting donations right away.",
     isNew: false,
     backgroundPositionX: 80,
     backgroundPositionY: 20,
@@ -177,11 +177,11 @@ export default function RuixenFeaturedImageSection() {
           <h2 className="mt-5 text-4xl font-black tracking-tight text-zinc-900 dark:text-white md:text-5xl lg:text-6xl">
             Everything you need to{" "}
             <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
-              run great events.
+              run a great fundraiser.
             </span>
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg text-zinc-500 dark:text-zinc-400">
-            Fund4Good gives organizers a complete toolkit — from live dashboards to fundraiser campaigns — all in one place.
+            Fund4Good gives organizers a complete toolkit — from live dashboards to donor management — all in one place.
           </p>
         </div>
 

@@ -1,69 +1,30 @@
-import type { Metadata } from "next";
-import { supabase } from "@/lib/supabase";
-import { notFound } from "next/navigation";
-import OrganizerProfileClient from "./OrganizerProfileClient";
-import { normalizeImageUrl } from "@/lib/image-url";
+/**
+ * app/organizers/[id]/page.tsx
+ * Legacy route — kept for backward compatibility.
+ * Redirects all traffic to the canonical Organization profile at /org/[slug].
+ */
+import { redirect, notFound } from "next/navigation";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}): Promise<Metadata> {
-  const { id } = await params;
-  const { data: organizer } = await supabase
-    .from("organizers")
-    .select("name, bio, photo, banner")
-    .eq("id", id)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  const title = organizer?.name
-    ? `${organizer.name} — Fund4Good`
-    : "Organizer — Fund4Good";
-  const description =
-    organizer?.bio ||
-    "View this organizer's events and fundraisers on Fund4Good.";
-  const image = normalizeImageUrl(
-    organizer?.photo || organizer?.banner,
-    "/og-image.png"
-  );
-
-  return {
-    metadataBase: new URL("https://www.fund4agoodcause.com"),
-    title,
-    description,
-    openGraph: {
-      title,
-      description,
-      url: `https://www.fund4agoodcause.com/organizers/${id}`,
-      siteName: "Fund4Good",
-      images: [{ url: image, width: 1200, height: 630, alt: organizer?.name || "Organizer" }],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [image],
-    },
-  };
-}
-
-export default async function OrganizerProfilePage({
+export default async function LegacyOrganizerRedirectPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { data: organizer } = await supabase
+  const supabase = createSupabaseAdmin();
+
+  const { data } = await supabase
     .from("organizers")
-    .select("*")
+    .select("slug")
     .eq("id", id)
     .is("deleted_at", null)
-    .maybeSingle(); // Use maybeSingle instead of single so that if it returns null, we handle it elegantly rather than throwing.
+    .maybeSingle();
 
-  if (!organizer) {
-    return notFound();
+  if (data?.slug) {
+    // 308 Permanent Redirect — preserves the HTTP method
+    redirect(`/org/${data.slug}`);
   }
 
-  return <OrganizerProfileClient id={id} initialData={organizer} />;
+  return notFound();
 }

@@ -8,7 +8,7 @@ export default async function NewDashboardFundraiserPage() {
 
   if (ctx.organizerIds.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center shadow-sm">
+      <div className="px-6 py-16 text-center">
         <p className="text-2xl font-black text-zinc-950">Create an organizer profile first</p>
         <p className="mx-auto mt-2 max-w-md text-sm font-medium text-zinc-500">
           You need an organizer profile before you can create or import fundraisers.
@@ -25,7 +25,7 @@ export default async function NewDashboardFundraiserPage() {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-2xl border border-zinc-200/80 bg-white px-5 py-4 shadow-sm sm:px-6">
+      <header>
         <p className="text-xs font-black uppercase tracking-wide text-emerald-600">Fundraisers</p>
         <h1 className="mt-1 text-3xl font-black tracking-tight">Create New Fundraiser</h1>
         <p className="mt-1 text-sm font-medium text-zinc-500">
@@ -36,7 +36,7 @@ export default async function NewDashboardFundraiserPage() {
       <div className="grid gap-5 md:grid-cols-2">
         <Link
           href="/create-fundraiser"
-          className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          className="rounded-xl border border-emerald-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-emerald-300"
         >
           <p className="text-sm font-black uppercase tracking-wide text-emerald-600">Create</p>
           <h2 className="mt-2 text-2xl font-black text-zinc-950">Create from scratch</h2>
@@ -49,8 +49,8 @@ export default async function NewDashboardFundraiserPage() {
         </Link>
 
         <Link
-          href="/import?mode=fundraisers"
-          className="rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
+          href="/import"
+          className="rounded-xl border border-zinc-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-emerald-200"
         >
           <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Import</p>
           <h2 className="mt-2 text-2xl font-black text-zinc-950">Import fundraiser</h2>

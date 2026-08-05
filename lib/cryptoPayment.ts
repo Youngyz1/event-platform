@@ -40,3 +40,31 @@ export function parseCryptoOrderId(
 
   return { kind: kind as CryptoPaymentKind, id };
 }
+
+export interface NowPaymentsConfig {
+  baseUrl: string;
+  apiKey: string | undefined;
+  ipnSecret: string | undefined;
+}
+
+/**
+ * Resolves which NOWPayments environment a request should talk to.
+ * NOWPAYMENTS_ENV defaults to production whenever unset — sandbox mode is
+ * strictly opt-in per deployment, so existing production behavior for real
+ * users is untouched unless NOWPAYMENTS_ENV=sandbox is explicitly set.
+ */
+export function getNowPaymentsConfig(): NowPaymentsConfig {
+  const isSandbox = process.env.NOWPAYMENTS_ENV === "sandbox";
+
+  return isSandbox
+    ? {
+        baseUrl: "https://api-sandbox.nowpayments.io/v1",
+        apiKey: process.env.NOWPAYMENTS_SANDBOX_API_KEY,
+        ipnSecret: process.env.NOWPAYMENTS_SANDBOX_IPN_SECRET,
+      }
+    : {
+        baseUrl: "https://api.nowpayments.io/v1",
+        apiKey: process.env.NOWPAYMENTS_API_KEY,
+        ipnSecret: process.env.NOWPAYMENTS_IPN_SECRET,
+      };
+}

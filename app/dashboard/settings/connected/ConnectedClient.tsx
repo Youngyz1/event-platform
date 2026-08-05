@@ -22,21 +22,12 @@ export default function ConnectedClient({
 }) {
   const [integrations, setIntegrations] = useState<Integration[]>([
     {
-      id: "eventbrite",
-      name: "Eventbrite Sync",
-      description: "Synchronize events, draft ticket lists, and manage check-ins directly from Eventbrite.",
-      icon: RefreshCw,
-      status: "connected",
-      link: "/dashboard/eventbrite-sync",
-      connectedEmail: "partner-eventbrite@example.com",
-    },
-    {
       id: "gofundme",
       name: "GoFundMe Sync",
       description: "Import fundraising logs, donation history, and host campaigns from GoFundMe pages.",
       icon: Link2,
       status: "connected",
-      link: "/dashboard/gofundme-sync",
+      link: "/gofundme-sync",
       connectedEmail: "gofundme-sync-user@example.com",
     },
     {
@@ -119,7 +110,7 @@ export default function ConnectedClient({
           return (
             <div
               key={app.id}
-              className="flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-5 shadow-xs transition hover:shadow-sm sm:rounded-2xl"
+              className="flex flex-col justify-between rounded-xl border border-zinc-200 bg-white p-5 transition sm:rounded-2xl"
             >
               <div>
                 {/* Header */}

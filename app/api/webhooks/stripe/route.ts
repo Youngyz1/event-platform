@@ -4,8 +4,8 @@ import { createClient } from "@supabase/supabase-js";
 import { recordDonationFromSession } from "@/lib/donations";
 import { processDonationReceipt } from "@/lib/receipt";
 import { processDonationCertificate } from "@/lib/certificate";
-import { Resend } from "resend";
 import { markProductOrderPaid } from "@/lib/productOrders";
+import { createNotification } from "@/lib/notifications";
 
 // Service role: bypasses RLS — admin operations only
 const supabaseAdmin = createClient(
@@ -37,7 +37,7 @@ export async function notifyOrganizerOfTicketPurchase(params: {
   try {
     const { data: event } = await supabaseAdmin
       .from("events")
-      .select("title, organizer_id, user_id")
+      .select("title, slug, organizer_id, user_id")
       .eq("id", params.eventId)
       .maybeSingle();
 
@@ -68,15 +68,9 @@ export async function notifyOrganizerOfTicketPurchase(params: {
 
     const preferences = profileRes.data?.preferences as Record<string, any> | null;
     const email = userRes.data?.user?.email;
-    const notify = preferences?.notify_ticket_purchase !== false;
+    const shouldEmail = preferences?.notify_ticket_purchase !== false && Boolean(email);
 
-    if (notify && email) {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      await resend.emails.send({
-        from: "Fund4Good <contact@fund4agoodcause.com>",
-        to: email,
-        subject: `New ticket purchase for ${event.title} 🎟️`,
-        html: `
+    const emailHtml = `
           <!DOCTYPE html>
           <html>
           <head>
@@ -145,9 +139,20 @@ export async function notifyOrganizerOfTicketPurchase(params: {
             </table>
           </body>
           </html>
-        `
-      });
-    }
+        `;
+
+    await createNotification({
+      userId: ownerUserId,
+      type: "ticket_purchase",
+      title: "New ticket purchase",
+      body: `${params.buyerName || "Someone"} bought ${params.quantity} ticket(s) for "${event.title}" ($${params.totalAmount.toFixed(2)} ${params.currency.toUpperCase()}).`,
+      link: event.slug ? `/events/${event.slug}` : null,
+      relatedType: "event",
+      relatedId: params.eventId,
+      email: shouldEmail
+        ? { to: email!, subject: `New ticket purchase for ${event.title} 🎟️`, html: emailHtml }
+        : null,
+    });
   } catch (err) {
     console.error("[webhook] Failed to notify organizer of ticket purchase:", err);
   }
@@ -164,7 +169,7 @@ export async function notifyOrganizerOfDonation(params: {
   try {
     const { data: fundraiser } = await supabaseAdmin
       .from("fundraisers")
-      .select("title, organizer_id, user_id")
+      .select("title, slug, organizer_id, user_id")
       .eq("id", params.fundraiserId)
       .maybeSingle();
 
@@ -195,15 +200,9 @@ export async function notifyOrganizerOfDonation(params: {
 
     const preferences = profileRes.data?.preferences as Record<string, any> | null;
     const email = userRes.data?.user?.email;
-    const notify = preferences?.notify_donation !== false;
+    const shouldEmail = preferences?.notify_donation !== false && Boolean(email);
 
-    if (notify && email) {
-      const resend = new Resend(process.env.RESEND_API_KEY);
-      await resend.emails.send({
-        from: "Fund4Good <contact@fund4agoodcause.com>",
-        to: email,
-        subject: `New donation received for ${fundraiser.title} 💚`,
-        html: `
+    const emailHtml = `
           <!DOCTYPE html>
           <html>
           <head>
@@ -276,9 +275,20 @@ export async function notifyOrganizerOfDonation(params: {
             </table>
           </body>
           </html>
-        `
-      });
-    }
+        `;
+
+    await createNotification({
+      userId: ownerUserId,
+      type: "donation",
+      title: "New donation received",
+      body: `${params.donorName || "Anonymous"} donated $${params.amount.toFixed(2)} ${params.currency.toUpperCase()} to "${fundraiser.title}".`,
+      link: fundraiser.slug ? `/fundraisers/${fundraiser.slug}` : null,
+      relatedType: "fundraiser",
+      relatedId: params.fundraiserId,
+      email: shouldEmail
+        ? { to: email!, subject: `New donation received for ${fundraiser.title} 💚`, html: emailHtml }
+        : null,
+    });
   } catch (err) {
     console.error("[webhook] Failed to notify organizer of donation:", err);
   }

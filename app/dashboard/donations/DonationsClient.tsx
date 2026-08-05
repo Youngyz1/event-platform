@@ -9,9 +9,10 @@ import DashboardToolbar from "@/components/dashboard/DashboardToolbar";
 import DashboardTableCard from "@/components/dashboard/DashboardTableCard";
 import DashboardDrawer from "@/components/dashboard/DashboardDrawer";
 import DashboardEmptyState from "@/components/dashboard/DashboardEmptyState";
-import { formatAdminDate, formatAdminMoney } from "@/lib/admin-query";
+import { formatAdminMoney } from "@/lib/admin-query";
 import { useDashboardParams } from "@/hooks/use-dashboard-params";
 import { useDashboardExport } from "@/hooks/use-dashboard-export";
+import { cn } from "@/lib/utils";
 import type {
   DashboardDonationDetail,
   DashboardDonationRow,
@@ -24,6 +25,17 @@ const statusBadge: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
   failed: "bg-red-100 text-red-600",
 };
+
+function formatDonationDateTime(value?: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
 
 type CampaignOption = { id: string; title: string };
 
@@ -211,7 +223,19 @@ function DonationsClientInner() {
             </thead>
             <tbody className="divide-y divide-zinc-100">
               {rows.map((row) => (
-                <tr key={row.id} className="cursor-pointer hover:bg-zinc-50/70" onClick={() => openDrawer(row.id)}>
+                <tr
+                  key={row.id}
+                  role="button"
+                  tabIndex={0}
+                  className="cursor-pointer hover:bg-zinc-50/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-500 focus-visible:-outline-offset-2"
+                  onClick={() => openDrawer(row.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      openDrawer(row.id);
+                    }
+                  }}
+                >
                   <td className="py-3 pr-4 pl-4">
                     <p className="font-black text-zinc-900">{row.donor_name}</p>
                     {row.donor_email && <p className="text-xs text-zinc-500">{row.donor_email}</p>}
@@ -229,7 +253,7 @@ function DonationsClientInner() {
                       {row.status}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-zinc-500">{formatAdminDate(row.created_at)}</td>
+                  <td className="px-4 py-3 text-zinc-500">{formatDonationDateTime(row.created_at)}</td>
                 </tr>
               ))}
             </tbody>
@@ -248,16 +272,18 @@ function DonationsClientInner() {
         ) : drawerItem ? (
           <div className="space-y-6">
             <section className="grid grid-cols-2 gap-3">
-              {[
-                ["Campaign", drawerItem.campaign_title],
-                ["Amount", formatAdminMoney(drawerItem.amount)],
-                ["Status", drawerItem.status],
-                ["Date", formatAdminDate(drawerItem.created_at)],
-                ["Email", drawerItem.donor_email || "—"],
-              ].map(([label, value]) => (
-                <div key={String(label)} className="rounded-xl bg-zinc-50 p-3 ring-1 ring-zinc-200/70">
+              {(
+                [
+                  { label: "Campaign", value: drawerItem.campaign_title, capitalize: false },
+                  { label: "Amount", value: formatAdminMoney(drawerItem.amount), capitalize: false },
+                  { label: "Status", value: drawerItem.status, capitalize: true },
+                  { label: "Date", value: formatDonationDateTime(drawerItem.created_at), capitalize: false },
+                  { label: "Email", value: drawerItem.donor_email || "—", capitalize: false },
+                ] satisfies { label: string; value: string; capitalize: boolean }[]
+              ).map(({ label, value, capitalize }) => (
+                <div key={label} className="min-w-0 rounded-xl bg-zinc-50 p-3 ring-1 ring-zinc-200/70">
                   <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400">{label}</p>
-                  <p className="mt-1 font-black capitalize text-zinc-950">{value}</p>
+                  <p className={cn("mt-1 break-words font-black text-zinc-950", capitalize && "capitalize")}>{value}</p>
                 </div>
               ))}
             </section>

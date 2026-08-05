@@ -12,8 +12,6 @@ export interface HomepageCmsItem {
   slug: string;
   is_homepage_featured: boolean;
   homepage_position: number;
-  event_date?: string;
-  city?: string;
   goal?: number;
   raised?: number;
 }

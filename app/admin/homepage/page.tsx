@@ -36,30 +36,7 @@ export default async function AdminHomepagePage() {
     console.error("Failed to load settings:", err);
   }
 
-  // 2. Fetch featured events (safe query, handle missing position column)
-  let featuredEvents: HomepageCmsItem[] = [];
-  try {
-    const { data, error } = await supabase
-      .from("events")
-      .select("id, title, slug, is_homepage_featured, homepage_position, event_date, city")
-      .eq("is_homepage_featured", true)
-      .order("homepage_position", { ascending: true });
-
-    if (error) {
-      if (error.message.includes("homepage_position") || error.message.includes("is_homepage_featured")) {
-        migrationMissing = true;
-        featuredEvents = [];
-      } else {
-        throw error;
-      }
-    } else {
-      featuredEvents = (data ?? []) as HomepageCmsItem[];
-    }
-  } catch (err) {
-    console.error("Failed to load featured events:", err);
-  }
-
-  // 3. Fetch featured fundraisers (safe query)
+  // 2. Fetch featured fundraisers (safe query)
   let featuredFundraisers: HomepageCmsItem[] = [];
   try {
     const { data, error } = await supabase
@@ -82,7 +59,7 @@ export default async function AdminHomepagePage() {
     console.error("Failed to load featured fundraisers:", err);
   }
 
-  // 4. Fetch homepage categories (gracefully handle table missing)
+  // 3. Fetch homepage categories (gracefully handle table missing)
   let categories: HomepageCmsCategory[] = [];
   try {
     const { data, error } = await supabase
@@ -100,7 +77,7 @@ export default async function AdminHomepagePage() {
     console.error("Failed to load homepage categories:", err);
   }
 
-  // 5. Fetch testimonials
+  // 4. Fetch testimonials
   let testimonials: HomepageTestimonial[] = [];
   try {
     const { data, error } = await supabase
@@ -118,7 +95,7 @@ export default async function AdminHomepagePage() {
     console.error("Failed to load homepage testimonials:", err);
   }
 
-  // 6. Fetch sponsors
+  // 5. Fetch sponsors
   let sponsors: HomepageSponsor[] = [];
   try {
     const { data, error } = await supabase
@@ -140,7 +117,6 @@ export default async function AdminHomepagePage() {
     <div className="pb-16">
       <HomepageCmsTabs
         initialSettings={getHomepageSettings(settingsRows)}
-        initialEvents={featuredEvents}
         initialFundraisers={featuredFundraisers}
         initialCategories={categories}
         initialTestimonials={testimonials}

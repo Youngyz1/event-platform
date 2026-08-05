@@ -1,5 +1,6 @@
 import Image from "next/image";
 import type { PublicSponsor } from "@/types/homepage-cms";
+import { safeImageSrc } from "@/lib/image-url";
 
 interface Props {
   sponsors: PublicSponsor[];
@@ -22,12 +23,14 @@ export default function HomepageSponsors({ sponsors }: Props) {
 
         <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10">
           {sponsors.map((sponsor) => {
-            const logo = sponsor.logo_url ? (
+            const logoSrc = safeImageSrc(sponsor.logo_url);
+            const logo = logoSrc ? (
               <Image
-                src={sponsor.logo_url}
+                src={logoSrc}
                 alt={sponsor.name}
                 width={160}
                 height={48}
+                sizes="(max-width: 640px) 140px, 160px"
                 className="max-h-10 w-auto max-w-[140px] object-contain grayscale transition duration-300 hover:grayscale-0 sm:max-h-12 sm:max-w-[160px]"
               />
             ) : (

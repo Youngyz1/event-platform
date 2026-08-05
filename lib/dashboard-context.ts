@@ -21,8 +21,8 @@ const supabaseAdmin = createClient(
 
 export type DashboardContext = {
   user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>;
-  organizers: { id: string; name: string; bio?: string | null; photo?: string | null }[];
-  organizer: { id: string; name: string; bio?: string | null; photo?: string | null } | null;
+  organizers: { id: string; name: string; bio?: string | null; photo?: string | null; slug?: string | null; org_type?: string | null; status?: string | null }[];
+  organizer: { id: string; name: string; bio?: string | null; photo?: string | null; slug?: string | null; org_type?: string | null; status?: string | null } | null;
   organizerIds: string[];
   organizerId: string | null;
 };
@@ -46,7 +46,7 @@ export const getDashboardContext = cache(async (): Promise<DashboardContext | nu
 
   const { data: organizers } = await supabaseAdmin
     .from('organizers')
-    .select('id, name, bio, photo')
+    .select('id, name, bio, photo, slug, org_type, status')
     .eq('user_id', user.id)
     .order('created_at', { ascending: true });
 
