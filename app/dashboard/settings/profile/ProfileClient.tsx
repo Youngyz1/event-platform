@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { SettingsCard } from "@/components/ui/settings-card";
+import ImageUploadWithCrop from "@/components/ui/ImageUploadWithCrop";
 import { type AccountInfo, type AddressInfo, defaultAddress } from "@/types/settings";
 
 const stateOptions = [
@@ -14,7 +15,7 @@ const stateOptions = [
 const countryOptions = ["United States", "Canada", "United Kingdom", "Nigeria", "Germany", "France"];
 
 const fieldClass =
-  "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100 sm:rounded-xl sm:px-4 sm:py-2.5";
+  "w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden transition focus:border-brand-600 focus:ring-4 focus:ring-brand-100 sm:rounded-xl sm:px-4 sm:py-2.5";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -46,8 +47,7 @@ export default function ProfileClient({
   const [email, setEmail] = useState(initialEmail);
   const [displayName, setDisplayName] = useState(initialDisplayName);
   const [profilePhoto, setProfilePhoto] = useState(initialProfilePhoto);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  
+
   const [accountInfo, setAccountInfo] = useState<AccountInfo>({
     ...initialAccountInfo,
     homeAddress: { ...defaultAddress, ...initialAccountInfo.homeAddress },
@@ -80,33 +80,13 @@ export default function ProfileClient({
     }));
   }
 
-  function handlePhoto(file: File | null) {
-    setPhotoFile(file);
-    if (file) setProfilePhoto(URL.createObjectURL(file));
-  }
-
-  async function uploadProfilePhoto() {
-    if (!photoFile) return profilePhoto;
-
-    const ext = photoFile.name.split(".").pop() || "jpg";
-    const fileName = `${userId}/profile-${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from("profile-images")
-      .upload(fileName, photoFile, { upsert: true });
-
-    if (uploadError) throw new Error(uploadError.message);
-
-    const { data } = supabase.storage.from("profile-images").getPublicUrl(fileName);
-    return data.publicUrl;
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError("");
 
     try {
-      const nextPhoto = await uploadProfilePhoto();
+      const nextPhoto = profilePhoto;
       const nextDisplayName =
         displayName.trim() ||
         [accountInfo.firstName, accountInfo.lastName].filter(Boolean).join(" ").trim();
@@ -157,7 +137,7 @@ export default function ProfileClient({
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {toast && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+        <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-800">
           {toast}
         </div>
       )}
@@ -181,23 +161,29 @@ export default function ProfileClient({
             )}
           </div>
           <div className="space-y-2">
-            <p className="text-sm font-bold text-zinc-800">
-              {photoFile ? photoFile.name : "No file chosen"}
-            </p>
             <div className="flex gap-2">
-              <label className="inline-flex cursor-pointer items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-black text-zinc-700 transition hover:bg-zinc-50">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handlePhoto(e.target.files?.[0] || null)}
-                  className="sr-only"
-                />
-                Choose File
-              </label>
+              <ImageUploadWithCrop
+                bucket="profile-images"
+                folder={userId}
+                aspectRatio={1}
+                shape="round"
+                onUploaded={setProfilePhoto}
+                onError={setError}
+                renderTrigger={({ open, uploading }) => (
+                  <button
+                    type="button"
+                    onClick={open}
+                    disabled={uploading}
+                    className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-xs font-black text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-50"
+                  >
+                    {uploading ? "Uploading..." : "Choose Photo"}
+                  </button>
+                )}
+              />
               {profilePhoto && (
                 <button
                   type="button"
-                  onClick={() => { setProfilePhoto(""); setPhotoFile(null); }}
+                  onClick={() => setProfilePhoto("")}
                   className="rounded-xl border border-red-200 bg-white px-4 py-2.5 text-xs font-black text-red-600 transition hover:bg-red-50"
                 >
                   Remove
@@ -277,7 +263,7 @@ export default function ProfileClient({
                 onClick={() => setActiveAddressTab(tab)}
                 className={`relative shrink-0 whitespace-nowrap px-4 py-2.5 text-xs font-black capitalize transition-all duration-200 ${
                   activeAddressTab === tab
-                    ? "text-orange-600 border-b-2 border-orange-500"
+                    ? "text-brand-700 border-b-2 border-brand-600"
                     : "text-zinc-500 hover:text-zinc-800"
                 }`}
               >
@@ -348,7 +334,7 @@ export default function ProfileClient({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-60 transition"
+          className="rounded-xl bg-brand-700 px-6 py-3 text-sm font-black text-white hover:bg-brand-800 disabled:opacity-60 transition"
         >
           {saving ? "Saving Changes..." : "Save Profile Details"}
         </button>
@@ -375,7 +361,7 @@ export default function ProfileClient({
                 </a>
                 <a
                   href="/create-organizer"
-                  className="rounded-lg bg-orange-600 px-3.5 py-2 text-xs font-black text-white hover:bg-orange-700 transition"
+                  className="rounded-lg bg-brand-700 px-3.5 py-2 text-xs font-black text-white hover:bg-brand-800 transition"
                 >
                   Edit Profile
                 </a>
@@ -386,7 +372,7 @@ export default function ProfileClient({
               <p className="text-xs text-zinc-500">You don&apos;t have an organizer profile yet.</p>
               <a
                 href="/create-organizer"
-                className="rounded-lg bg-orange-600 px-3.5 py-2 text-xs font-black text-white hover:bg-orange-700 transition shrink-0"
+                className="rounded-lg bg-brand-700 px-3.5 py-2 text-xs font-black text-white hover:bg-brand-800 transition shrink-0"
               >
                 Add Organizer Profile
               </a>

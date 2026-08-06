@@ -4,10 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { normalizeImageUrl, isValidImageUrl } from "@/lib/image-url";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import SearchableSelect from "@/components/ui/SearchableSelect";
+import ImageUploadWithCrop from "@/components/ui/ImageUploadWithCrop";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
+
+// Matches the detail-page hero (FundraiserMediaSlider)'s mobile ratio — the
+// single ratio every uploaded photo is cropped to.
+const FUNDRAISER_PHOTO_ASPECT_RATIO = 4 / 5;
 
 
 function generateSlug(title: string) {
@@ -183,9 +187,7 @@ export default function EditFundraiserPage() {
   }
 
   function cleanGalleryItems() {
-    return galleryItems
-      .filter((item) => isValidImageUrl(item.url))
-      .map((item) => ({ ...item, url: normalizeImageUrl(item.url, "") }));
+    return galleryItems.filter((item) => item.url.trim() !== "");
   }
 
   async function handleSubmit(event: React.FormEvent) {
@@ -200,11 +202,6 @@ export default function EditFundraiserPage() {
         throw new Error("Choose an organizer profile that belongs to your account.");
       }
 
-      const sanitizedBanner = normalizeImageUrl(form.banner, "");
-      if (form.banner.trim() && !sanitizedBanner) {
-        throw new Error("Banner URL must be a direct image link from an approved host (not a Google Images or search page URL).");
-      }
-
       const { error: updateError } = await supabase
         .from("fundraisers")
         .update({
@@ -214,7 +211,7 @@ export default function EditFundraiserPage() {
           organizer_id: selectedOrganizer.id,
           goal: Number(form.goal),
           raised: Number(form.raised) || 0,
-          banner: sanitizedBanner,
+          banner: form.banner,
           video_url: form.video_url || null,
           story: form.story,
           category: form.category || "Other",
@@ -288,7 +285,22 @@ export default function EditFundraiserPage() {
             <input value={form.goal} onChange={(event) => update("goal", event.target.value)} required type="number" min="1" placeholder="Goal" className={inputClass} />
             <input value={form.raised} onChange={(event) => update("raised", event.target.value)} type="number" min="0" placeholder="Raised so far" className={inputClass} />
           </div>
-          <input value={form.banner} onChange={(event) => update("banner", event.target.value)} placeholder="Banner image URL" className={inputClass} />
+          <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+            <h2 className="mb-4 text-lg font-black text-zinc-950">Banner Image</h2>
+            <div className="flex items-center gap-4">
+              {form.banner && (
+                <img src={form.banner} alt="Banner" className="h-20 w-32 shrink-0 rounded-xl border border-zinc-200 object-cover" />
+              )}
+              <ImageUploadWithCrop
+                bucket="fundraiser-media"
+                folder="fundraiser-photos"
+                aspectRatio={FUNDRAISER_PHOTO_ASPECT_RATIO}
+                onUploaded={(url) => update("banner", url)}
+                onError={setError}
+                label={form.banner ? "Change banner" : "Upload banner"}
+              />
+            </div>
+          </div>
           <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
             <div className="mb-4">
               <h2 className="text-lg font-black text-zinc-950">Banner Carousel Photos</h2>
@@ -300,15 +312,22 @@ export default function EditFundraiserPage() {
               {galleryItems.map((item, index) => (
                 <div key={index} className="rounded-2xl border border-zinc-200 bg-white p-4">
                   <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
-                    <label className="block">
-                <span className="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-500">Photo {index + 1} URL</span>
-                <input
-                  value={item.url}
-                  onChange={(event) => updateGalleryItem(index, "url", event.target.value)}
-                  placeholder="https://..."
-                  className={inputClass}
-                />
-              </label>
+                    <div>
+                      <span className="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-500">Photo {index + 1}</span>
+                      <div className="flex items-center gap-3">
+                        {item.url && (
+                          <img src={item.url} alt="" className="h-14 w-14 shrink-0 rounded-lg border border-zinc-200 object-cover" />
+                        )}
+                        <ImageUploadWithCrop
+                          bucket="fundraiser-media"
+                          folder="fundraiser-photos"
+                          aspectRatio={FUNDRAISER_PHOTO_ASPECT_RATIO}
+                          onUploaded={(url) => updateGalleryItem(index, "url", url)}
+                          onError={setError}
+                          label={item.url ? "Change photo" : "Upload photo"}
+                        />
+                      </div>
+                    </div>
                     <label className="block">
                       <span className="mb-2 block text-xs font-black uppercase tracking-wide text-zinc-500">Caption</span>
                       <input

@@ -51,4 +51,5 @@ There is no configured test runner (`playwright` is a devDependency but there is
 ### Misc
 
 - `scratch/` is git-ignored from lint and is where throwaway debug/simulation scripts belong (e.g. webhook simulators) — don't put real code there.
-- `hooks/` holds shared client hooks (`use-dashboard-export`, `use-dashboard-params`, `use-image-upload`); prefer these over ad hoc `useState`/`useEffect` duplication in dashboard/admin pages.
+- `hooks/` holds shared client hooks (`use-dashboard-export`, `use-dashboard-params`); prefer these over ad hoc `useState`/`useEffect` duplication in dashboard/admin pages.
+- Every image upload point (fundraiser cover/gallery, user avatar, organizer photo/banner, admin hero fan) goes through `components/ui/ImageUploadWithCrop.tsx` — a file picker + zoom/reposition crop modal (react-easy-crop) that uploads the cropped result via `lib/uploads.ts`'s `uploadPublicFile`. Pass the aspect ratio that matches where the image is actually displayed; don't add a new raw `<input type="file">` for images without checking whether this component fits first.

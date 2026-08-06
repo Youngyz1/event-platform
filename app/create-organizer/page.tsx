@@ -8,7 +8,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getImageDimensions, MIN_BANNER_WIDTH, MIN_BANNER_HEIGHT } from "@/lib/image-dimensions";
+import ImageUploadWithCrop from "@/components/ui/ImageUploadWithCrop";
+import { MIN_BANNER_WIDTH, MIN_BANNER_HEIGHT } from "@/lib/image-dimensions";
 
 type FormState = {
   name:     string;
@@ -42,13 +43,11 @@ const ORG_TYPES = [
 export default function CreateOrganizerPage() {
   const router = useRouter();
 
-  const [checking,      setChecking]      = useState(true);
-  const [loading,       setLoading]       = useState(false);
-  const [error,         setError]         = useState("");
-  const [photoFile,     setPhotoFile]     = useState<File | null>(null);
-  const [photoPreview,  setPhotoPreview]  = useState<string | null>(null);
-  const [bannerFile,    setBannerFile]    = useState<File | null>(null);
-  const [bannerPreview, setBannerPreview] = useState<string | null>(null);
+  const [checking,   setChecking]   = useState(true);
+  const [loading,    setLoading]    = useState(false);
+  const [error,      setError]      = useState("");
+  const [photoUrl,   setPhotoUrl]   = useState<string | null>(null);
+  const [bannerUrl,  setBannerUrl]  = useState<string | null>(null);
 
   const [form, setForm] = useState<FormState>({
     name:     "",
@@ -111,48 +110,6 @@ export default function CreateOrganizerPage() {
     setForm((prev) => ({ ...prev, visibility }));
   }
 
-  function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    setPhotoFile(file);
-    if (file) setPhotoPreview(URL.createObjectURL(file));
-  }
-
-  async function handleBanner(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    if (!file) {
-      setBannerFile(null);
-      return;
-    }
-
-    try {
-      const { width, height } = await getImageDimensions(file);
-      if (width < MIN_BANNER_WIDTH || height < MIN_BANNER_HEIGHT) {
-        setError(
-          `Banner image is too small (${width}x${height}px). Use at least ${MIN_BANNER_WIDTH}x${MIN_BANNER_HEIGHT}px so it doesn't blur when stretched across the banner.`
-        );
-        e.target.value = "";
-        return;
-      }
-    } catch {
-      // Couldn't read dimensions — let it through rather than block upload.
-    }
-
-    setError("");
-    setBannerFile(file);
-    setBannerPreview(URL.createObjectURL(file));
-  }
-
-  async function uploadFile(file: File, bucket: string, prefix: string) {
-    const ext      = file.name.split(".").pop();
-    const fileName = `${prefix}-${Date.now()}.${ext}`;
-    const { error: uploadErr } = await supabase.storage
-      .from(bucket)
-      .upload(fileName, file);
-    if (uploadErr) throw new Error(uploadErr.message);
-    const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
-    return data.publicUrl;
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -196,11 +153,8 @@ export default function CreateOrganizerPage() {
         }
       }
 
-      let photo:  string | null = null;
-      let banner: string | null = null;
-
-      if (photoFile)  photo  = await uploadFile(photoFile,  "organizer-images",  "photo");
-      if (bannerFile) banner = await uploadFile(bannerFile, "organizer-banners", "banner");
+      const photo = photoUrl;
+      const banner = bannerUrl;
 
       const payload = {
         name:     form.name,
@@ -241,7 +195,7 @@ export default function CreateOrganizerPage() {
   if (checking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-zinc-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
       </main>
     );
   }
@@ -252,7 +206,7 @@ export default function CreateOrganizerPage() {
 
         {/* Header */}
         <div className="mb-12">
-          <p className="mb-3 font-semibold text-orange-500">
+          <p className="mb-3 font-semibold text-brand-600">
             Organization Setup
           </p>
           <h1 className="text-5xl font-black">
@@ -274,33 +228,33 @@ export default function CreateOrganizerPage() {
           {/* BANNER */}
           <div>
             <label className="mb-3 block font-semibold text-sm text-zinc-700">Banner Image (Min 1200x300px)</label>
-            <div
-              className="relative flex h-48 w-full cursor-pointer items-center justify-center overflow-hidden rounded-2xl bg-zinc-200 hover:opacity-90 transition"
-              style={
-                bannerPreview
-                  ? { backgroundImage: `url(${bannerPreview})`, backgroundSize: "cover", backgroundPosition: "center" }
-                  : {}
-              }
-            >
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleBanner}
-                className="hidden"
-                id="banner-upload"
-              />
-              <label
-                htmlFor="banner-upload"
-                className="absolute inset-0 flex cursor-pointer items-center justify-center"
-              >
-                {!bannerPreview && (
-                  <div className="text-center">
-                    <p className="mb-2 text-4xl">🖼️</p>
-                    <p className="font-semibold text-zinc-500">Click to upload banner</p>
-                  </div>
-                )}
-              </label>
-            </div>
+            <ImageUploadWithCrop
+              bucket="organizer-banners"
+              folder="banner"
+              aspectRatio={MIN_BANNER_WIDTH / MIN_BANNER_HEIGHT}
+              minWidth={MIN_BANNER_WIDTH}
+              minHeight={MIN_BANNER_HEIGHT}
+              onUploaded={setBannerUrl}
+              onError={setError}
+              renderTrigger={({ open }) => (
+                <div
+                  onClick={open}
+                  className="relative flex h-48 w-full cursor-pointer items-center justify-center overflow-hidden rounded-2xl bg-zinc-200 hover:opacity-90 transition"
+                  style={
+                    bannerUrl
+                      ? { backgroundImage: `url(${bannerUrl})`, backgroundSize: "cover", backgroundPosition: "center" }
+                      : {}
+                  }
+                >
+                  {!bannerUrl && (
+                    <div className="text-center">
+                      <p className="mb-2 text-4xl">🖼️</p>
+                      <p className="font-semibold text-zinc-500">Click to upload banner</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            />
           </div>
 
           {/* PHOTO */}
@@ -308,26 +262,31 @@ export default function CreateOrganizerPage() {
             <label className="mb-3 block font-semibold text-sm text-zinc-700">Profile Logo / Photo</label>
             <div className="flex items-center gap-8">
               <div className="flex h-28 w-28 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-white bg-zinc-200 shadow">
-                {photoPreview ? (
-                  <img src={photoPreview} alt="preview" className="h-full w-full object-cover" />
+                {photoUrl ? (
+                  <img src={photoUrl} alt="preview" className="h-full w-full object-cover" />
                 ) : (
                   <span className="text-4xl text-zinc-400">🏢</span>
                 )}
               </div>
               <div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handlePhoto}
-                  className="hidden"
-                  id="photo-upload"
+                <ImageUploadWithCrop
+                  bucket="organizer-images"
+                  folder="photo"
+                  aspectRatio={1}
+                  shape="round"
+                  onUploaded={setPhotoUrl}
+                  onError={setError}
+                  renderTrigger={({ open, uploading }) => (
+                    <button
+                      type="button"
+                      onClick={open}
+                      disabled={uploading}
+                      className="cursor-pointer rounded-xl bg-zinc-100 px-5 py-3 font-semibold transition hover:bg-zinc-200 disabled:opacity-50"
+                    >
+                      {uploading ? "Uploading..." : "Upload Logo"}
+                    </button>
+                  )}
                 />
-                <label
-                  htmlFor="photo-upload"
-                  className="cursor-pointer rounded-xl bg-zinc-100 px-5 py-3 font-semibold transition hover:bg-zinc-200"
-                >
-                  Upload Logo
-                </label>
                 <p className="mt-2 text-sm text-zinc-400">JPG, PNG recommended</p>
               </div>
             </div>
@@ -344,7 +303,7 @@ export default function CreateOrganizerPage() {
                 required
                 type="text"
                 placeholder="Greenwood Alliance"
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
               />
             </div>
 
@@ -355,7 +314,7 @@ export default function CreateOrganizerPage() {
                 value={form.org_type}
                 onChange={handleChange}
                 required
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
               >
                 {ORG_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
@@ -369,7 +328,7 @@ export default function CreateOrganizerPage() {
           {/* SLUG */}
           <div>
             <label className="mb-3 block font-semibold text-sm text-zinc-700">URL Handle / Slug *</label>
-            <div className="flex rounded-2xl border border-zinc-300 overflow-hidden bg-white focus-within:border-orange-500">
+            <div className="flex rounded-2xl border border-zinc-300 overflow-hidden bg-white focus-within:border-brand-600">
               <span className="flex items-center bg-zinc-100 px-4 text-sm font-semibold text-zinc-500 border-r border-zinc-200 select-none">
                 /org/
               </span>
@@ -396,7 +355,7 @@ export default function CreateOrganizerPage() {
               required
               type="email"
               placeholder="contact@greenwoodalliance.org"
-              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
             />
             <p className="mt-2 text-xs text-zinc-400">Exposed publicly so users and donors can contact you.</p>
           </div>
@@ -410,7 +369,7 @@ export default function CreateOrganizerPage() {
               onChange={handleChange}
               rows={4}
               placeholder="Tell people about your organization's mission and cause..."
-              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
             />
           </div>
 
@@ -431,7 +390,7 @@ export default function CreateOrganizerPage() {
                     name="visibility"
                     checked={form.visibility === value}
                     onChange={() => setVisibility(value as FormState["visibility"])}
-                    className="mt-1 accent-orange-600"
+                    className="mt-1 accent-brand-700"
                   />
                   <span>
                     <span className="block text-sm font-black text-zinc-950">{label}</span>
@@ -452,7 +411,7 @@ export default function CreateOrganizerPage() {
                 onChange={handleChange}
                 type="text"
                 placeholder="Website URL (e.g. greenwoodalliance.org)"
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
               />
               <input
                 name="facebook"
@@ -460,7 +419,7 @@ export default function CreateOrganizerPage() {
                 onChange={handleChange}
                 type="text"
                 placeholder="Facebook URL"
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
               />
               <input
                 name="twitter"
@@ -468,7 +427,7 @@ export default function CreateOrganizerPage() {
                 onChange={handleChange}
                 type="text"
                 placeholder="Twitter/X URL"
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
               />
               <input
                 name="instagram"
@@ -476,7 +435,7 @@ export default function CreateOrganizerPage() {
                 onChange={handleChange}
                 type="text"
                 placeholder="Instagram URL"
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
               />
               <input
                 name="linkedin"
@@ -484,7 +443,7 @@ export default function CreateOrganizerPage() {
                 onChange={handleChange}
                 type="text"
                 placeholder="LinkedIn URL"
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
               />
               <input
                 name="youtube"
@@ -492,7 +451,7 @@ export default function CreateOrganizerPage() {
                 onChange={handleChange}
                 type="text"
                 placeholder="YouTube Channel URL"
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
               />
               <input
                 name="tiktok"
@@ -500,7 +459,7 @@ export default function CreateOrganizerPage() {
                 onChange={handleChange}
                 type="text"
                 placeholder="TikTok URL"
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600 bg-white"
               />
             </div>
           </div>
@@ -509,7 +468,7 @@ export default function CreateOrganizerPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 rounded-2xl bg-orange-500 py-5 text-lg font-bold text-white transition hover:bg-orange-600 disabled:bg-orange-300"
+              className="flex-1 rounded-2xl bg-brand-600 py-5 text-lg font-bold text-white transition hover:bg-brand-700 disabled:bg-brand-300"
             >
               {loading
                 ? "Creating…"

@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { ArrowUp, ArrowDown, Trash2, Plus, Upload, Search, Loader2, X } from "lucide-react";
-import { useImageUpload } from "@/hooks/use-image-upload";
+import ImageUploadWithCrop from "@/components/ui/ImageUploadWithCrop";
+
+// Matches the hero fan's display ratio (LandingHeroImagery renders each tile
+// at aspect-[3/4]).
+const HERO_FAN_ASPECT_RATIO = 3 / 4;
 
 const MAX_IMAGES = 5;
 
@@ -32,12 +36,6 @@ export default function HeroFanManager({ initialImages }: { initialImages: strin
   const [brokenCandidates, setBrokenCandidates] = useState<Set<string>>(new Set());
 
   const atMax = images.length >= MAX_IMAGES;
-
-  const { uploading, fileInputRef, triggerUpload, handleFileChange } = useImageUpload({
-    folder: "hero-fan",
-    onSuccess: (url) => addImage(url),
-    onError: (text) => setMsg({ kind: "err", text }),
-  });
 
   function addImage(url: string) {
     setMsg(null);
@@ -175,21 +173,24 @@ export default function HeroFanManager({ initialImages }: { initialImages: strin
         >
           <Plus className="h-4 w-4" /> From campaigns
         </button>
-        <button
-          type="button"
-          onClick={triggerUpload}
-          disabled={atMax || uploading}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-sm font-black text-zinc-800 transition hover:bg-zinc-50 disabled:opacity-40"
-        >
-          {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-          Upload photo
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={handleFileChange}
-          className="hidden"
+        <ImageUploadWithCrop
+          bucket="fundraiser-media"
+          folder="hero-fan"
+          aspectRatio={HERO_FAN_ASPECT_RATIO}
+          disabled={atMax}
+          onUploaded={addImage}
+          onError={(text) => setMsg({ kind: "err", text })}
+          renderTrigger={({ open, uploading }) => (
+            <button
+              type="button"
+              onClick={open}
+              disabled={atMax || uploading}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3.5 py-2 text-sm font-black text-zinc-800 transition hover:bg-zinc-50 disabled:opacity-40"
+            >
+              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+              Upload photo
+            </button>
+          )}
         />
       </div>
 
@@ -209,7 +210,7 @@ export default function HeroFanManager({ initialImages }: { initialImages: strin
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search campaigns by title…"
-                className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold outline-none focus:border-orange-500"
+                className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm font-semibold outline-none focus:border-brand-600"
               />
             </div>
             <button
@@ -268,13 +269,13 @@ export default function HeroFanManager({ initialImages }: { initialImages: strin
           type="button"
           onClick={save}
           disabled={saving}
-          className="rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-orange-700 disabled:opacity-60"
+          className="rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-black text-white transition hover:bg-brand-800 disabled:opacity-60"
         >
           {saving ? "Saving…" : "Save Hero Photos"}
         </button>
         {msg && (
           <span
-            className={`text-sm font-bold ${msg.kind === "ok" ? "text-emerald-600" : "text-red-600"}`}
+            className={`text-sm font-bold ${msg.kind === "ok" ? "text-brand-700" : "text-red-600"}`}
           >
             {msg.text}
           </span>

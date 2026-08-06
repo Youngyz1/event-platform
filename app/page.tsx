@@ -1,4 +1,4 @@
-import PublicPagination from "@/components/public/PublicPagination";
+import Link from "next/link";
 import CampaignShowcase, {
   type CampaignShowcaseItem,
 } from "@/components/fundraisers/CampaignShowcase";
@@ -14,7 +14,6 @@ import {
   getFundraiserList,
   getCuratedFundraiserImages,
   type FundraiserListParams,
-  type FundraiserSmartFilter,
 } from "@/lib/fundraiser-data";
 import { CURATED_HERO_FUNDRAISER_SLUGS } from "@/lib/fundraiser-hero-curation";
 import { normalizeImageUrl } from "@/lib/image-url";
@@ -115,26 +114,21 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", images: ["/og-image.png"] },
 };
 
-const PAGE_SIZE = 12;
+// Fixed-size homepage grid — no pagination. Browsing beyond this batch, or by
+// category/behavioural filter, happens on /campaigns now (see ShowcaseControls).
+const HOMEPAGE_GRID_SIZE = 12;
 
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sort?: string; page?: string; categories?: string; filter?: string }>;
+  searchParams: Promise<{ q?: string; sort?: string; categories?: string }>;
 }) {
   const filters = await searchParams;
   const query = filters.q?.trim();
   const sort = filters.sort || "newest";
-  const page = Math.max(1, parseInt(filters.page || "1", 10) || 1);
   const selectedCategories = filters.categories
     ? filters.categories.split(",").map((c) => c.trim()).filter(Boolean)
     : [];
-
-  const SMART_FILTERS = ["close-to-target", "just-launched", "needs-momentum", "trending"] as const;
-  const smartFilter: FundraiserSmartFilter =
-    (SMART_FILTERS as readonly string[]).includes(filters.filter ?? "")
-      ? (filters.filter as FundraiserSmartFilter)
-      : "all";
 
   // 1. Hero CMS copy + platform-wide total-raised stat (both cached — see the
   //    module-level helpers — so neither hits the DB on every request).
@@ -145,23 +139,20 @@ export default async function HomePage({
 
   // 2. Pick a single featured campaign (by highest amount raised) when browsing
   // the default view without a search query — excluded from the grid below so
-  // the same campaign never renders twice. Behavioural smart filters skip the
-  // featured pin so the ranked results stand on their own.
+  // the same campaign never renders twice.
   const sortParam = sort === "raised" || sort === "goal" ? sort : "newest";
 
-  const featuredItem =
-    !query && smartFilter === "all" ? await getCachedFeaturedFundraiser() : null;
+  const featuredItem = !query ? await getCachedFeaturedFundraiser() : null;
 
-  // 3. Fetch the browse grid (Step 3), excluding the featured pick so it
+  // 3. Fetch the fixed-size browse grid, excluding the featured pick so it
   // can't appear twice on the same page load.
-  const { fundraisers, total: totalCount } = await getCachedFundraiserGrid({
+  const { fundraisers } = await getCachedFundraiserGrid({
     categories: selectedCategories,
     excludeIds: featuredItem ? [featuredItem.id] : undefined,
     searchQuery: query,
     sort: sortParam,
-    smartFilter,
-    page,
-    pageSize: PAGE_SIZE,
+    page: 1,
+    pageSize: HOMEPAGE_GRID_SIZE,
   });
 
   // Fetch donor counts for each fundraiser (including the featured pick)
@@ -184,8 +175,6 @@ export default async function HomePage({
       }
     }
   }
-
-  const totalPages = Math.max(1, Math.ceil((totalCount ?? 0) / PAGE_SIZE));
 
   const showcaseFeatured: CampaignShowcaseItem | null = featuredItem
     ? {
@@ -224,16 +213,6 @@ export default async function HomePage({
   const heroImages =
     adminHeroImages.length > 0 ? adminHeroImages : await getCachedHeroImages();
 
-  function buildHref(updates: Record<string, string>) {
-    const params = new URLSearchParams();
-    if (query) params.set("q", query);
-    if (sort !== "newest") params.set("sort", sort);
-    if (selectedCategories.length > 0) params.set("categories", selectedCategories.join(","));
-    if (smartFilter !== "all") params.set("filter", smartFilter);
-    Object.entries(updates).forEach(([k, v]) => params.set(k, v));
-    return `/?${params.toString()}`;
-  }
-
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950 pb-16">
       {/* ── Hero (CMS text preserved; layout redesigned) ── */}
@@ -260,8 +239,8 @@ export default async function HomePage({
         </div>
 
         <CampaignShowcase
-          basePath="/"
-          activeFilter={smartFilter}
+          basePath="/campaigns"
+          activeFilter="all"
           featured={showcaseFeatured}
           items={showcaseItems}
           emptyState={{
@@ -272,14 +251,14 @@ export default async function HomePage({
           }}
         />
 
-        {/* ── Pagination Section (Step 5) ── */}
         {fundraisers && fundraisers.length > 0 && (
           <div className="mt-12 flex justify-center border-t border-zinc-200 pt-8">
-            <PublicPagination
-              currentPage={page}
-              totalPages={totalPages}
-              buildHref={(p) => buildHref({ page: String(p) })}
-            />
+            <Link
+              href="/campaigns"
+              className="rounded-xl border border-zinc-200 bg-white px-6 py-3 text-sm font-black text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
+            >
+              See more campaigns
+            </Link>
           </div>
         )}
       </div>

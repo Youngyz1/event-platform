@@ -25,7 +25,7 @@ const TOPICS: FeaturedTopic[] = [
     image: normalizeImageUrl(NEEDS_BOOST_IMAGE, ""),
     imageAlt: "Miracle & Amiri's recovery and rebuilding fundraiser",
     title: "Miracle & Amiri's Recovery and Rebuilding",
-    href: "/?filter=needs-momentum",
+    href: "/campaigns?filter=needs-momentum",
     cta: "Donate now",
   },
   {
@@ -33,7 +33,7 @@ const TOPICS: FeaturedTopic[] = [
     tone: "emerald-soft",
     icon: <Sprout className="h-12 w-12" />,
     title: "Help the Tiny Toadlets Cross the Road this Summer",
-    href: "/?filter=just-launched",
+    href: "/campaigns?filter=just-launched",
     cta: "Donate now",
   },
   {

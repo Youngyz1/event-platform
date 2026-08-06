@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 
 interface SmartFilterOption {
@@ -25,19 +25,17 @@ interface ShowcaseControlsProps {
 }
 
 /**
- * Single smart-filter dropdown for the discovery header. Purely presentational
- * over the URL: it writes the `filter` param (cleared on "all") and resets
- * `page`, preserving every other param. The underlying queries are untouched.
+ * Smart-filter dropdown for the discovery header. Navigates to `basePath`
+ * with a `filter` param (omitted for "all") rather than filtering in place —
+ * every option is a destination on the /campaigns page, not a live query
+ * against whatever page this control is rendered on.
  */
 export default function ShowcaseControls({ basePath, activeFilter }: ShowcaseControlsProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   function onFilterChange(value: string) {
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams();
     if (value && value !== "all") params.set("filter", value);
-    else params.delete("filter");
-    params.delete("page");
     const qs = params.toString();
     router.push(qs ? `${basePath}?${qs}` : basePath);
   }
@@ -48,7 +46,7 @@ export default function ShowcaseControls({ basePath, activeFilter }: ShowcaseCon
       <select
         value={activeFilter}
         onChange={(e) => onFilterChange(e.target.value)}
-        className="w-full appearance-none rounded-xl border border-zinc-200 bg-white py-2.5 pl-4 pr-9 text-sm font-bold text-zinc-700 transition hover:border-zinc-300 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+        className="w-full appearance-none rounded-xl border border-zinc-200 bg-white py-2.5 pl-4 pr-9 text-sm font-bold text-zinc-700 transition hover:border-zinc-300 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
       >
         {SMART_FILTERS.map((opt) => (
           <option key={opt.value} value={opt.value}>
