@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { User, Lock, Bell, CreditCard, ShieldAlert, Link2 } from "lucide-react";
+import { User, Lock, Bell, CreditCard, ShieldAlert } from "lucide-react";
 import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import SidebarNavList from "@/components/nav/SidebarNavList";
 import MobilePillNav from "@/components/nav/MobilePillNav";
@@ -15,7 +15,6 @@ const groups: NavGroup[] = [
       { label: "Notifications", href: "/dashboard/settings/notifications", icon: Bell, description: "Email preference settings" },
       { label: "Payments", href: "/dashboard/settings/payments", icon: CreditCard, description: "Stripe payouts and currency" },
       { label: "Privacy", href: "/dashboard/settings/privacy", icon: ShieldAlert, description: "Profile and display privacy" },
-      { label: "Connected Accounts", href: "/dashboard/settings/accounts", icon: Link2, description: "Third-party sync integrations" },
     ],
   },
 ];
