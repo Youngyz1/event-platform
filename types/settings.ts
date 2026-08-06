@@ -58,7 +58,7 @@ export const defaultAddress: AddressInfo = {
   address: "",
   address2: "",
   city: "",
-  country: "United States",
+  country: "",
   zip: "",
   state: "",
 };
