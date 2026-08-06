@@ -31,7 +31,7 @@ function Toggle({
         disabled={disabled}
         onClick={() => !disabled && onChange(!checked)}
         className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-hidden ${
-          checked ? "bg-orange-600" : "bg-zinc-200"
+          checked ? "bg-brand-700" : "bg-zinc-200"
         } ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}
       >
         <span
@@ -84,7 +84,7 @@ export default function NotificationsClient({
   return (
     <form onSubmit={handleSave} className="space-y-6">
       {toast && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+        <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-800">
           {toast}
         </div>
       )}
@@ -143,7 +143,7 @@ export default function NotificationsClient({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-60 transition"
+          className="rounded-xl bg-brand-700 px-6 py-3 text-sm font-black text-white hover:bg-brand-800 disabled:opacity-60 transition"
         >
           {saving ? "Saving Preferences..." : "Save Preferences"}
         </button>

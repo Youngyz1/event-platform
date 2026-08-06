@@ -9,7 +9,7 @@ const TONES = {
   /** Persistent dark app-chrome sidebars — dashboard, org workspace, admin. */
   dark: {
     groupLabel: "text-slate-500",
-    active: "border-orange-500 bg-white/[0.06] text-orange-400",
+    active: "border-brand-600 bg-white/[0.06] text-brand-400",
     inactive: "border-transparent text-slate-300 hover:bg-white/10 hover:text-white",
     ring: "focus-visible:ring-offset-slate-950",
     description: "text-slate-500",
@@ -18,7 +18,7 @@ const TONES = {
   /** In-page light nav, e.g. account settings. */
   light: {
     groupLabel: "text-zinc-400",
-    active: "border-orange-500 bg-white text-orange-600",
+    active: "border-brand-600 bg-white text-brand-700",
     inactive: "border-transparent text-zinc-600 hover:bg-white/50 hover:text-zinc-900",
     ring: "focus-visible:ring-offset-2",
     description: "text-zinc-400",
@@ -64,7 +64,7 @@ export default function SidebarNavList({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 rounded-r-lg border-l-2 px-3 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${t.ring} ${
+                className={`flex items-center gap-3 rounded-r-lg border-l-2 px-3 py-2.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 ${t.ring} ${
                   active ? t.active : t.inactive
                 }`}
               >

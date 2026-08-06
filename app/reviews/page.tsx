@@ -24,7 +24,7 @@ export default function PlatformReviewsPage() {
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
 
         <header className="mb-10 text-center sm:mb-14">
-          <p className="text-xs font-semibold uppercase tracking-wide text-orange-600">
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-700">
             Reviews
           </p>
           <h1 className="mt-2 text-3xl font-bold tracking-tight text-zinc-950 sm:text-4xl">

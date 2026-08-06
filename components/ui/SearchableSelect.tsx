@@ -44,18 +44,18 @@ export default function SearchableSelect({
 
   const activeFocusClass =
     accent === "green"
-      ? "focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-      : "focus:border-orange-500 focus:ring-4 focus:ring-orange-100";
+      ? "focus:border-brand-600 focus:ring-4 focus:ring-brand-100"
+      : "focus:border-brand-600 focus:ring-4 focus:ring-brand-100";
 
   const hoverOptionClass =
     accent === "green"
-      ? "hover:bg-emerald-50 hover:text-emerald-900"
-      : "hover:bg-orange-50 hover:text-orange-900";
+      ? "hover:bg-brand-50 hover:text-brand-950"
+      : "hover:bg-brand-50 hover:text-brand-950";
 
   const selectedClass =
     accent === "green"
-      ? "bg-emerald-500 text-white hover:bg-emerald-600"
-      : "bg-orange-500 text-white hover:bg-orange-600";
+      ? "bg-brand-600 text-white hover:bg-brand-700"
+      : "bg-brand-600 text-white hover:bg-brand-700";
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -65,7 +65,7 @@ export default function SearchableSelect({
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "flex w-full items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm font-semibold outline-none transition",
-          isOpen && (accent === "green" ? "border-emerald-500 ring-4 ring-emerald-100" : "border-orange-500 ring-4 ring-orange-100"),
+          isOpen && (accent === "green" ? "border-brand-600 ring-4 ring-brand-100" : "border-brand-600 ring-4 ring-brand-100"),
           error && "border-red-500 focus:ring-red-100",
           !isOpen && activeFocusClass
         )}
@@ -102,7 +102,7 @@ export default function SearchableSelect({
               placeholder="Search..."
               className={cn(
                 "w-full rounded-lg border border-zinc-200 bg-zinc-50 pl-9 pr-3 py-2 text-xs font-semibold outline-none transition focus:bg-white",
-                accent === "green" ? "focus:border-emerald-500" : "focus:border-orange-500"
+                accent === "green" ? "focus:border-brand-600" : "focus:border-brand-600"
               )}
             />
           </div>

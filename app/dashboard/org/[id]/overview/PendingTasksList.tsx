@@ -46,14 +46,14 @@ export function PendingTasksList({ tasks }: { tasks: PendingTask[] }) {
           >
             <AlertCircle className="h-3.5 w-3.5" />
           </span>
-          <Link href={task.href} className="min-w-0 flex-1 break-words text-sm font-medium text-slate-700 hover:text-orange-600">
+          <Link href={task.href} className="min-w-0 flex-1 break-words text-sm font-medium text-slate-700 hover:text-brand-700">
             {task.message}
           </Link>
           <button
             type="button"
             onClick={() => setDismissed((prev) => new Set(prev).add(task.id))}
             aria-label="Dismiss task"
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-50 hover:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-slate-50 hover:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
           >
             <X className="h-3.5 w-3.5" />
           </button>

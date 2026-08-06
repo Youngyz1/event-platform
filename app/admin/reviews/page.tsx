@@ -106,7 +106,7 @@ export default function AdminReviewsPage() {
             onClick={() => setStatusFilter(filter)}
             className={`rounded-xl px-4 py-2 text-xs font-black capitalize transition ${
               statusFilter === filter
-                ? "bg-orange-600 text-white"
+                ? "bg-brand-700 text-white"
                 : "border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50"
             }`}
           >
@@ -124,7 +124,7 @@ export default function AdminReviewsPage() {
       <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -162,7 +162,7 @@ export default function AdminReviewsPage() {
                     <td className="py-3 pr-4">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-black uppercase ${
-                          r.is_approved ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"
+                          r.is_approved ? "bg-brand-100 text-brand-800" : "bg-red-100 text-red-600"
                         }`}
                       >
                         {r.is_approved ? "Approved" : "Hidden"}
@@ -182,7 +182,7 @@ export default function AdminReviewsPage() {
                           <button
                             disabled={working === r.id}
                             onClick={() => handleModerate(r.id, "approve")}
-                            className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                            className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50 disabled:opacity-50"
                           >
                             Approve
                           </button>

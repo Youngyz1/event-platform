@@ -42,8 +42,8 @@ const activityConfig = {
   },
   withdrawal: {
     icon: CircleDollarSign,
-    iconBg: "bg-emerald-50",
-    iconColor: "text-emerald-600",
+    iconBg: "bg-brand-50",
+    iconColor: "text-brand-700",
   },
   campaign_started: {
     icon: Flag,

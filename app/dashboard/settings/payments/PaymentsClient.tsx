@@ -33,7 +33,7 @@ export default function PaymentsClient({
   return (
     <div className="space-y-6">
       {toast && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+        <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-800">
           {toast}
         </div>
       )}
@@ -80,7 +80,7 @@ export default function PaymentsClient({
           <button
             type="button"
             onClick={() => showToast("Payout preferences saved successfully.")}
-            className="rounded-xl bg-orange-600 px-5 py-2.5 text-xs font-black text-white hover:bg-orange-700 transition"
+            className="rounded-xl bg-brand-700 px-5 py-2.5 text-xs font-black text-white hover:bg-brand-800 transition"
           >
             Save Payout Settings
           </button>
@@ -96,7 +96,7 @@ export default function PaymentsClient({
             <select
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100 sm:rounded-xl sm:px-4 sm:py-2.5"
+              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden transition focus:border-brand-600 focus:ring-4 focus:ring-brand-100 sm:rounded-xl sm:px-4 sm:py-2.5"
             >
               <option value="USD">USD ($) - United States Dollar</option>
               <option value="CAD">CAD ($) - Canadian Dollar</option>
@@ -115,7 +115,7 @@ export default function PaymentsClient({
             <select
               value={payoutSchedule}
               onChange={(e) => setPayoutSchedule(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100 sm:rounded-xl sm:px-4 sm:py-2.5"
+              className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden transition focus:border-brand-600 focus:ring-4 focus:ring-brand-100 sm:rounded-xl sm:px-4 sm:py-2.5"
             >
               <option value="daily">Daily Payouts</option>
               <option value="weekly">Weekly Payouts (Every Monday)</option>
@@ -145,7 +145,7 @@ export default function PaymentsClient({
         description="A list of all disbursements processed to your account."
       >
         <div className="flex flex-col items-center justify-center py-4 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-orange-50 text-orange-500">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
             <Sparkles size={20} />
           </div>
           <p className="mt-4 text-sm font-bold text-zinc-950">No payouts record found</p>

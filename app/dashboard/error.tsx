@@ -12,7 +12,7 @@ export default function DashboardError({
   return (
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <div className="max-w-md text-center">
-        <p className="text-4xl font-black text-orange-500">Oops</p>
+        <p className="text-4xl font-black text-brand-600">Oops</p>
         <h2 className="mt-3 text-xl font-black">Dashboard failed to load</h2>
         <p className="mt-2 text-zinc-500 text-sm leading-6">
           {error.message || "Something went wrong loading your dashboard. Please try again."}
@@ -25,7 +25,7 @@ export default function DashboardError({
         <div className="mt-6 flex flex-col sm:flex-row justify-center gap-3">
           <button
             onClick={reset}
-            className="rounded-xl bg-orange-500 px-5 py-2.5 font-bold text-white hover:bg-orange-600 transition"
+            className="rounded-xl bg-brand-600 px-5 py-2.5 font-bold text-white hover:bg-brand-700 transition"
           >
             Try again
           </button>

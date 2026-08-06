@@ -224,7 +224,7 @@ export default function ProfileClient({
               <div className="py-1">
                 {followersLoading || followersList === null ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
                   </div>
                 ) : followersList.length === 0 ? (
                   <EmptyListState label="No followers yet." />
@@ -242,7 +242,7 @@ export default function ProfileClient({
               <div className="py-1">
                 {followingLoading || followingList === null ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
                   </div>
                 ) : followingList.length === 0 ? (
                   <EmptyListState label="Not following anyone yet." />

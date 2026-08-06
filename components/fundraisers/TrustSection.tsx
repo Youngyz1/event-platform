@@ -34,7 +34,7 @@ export default async function TrustSection() {
       />
     </div>
   ) : (
-    <div className="flex aspect-[4/3] w-full items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-500 to-emerald-700 text-white/85 shadow-xl ring-1 ring-white/10">
+    <div className="flex aspect-[4/3] w-full items-center justify-center rounded-3xl bg-gradient-to-br from-brand-600 to-brand-800 text-white/85 shadow-xl ring-1 ring-white/10">
       <ShieldCheck className="h-24 w-24" />
     </div>
   );

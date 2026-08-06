@@ -65,8 +65,8 @@ export const KpiGrid = memo(function KpiGrid({ campaign, dailyDonations, classNa
           label="Amount Raised"
           value={formatCurrency(campaign.raised, campaign.currency, true)}
           icon={Wallet}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-600"
+          iconBg="bg-brand-50"
+          iconColor="text-brand-700"
           trend={raisedTrend ?? undefined}
         />
         <StatCard
@@ -74,8 +74,8 @@ export const KpiGrid = memo(function KpiGrid({ campaign, dailyDonations, classNa
           value={formatCurrency(campaign.todayAmount, campaign.currency, true)}
           subValue={`${campaign.todayCount} ${campaign.todayCount === 1 ? "gift" : "gifts"} today`}
           icon={Zap}
-          iconBg="bg-orange-50"
-          iconColor="text-orange-600"
+          iconBg="bg-brand-50"
+          iconColor="text-brand-700"
           trend={todayTrend}
         />
         <StatCard

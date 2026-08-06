@@ -59,7 +59,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Logo */}
         <div className="flex h-[60px] shrink-0 items-center gap-3 px-4">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/30">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-700 shadow-lg shadow-brand-600/30">
               <svg viewBox="0 0 32 32" className="h-4 w-4" fill="none">
                 <path
                   d="M8 7h12.5c2 0 3.5 1.5 3.5 3.4s-1.5 3.4-3.5 3.4H16l8.2 6.7c1.6 1.3 1.8 3.5.5 5.1-1.3 1.5-3.6 1.7-5.2.4L6.4 15.2A4.6 4.6 0 0 1 8 7Z"
@@ -100,19 +100,19 @@ export function AppShell({ children }: { children: ReactNode }) {
                       title={collapsed ? label : undefined}
                       className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all ${
                         active
-                          ? "bg-orange-500/10 text-orange-400"
+                          ? "bg-brand-600/10 text-brand-400"
                           : "text-white/50 hover:bg-white/[0.04] hover:text-white/80"
                       }`}
                     >
                       <Icon
                         size={17}
                         className={`shrink-0 transition-colors ${
-                          active ? "text-orange-400" : "text-white/40 group-hover:text-white/60"
+                          active ? "text-brand-400" : "text-white/40 group-hover:text-white/60"
                         }`}
                       />
                       {!collapsed && <span className="truncate">{label}</span>}
                       {!collapsed && active && (
-                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-orange-400" />
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-brand-400" />
                       )}
                     </Link>
                   );
@@ -157,7 +157,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Top bar */}
         <header className="flex h-[60px] shrink-0 items-center justify-between gap-4 border-b border-white/[0.06] bg-[#141418] px-5">
           {/* Search */}
-          <div className="flex max-w-xs flex-1 items-center gap-2 rounded-xl bg-white/[0.05] px-3.5 py-2 ring-1 ring-white/[0.07] transition focus-within:ring-orange-500/40">
+          <div className="flex max-w-xs flex-1 items-center gap-2 rounded-xl bg-white/[0.05] px-3.5 py-2 ring-1 ring-white/[0.07] transition focus-within:ring-brand-600/40">
             <Search size={15} className="shrink-0 text-white/30" />
             <input
               type="text"
@@ -170,7 +170,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             {/* Notifications */}
             <button className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.05] text-white/50 ring-1 ring-white/[0.07] transition hover:bg-white/[0.08] hover:text-white/80">
               <Bell size={16} />
-              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-orange-500" />
+              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-brand-600" />
             </button>
 
             {/* Avatar dropdown */}
@@ -183,7 +183,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                       alt="User"
                       className="h-full w-full object-cover"
                     />
-                    <Avatar.Fallback className="flex h-full w-full items-center justify-center bg-orange-500 text-xs font-bold text-white">
+                    <Avatar.Fallback className="flex h-full w-full items-center justify-center bg-brand-600 text-xs font-bold text-white">
                       U
                     </Avatar.Fallback>
                   </Avatar.Root>

@@ -52,7 +52,7 @@ function ForgotPasswordForm() {
         )}
 
         {success && (
-          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+          <div className="mb-6 rounded-2xl border border-brand-200 bg-brand-50 px-5 py-4 text-sm text-brand-800">
             Password reset email sent. Check your inbox and follow the link to set a new password.
           </div>
         )}
@@ -66,14 +66,14 @@ function ForgotPasswordForm() {
               required
               type="email"
               placeholder="you@example.com"
-              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+              className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-2xl bg-orange-500 py-4 text-lg font-bold text-white transition hover:bg-orange-600 disabled:bg-orange-300"
+            className="w-full rounded-2xl bg-brand-600 py-4 text-lg font-bold text-white transition hover:bg-brand-700 disabled:bg-brand-300"
           >
             {loading ? "Sending reset link..." : "Send Reset Link"}
           </button>
@@ -81,7 +81,7 @@ function ForgotPasswordForm() {
 
         <p className="mt-6 text-center text-zinc-500">
           Remember your password?{" "}
-          <Link href="/login" className="font-semibold text-orange-500">
+          <Link href="/login" className="font-semibold text-brand-600">
             Log in
           </Link>
         </p>

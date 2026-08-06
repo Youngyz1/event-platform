@@ -37,7 +37,7 @@ export const DonationList = memo(function DonationList({
         </div>
         <Link
           href="/dashboard/donations"
-          className="text-xs font-medium text-orange-600 hover:text-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded"
+          className="text-xs font-medium text-brand-700 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 rounded"
         >
           View all
         </Link>

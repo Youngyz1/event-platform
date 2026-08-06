@@ -72,7 +72,7 @@ export function AdminSidebarNav() {
       header={
         <div className="px-4 pt-4">
           <Link href="/admin" className="mb-6 flex items-center gap-3 px-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-orange-600 text-sm font-black">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-700 text-sm font-black">
               A
             </span>
             <span className="text-sm font-black tracking-tight">Admin Panel</span>

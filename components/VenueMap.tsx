@@ -87,7 +87,7 @@ export default function VenueMap({ lat, lng, title, venue, city }: Props) {
     <div className="relative rounded-2xl overflow-hidden border border-zinc-200 shadow-sm" style={{ height: "280px" }}>
       {!mapReady && (
         <div className="absolute inset-0 bg-zinc-100 flex items-center justify-center z-10">
-          <div className="w-6 h-6 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-4 border-brand-600 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
       <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
@@ -96,7 +96,7 @@ export default function VenueMap({ lat, lng, title, venue, city }: Props) {
         href={`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`}
         target="_blank"
         rel="noreferrer"
-        className="absolute bottom-3 right-3 z-[999] bg-white shadow-lg border border-zinc-200 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 hover:bg-orange-50 hover:text-orange-600 transition flex items-center gap-1"
+        className="absolute bottom-3 right-3 z-[999] bg-white shadow-lg border border-zinc-200 rounded-xl px-3 py-2 text-xs font-bold text-zinc-800 hover:bg-brand-50 hover:text-brand-700 transition flex items-center gap-1"
       >
         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />

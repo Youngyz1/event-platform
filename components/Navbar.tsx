@@ -49,8 +49,8 @@ function NavLink({
       className={cn(
         "rounded-lg px-3 py-2 text-sm font-bold transition",
         active
-          ? "bg-orange-50 text-orange-700"
-          : "text-zinc-700 hover:bg-zinc-50 hover:text-orange-600"
+          ? "bg-brand-50 text-brand-800"
+          : "text-zinc-700 hover:bg-zinc-50 hover:text-brand-700"
       )}
     >
       {label}
@@ -62,7 +62,7 @@ function NavDropdown({ label, sections }: { label: string; sections: DropdownSec
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger
-        className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-bold text-zinc-700 outline-none transition hover:bg-zinc-50 hover:text-orange-600 data-[state=open]:bg-zinc-50 data-[state=open]:text-orange-600"
+        className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-bold text-zinc-700 outline-none transition hover:bg-zinc-50 hover:text-brand-700 data-[state=open]:bg-zinc-50 data-[state=open]:text-brand-700"
       >
         {label}
         <ChevronDown className="h-3.5 w-3.5" />
@@ -85,7 +85,7 @@ function NavDropdown({ label, sections }: { label: string; sections: DropdownSec
                 <DropdownMenu.Item key={item.href} asChild>
                   <Link
                     href={item.href}
-                    className="block cursor-pointer rounded-xl px-3 py-2 text-sm font-bold text-zinc-700 outline-none transition hover:bg-zinc-50 hover:text-orange-600"
+                    className="block cursor-pointer rounded-xl px-3 py-2 text-sm font-bold text-zinc-700 outline-none transition hover:bg-zinc-50 hover:text-brand-700"
                   >
                     {item.label}
                   </Link>
@@ -126,7 +126,7 @@ function MobileDropdownSection({ title, links, onLinkClick }: { title: string; l
                 key={link.href}
                 href={link.href}
                 onClick={onLinkClick}
-                className="rounded-lg px-3 py-2 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 hover:text-orange-600"
+                className="rounded-lg px-3 py-2 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50 hover:text-brand-700"
               >
                 {link.label}
               </Link>
@@ -242,7 +242,7 @@ export default function Navbar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search fundraisers, organizers…"
-              className="h-10 w-full rounded-full border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+              className="h-10 w-full rounded-full border border-zinc-200 bg-zinc-50 pl-10 pr-4 text-sm font-semibold outline-none transition focus:border-brand-600 focus:bg-white focus:ring-2 focus:ring-brand-600/20"
             />
           </label>
         </form>
@@ -257,7 +257,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setSearchOpen((o) => !o)}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 text-zinc-600 transition hover:border-orange-200 hover:text-orange-600 md:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200 text-zinc-600 transition hover:border-brand-200 hover:text-brand-700 md:hidden"
             aria-label="Search"
           >
             <Search className="h-5 w-5" />
@@ -271,9 +271,9 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setAccountOpen((o) => !o)}
-                className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white py-1.5 pl-1.5 pr-3 transition hover:border-orange-200"
+                className="flex items-center gap-2 rounded-full border border-zinc-200 bg-white py-1.5 pl-1.5 pr-3 transition hover:border-brand-200"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-600 text-xs font-black text-white">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-700 text-xs font-black text-white">
                   {initials}
                 </span>
                 <span className="hidden max-w-24 truncate text-sm font-bold text-zinc-800 xl:inline">
@@ -285,10 +285,10 @@ export default function Navbar() {
                 <div className="absolute right-0 mt-2 w-56 rounded-2xl border border-zinc-200 bg-white py-2 shadow-xl">
                   <p className="truncate px-4 py-2 text-sm font-black text-zinc-900">{accountName}</p>
                   <div className="my-1 border-t border-zinc-100" />
-                  <Link href="/dashboard" className="block px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 hover:text-orange-600">
+                  <Link href="/dashboard" className="block px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 hover:text-brand-700">
                     Dashboard
                   </Link>
-                  <Link href="/dashboard/settings/profile" className="block px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 hover:text-orange-600">
+                  <Link href="/dashboard/settings/profile" className="block px-4 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 hover:text-brand-700">
                     Account settings
                   </Link>
                   <div className="my-1 border-t border-zinc-100" />
@@ -304,7 +304,7 @@ export default function Navbar() {
             </div>
           ) : (
             <div className="hidden items-center gap-2 sm:flex">
-              <Link href="/login" className="rounded-lg px-3 py-2 text-sm font-bold text-zinc-700 hover:text-orange-600">
+              <Link href="/login" className="rounded-lg px-3 py-2 text-sm font-bold text-zinc-700 hover:text-brand-700">
                 Log in
               </Link>
               <Link
@@ -339,9 +339,9 @@ export default function Navbar() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search…"
-              className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 px-3 text-sm font-semibold outline-none focus:border-orange-500"
+              className="h-10 min-w-0 flex-1 rounded-xl border border-zinc-200 px-3 text-sm font-semibold outline-none focus:border-brand-600"
             />
-            <button type="submit" className="rounded-xl bg-orange-600 px-4 text-sm font-black text-white">
+            <button type="submit" className="rounded-xl bg-brand-700 px-4 text-sm font-black text-white">
               Go
             </button>
           </form>
@@ -375,7 +375,7 @@ export default function Navbar() {
               <Link href="/login" onClick={() => setMenuOpen(false)} className="rounded-xl bg-zinc-100 py-3 text-center text-sm font-bold">
                 Log in
               </Link>
-              <Link href="/signup" onClick={() => setMenuOpen(false)} className="rounded-xl bg-orange-600 py-3 text-center text-sm font-black text-white">
+              <Link href="/signup" onClick={() => setMenuOpen(false)} className="rounded-xl bg-brand-700 py-3 text-center text-sm font-black text-white">
                 Sign up
               </Link>
             </div>

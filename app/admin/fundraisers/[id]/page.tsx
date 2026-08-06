@@ -58,7 +58,7 @@ export default async function AdminFundraiserManagePage({
           <div>
             <Link
               href="/admin/fundraisers"
-              className="text-xs font-black uppercase tracking-wide text-orange-600 hover:underline"
+              className="text-xs font-black uppercase tracking-wide text-brand-700 hover:underline"
             >
               ← Fundraisers
             </Link>

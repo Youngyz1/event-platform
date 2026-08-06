@@ -102,7 +102,7 @@ const upcomingEvents = [
     date: "Jul 28, 2025",
     tickets: 142,
     capacity: 200,
-    color: "from-orange-500 to-orange-600",
+    color: "from-brand-600 to-brand-700",
   },
   {
     title: "Summer Music Festival",
@@ -116,7 +116,7 @@ const upcomingEvents = [
     date: "Aug 15, 2025",
     tickets: 231,
     capacity: 300,
-    color: "from-emerald-500 to-emerald-600",
+    color: "from-brand-600 to-brand-700",
   },
 ];
 
@@ -153,7 +153,7 @@ function StatCard({
         <span
           className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold ${
             positive
-              ? "bg-emerald-500/10 text-emerald-400"
+              ? "bg-brand-600/10 text-brand-400"
               : "bg-red-500/10 text-red-400"
           }`}
         >
@@ -204,7 +204,7 @@ export function Dashboard() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-bold uppercase tracking-widest text-orange-400">
+          <p className="text-xs font-bold uppercase tracking-widest text-brand-400">
             Overview
           </p>
           <h1 className="mt-1 text-2xl font-black tracking-tight text-white sm:text-3xl">
@@ -215,7 +215,7 @@ export function Dashboard() {
         <div className="flex items-center gap-2">
           <Link
             href="/dashboard/events/new"
-            className="flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600"
+            className="flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700"
           >
             <Calendar size={15} />
             New Event
@@ -239,7 +239,7 @@ export function Dashboard() {
           change="+18.4%"
           positive={true}
           icon={DollarSign}
-          gradient="from-orange-500 to-orange-600"
+          gradient="from-brand-600 to-brand-700"
         />
         <StatCard
           label="Tickets Sold"
@@ -257,7 +257,7 @@ export function Dashboard() {
           change="+9.7%"
           positive={true}
           icon={Heart}
-          gradient="from-emerald-500 to-emerald-600"
+          gradient="from-brand-600 to-brand-700"
         />
         <StatCard
           label="Active Campaigns"
@@ -305,11 +305,11 @@ export function Dashboard() {
           </ResponsiveContainer>
           <div className="mt-3 flex items-center gap-5">
             <span className="flex items-center gap-1.5 text-xs font-semibold text-white/40">
-              <span className="h-2 w-2 rounded-full bg-orange-500" />
+              <span className="h-2 w-2 rounded-full bg-brand-600" />
               Revenue
             </span>
             <span className="flex items-center gap-1.5 text-xs font-semibold text-white/40">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="h-2 w-2 rounded-full bg-brand-600" />
               Donations
             </span>
           </div>
@@ -322,7 +322,7 @@ export function Dashboard() {
               <p className="text-sm font-black text-white">Ticket Sales</p>
               <p className="text-xs text-white/30">This week</p>
             </div>
-            <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-bold text-emerald-400">
+            <span className="flex items-center gap-1 rounded-full bg-brand-600/10 px-2.5 py-0.5 text-xs font-bold text-brand-400">
               <TrendingUp size={11} />
               +24%
             </span>
@@ -347,7 +347,7 @@ export function Dashboard() {
             <p className="text-sm font-black text-white">Recent Activity</p>
             <Link
               href="/dashboard/donations"
-              className="flex items-center gap-1 text-xs font-bold text-orange-400 transition hover:text-orange-300"
+              className="flex items-center gap-1 text-xs font-bold text-brand-400 transition hover:text-brand-300"
             >
               View all <ArrowUpRight size={13} />
             </Link>
@@ -367,7 +367,7 @@ export function Dashboard() {
                     <p className="truncate text-xs text-white/35">{item.action}</p>
                   </div>
                   <div className="text-right">
-                    <p className={`text-sm font-black ${item.type === "donation" ? "text-emerald-400" : "text-violet-400"}`}>
+                    <p className={`text-sm font-black ${item.type === "donation" ? "text-brand-400" : "text-violet-400"}`}>
                       {item.amount}
                     </p>
                     <p className="text-xs text-white/25">{item.time}</p>
@@ -387,7 +387,7 @@ export function Dashboard() {
             <p className="text-sm font-black text-white">Upcoming Events</p>
             <Link
               href="/dashboard/events"
-              className="flex items-center gap-1 text-xs font-bold text-orange-400 transition hover:text-orange-300"
+              className="flex items-center gap-1 text-xs font-bold text-brand-400 transition hover:text-brand-300"
             >
               View all <ArrowUpRight size={13} />
             </Link>
@@ -422,7 +422,7 @@ export function Dashboard() {
 
             <Link
               href="/dashboard/events/new"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.08] py-3 text-xs font-bold text-white/30 transition hover:border-orange-500/40 hover:text-orange-400"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-white/[0.08] py-3 text-xs font-bold text-white/30 transition hover:border-brand-600/40 hover:text-brand-400"
             >
               <Calendar size={13} />
               Create new event

@@ -17,7 +17,7 @@ export default function DashboardSidebar() {
           </Link>
           <Link
             href="/create-organizer"
-            className="block rounded-xl bg-orange-600 px-3 py-2.5 text-center text-sm font-black text-white transition hover:bg-orange-700"
+            className="block rounded-xl bg-brand-700 px-3 py-2.5 text-center text-sm font-black text-white transition hover:bg-brand-800"
           >
             + New Organization
           </Link>

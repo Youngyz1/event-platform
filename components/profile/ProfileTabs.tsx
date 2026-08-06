@@ -38,7 +38,7 @@ export default function ProfileTabs({ tabs, activeId, onChange }: ProfileTabsPro
             className={cn(
               "flex shrink-0 items-center gap-1.5 rounded-full px-4 py-2 text-sm font-bold transition",
               active
-                ? "bg-orange-600 text-white"
+                ? "bg-brand-700 text-white"
                 : "text-zinc-500 hover:text-zinc-800"
             )}
           >

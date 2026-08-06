@@ -33,7 +33,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
           <div className="mb-6 flex flex-col gap-4 lg:hidden">
             <div className="flex items-center justify-between bg-slate-950 px-4 py-3 text-white">
               <Link href="/admin" className="flex items-center gap-2.5">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-600 text-xs font-black">A</span>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-700 text-xs font-black">A</span>
                 <span className="text-sm font-black text-white">Admin</span>
               </Link>
               <Link href="/dashboard" className="text-xs font-bold text-slate-400 hover:text-white">

@@ -69,7 +69,7 @@ export default function AdminUserActions({
           <button
             disabled={working !== null}
             onClick={() => updateStatus("active")}
-            className="rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+            className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-black text-brand-800 hover:bg-brand-50 disabled:opacity-50"
           >
             {working === "active" ? "Reactivating..." : "Reactivate User"}
           </button>
@@ -77,12 +77,12 @@ export default function AdminUserActions({
         <button
           disabled={working !== null}
           onClick={resetPassword}
-          className="rounded-xl border border-orange-200 bg-white px-4 py-2 text-sm font-black text-orange-700 hover:bg-orange-50 disabled:opacity-50"
+          className="rounded-xl border border-brand-200 bg-white px-4 py-2 text-sm font-black text-brand-800 hover:bg-brand-50 disabled:opacity-50"
         >
           {working === "reset" ? "Sending..." : "Reset Password"}
         </button>
       </div>
-      {message && <p className="text-sm font-semibold text-emerald-700">{message}</p>}
+      {message && <p className="text-sm font-semibold text-brand-800">{message}</p>}
       {error && <p className="text-sm font-semibold text-red-600">{error}</p>}
     </div>
   );

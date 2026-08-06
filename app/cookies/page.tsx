@@ -47,7 +47,7 @@ export default function CookiesPage() {
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[280px_1fr]">
           <aside className="lg:sticky lg:top-24 lg:self-start">
             <p className="text-sm font-semibold text-zinc-500">Help Center</p>
-            <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-orange-600">
+            <p className="mt-2 text-sm font-semibold uppercase tracking-wide text-brand-700">
               Terms and policies
             </p>
             <nav className="mt-6 max-h-[calc(100vh-180px)] space-y-2 overflow-auto pr-2 text-sm">
@@ -55,7 +55,7 @@ export default function CookiesPage() {
                 <a
                   key={section}
                   href={`#${slugify(section)}`}
-                  className="block rounded-lg px-3 py-2 font-medium text-zinc-600 transition hover:bg-orange-50 hover:text-orange-700"
+                  className="block rounded-lg px-3 py-2 font-medium text-zinc-600 transition hover:bg-brand-50 hover:text-brand-800"
                 >
                   {index + 1}. {section}
                 </a>
@@ -65,7 +65,7 @@ export default function CookiesPage() {
 
           <article className="max-w-4xl">
             <div className="border-b border-zinc-100 pb-8">
-              <p className="text-sm font-semibold uppercase tracking-wide text-orange-600">
+              <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">
                 Terms and policies
               </p>
               <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -85,7 +85,7 @@ export default function CookiesPage() {
               <ol className="mt-4 grid gap-2 text-sm text-zinc-600 sm:grid-cols-2">
                 {sections.map((section, index) => (
                   <li key={section}>
-                    <a className="hover:text-orange-700" href={`#${slugify(section)}`}>
+                    <a className="hover:text-brand-800" href={`#${slugify(section)}`}>
                       {index + 1}. {section}.
                     </a>
                   </li>
@@ -179,7 +179,7 @@ export default function CookiesPage() {
                 <h2 className="text-xl font-semibold text-zinc-950">6. Contact Us.</h2>
                 <p className="mt-3">
                   If you have any questions about our use of cookies or this Cookie Policy, you can email us at{" "}
-                  <a className="font-bold text-orange-600" href="mailto:support@fund4agoodcause.com">
+                  <a className="font-bold text-brand-700" href="mailto:support@fund4agoodcause.com">
                     support@fund4agoodcause.com
                   </a>.
                 </p>
@@ -194,17 +194,17 @@ export default function CookiesPage() {
               </p>
               <a
                 href="mailto:support@fund4agoodcause.com"
-                className="mt-5 inline-flex rounded-full bg-orange-600 px-6 py-3 font-semibold text-white transition hover:bg-orange-700"
+                className="mt-5 inline-flex rounded-full bg-brand-700 px-6 py-3 font-semibold text-white transition hover:bg-brand-800"
               >
                 Contact us
               </a>
             </div>
 
             <div className="mt-10 flex flex-wrap gap-x-5 gap-y-3 border-t border-zinc-100 pt-6 text-sm font-medium text-zinc-500">
-              <Link href="/about" className="hover:text-orange-600">About</Link>
-              <Link href="/fundraisers" className="hover:text-orange-600">Fundraisers</Link>
-              <Link href="/organizers" className="hover:text-orange-600">Organizers</Link>
-              <Link href="/signup" className="hover:text-orange-600">Create account</Link>
+              <Link href="/about" className="hover:text-brand-700">About</Link>
+              <Link href="/fundraisers" className="hover:text-brand-700">Fundraisers</Link>
+              <Link href="/organizers" className="hover:text-brand-700">Organizers</Link>
+              <Link href="/signup" className="hover:text-brand-700">Create account</Link>
             </div>
           </article>
         </div>

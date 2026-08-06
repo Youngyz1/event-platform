@@ -14,7 +14,7 @@ interface SmartInsightsCardProps {
 }
 
 const toneConfig: Record<Insight["tone"], { icon: typeof TrendingUp; iconColor: string; iconBg: string }> = {
-  positive: { icon: TrendingUp, iconColor: "text-emerald-600", iconBg: "bg-emerald-50" },
+  positive: { icon: TrendingUp, iconColor: "text-brand-700", iconBg: "bg-brand-50" },
   warning: { icon: AlertTriangle, iconColor: "text-amber-600", iconBg: "bg-amber-50" },
   neutral: { icon: Info, iconColor: "text-sky-600", iconBg: "bg-sky-50" },
 };

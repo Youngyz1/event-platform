@@ -78,12 +78,12 @@ function Footerdemo() {
               <Input
                 type="email"
                 placeholder="Enter your email"
-                className="h-10 rounded-full border-zinc-200 bg-white px-4 pr-12 text-sm font-medium text-zinc-950 placeholder:text-zinc-500 focus-visible:ring-orange-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
+                className="h-10 rounded-full border-zinc-200 bg-white px-4 pr-12 text-sm font-medium text-zinc-950 placeholder:text-zinc-500 focus-visible:ring-brand-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-white"
               />
               <Button
                 type="submit"
                 size="icon"
-                className="absolute right-1 top-1 h-8 w-8 rounded-full bg-orange-600 text-white transition-transform hover:scale-105 hover:bg-orange-700"
+                className="absolute right-1 top-1 h-8 w-8 rounded-full bg-brand-700 text-white transition-transform hover:scale-105 hover:bg-brand-800"
               >
                 <Send className="h-4 w-4" />
                 <span className="sr-only">Subscribe</span>
@@ -100,7 +100,7 @@ function Footerdemo() {
                 <Link
                   key={href}
                   href={href}
-                  className="block transition-colors hover:text-orange-600"
+                  className="block transition-colors hover:text-brand-700"
                 >
                   {label}
                 </Link>
@@ -119,7 +119,7 @@ function Footerdemo() {
                 Email:{" "}
                 <a
                   href="mailto:support@fund4agoodcause.com"
-                  className="font-semibold text-orange-600"
+                  className="font-semibold text-brand-700"
                 >
                   support@fund4agoodcause.com
                 </a>
@@ -139,7 +139,7 @@ function Footerdemo() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 rounded-full border-zinc-200 bg-white text-zinc-700 hover:border-orange-500 hover:bg-orange-50 hover:text-orange-500 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                        className="h-9 w-9 rounded-full border-zinc-200 bg-white text-zinc-700 hover:border-brand-600 hover:bg-brand-50 hover:text-brand-600 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900"
                       >
                         <Icon className="h-4 w-4" />
                         <span className="sr-only">{label}</span>
@@ -158,7 +158,7 @@ function Footerdemo() {
                 id="dark-mode"
                 checked={isDarkMode}
                 onCheckedChange={setIsDarkMode}
-                className="data-[state=checked]:bg-orange-600"
+                className="data-[state=checked]:bg-brand-700"
               />
               <Moon className="h-5 w-5 text-zinc-700 dark:text-white" />
               <Label htmlFor="dark-mode" className="sr-only">

@@ -36,7 +36,7 @@ export default async function AccountAnalyticsPage() {
   return (
     <div className="space-y-6">
       <header className="flex flex-col gap-1">
-        <p className="text-xs font-bold uppercase tracking-wide text-orange-600">Account Dashboard</p>
+        <p className="text-xs font-bold uppercase tracking-wide text-brand-700">Account Dashboard</p>
         <h1 className="mt-1 text-2xl font-bold text-slate-900">Cross-Organization Analytics</h1>
         <p className="text-sm text-slate-500">Aggregated performance stats across all of your organization workspaces.</p>
       </header>
@@ -47,15 +47,15 @@ export default async function AccountAnalyticsPage() {
           label="Total Events Hosted"
           value={eventCount.toLocaleString()}
           icon={Calendar}
-          iconBg="bg-orange-50"
-          iconColor="text-orange-600"
+          iconBg="bg-brand-50"
+          iconColor="text-brand-700"
         />
         <StatCard
           label="Total Campaigns Launched"
           value={fundraiserCount.toLocaleString()}
           icon={Heart}
-          iconBg="bg-emerald-50"
-          iconColor="text-emerald-600"
+          iconBg="bg-brand-50"
+          iconColor="text-brand-700"
         />
         <StatCard
           label="Total Funds Raised"
@@ -74,7 +74,7 @@ export default async function AccountAnalyticsPage() {
         </p>
         <Link
           href="/dashboard"
-          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-orange-700 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+          className="mt-6 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-brand-800 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
         >
           Back to Overview
         </Link>

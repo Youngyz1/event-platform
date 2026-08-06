@@ -113,14 +113,14 @@ export function QuickActions({ campaign, className }: QuickActionsProps) {
         {/* Primary action */}
         <Link
           href={`/dashboard/fundraisers/${campaign.id}/updates`}
-          className="group flex min-h-[76px] items-center gap-4 rounded-xl bg-orange-600 px-5 py-4 text-left shadow-sm transition-all duration-150 hover:bg-orange-700 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+          className="group flex min-h-[76px] items-center gap-4 rounded-xl bg-brand-700 px-5 py-4 text-left shadow-sm transition-all duration-150 hover:bg-brand-800 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
         >
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white/15">
             <Megaphone className="h-5 w-5 text-white" aria-hidden />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-white">Post Update</p>
-            <p className="text-xs text-orange-100">Keep donors informed and re-engaged</p>
+            <p className="text-xs text-brand-100">Keep donors informed and re-engaged</p>
           </div>
           <ArrowRight
             className="h-4 w-4 shrink-0 text-white transition-transform group-hover:translate-x-0.5"
@@ -134,17 +134,17 @@ export function QuickActions({ campaign, className }: QuickActionsProps) {
             const Icon = tile.icon;
             const classes = cn(
               "group flex min-h-[72px] flex-col items-start gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition-all duration-150",
-              "hover:border-orange-200 hover:bg-orange-50 active:scale-[0.98]",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500",
+              "hover:border-brand-200 hover:bg-brand-50 active:scale-[0.98]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600",
               "disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-200 disabled:hover:bg-slate-50"
             );
             const inner = (
               <>
                 <div
-                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white transition-colors group-hover:border-orange-200 group-hover:bg-orange-100"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white transition-colors group-hover:border-brand-200 group-hover:bg-brand-100"
                   aria-hidden
                 >
-                  <Icon className={cn("h-3.5 w-3.5 text-orange-600", tile.loading && "animate-spin")} />
+                  <Icon className={cn("h-3.5 w-3.5 text-brand-700", tile.loading && "animate-spin")} />
                 </div>
                 <div>
                   <p className="text-xs font-semibold leading-none text-slate-900">{tile.label}</p>

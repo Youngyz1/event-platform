@@ -42,7 +42,7 @@ const STATUS_LABELS: Record<string, string> = {
 function StatusBadge({ status }: { status: string }) {
   const style =
     status === "published"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "bg-brand-100 text-brand-800"
       : status === "rejected"
       ? "bg-red-100 text-red-700"
       : "bg-amber-100 text-amber-700";
@@ -338,7 +338,7 @@ export default function AdminFundraisersPage() {
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -363,7 +363,7 @@ export default function AdminFundraisersPage() {
                       <button
                         type="button"
                         onClick={() => openDrawer(f)}
-                        className="max-w-[200px] truncate text-left font-black text-zinc-900 hover:text-orange-700 hover:underline"
+                        className="max-w-[200px] truncate text-left font-black text-zinc-900 hover:text-brand-800 hover:underline"
                       >
                         {f.title}
                       </button>
@@ -371,7 +371,7 @@ export default function AdminFundraisersPage() {
                     <td className="max-w-[130px] truncate py-3 pr-4 text-zinc-500">
                       {f.organizer || "—"}
                     </td>
-                    <td className="py-3 pr-4 font-black text-emerald-700">
+                    <td className="py-3 pr-4 font-black text-brand-800">
                       {money(f.raised)}
                     </td>
                     <td className="py-3 pr-4 text-zinc-500">{money(f.goal)}</td>
@@ -379,7 +379,7 @@ export default function AdminFundraisersPage() {
                       <div className="flex items-center gap-2">
                         <div className="h-1.5 w-20 overflow-hidden rounded-full bg-zinc-100">
                           <div
-                            className="h-full rounded-full bg-emerald-500"
+                            className="h-full rounded-full bg-brand-600"
                             style={{
                               width: `${calcProgress(f.raised, f.goal)}%`,
                             }}
@@ -400,7 +400,7 @@ export default function AdminFundraisersPage() {
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-black uppercase ${
                           f.is_featured
-                            ? "bg-orange-100 text-orange-700"
+                            ? "bg-brand-100 text-brand-800"
                             : "bg-zinc-100 text-zinc-500"
                         }`}
                       >
@@ -418,7 +418,7 @@ export default function AdminFundraisersPage() {
                         </button>
                         <Link
                           href={`/admin/fundraisers/${f.id}`}
-                          className="rounded-lg border border-orange-200 bg-white px-2.5 py-1.5 text-xs font-black text-orange-700 hover:bg-orange-50"
+                          className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50"
                         >
                           Manage
                         </Link>
@@ -427,7 +427,7 @@ export default function AdminFundraisersPage() {
                             type="button"
                             disabled={working === f.id}
                             onClick={() => approveFundraiser(f.id)}
-                            className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                            className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50 disabled:opacity-50"
                           >
                             Approve
                           </button>
@@ -441,7 +441,7 @@ export default function AdminFundraisersPage() {
                           className={`rounded-lg border bg-white px-2.5 py-1.5 text-xs font-black disabled:opacity-50 ${
                             f.is_featured
                               ? "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
-                              : "border-orange-200 text-orange-700 hover:bg-orange-50"
+                              : "border-brand-200 text-brand-800 hover:bg-brand-50"
                           }`}
                         >
                           {working === f.id
@@ -502,7 +502,7 @@ export default function AdminFundraisersPage() {
               )}
               <Link
                 href={`/admin/fundraisers/${drawer.id}`}
-                className="rounded-xl border border-orange-200 px-4 py-2 text-sm font-black text-orange-700 hover:bg-orange-50"
+                className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-black text-brand-800 hover:bg-brand-50"
               >
                 Manage / Import
               </Link>
@@ -517,7 +517,7 @@ export default function AdminFundraisersPage() {
                 className={`rounded-xl border bg-white px-4 py-2 text-sm font-black disabled:opacity-50 ${
                   drawer.is_featured
                     ? "border-zinc-200 text-zinc-600 hover:bg-zinc-50"
-                    : "border-orange-200 text-orange-700 hover:bg-orange-50"
+                    : "border-brand-200 text-brand-800 hover:bg-brand-50"
                 }`}
               >
                 {working === drawer.id
@@ -532,7 +532,7 @@ export default function AdminFundraisersPage() {
       >
         {drawerLoading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
           </div>
         ) : drawer ? (
           <div className="space-y-6">
@@ -554,7 +554,7 @@ export default function AdminFundraisersPage() {
                   type="button"
                   disabled={working === drawer.id}
                   onClick={() => approveFundraiser(drawer.id)}
-                  className="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                  className="mt-3 w-full rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-brand-800 disabled:opacity-50"
                 >
                   {working === drawer.id ? "Working…" : "Approve & Publish"}
                 </button>
@@ -633,7 +633,7 @@ export default function AdminFundraisersPage() {
                       setDateError("");
                       setDateSuccess(false);
                     }}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-100"
+                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-900 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
                   />
                 </div>
 
@@ -643,7 +643,7 @@ export default function AdminFundraisersPage() {
                   </p>
                 )}
                 {dateSuccess && (
-                  <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                  <p className="rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-800">
                     Date updated successfully.
                   </p>
                 )}
@@ -652,7 +652,7 @@ export default function AdminFundraisersPage() {
                   type="button"
                   disabled={dateSaving || newDate === toDateInputValue(drawer.created_at)}
                   onClick={saveDate}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-orange-700 disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-brand-800 disabled:opacity-50"
                 >
                   {dateSaving ? (
                     <>
@@ -673,7 +673,7 @@ export default function AdminFundraisersPage() {
             <section>
               <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900">
                 {drawer.is_featured ? (
-                  <Star className="h-3.5 w-3.5 fill-orange-500 text-orange-500" />
+                  <Star className="h-3.5 w-3.5 fill-brand-600 text-brand-600" />
                 ) : (
                   <StarOff className="h-3.5 w-3.5" />
                 )}
@@ -688,7 +688,7 @@ export default function AdminFundraisersPage() {
                 </p>
                 <p
                   className={`mt-1 font-black ${
-                    drawer.is_featured ? "text-orange-600" : "text-zinc-500"
+                    drawer.is_featured ? "text-brand-700" : "text-zinc-500"
                   }`}
                 >
                   {drawer.is_featured ? "Featured" : "Not Featured"}

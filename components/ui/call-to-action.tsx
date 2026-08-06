@@ -32,7 +32,7 @@ export function CallToAction({
   avatars     = DEFAULT_AVATARS,
 }: CallToActionProps) {
   return (
-    <div className="max-w-5xl w-full mx-4 md:mx-auto flex flex-col items-center justify-center text-center bg-gradient-to-b from-orange-600 to-orange-800 rounded-3xl p-10 md:p-14 text-white shadow-2xl">
+    <div className="max-w-5xl w-full mx-4 md:mx-auto flex flex-col items-center justify-center text-center bg-gradient-to-b from-brand-700 to-brand-900 rounded-3xl p-10 md:p-14 text-white shadow-2xl">
       {/* Social proof pill */}
       <div className="flex flex-wrap items-center justify-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-sm mb-6">
         <div className="flex items-center">
@@ -49,7 +49,7 @@ export function CallToAction({
       </div>
 
       {/* Headline */}
-      <h2 className="text-3xl md:text-5xl font-black max-w-xl leading-tight bg-gradient-to-r from-white to-orange-100 text-transparent bg-clip-text">
+      <h2 className="text-3xl md:text-5xl font-black max-w-xl leading-tight bg-gradient-to-r from-white to-brand-100 text-transparent bg-clip-text">
         {headline}
       </h2>
 
@@ -59,7 +59,7 @@ export function CallToAction({
       {/* CTA Button */}
       <Link
         href={ctaHref}
-        className="mt-8 inline-block px-8 py-4 bg-white text-orange-700 font-black rounded-full text-sm uppercase tracking-wide hover:bg-orange-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+        className="mt-8 inline-block px-8 py-4 bg-white text-brand-800 font-black rounded-full text-sm uppercase tracking-wide hover:bg-brand-50 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
       >
         {ctaLabel}
       </Link>

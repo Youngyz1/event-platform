@@ -274,7 +274,7 @@ export default function UsersClient() {
                 key={action.id}
                 type="button"
                 onClick={() => setConfirmAction(action.id)}
-                className="rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-black text-orange-700 hover:bg-orange-100"
+                className="rounded-lg border border-brand-300 bg-white px-3 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-100"
               >
                 {action.label}
               </button>
@@ -296,7 +296,7 @@ export default function UsersClient() {
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -340,7 +340,7 @@ export default function UsersClient() {
                         <button
                           type="button"
                           onClick={() => openDrawer(row.id)}
-                          className="font-black text-zinc-900 hover:text-orange-700 hover:underline"
+                          className="font-black text-zinc-900 hover:text-brand-800 hover:underline"
                         >
                           {row.full_name}
                         </button>
@@ -348,7 +348,7 @@ export default function UsersClient() {
                           <p className="text-xs text-zinc-500">@{row.username}</p>
                         )}
                         {isSelf && (
-                          <span className="mt-1 inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-black uppercase text-orange-700">
+                          <span className="mt-1 inline-block rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-black uppercase text-brand-800">
                             You
                           </span>
                         )}
@@ -384,7 +384,7 @@ export default function UsersClient() {
                               type="button"
                               disabled={working === row.id}
                               onClick={() => patchUser(row.id, { status: "active" })}
-                              className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                              className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50 disabled:opacity-50"
                             >
                               {working === row.id ? "…" : "Activate"}
                             </button>
@@ -394,7 +394,7 @@ export default function UsersClient() {
                               type="button"
                               disabled={working === row.id}
                               onClick={() => patchUser(row.id, { role: "admin" })}
-                              className="rounded-lg border border-orange-200 bg-white px-2.5 py-1.5 text-xs font-black text-orange-700 hover:bg-orange-50 disabled:opacity-50"
+                              className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50 disabled:opacity-50"
                             >
                               Promote
                             </button>
@@ -459,7 +459,7 @@ export default function UsersClient() {
                   type="button"
                   disabled={working === drawerUser.id}
                   onClick={() => patchUser(drawerUser.id, { status: "active" })}
-                  className="rounded-xl border border-emerald-200 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-50 disabled:opacity-50"
+                  className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-black text-brand-800 hover:bg-brand-50 disabled:opacity-50"
                 >
                   Activate
                 </button>
@@ -469,7 +469,7 @@ export default function UsersClient() {
                   type="button"
                   disabled={working === drawerUser.id}
                   onClick={() => patchUser(drawerUser.id, { role: "admin" })}
-                  className="rounded-xl border border-orange-200 px-4 py-2 text-sm font-black text-orange-700 hover:bg-orange-50 disabled:opacity-50"
+                  className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-black text-brand-800 hover:bg-brand-50 disabled:opacity-50"
                 >
                   Promote to Admin
                 </button>
@@ -489,7 +489,7 @@ export default function UsersClient() {
       >
         {drawerLoading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
           </div>
         ) : drawerUser ? (
           <div className="space-y-6">
@@ -532,7 +532,7 @@ export default function UsersClient() {
                       <StatusBadge status={org.status} />
                     </div>
                     <div className="flex gap-2">
-                      <Link href={`/org/${org.slug ?? org.id}`} className="text-xs font-black text-orange-700 hover:underline">
+                      <Link href={`/org/${org.slug ?? org.id}`} className="text-xs font-black text-brand-800 hover:underline">
                         View Organizer
                       </Link>
                       <Link href="/admin/fundraisers" className="text-xs font-black text-zinc-600 hover:underline">
@@ -561,7 +561,7 @@ export default function UsersClient() {
                     <div className="mt-1 flex items-center justify-between">
                       <span className="text-xs text-zinc-400">{formatAdminDate(item.at)}</span>
                       {item.href && (
-                        <Link href={item.href} className="text-xs font-black text-orange-700 hover:underline">
+                        <Link href={item.href} className="text-xs font-black text-brand-800 hover:underline">
                           View
                         </Link>
                       )}

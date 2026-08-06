@@ -197,7 +197,7 @@ export default async function OrganizersDirectoryPage({
       >
         <div className="absolute inset-0 bg-black/65" />
         <div className="relative w-full max-w-4xl text-white">
-          <span className="inline-block rounded-full bg-orange-600/30 border border-orange-500/40 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-orange-300 backdrop-blur-sm">
+          <span className="inline-block rounded-full bg-brand-700/30 border border-brand-600/40 px-4 py-1.5 text-xs font-black uppercase tracking-widest text-brand-300 backdrop-blur-sm">
             {cms.organizersHeroEyebrow}
           </span>
           <h1 className="mt-6 text-4xl font-black leading-tight tracking-tight sm:text-5xl lg:text-6xl">
@@ -205,7 +205,7 @@ export default async function OrganizersDirectoryPage({
             {cms.organizersHeroHeadlineLine2 && (
               <>
                 <br />
-                <span className="text-orange-400">{cms.organizersHeroHeadlineLine2}</span>
+                <span className="text-brand-400">{cms.organizersHeroHeadlineLine2}</span>
               </>
             )}
           </h1>
@@ -229,7 +229,7 @@ export default async function OrganizersDirectoryPage({
         {!query && featuredEnriched.length > 0 && (
           <div className="mb-14">
             <div className="mb-6">
-              <p className="text-xs font-black uppercase tracking-wider text-orange-600 font-bold">Industry Leaders</p>
+              <p className="text-xs font-black uppercase tracking-wider text-brand-700 font-bold">Industry Leaders</p>
               <h2 className="text-2xl font-black text-zinc-950 sm:text-3xl mt-1">Featured Organizers</h2>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

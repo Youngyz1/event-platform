@@ -28,15 +28,15 @@ interface ReviewFormProps {
 }
 
 const accentBtn: Record<string, string> = {
-  orange: "bg-orange-500 hover:bg-orange-600 disabled:bg-orange-200",
+  orange: "bg-brand-600 hover:bg-brand-700 disabled:bg-brand-200",
   violet: "bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300",
-  green:  "bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300",
+  green:  "bg-brand-700 hover:bg-brand-800 disabled:bg-brand-300",
 };
 
 const accentRing: Record<string, string> = {
-  orange: "focus:ring-orange-400",
+  orange: "focus:ring-brand-400",
   violet: "focus:ring-violet-400",
-  green:  "focus:ring-emerald-400",
+  green:  "focus:ring-brand-400",
 };
 
 export default function ReviewForm({

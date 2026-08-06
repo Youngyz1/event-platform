@@ -58,7 +58,7 @@ export default function ProfileAvatar({
       ) : (
         <span
           className={cn(
-            "flex h-full w-full items-center justify-center bg-gradient-to-br from-orange-400 to-orange-600 font-black text-white",
+            "flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-400 to-brand-700 font-black text-white",
             TEXT_CLASS[size]
           )}
         >

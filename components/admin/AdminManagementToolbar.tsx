@@ -45,7 +45,7 @@ function SelectField({ filter }: { filter: FilterSelect }) {
         <select
           value={filter.value}
           onChange={(e) => filter.onChange(e.target.value)}
-          className="w-full appearance-none rounded-xl border border-zinc-200 bg-white py-2 pl-3 pr-8 text-xs font-bold text-zinc-800 outline-none focus:border-orange-500"
+          className="w-full appearance-none rounded-xl border border-zinc-200 bg-white py-2 pl-3 pr-8 text-xs font-bold text-zinc-800 outline-none focus:border-brand-600"
         >
           {filter.options.map((opt) => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -101,7 +101,7 @@ export default function AdminManagementToolbar({
               className={cn(
                 "shrink-0 rounded-xl px-3 py-2 text-xs font-black transition",
                 activeTab === tab.value
-                  ? "bg-orange-600 text-white"
+                  ? "bg-brand-700 text-white"
                   : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"
               )}
             >
@@ -122,7 +122,7 @@ export default function AdminManagementToolbar({
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             placeholder={searchPlaceholder}
-            className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm font-semibold text-zinc-900 outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-200"
+            className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-4 text-sm font-semibold text-zinc-900 outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-200"
           />
         </div>
 
@@ -158,8 +158,8 @@ export default function AdminManagementToolbar({
       </div>
 
       {selectedCount > 0 && bulkActions && (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5">
-          <span className="text-xs font-black text-orange-800">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-3 py-2.5">
+          <span className="text-xs font-black text-brand-900">
             {selectedCount} selected
           </span>
           {bulkActions}

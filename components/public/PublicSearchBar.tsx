@@ -84,7 +84,7 @@ export default function PublicSearchBar({
   }
 
   const fieldClass = cn(
-    "w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-3 font-semibold outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20",
+    "w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-3 font-semibold outline-none transition focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20",
     heightClass,
     textClass
   );
@@ -99,7 +99,7 @@ export default function PublicSearchBar({
           aria-expanded={expanded}
           aria-label="Open search"
           className={cn(
-            "inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white pl-4 pr-5 font-bold text-zinc-500 shadow-sm transition hover:border-orange-300 hover:text-orange-600 sm:hidden",
+            "inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white pl-4 pr-5 font-bold text-zinc-500 shadow-sm transition hover:border-brand-300 hover:text-brand-700 sm:hidden",
             heightClass,
             textClass,
             expanded && "hidden"
@@ -162,7 +162,7 @@ export default function PublicSearchBar({
         <button
           type="submit"
           className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded-xl bg-orange-600 px-5 font-black text-white transition hover:bg-orange-700",
+            "inline-flex shrink-0 items-center justify-center rounded-xl bg-brand-700 px-5 font-black text-white transition hover:bg-brand-800",
             // Full-width Search only in the mobile collapsed/expanded layout;
             // other usages keep the original content-width button on mobile.
             collapsibleOnMobile && "w-full sm:w-auto",

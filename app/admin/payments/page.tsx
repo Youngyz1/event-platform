@@ -27,11 +27,11 @@ function dateLabel(d: string) {
 }
 
 const statusClasses: Record<string, string> = {
-  valid:     'bg-emerald-100 text-emerald-700',
+  valid:     'bg-brand-100 text-brand-800',
   used:      'bg-zinc-100 text-zinc-500',
   cancelled: 'bg-red-100 text-red-600',
-  refunded:  'bg-orange-100 text-orange-600',
-  succeeded: 'bg-emerald-100 text-emerald-700',
+  refunded:  'bg-brand-100 text-brand-700',
+  succeeded: 'bg-brand-100 text-brand-800',
   pending:   'bg-amber-100 text-amber-700',
   failed:    'bg-red-100 text-red-600',
 };
@@ -122,7 +122,7 @@ export default async function AdminPaymentsPage() {
                     <td className="py-3 pr-4 text-zinc-500 max-w-[160px] truncate">
                       {(fr as { title?: string } | null)?.title ?? '—'}
                     </td>
-                    <td className="py-3 pr-4 font-black text-emerald-700">{money(d.amount)}</td>
+                    <td className="py-3 pr-4 font-black text-brand-800">{money(d.amount)}</td>
                     <td className="py-3 pr-4">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-black uppercase ${statusClasses[d.status ?? 'succeeded'] ?? statusClasses.succeeded}`}>
                         {d.status ?? 'succeeded'}

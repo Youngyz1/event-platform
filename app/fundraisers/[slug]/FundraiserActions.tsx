@@ -127,7 +127,7 @@ export default function FundraiserFloatingActions({
               strokeWidth={4.5}
               showDetails={true}
               animated={false}
-              textColor="text-emerald-800"
+              textColor="text-brand-900"
               trackColor="#d1fae5"
               progressColor="#059669"
             />

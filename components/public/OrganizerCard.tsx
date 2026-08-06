@@ -51,7 +51,7 @@ export default function OrganizerCard({
   return (
     <article
       className={`group flex flex-col overflow-hidden rounded-2xl border bg-white transition hover:-translate-y-0.5 hover:shadow-lg ${
-        featured ? "border-orange-200 ring-1 ring-orange-100" : "border-zinc-200"
+        featured ? "border-brand-200 ring-1 ring-brand-100" : "border-zinc-200"
       }`}
     >
       <div className="relative h-24 overflow-hidden bg-gradient-to-br from-zinc-100 to-zinc-200">
@@ -68,7 +68,7 @@ export default function OrganizerCard({
           <LocalBrandedPlaceholder variant="banner" />
         )}
         {featured && (
-          <span className="absolute left-3 top-3 rounded-full bg-orange-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+          <span className="absolute left-3 top-3 rounded-full bg-brand-700 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
             Featured
           </span>
         )}
@@ -130,7 +130,7 @@ export default function OrganizerCard({
 
         <Link
           href={href}
-          className="mt-5 block w-full rounded-xl bg-zinc-950 py-3 text-center text-sm font-black text-white transition group-hover:bg-orange-600"
+          className="mt-5 block w-full rounded-xl bg-zinc-950 py-3 text-center text-sm font-black text-white transition group-hover:bg-brand-700"
         >
           View profile
         </Link>

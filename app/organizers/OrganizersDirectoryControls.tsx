@@ -47,7 +47,7 @@ export default function OrganizersDirectoryControls({
           type="search"
           defaultValue={defaultQuery}
           placeholder="Search organizers by name…"
-          className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-4 text-sm font-semibold outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+          className="h-11 w-full rounded-xl border border-zinc-200 bg-white pl-10 pr-4 text-sm font-semibold outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20"
         />
       </form>
 
@@ -60,8 +60,8 @@ export default function OrganizersDirectoryControls({
             className={cn(
               "rounded-full px-4 py-2 text-xs font-black transition",
               activeStatus === status
-                ? "bg-orange-600 text-white"
-                : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:text-orange-600"
+                ? "bg-brand-700 text-white"
+                : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:text-brand-700"
             )}
           >
             {status === "all" ? "All organizers" : "Verified only"}

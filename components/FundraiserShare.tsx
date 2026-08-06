@@ -67,10 +67,10 @@ export default function FundraiserShare({
   const heroCardMarkup = (
     <div className="mx-auto flex w-full max-w-[280px] sm:max-w-[310px] flex-col items-center">
       {/* Outer phone frame mockup outline */}
-      <div className="relative w-full rounded-[26px] border border-emerald-400/40 bg-[#02241e] p-2 shadow-lg">
+      <div className="relative w-full rounded-[26px] border border-brand-400/40 bg-[#02241e] p-2 shadow-lg">
         {/* Phone top notch */}
         <div className="mb-1 flex justify-center">
-          <div className="h-1.5 w-8 rounded-full bg-emerald-600/60" />
+          <div className="h-1.5 w-8 rounded-full bg-brand-700/60" />
         </div>
 
         {/* Inner phone screen — clean, single container without nested card borders */}
@@ -106,7 +106,7 @@ export default function FundraiserShare({
                     Donate now!
                   </Link>
                 )}
-                <div className="shrink-0 rounded-full bg-emerald-800/80 text-emerald-200 px-2 py-0.5 text-[10px] font-semibold text-center truncate">
+                <div className="shrink-0 rounded-full bg-brand-900/80 text-brand-200 px-2 py-0.5 text-[10px] font-semibold text-center truncate">
                   {raisedLabel} raised
                 </div>
               </div>
@@ -167,7 +167,7 @@ export default function FundraiserShare({
             {donateSlug && (
               <Link
                 href={`/fundraisers/${donateSlug}/donate`}
-                className="bg-orange-600 text-white font-black shadow-md rotate-[2deg] shrink-0 hover:bg-orange-700 transition active:scale-95 truncate px-2.5 sm:px-3 py-1.5 text-xs"
+                className="bg-brand-700 text-white font-black shadow-md rotate-[2deg] shrink-0 hover:bg-brand-800 transition active:scale-95 truncate px-2.5 sm:px-3 py-1.5 text-xs"
               >
                 Donate now
               </Link>

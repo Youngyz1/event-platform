@@ -51,15 +51,15 @@ const targetLabel: Record<ReviewTarget, string> = {
 };
 
 const accentBtn: Record<AccentColor, string> = {
-  orange: "bg-orange-500 hover:bg-orange-600",
+  orange: "bg-brand-600 hover:bg-brand-700",
   violet: "bg-violet-600 hover:bg-violet-700",
-  green:  "bg-emerald-600 hover:bg-emerald-700",
+  green:  "bg-brand-700 hover:bg-brand-800",
 };
 
 const accentText: Record<AccentColor, string> = {
-  orange: "text-orange-600",
+  orange: "text-brand-700",
   violet: "text-violet-600",
-  green:  "text-emerald-600",
+  green:  "text-brand-700",
 };
 
 function formatDate(iso: string) {
@@ -323,7 +323,7 @@ export default function ReviewSection({
                     <div className="flex items-center gap-2">
                       <StarRating value={r.rating} size={16} />
                       {r.is_verified && (
-                        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-emerald-700">
+                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-brand-800">
                           Verified
                         </span>
                       )}

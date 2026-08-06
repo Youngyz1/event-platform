@@ -34,7 +34,7 @@ export default async function FundraiserUpdatesPage({
       <header>
         <Link
           href="/dashboard/fundraisers"
-          className="text-sm font-black text-emerald-700 hover:text-emerald-800"
+          className="text-sm font-black text-brand-800 hover:text-brand-900"
         >
           Back to fundraisers
         </Link>

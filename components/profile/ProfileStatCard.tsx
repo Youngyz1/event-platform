@@ -11,7 +11,7 @@ export default function ProfileStatCard({ label, value, icon: Icon }: ProfileSta
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4 sm:p-5">
       <div className="flex items-center gap-1.5">
-        {Icon && <Icon className="h-3.5 w-3.5 text-orange-500" />}
+        {Icon && <Icon className="h-3.5 w-3.5 text-brand-600" />}
         <p className="text-[10px] font-black uppercase tracking-wider text-zinc-400 sm:text-xs">
           {label}
         </p>

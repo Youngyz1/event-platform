@@ -85,7 +85,7 @@ export default function LocationAutocomplete({
           }
         }}
         placeholder={placeholder}
-        className="w-full rounded-full border border-zinc-200 bg-white py-2.5 pl-9 pr-4 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-orange-400 focus:outline-none"
+        className="w-full rounded-full border border-zinc-200 bg-white py-2.5 pl-9 pr-4 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-brand-400 focus:outline-none"
       />
       {open && filtered.length > 0 && (
         <ul className="absolute left-0 right-0 top-full z-20 mt-1.5 max-h-64 overflow-y-auto rounded-xl border border-zinc-200 bg-white py-1.5 shadow-lg">
@@ -96,7 +96,7 @@ export default function LocationAutocomplete({
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => commit(city)}
                 className={`block w-full px-4 py-2 text-left text-sm font-semibold ${
-                  i === highlight ? "bg-orange-50 text-orange-600" : "text-zinc-800 hover:bg-zinc-50"
+                  i === highlight ? "bg-brand-50 text-brand-700" : "text-zinc-800 hover:bg-zinc-50"
                 }`}
               >
                 {city}

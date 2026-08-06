@@ -22,7 +22,7 @@ export interface WorkspaceCampaign {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  published: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  published: "border-brand-200 bg-brand-50 text-brand-800",
   draft: "border-slate-200 bg-slate-100 text-slate-600",
   pending: "border-amber-200 bg-amber-50 text-amber-700",
   rejected: "border-red-200 bg-red-50 text-red-700",
@@ -37,7 +37,7 @@ export function WorkspaceCampaignCard({ campaign }: { campaign: WorkspaceCampaig
       <div className="flex min-w-0 items-start justify-between gap-2">
         <Link
           href={`/dashboard/fundraisers`}
-          className="min-w-0 break-words text-sm font-semibold leading-snug text-slate-900 line-clamp-2 hover:text-orange-600"
+          className="min-w-0 break-words text-sm font-semibold leading-snug text-slate-900 line-clamp-2 hover:text-brand-700"
         >
           {campaign.title}
         </Link>
@@ -46,7 +46,7 @@ export function WorkspaceCampaignCard({ campaign }: { campaign: WorkspaceCampaig
             <button
               type="button"
               aria-label={`Manage ${campaign.title}`}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
             >
               <MoreHorizontal className="h-4 w-4" />
             </button>

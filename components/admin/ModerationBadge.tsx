@@ -3,8 +3,8 @@
 import { cn } from "@/lib/utils";
 
 const BADGE_STYLES: Record<string, string> = {
-  verified: "bg-emerald-100 text-emerald-700",
-  top: "bg-orange-100 text-orange-700",
+  verified: "bg-brand-100 text-brand-800",
+  top: "bg-brand-100 text-brand-800",
   revenue: "bg-amber-100 text-amber-700",
   suspended: "bg-red-100 text-red-600",
   pending: "bg-amber-100 text-amber-700",
@@ -49,11 +49,11 @@ export function StatusBadge({
 }) {
   const styles: Record<string, string> = {
     pending: "bg-amber-100 text-amber-700",
-    verified: "bg-emerald-100 text-emerald-700",
+    verified: "bg-brand-100 text-brand-800",
     rejected: "bg-red-100 text-red-600",
     suspended: "bg-zinc-200 text-zinc-600",
-    active: "bg-emerald-100 text-emerald-700",
-    approved: "bg-emerald-100 text-emerald-700",
+    active: "bg-brand-100 text-brand-800",
+    approved: "bg-brand-100 text-brand-800",
   };
   return (
     <span
@@ -77,7 +77,7 @@ export function RoleBadge({
 }) {
   const styles: Record<string, string> = {
     admin: "bg-zinc-900 text-white",
-    organizer: "bg-orange-100 text-orange-700",
+    organizer: "bg-brand-100 text-brand-800",
     user: "bg-zinc-100 text-zinc-600",
   };
   return (

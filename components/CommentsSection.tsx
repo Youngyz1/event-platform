@@ -28,12 +28,12 @@ type CommentsSectionProps = {
 
 const accentClasses = {
   orange: {
-    label: "text-orange-600",
-    button: "bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300",
-    ring: "focus:border-orange-500",
-    avatar: "bg-orange-100 text-orange-700",
-    badge: "bg-orange-50 text-orange-700 border-orange-200",
-    icon: "text-orange-500",
+    label: "text-brand-700",
+    button: "bg-brand-600 hover:bg-brand-700 disabled:bg-brand-300",
+    ring: "focus:border-brand-600",
+    avatar: "bg-brand-100 text-brand-800",
+    badge: "bg-brand-50 text-brand-800 border-brand-200",
+    icon: "text-brand-600",
   },
   green: {
     label: "text-green-700",

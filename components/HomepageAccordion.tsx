@@ -33,7 +33,7 @@ export default function HomepageAccordion({ services }: HomepageAccordionProps) 
             key={svc.title}
             className={`rounded-xl border transition-all duration-200 ${
               isOpen
-                ? "border-orange-500 border-l-4 bg-orange-50/60"
+                ? "border-brand-600 border-l-4 bg-brand-50/60"
                 : "border-zinc-200 bg-white hover:border-zinc-300"
             }`}
           >
@@ -46,7 +46,7 @@ export default function HomepageAccordion({ services }: HomepageAccordionProps) 
               <span
                 className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
                   isOpen
-                    ? "bg-orange-100 text-orange-600"
+                    ? "bg-brand-100 text-brand-700"
                     : "bg-zinc-100 text-zinc-500"
                 }`}
               >
@@ -56,7 +56,7 @@ export default function HomepageAccordion({ services }: HomepageAccordionProps) 
               {/* Title */}
               <span
                 className={`flex-1 text-sm transition-colors ${
-                  isOpen ? "font-black text-orange-600" : "font-bold text-zinc-800"
+                  isOpen ? "font-black text-brand-700" : "font-bold text-zinc-800"
                 }`}
               >
                 {svc.title}
@@ -65,7 +65,7 @@ export default function HomepageAccordion({ services }: HomepageAccordionProps) 
               {/* Toggle indicator */}
               <span
                 className={`flex-shrink-0 transition-colors ${
-                  isOpen ? "text-orange-600" : "text-zinc-400"
+                  isOpen ? "text-brand-700" : "text-zinc-400"
                 }`}
               >
                 {isOpen ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />}

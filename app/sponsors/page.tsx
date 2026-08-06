@@ -42,7 +42,7 @@ export default function SponsorsPage() {
     <main className="min-h-screen bg-white text-zinc-950">
       <section className="bg-zinc-950 px-4 py-20 text-white sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-semibold uppercase tracking-wide text-orange-400">Sponsor Marketplace</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-400">Sponsor Marketplace</p>
           <h1 className="mt-3 max-w-4xl text-4xl font-bold tracking-tight sm:text-5xl">
             Back campaigns your audience already cares about.
           </h1>
@@ -50,7 +50,7 @@ export default function SponsorsPage() {
             Businesses can discover organizers, browse fundraising campaigns, and apply for sponsorship packages.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/fundraisers" className="rounded-full bg-orange-600 px-5 py-3 text-sm font-semibold text-white hover:bg-orange-700">
+            <Link href="/fundraisers" className="rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-800">
               Browse Campaigns
             </Link>
           </div>
@@ -61,12 +61,12 @@ export default function SponsorsPage() {
         <div className="grid gap-5 md:grid-cols-3">
           {packages.map((pkg) => (
             <div key={pkg.name} className="rounded-2xl border border-zinc-200 p-6">
-              <p className="text-sm font-semibold uppercase tracking-wide text-orange-600">{pkg.price}</p>
+              <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">{pkg.price}</p>
               <h2 className="mt-2 text-xl font-semibold">{pkg.name}</h2>
               <div className="mt-6 space-y-3">
                 {pkg.benefits.map((benefit) => (
                   <p key={benefit} className="flex gap-3 text-sm text-zinc-600">
-                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-orange-500" />
+                    <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-600" />
                     {benefit}
                   </p>
                 ))}

@@ -28,7 +28,7 @@ export default function PublicPagination({
       {currentPage > 1 && (
         <Link
           href={buildHref(currentPage - 1)}
-          className="rounded-lg px-3 py-2 text-sm font-bold text-zinc-600 transition hover:bg-zinc-100 hover:text-orange-600"
+          className="rounded-lg px-3 py-2 text-sm font-bold text-zinc-600 transition hover:bg-zinc-100 hover:text-brand-700"
         >
           Previous
         </Link>
@@ -46,8 +46,8 @@ export default function PublicPagination({
               className={cn(
                 "min-w-[2.25rem] rounded-lg px-3 py-2 text-center text-sm font-black transition",
                 page === currentPage
-                  ? "bg-orange-600 text-white"
-                  : "text-zinc-600 hover:bg-zinc-100 hover:text-orange-600"
+                  ? "bg-brand-700 text-white"
+                  : "text-zinc-600 hover:bg-zinc-100 hover:text-brand-700"
               )}
             >
               {page}
@@ -58,7 +58,7 @@ export default function PublicPagination({
       {currentPage < totalPages && (
         <Link
           href={buildHref(currentPage + 1)}
-          className="rounded-lg px-3 py-2 text-sm font-bold text-zinc-600 transition hover:bg-zinc-100 hover:text-orange-600"
+          className="rounded-lg px-3 py-2 text-sm font-bold text-zinc-600 transition hover:bg-zinc-100 hover:text-brand-700"
         >
           Next
         </Link>

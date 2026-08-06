@@ -72,7 +72,7 @@ export default function AboutPage() {
         />
         <div className="absolute inset-0 -z-10 bg-gradient-to-r from-black/90 via-black/60 to-black/30" />
         <div className="mx-auto grid min-h-[560px] max-w-7xl content-end px-4 pb-16 pt-24 sm:px-6 lg:pb-24">
-          <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-orange-400">
+          <p className="mb-4 text-sm font-semibold uppercase tracking-wide text-brand-400">
             About Fund4Good
           </p>
           <h1 className="max-w-4xl text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
@@ -82,7 +82,7 @@ export default function AboutPage() {
             Fund4Good helps people create, discover, and support real causes. The goal is simple: make it easier for communities to show up for each other.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/fundraisers" className="rounded-full bg-orange-600 px-6 py-3 font-semibold text-white transition hover:bg-orange-700">
+            <Link href="/fundraisers" className="rounded-full bg-brand-700 px-6 py-3 font-semibold text-white transition hover:bg-brand-800">
               Find a cause
             </Link>
             <Link href="/create-fundraiser" className="rounded-full bg-white px-6 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-100">
@@ -95,7 +95,7 @@ export default function AboutPage() {
       <section className="px-4 py-14 sm:px-6 sm:py-20">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-orange-600">Our mission</p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Our mission</p>
             <h2 className="mt-3 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
               Help organizers grow while helping people find where they belong.
             </h2>
@@ -116,7 +116,7 @@ export default function AboutPage() {
           <div className="grid gap-8 sm:grid-cols-2">
             {platformStats.map((item) => (
               <div key={item.value}>
-                <h3 className="text-3xl font-bold text-orange-600">{item.value}</h3>
+                <h3 className="text-3xl font-bold text-brand-700">{item.value}</h3>
                 <p className="mt-2 text-base text-zinc-600">{item.label}</p>
               </div>
             ))}
@@ -127,7 +127,7 @@ export default function AboutPage() {
       <section className="border-t border-zinc-100 px-4 py-14 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-wide text-orange-600">What you can do</p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">What you can do</p>
             <h2 className="mt-3 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
               One platform for the full community flow.
             </h2>
@@ -137,7 +137,7 @@ export default function AboutPage() {
               <article key={item.title}>
                 <h3 className="text-xl font-semibold">{item.title}</h3>
                 <p className="mt-3 min-h-24 text-base leading-7 text-zinc-600">{item.description}</p>
-                <Link href={item.href} className="mt-4 inline-flex rounded-full bg-zinc-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">
+                <Link href={item.href} className="mt-4 inline-flex rounded-full bg-zinc-950 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700">
                   {item.label}
                 </Link>
               </article>
@@ -149,7 +149,7 @@ export default function AboutPage() {
       <section className="bg-[#1f0a3d] px-4 py-14 text-white sm:px-6 sm:py-20">
         <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-orange-300">Built for trust</p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-300">Built for trust</p>
             <h2 className="mt-3 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
               Imported does not have to mean unfinished.
             </h2>
@@ -170,7 +170,7 @@ export default function AboutPage() {
       <section className="px-4 py-14 sm:px-6 sm:py-20">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-8 border-t border-zinc-100 pt-14 md:flex-row md:items-center">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-orange-600">Ready to build</p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">Ready to build</p>
             <h2 className="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">Create a page people can trust.</h2>
             <p className="mt-3 max-w-2xl text-base leading-7 text-zinc-600">
               Start with a fundraiser or organizer profile, then shape the details until it feels complete.

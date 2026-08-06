@@ -48,7 +48,7 @@ export default function EditOrganizerRedirectPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-zinc-50">
-      <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
     </main>
   );
 }

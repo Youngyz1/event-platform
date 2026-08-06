@@ -71,7 +71,7 @@ export function ModalPricing({
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-black text-white hover:bg-orange-700 transition-colors"
+        className="inline-flex items-center gap-2 rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-black text-white hover:bg-brand-800 transition-colors"
       >
         <Sparkles className="h-4 w-4" />
         {triggerLabel}
@@ -81,7 +81,7 @@ export function ModalPricing({
         <DialogContent className="sm:max-w-[480px] bg-white border border-zinc-200">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl font-black text-zinc-950">
-              <Zap className="h-5 w-5 text-orange-600" />
+              <Zap className="h-5 w-5 text-brand-700" />
               Choose Your Plan
             </DialogTitle>
             <p className="text-sm text-zinc-500">
@@ -99,7 +99,7 @@ export function ModalPricing({
                 key={plan.id}
                 className={`relative flex flex-col p-4 cursor-pointer rounded-2xl border-2 transition-all ${
                   selectedPlan === plan.id
-                    ? "border-orange-500 bg-orange-50"
+                    ? "border-brand-600 bg-brand-50"
                     : "border-zinc-200 hover:border-zinc-300"
                 }`}
               >
@@ -122,7 +122,7 @@ export function ModalPricing({
                   {plan.features.map((feat, i) => (
                     <li key={i} className="flex items-center gap-2 text-xs text-zinc-600">
                       <Check className={`h-3.5 w-3.5 flex-shrink-0 ${
-                        selectedPlan === plan.id ? "text-orange-600" : "text-zinc-400"
+                        selectedPlan === plan.id ? "text-brand-700" : "text-zinc-400"
                       }`} />
                       {feat}
                     </li>
@@ -130,7 +130,7 @@ export function ModalPricing({
                 </ul>
 
                 {selectedPlan === plan.id && (
-                  <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-orange-600">
+                  <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-700">
                     <Check className="h-3 w-3 text-white" />
                   </span>
                 )}
@@ -141,7 +141,7 @@ export function ModalPricing({
           <DialogFooter className="flex flex-col gap-2 pt-2">
             <button
               onClick={handleConfirm}
-              className="w-full rounded-xl bg-orange-600 py-3 text-sm font-black text-white hover:bg-orange-700 transition-colors"
+              className="w-full rounded-xl bg-brand-700 py-3 text-sm font-black text-white hover:bg-brand-800 transition-colors"
             >
               Confirm Selection
             </button>

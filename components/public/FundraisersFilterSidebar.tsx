@@ -79,7 +79,7 @@ export default function FundraisersFilterSidebar({
               className={cn(
                 "block rounded-lg px-3 py-2 text-sm font-bold transition",
                 activeCategories.length === 0
-                  ? "bg-emerald-50 text-emerald-700"
+                  ? "bg-brand-50 text-brand-800"
                   : "text-zinc-700 hover:bg-zinc-50"
               )}
             >
@@ -94,7 +94,7 @@ export default function FundraisersFilterSidebar({
                   className={cn(
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition",
                     isActive
-                      ? "bg-emerald-50 text-emerald-700"
+                      ? "bg-brand-50 text-brand-800"
                       : "text-zinc-700 hover:bg-zinc-50"
                   )}
                 >
@@ -102,7 +102,7 @@ export default function FundraisersFilterSidebar({
                     className={cn(
                       "h-3 w-3 rounded-sm border-2 flex-shrink-0",
                       isActive
-                        ? "border-emerald-600 bg-emerald-600"
+                        ? "border-brand-700 bg-brand-700"
                         : "border-zinc-300"
                     )}
                   />
@@ -126,7 +126,7 @@ export default function FundraisersFilterSidebar({
               className={cn(
                 "block rounded-lg px-3 py-2 text-sm font-bold transition",
                 activeSort === opt.value
-                  ? "bg-emerald-50 text-emerald-700"
+                  ? "bg-brand-50 text-brand-800"
                   : "text-zinc-700 hover:bg-zinc-50"
               )}
             >

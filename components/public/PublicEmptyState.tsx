@@ -31,7 +31,7 @@ export default function PublicEmptyState({
       {action && (
         <Link
           href={action.href}
-          className="mt-6 inline-flex rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white transition hover:bg-orange-700"
+          className="mt-6 inline-flex rounded-xl bg-brand-700 px-6 py-3 text-sm font-black text-white transition hover:bg-brand-800"
         >
           {action.label}
         </Link>

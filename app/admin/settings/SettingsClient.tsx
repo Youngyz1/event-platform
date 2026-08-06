@@ -11,7 +11,7 @@ import {
 } from "@/types/platform-settings";
 
 const fieldClass =
-  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-orange-500 focus:ring-1 focus:ring-orange-200";
+  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-brand-600 focus:ring-1 focus:ring-brand-200";
 
 export default function SettingsClient() {
   const [settings, setSettings] = useState<Record<PlatformSettingKey, string>>(
@@ -71,7 +71,7 @@ export default function SettingsClient() {
       />
 
       {toast && (
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700">
+        <div className="rounded-2xl border border-brand-200 bg-brand-50 px-5 py-3 text-sm font-semibold text-brand-800">
           {toast}
         </div>
       )}
@@ -83,7 +83,7 @@ export default function SettingsClient() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
         </div>
       ) : (
         <form onSubmit={handleSave} className="space-y-6">
@@ -108,7 +108,7 @@ export default function SettingsClient() {
                           type="checkbox"
                           checked={settings[field.key] === "true"}
                           onChange={(e) => onChange(field.key, e.target.checked ? "true" : "false")}
-                          className="h-5 w-5 rounded border-zinc-300 text-orange-600 focus:ring-orange-500"
+                          className="h-5 w-5 rounded border-zinc-300 text-brand-700 focus:ring-brand-600"
                         />
                       </label>
                     ) : field.inputType === "color" ? (
@@ -158,7 +158,7 @@ export default function SettingsClient() {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-60"
+              className="rounded-xl bg-brand-700 px-6 py-3 text-sm font-black text-white hover:bg-brand-800 disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save Settings"}
             </button>

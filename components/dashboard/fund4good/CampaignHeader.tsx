@@ -34,9 +34,9 @@ export function CampaignHeader({ campaign, className }: CampaignHeaderProps) {
 
   const progressColor =
     progress >= 75
-      ? "bg-emerald-500"
+      ? "bg-brand-600"
       : progress >= 40
-      ? "bg-orange-500"
+      ? "bg-brand-600"
       : "bg-amber-400";
 
   return (
@@ -76,10 +76,10 @@ export function CampaignHeader({ campaign, className }: CampaignHeaderProps) {
           <button
             type="button"
             onClick={handleShare}
-            className="flex min-h-[40px] items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            className="flex min-h-[40px] items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
           >
             {copied ? (
-              <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden />
+              <Check className="h-3.5 w-3.5 text-brand-700" aria-hidden />
             ) : (
               <Share2 className="h-3.5 w-3.5" aria-hidden />
             )}
@@ -87,7 +87,7 @@ export function CampaignHeader({ campaign, className }: CampaignHeaderProps) {
           </button>
           <Link
             href={`/fundraisers/edit/${campaign.id}`}
-            className="flex min-h-[40px] items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500"
+            className="flex min-h-[40px] items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
           >
             <Pencil className="h-3.5 w-3.5" aria-hidden />
             Edit
@@ -96,7 +96,7 @@ export function CampaignHeader({ campaign, className }: CampaignHeaderProps) {
             href={`/fundraisers/${campaign.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex min-h-[40px] items-center gap-1.5 rounded-lg bg-orange-600 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-orange-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+            className="flex min-h-[40px] items-center gap-1.5 rounded-lg bg-brand-700 px-3.5 py-2 text-xs font-semibold text-white transition-colors hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
           >
             <ExternalLink className="h-3.5 w-3.5" aria-hidden />
             View Page
@@ -184,7 +184,7 @@ function StatChip({
       <dd
         className={cn(
           "truncate text-sm font-bold tabular-nums",
-          highlight ? "text-emerald-600" : "text-slate-900"
+          highlight ? "text-brand-700" : "text-slate-900"
         )}
       >
         {value}

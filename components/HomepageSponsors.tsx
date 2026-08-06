@@ -13,7 +13,7 @@ export default function HomepageSponsors({ sponsors }: Props) {
     <section className="border-t border-zinc-100 bg-white py-10 sm:py-14">
       <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <div className="mb-6 text-center sm:mb-8">
-          <p className="text-xs font-black uppercase tracking-widest text-orange-600">
+          <p className="text-xs font-black uppercase tracking-widest text-brand-700">
             Our Sponsors
           </p>
           <h2 className="mt-1 text-xl font-black tracking-tight text-zinc-950 sm:text-2xl">

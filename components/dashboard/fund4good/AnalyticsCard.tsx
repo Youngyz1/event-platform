@@ -67,10 +67,10 @@ export function AnalyticsCard({ dailyDonations = [], className }: AnalyticsCardP
         {activeTab.tracked && hasData && weekChange !== null && (
           <div className="flex items-center gap-1.5">
             <TrendingUp
-              className={cn("h-3.5 w-3.5", weekChange >= 0 ? "text-emerald-500" : "text-red-500")}
+              className={cn("h-3.5 w-3.5", weekChange >= 0 ? "text-brand-600" : "text-red-500")}
               aria-hidden
             />
-            <span className={cn("text-xs font-semibold", weekChange >= 0 ? "text-emerald-600" : "text-red-500")}>
+            <span className={cn("text-xs font-semibold", weekChange >= 0 ? "text-brand-700" : "text-red-500")}>
               {weekChange >= 0 ? "+" : ""}
               {weekChange}% vs last week
             </span>
@@ -90,7 +90,7 @@ export function AnalyticsCard({ dailyDonations = [], className }: AnalyticsCardP
             className={cn(
               "shrink-0 whitespace-nowrap rounded-t-lg px-3 py-2 text-xs font-semibold transition-colors",
               tab === t.id
-                ? "border-b-2 border-orange-600 text-orange-600"
+                ? "border-b-2 border-brand-700 text-brand-700"
                 : "border-b-2 border-transparent text-slate-400 hover:text-slate-600"
             )}
           >

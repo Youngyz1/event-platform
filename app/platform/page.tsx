@@ -52,12 +52,12 @@ const roles = [
 
 const accents: Record<string, { badge: string; dot: string }> = {
   orange: {
-    badge: "bg-orange-100 text-orange-700",
-    dot: "bg-orange-500",
+    badge: "bg-brand-100 text-brand-800",
+    dot: "bg-brand-600",
   },
   emerald: {
-    badge: "bg-emerald-100 text-emerald-700",
-    dot: "bg-emerald-500",
+    badge: "bg-brand-100 text-brand-800",
+    dot: "bg-brand-600",
   },
   blue: {
     badge: "bg-blue-100 text-blue-700",
@@ -70,7 +70,7 @@ export default function PlatformPage() {
     <main className="min-h-screen bg-white text-zinc-950">
       <section className="bg-zinc-950 px-4 py-20 text-white sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <p className="text-sm font-semibold uppercase tracking-wide text-orange-400">
+          <p className="text-sm font-semibold uppercase tracking-wide text-brand-400">
             Platform
           </p>
           <h1 className="mt-3 max-w-4xl text-4xl font-bold tracking-tight sm:text-5xl">
@@ -121,7 +121,7 @@ export default function PlatformPage() {
       <section className="px-4 pb-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl rounded-2xl bg-zinc-950 p-8 text-white md:flex md:items-center md:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-orange-400">
+            <p className="text-sm font-semibold uppercase tracking-wide text-brand-400">
               Ready to get started?
             </p>
             <h2 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -131,7 +131,7 @@ export default function PlatformPage() {
           <div className="mt-6 flex flex-wrap gap-3 md:mt-0">
             <Link
               href="/fundraisers"
-              className="rounded-full bg-orange-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-700"
+              className="rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-800"
             >
               Browse Fundraisers
             </Link>

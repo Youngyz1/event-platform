@@ -21,7 +21,7 @@ export default function ApprovalActionButtons({
         type="button"
         disabled={disabled}
         onClick={onApprove}
-        className="inline-flex items-center gap-1 rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50 transition disabled:opacity-50"
+        className="inline-flex items-center gap-1 rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50 transition disabled:opacity-50"
       >
         <Check className="h-3.5 w-3.5" />
         Approve

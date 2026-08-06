@@ -188,7 +188,7 @@ export default function FundraiserMediaSlider({
             <button
               type="button"
               onClick={() => setShowShareMenu(!showShareMenu)}
-              className="inline-flex items-center gap-1.5 rounded-full bg-orange-600 text-white px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-black shadow-lg hover:bg-orange-700 transition active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-1.5 rounded-full bg-brand-700 text-white px-4 sm:px-6 py-1.5 sm:py-2 text-xs sm:text-sm font-black shadow-lg hover:bg-brand-800 transition active:scale-95 cursor-pointer"
             >
               <Share2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Share this campaign
@@ -258,7 +258,7 @@ export default function FundraiserMediaSlider({
           className="aspect-[4/5] sm:aspect-[16/9] w-full bg-black object-cover"
         />
       ) : active.story ? (
-        <div className="relative aspect-[4/5] sm:aspect-[16/9] w-full bg-emerald-600">
+        <div className="relative aspect-[4/5] sm:aspect-[16/9] w-full bg-brand-700">
           <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-white p-4 shadow-lg sm:inset-x-6 sm:bottom-6 sm:p-5">
             <p className="line-clamp-2 text-sm leading-6 text-zinc-700 sm:text-base">
               {active.story.excerpt}
@@ -287,7 +287,7 @@ export default function FundraiserMediaSlider({
                     .getElementById(active.story!.scrollTargetId)
                     ?.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
-                className="shrink-0 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700"
+                className="shrink-0 rounded-full bg-brand-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-brand-800"
               >
                 Read story
               </button>

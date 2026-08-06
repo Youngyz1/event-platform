@@ -185,7 +185,7 @@ function FundraisersClientInner() {
         title="Fundraisers"
         description="Campaign progress, donors, and fundraising performance."
         action={
-          <Link href="/dashboard/fundraisers/new" className="shrink-0 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-700">
+          <Link href="/dashboard/fundraisers/new" className="shrink-0 rounded-xl bg-brand-700 px-5 py-3 text-sm font-black text-white hover:bg-brand-800">
             + Start Fundraiser
           </Link>
         }
@@ -272,7 +272,7 @@ function FundraisersClientInner() {
                   <ReviewBadge status={row.review_status} />
                   <div className="mt-1 flex items-center justify-between">
                     <span className="text-xs font-bold text-zinc-500 uppercase">{row.category || "Other"}</span>
-                    <p className="text-sm font-medium text-emerald-700">{formatAdminMoney(row.raised)} raised</p>
+                    <p className="text-sm font-medium text-brand-800">{formatAdminMoney(row.raised)} raised</p>
                   </div>
                 </button>
                 <div className="mt-3">
@@ -280,7 +280,7 @@ function FundraisersClientInner() {
                 </div>
                 <p className="mt-2 text-xs font-bold text-zinc-500">{row.progress}% of {formatAdminMoney(row.goal)}</p>
                 <div className="mt-4 flex flex-wrap gap-1.5">
-                  <Link href={`/fundraisers/edit/${row.id}`} className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50">Edit</Link>
+                  <Link href={`/fundraisers/edit/${row.id}`} className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50">Edit</Link>
                   <button type="button" onClick={() => setDeleteTarget(row)} className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-black text-red-700 hover:bg-red-50">Delete</button>
                 </div>
               </article>
@@ -312,19 +312,19 @@ function FundraisersClientInner() {
                       <ReviewBadge status={row.review_status} />
                     </td>
                     <td className="py-3 pr-4 text-xs font-bold text-zinc-500 uppercase">{row.category || "Other"}</td>
-                    <td className="py-3 pr-4 font-black text-emerald-700">{formatAdminMoney(row.raised)}</td>
+                    <td className="py-3 pr-4 font-black text-brand-800">{formatAdminMoney(row.raised)}</td>
                     <td className="py-3 pr-4 font-black">{formatAdminMoney(row.goal)}</td>
                     <td className="py-3 pr-4 font-black text-violet-700">{row.progress}%</td>
                     <td className="py-3 pr-4 font-black">{row.donor_count}</td>
                     <td className="py-3 pr-4">
-                      <span className={cn("rounded-full px-2.5 py-1 text-xs font-black uppercase", row.status === "completed" ? "bg-emerald-100 text-emerald-700" : "bg-violet-100 text-violet-700")}>
+                      <span className={cn("rounded-full px-2.5 py-1 text-xs font-black uppercase", row.status === "completed" ? "bg-brand-100 text-brand-800" : "bg-violet-100 text-violet-700")}>
                         {row.status}
                       </span>
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1.5">
                         <button type="button" onClick={() => openDrawer(row.id)} className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-black text-zinc-700 hover:bg-zinc-50">View</button>
-                        <Link href={`/fundraisers/edit/${row.id}`} className="rounded-lg border border-emerald-200 bg-white px-2.5 py-1.5 text-xs font-black text-emerald-700 hover:bg-emerald-50">Edit</Link>
+                        <Link href={`/fundraisers/edit/${row.id}`} className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50">Edit</Link>
                         <button type="button" onClick={() => setDeleteTarget(row)} className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-black text-red-700 hover:bg-red-50">Delete</button>
                       </div>
                     </td>
@@ -347,7 +347,7 @@ function FundraisersClientInner() {
               {drawerItem.slug && (
                 <Link href={`/fundraisers/${drawerItem.slug}`} className="rounded-xl border border-zinc-200 px-4 py-2 text-sm font-black text-zinc-700 hover:bg-white">Public Page</Link>
               )}
-              <Link href={`/fundraisers/edit/${drawerItem.id}`} className="rounded-xl border border-emerald-200 px-4 py-2 text-sm font-black text-emerald-700 hover:bg-emerald-50">Edit</Link>
+              <Link href={`/fundraisers/edit/${drawerItem.id}`} className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-black text-brand-800 hover:bg-brand-50">Edit</Link>
               <Link href={`/dashboard/fundraisers/${drawerItem.id}/updates`} className="rounded-xl border border-violet-200 px-4 py-2 text-sm font-black text-violet-700 hover:bg-violet-50">Updates ({drawerItem.update_count})</Link>
               <button type="button" onClick={() => setDeleteTarget(drawerItem)} className="rounded-xl border border-red-200 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-50">Delete</button>
             </div>

@@ -43,14 +43,14 @@ export function CreatorWorkspace({
 }) {
   const accentClasses = {
     orange: {
-      text: "text-orange-600",
-      bg: "bg-orange-600",
-      soft: "bg-orange-50 text-orange-700",
+      text: "text-brand-700",
+      bg: "bg-brand-700",
+      soft: "bg-brand-50 text-brand-800",
     },
     green: {
-      text: "text-emerald-600",
-      bg: "bg-emerald-600",
-      soft: "bg-emerald-50 text-emerald-700",
+      text: "text-brand-700",
+      bg: "bg-brand-700",
+      soft: "bg-brand-50 text-brand-800",
     },
   };
   const theme = accentClasses[accent];
@@ -179,7 +179,7 @@ export function CreatorField({
 }
 
 export const inputClass =
-  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100";
+  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-brand-600 focus:ring-4 focus:ring-brand-100";
 
 export const greenInputClass =
-  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100";
+  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold outline-none transition focus:border-brand-600 focus:ring-4 focus:ring-brand-100";

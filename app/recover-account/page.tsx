@@ -32,8 +32,8 @@ export default function RecoverAccountPage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
         <div className="w-full max-w-md text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
-            <CheckCircle className="h-8 w-8 text-emerald-600" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-100">
+            <CheckCircle className="h-8 w-8 text-brand-700" />
           </div>
           <h1 className="text-2xl font-black text-zinc-900">Account Recovered!</h1>
           <p className="mt-2 text-sm font-medium text-zinc-500">
@@ -101,7 +101,7 @@ export default function RecoverAccountPage() {
             <button
               onClick={handleRecover}
               disabled={recovering}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-orange-600 px-5 py-3 text-sm font-black text-white transition hover:bg-orange-700 disabled:opacity-60"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-brand-700 px-5 py-3 text-sm font-black text-white transition hover:bg-brand-800 disabled:opacity-60"
             >
               {recovering ? (
                 <>

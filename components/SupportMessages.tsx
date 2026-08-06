@@ -206,7 +206,7 @@ export default function SupportMessages({
                       {hasCustomizedProfile ? (
                         <Link
                           href={`/profile/${profile!.id}`}
-                          className="font-black text-zinc-950 transition hover:text-emerald-600 hover:underline"
+                          className="font-black text-zinc-950 transition hover:text-brand-700 hover:underline"
                         >
                           {displayName}
                         </Link>

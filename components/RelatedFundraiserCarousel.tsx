@@ -88,14 +88,14 @@ export default function RelatedFundraiserCarousel({
   return (
     <div>
       <div className="mb-6 flex justify-end">
-        <label className="flex items-center gap-2 text-sm font-semibold text-emerald-100">
+        <label className="flex items-center gap-2 text-sm font-semibold text-brand-100">
           Show
           <select
             value={category}
             onChange={(event) =>
               setCategory(event.target.value as RelatedFundraiserCategory)
             }
-            className="rounded-lg border border-emerald-700 bg-emerald-900 px-3 py-2 text-sm font-bold text-white transition focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            className="rounded-lg border border-brand-800 bg-brand-950 px-3 py-2 text-sm font-bold text-white transition focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-400"
           >
             {CATEGORY_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -107,7 +107,7 @@ export default function RelatedFundraiserCarousel({
       </div>
 
       {fundraisers.length === 0 ? (
-        <p className="rounded-lg border border-emerald-800 bg-emerald-900/50 px-5 py-10 text-center text-sm font-medium text-emerald-100">
+        <p className="rounded-lg border border-brand-900 bg-brand-950/50 px-5 py-10 text-center text-sm font-medium text-brand-100">
           {isLoading
             ? "Loading fundraisers…"
             : "No fundraisers match this filter right now."}

@@ -44,7 +44,7 @@ export default function FundraiserCard({
       <article
         className={cn(
           "group flex h-full flex-col overflow-hidden rounded-2xl border bg-white transition hover:-translate-y-0.5 hover:shadow-lg",
-          featured ? "border-emerald-200 ring-1 ring-emerald-100" : "border-zinc-200"
+          featured ? "border-brand-200 ring-1 ring-brand-100" : "border-zinc-200"
         )}
       >
         <div className="relative h-44 w-full overflow-hidden bg-zinc-100 sm:h-52">
@@ -62,7 +62,7 @@ export default function FundraiserCard({
           )}
 
           {featured && (
-            <span className="absolute left-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+            <span className="absolute left-3 top-3 rounded-full bg-brand-700 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
               Featured
             </span>
           )}
@@ -103,7 +103,7 @@ export default function FundraiserCard({
             )}
           </div>
 
-          <span className="mt-4 block w-full rounded-xl bg-emerald-600 py-2.5 text-center text-sm font-black text-white transition group-hover:bg-emerald-700">
+          <span className="mt-4 block w-full rounded-xl bg-brand-700 py-2.5 text-center text-sm font-black text-white transition group-hover:bg-brand-800">
             Donate now
           </span>
         </div>

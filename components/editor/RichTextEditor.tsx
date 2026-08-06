@@ -356,8 +356,8 @@ export default function RichTextEditor({
   // --- Toolbar Styling Helpers ---
   const activeClass =
     accent === "green"
-      ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-      : "bg-orange-100 text-orange-800 border-orange-200";
+      ? "bg-brand-100 text-brand-900 border-brand-200"
+      : "bg-brand-100 text-brand-900 border-brand-200";
 
   const buttonStyle = (isActive: boolean) =>
     `p-2.5 rounded-lg border text-sm font-semibold transition hover:bg-zinc-100 flex items-center justify-center ${
@@ -610,8 +610,8 @@ export default function RichTextEditor({
                 }}
                 className={`px-4 py-2.5 rounded-xl text-sm font-black text-white ${
                   accent === "green"
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-orange-600 hover:bg-orange-700"
+                    ? "bg-brand-700 hover:bg-brand-800"
+                    : "bg-brand-700 hover:bg-brand-800"
                 }`}
               >
                 Insert

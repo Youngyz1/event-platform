@@ -156,11 +156,11 @@ export default function SignupPage() {
     <div className="w-full min-h-screen flex">
 
       {/* LEFT — Hero */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-slate-900 via-orange-900 to-orange-600 items-center justify-center p-12 relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-slate-900 via-brand-950 to-brand-700 items-center justify-center p-12 relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-64 h-64 rounded-full bg-white blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-orange-300 blur-3xl" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-brand-300 blur-3xl" />
         </div>
         <div className="text-white max-w-lg relative z-10">
           {/* Logo */}
@@ -174,7 +174,7 @@ export default function SignupPage() {
           <h1 className="text-5xl font-bold mb-6 leading-tight">
             Create events, raise funds, find sponsors.
           </h1>
-          <p className="text-lg text-orange-100 mb-10">
+          <p className="text-lg text-brand-100 mb-10">
             Join thousands of organizers already using Fund4Good to run
             successful events and campaigns.
           </p>
@@ -183,15 +183,15 @@ export default function SignupPage() {
           <div className="grid grid-cols-3 gap-6">
             <div>
               <p className="text-3xl font-black text-white">10K+</p>
-              <p className="text-sm text-orange-200">Events hosted</p>
+              <p className="text-sm text-brand-200">Events hosted</p>
             </div>
             <div>
               <p className="text-3xl font-black text-white">$2M+</p>
-              <p className="text-sm text-orange-200">Funds raised</p>
+              <p className="text-sm text-brand-200">Funds raised</p>
             </div>
             <div>
               <p className="text-3xl font-black text-white">98%</p>
-              <p className="text-sm text-orange-200">Satisfaction</p>
+              <p className="text-sm text-brand-200">Satisfaction</p>
             </div>
           </div>
         </div>
@@ -214,7 +214,7 @@ export default function SignupPage() {
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-orange-500 font-semibold hover:text-orange-600"
+              className="text-brand-600 font-semibold hover:text-brand-700"
             >
               Log in
             </Link>
@@ -313,7 +313,7 @@ export default function SignupPage() {
                       required
                       type="email"
                       placeholder="you@example.com"
-                      className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                      className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-brand-600 bg-white"
                     />
                   </div>
 
@@ -331,7 +331,7 @@ export default function SignupPage() {
                         required
                         type={showPassword ? "text" : "password"}
                         placeholder="Min. 8 characters"
-                        className="w-full border border-zinc-300 rounded-2xl px-5 py-4 pr-12 outline-none focus:border-orange-500 bg-white"
+                        className="w-full border border-zinc-300 rounded-2xl px-5 py-4 pr-12 outline-none focus:border-brand-600 bg-white"
                       />
                       <button
                         type="button"
@@ -364,7 +364,7 @@ export default function SignupPage() {
                             <p className="font-bold text-zinc-700 mb-1">Password must contain:</p>
                             <div className="flex items-center gap-2">
                               {isMinLength ? (
-                                <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                <svg className="w-4 h-4 text-brand-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               ) : (
@@ -372,12 +372,12 @@ export default function SignupPage() {
                                   <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
                                 </div>
                               )}
-                              <span className={isMinLength ? "text-emerald-700 font-semibold" : "text-zinc-500"}>At least 8 characters</span>
+                              <span className={isMinLength ? "text-brand-800 font-semibold" : "text-zinc-500"}>At least 8 characters</span>
                             </div>
 
                             <div className="flex items-center gap-2">
                               {hasCapitalLetter ? (
-                                <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                <svg className="w-4 h-4 text-brand-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               ) : (
@@ -385,12 +385,12 @@ export default function SignupPage() {
                                   <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
                                 </div>
                               )}
-                              <span className={hasCapitalLetter ? "text-emerald-700 font-semibold" : "text-zinc-500"}>At least 1 capital letter</span>
+                              <span className={hasCapitalLetter ? "text-brand-800 font-semibold" : "text-zinc-500"}>At least 1 capital letter</span>
                             </div>
 
                             <div className="flex items-center gap-2">
                               {hasLetter ? (
-                                <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                <svg className="w-4 h-4 text-brand-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               ) : (
@@ -398,12 +398,12 @@ export default function SignupPage() {
                                   <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
                                 </div>
                               )}
-                              <span className={hasLetter ? "text-emerald-700 font-semibold" : "text-zinc-500"}>At least 1 letter</span>
+                              <span className={hasLetter ? "text-brand-800 font-semibold" : "text-zinc-500"}>At least 1 letter</span>
                             </div>
 
                             <div className="flex items-center gap-2">
                               {hasNumber ? (
-                                <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                <svg className="w-4 h-4 text-brand-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               ) : (
@@ -411,12 +411,12 @@ export default function SignupPage() {
                                   <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
                                 </div>
                               )}
-                              <span className={hasNumber ? "text-emerald-700 font-semibold" : "text-zinc-500"}>At least 1 number</span>
+                              <span className={hasNumber ? "text-brand-800 font-semibold" : "text-zinc-500"}>At least 1 number</span>
                             </div>
 
                             <div className="flex items-center gap-2">
                               {hasSpecialChar ? (
-                                <svg className="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+                                <svg className="w-4 h-4 text-brand-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                                 </svg>
                               ) : (
@@ -424,7 +424,7 @@ export default function SignupPage() {
                                   <div className="w-1.5 h-1.5 rounded-full bg-zinc-300" />
                                 </div>
                               )}
-                              <span className={hasSpecialChar ? "text-emerald-700 font-semibold" : "text-zinc-500"}>At least 1 special character</span>
+                              <span className={hasSpecialChar ? "text-brand-800 font-semibold" : "text-zinc-500"}>At least 1 special character</span>
                             </div>
                           </div>
                         </motion.div>
@@ -443,14 +443,14 @@ export default function SignupPage() {
                       required
                       type="password"
                       placeholder="Repeat your password"
-                      className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                      className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-brand-600 bg-white"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-4 rounded-2xl font-bold text-lg transition"
+                    className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-brand-300 text-white py-4 rounded-2xl font-bold text-lg transition"
                   >
                     {loading ? "Creating account..." : "Create Account"}
                   </button>

@@ -164,7 +164,7 @@ export default async function OrgOverviewPage({
       {/* Header */}
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-wide text-orange-600">Organization</p>
+          <p className="text-xs font-bold uppercase tracking-wide text-brand-700">Organization</p>
           <h1 className="mt-1 min-w-0 break-words text-2xl font-bold text-slate-900">{org.name}</h1>
           <p className="text-sm text-slate-500">Your organization at a glance</p>
         </div>
@@ -190,8 +190,8 @@ export default async function OrgOverviewPage({
       {/* Stats — 2x2 mobile, 4 columns desktop */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
-          { label: "Campaigns", value: activeCampaigns.toLocaleString(), icon: Heart, tint: "bg-emerald-50 text-emerald-600" },
-          { label: "Raised", value: `$${raised.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: DollarSign, tint: "bg-orange-50 text-orange-600" },
+          { label: "Campaigns", value: activeCampaigns.toLocaleString(), icon: Heart, tint: "bg-brand-50 text-brand-700" },
+          { label: "Raised", value: `$${raised.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: DollarSign, tint: "bg-brand-50 text-brand-700" },
           { label: "Donors", value: donorCount.toLocaleString(), icon: Users, tint: "bg-sky-50 text-sky-600" },
           { label: "Events", value: (eventCount ?? 0).toLocaleString(), icon: Calendar, tint: "bg-violet-50 text-violet-600" },
         ].map((stat) => (
@@ -213,17 +213,17 @@ export default async function OrgOverviewPage({
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Link
             href="/create-fundraiser"
-            className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-orange-300 hover:bg-orange-50/40"
+            className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-brand-300 hover:bg-brand-50/40"
           >
-            <Plus className="h-5 w-5 text-orange-600" />
+            <Plus className="h-5 w-5 text-brand-700" />
             <span className="text-sm font-semibold text-slate-900">Create Campaign</span>
           </Link>
           {mostRecentFundraiser ? (
             <Link
               href={`/dashboard/fundraisers/${mostRecentFundraiser.id}/updates`}
-              className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-orange-300 hover:bg-orange-50/40"
+              className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-brand-300 hover:bg-brand-50/40"
             >
-              <Megaphone className="h-5 w-5 text-orange-600" />
+              <Megaphone className="h-5 w-5 text-brand-700" />
               <span className="text-sm font-semibold text-slate-900">Post Update</span>
             </Link>
           ) : (
@@ -249,9 +249,9 @@ export default async function OrgOverviewPage({
           <a
             href={org.slug ? `/org/${org.slug}` : `/organizers/${org.id}`}
             target="_blank"
-            className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-orange-300 hover:bg-orange-50/40"
+            className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-brand-300 hover:bg-brand-50/40"
           >
-            <Globe className="h-5 w-5 text-orange-600" />
+            <Globe className="h-5 w-5 text-brand-700" />
             <span className="text-sm font-semibold text-slate-900">View Public Page</span>
           </a>
         </div>
@@ -261,7 +261,7 @@ export default async function OrgOverviewPage({
       <section>
         <div className="mb-3 flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-slate-900">Campaigns</h2>
-          <Link href={`${base}/fundraisers`} className="text-xs font-medium text-orange-600 hover:text-orange-700">
+          <Link href={`${base}/fundraisers`} className="text-xs font-medium text-brand-700 hover:text-brand-800">
             View all
           </Link>
         </div>
@@ -278,7 +278,7 @@ export default async function OrgOverviewPage({
             <p className="mt-1 max-w-xs text-sm text-slate-500">Launch your first campaign to start tracking donations here.</p>
             <Link
               href="/create-fundraiser"
-              className="mt-4 inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
+              className="mt-4 inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800"
             >
               <Plus className="h-4 w-4" />
               Create Campaign
@@ -308,14 +308,14 @@ export default async function OrgOverviewPage({
             </button>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-semibold text-orange-700">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-800">
               {org.name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-slate-900">You</p>
               <p className="text-xs text-slate-400">Sole owner of this organization</p>
             </div>
-            <span className="inline-flex shrink-0 items-center rounded-full border border-orange-200 bg-orange-50 px-2.5 py-0.5 text-xs font-medium text-orange-700">
+            <span className="inline-flex shrink-0 items-center rounded-full border border-brand-200 bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-800">
               Owner
             </span>
           </div>

@@ -49,10 +49,10 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const ACTION_STYLES: Record<string, string> = {
-  verify: "border-emerald-200 text-emerald-700 hover:bg-emerald-50",
+  verify: "border-brand-200 text-brand-800 hover:bg-brand-50",
   reject: "border-red-200 text-red-600 hover:bg-red-50",
   suspend: "border-zinc-200 text-zinc-600 hover:bg-zinc-50",
-  restore: "border-orange-200 text-orange-700 hover:bg-orange-50",
+  restore: "border-brand-200 text-brand-800 hover:bg-brand-50",
 };
 
 export default function OrganizersClient() {
@@ -399,7 +399,7 @@ export default function OrganizersClient() {
                 key={action}
                 type="button"
                 onClick={() => setConfirmAction(action)}
-                className="rounded-lg border border-orange-300 bg-white px-3 py-1.5 text-xs font-black text-orange-700 hover:bg-orange-100"
+                className="rounded-lg border border-brand-300 bg-white px-3 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-100"
               >
                 {ACTION_LABELS[action]}
               </button>
@@ -421,7 +421,7 @@ export default function OrganizersClient() {
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -463,7 +463,7 @@ export default function OrganizersClient() {
                           <button
                             type="button"
                             onClick={() => openDrawer(row.id)}
-                            className="font-black text-zinc-900 hover:text-orange-700 hover:underline"
+                            className="font-black text-zinc-900 hover:text-brand-800 hover:underline"
                           >
                             {row.name}
                           </button>
@@ -562,7 +562,7 @@ export default function OrganizersClient() {
       >
         {drawerLoading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
           </div>
         ) : drawerOrg ? (
           <div className="space-y-6">
@@ -570,7 +570,7 @@ export default function OrganizersClient() {
               <h3 className="text-sm font-bold text-zinc-900">Organizer Profile</h3>
               <p className="mt-2 text-sm font-semibold text-zinc-700">{drawerOrg.bio || "No bio provided."}</p>
               {drawerOrg.website && (
-                <a href={drawerOrg.website} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-bold text-orange-700 hover:underline">
+                <a href={drawerOrg.website} target="_blank" rel="noreferrer" className="mt-2 inline-block text-sm font-bold text-brand-800 hover:underline">
                   {drawerOrg.website}
                 </a>
               )}
@@ -593,7 +593,7 @@ export default function OrganizersClient() {
             {/* Visibility Boost Section */}
             <section className="rounded-xl border border-zinc-200 bg-white p-4 space-y-4">
               <h3 className="flex items-center gap-2 text-sm font-bold text-zinc-900">
-                <TrendingUp className="h-4 w-4 text-orange-500" />
+                <TrendingUp className="h-4 w-4 text-brand-600" />
                 Visibility Boost
               </h3>
               <p className="text-xs text-zinc-500">
@@ -615,7 +615,7 @@ export default function OrganizersClient() {
                       setVisibilityError("");
                       setVisibilitySuccess(false);
                     }}
-                    className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold focus:border-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold focus:border-brand-600 focus:outline-none"
                     placeholder="0"
                   />
                   <p className="mt-1 text-[10px] text-zinc-400">
@@ -637,7 +637,7 @@ export default function OrganizersClient() {
                       setVisibilityError("");
                       setVisibilitySuccess(false);
                     }}
-                    className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold focus:border-orange-500 focus:outline-none"
+                    className="w-full rounded-lg border border-zinc-200 px-3 py-1.5 text-sm font-semibold focus:border-brand-600 focus:outline-none"
                     placeholder="0"
                   />
                   <p className="mt-1 text-[10px] text-zinc-400">
@@ -652,7 +652,7 @@ export default function OrganizersClient() {
                 </div>
               )}
               {visibilitySuccess && (
-                <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-2.5 text-xs font-semibold text-emerald-700">
+                <div className="rounded-lg bg-brand-50 border border-brand-200 p-2.5 text-xs font-semibold text-brand-800">
                   Boosts updated successfully.
                 </div>
               )}
@@ -666,7 +666,7 @@ export default function OrganizersClient() {
                       eventsOffsetInput === String(drawerOrg.events_offset ?? 0))
                   }
                   onClick={saveVisibilityBoost}
-                  className="flex-1 rounded-lg bg-orange-600 px-3 py-2 text-xs font-black text-white hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  className="flex-1 rounded-lg bg-brand-700 px-3 py-2 text-xs font-black text-white hover:bg-brand-800 disabled:opacity-50 flex items-center justify-center gap-1.5"
                 >
                   {visibilitySaving ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />

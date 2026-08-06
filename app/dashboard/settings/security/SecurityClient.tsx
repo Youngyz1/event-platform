@@ -148,7 +148,7 @@ export default function SecurityClient({
   return (
     <div className="space-y-6">
       {toast && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+        <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-800">
           {toast}
         </div>
       )}
@@ -167,7 +167,7 @@ export default function SecurityClient({
             <button
               type="submit"
               disabled={updatingPassword}
-              className="rounded-xl bg-orange-600 px-5 py-2.5 text-xs font-black text-white hover:bg-orange-700 disabled:opacity-60 transition"
+              className="rounded-xl bg-brand-700 px-5 py-2.5 text-xs font-black text-white hover:bg-brand-800 disabled:opacity-60 transition"
             >
               {updatingPassword ? "Updating..." : "Update Password"}
             </button>
@@ -183,7 +183,7 @@ export default function SecurityClient({
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100 sm:rounded-xl sm:px-4 sm:py-2.5"
+                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden transition focus:border-brand-600 focus:ring-4 focus:ring-brand-100 sm:rounded-xl sm:px-4 sm:py-2.5"
               />
             </label>
             <label className="block">
@@ -195,7 +195,7 @@ export default function SecurityClient({
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100 sm:rounded-xl sm:px-4 sm:py-2.5"
+                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold outline-hidden transition focus:border-brand-600 focus:ring-4 focus:ring-brand-100 sm:rounded-xl sm:px-4 sm:py-2.5"
               />
             </label>
           </div>

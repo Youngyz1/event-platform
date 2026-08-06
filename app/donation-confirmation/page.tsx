@@ -138,7 +138,7 @@ function DonationConfirmationContent() {
     <main className="min-h-screen bg-zinc-50 px-4 pt-6 pb-12 text-zinc-950">
       <section className="mx-auto max-w-xl rounded-xl border border-zinc-200 bg-white p-6 sm:p-8">
         <div className="flex justify-center">
-          <CheckCircle2 className="h-16 w-16 text-emerald-600" />
+          <CheckCircle2 className="h-16 w-16 text-brand-700" />
         </div>
         <h1 className="mt-5 text-center text-3xl font-black">
           Thank you for your donation!
@@ -151,19 +151,19 @@ function DonationConfirmationContent() {
         <div className="mt-6 border-t border-zinc-100 pt-6">
           {loadingReceipt ? (
             <div className="flex flex-col items-center justify-center py-4">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-emerald-600 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-brand-700 border-t-transparent" />
               <p className="mt-2 text-xs font-semibold text-zinc-400">Generating receipt…</p>
             </div>
           ) : donationId ? (
             <div className="space-y-4">
               <a
                 href={`/api/receipts/${donationId}?session_id=${sessionId}`}
-                className="block w-full text-center rounded-2xl bg-emerald-600 py-3.5 text-sm font-black text-white hover:bg-emerald-700 transition shadow-sm"
+                className="block w-full text-center rounded-2xl bg-brand-700 py-3.5 text-sm font-black text-white hover:bg-brand-800 transition shadow-sm"
               >
                 Download Receipt PDF
               </a>
               {isNonprofit ? (
-                <div className="rounded-2xl bg-emerald-50 border border-emerald-100 p-4 text-left text-xs text-emerald-800 leading-relaxed">
+                <div className="rounded-2xl bg-brand-50 border border-brand-100 p-4 text-left text-xs text-brand-900 leading-relaxed">
                   <span className="font-black block mb-1">★ Tax-Deductible Donation</span>
                   This fundraiser is run by a registered nonprofit. Your contribution qualifies for tax-deductible benefits.
                 </div>
@@ -198,7 +198,7 @@ function DonationConfirmationContent() {
               onChange={(e) => setName(e.target.value)}
               disabled={anonymous}
               placeholder="Your name"
-              className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm outline-none focus:border-emerald-500 disabled:bg-zinc-50 disabled:text-zinc-400"
+              className="mt-1 w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm outline-none focus:border-brand-600 disabled:bg-zinc-50 disabled:text-zinc-400"
             />
           </div>
 
@@ -210,7 +210,7 @@ function DonationConfirmationContent() {
             maxLength={200}
             rows={5}
             placeholder="Write a message of support..."
-            className="mt-4 w-full resize-none rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+            className="mt-4 w-full resize-none rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
           />
           <div className="mt-2 flex items-center justify-between gap-3">
             <label className="flex items-center gap-2 text-sm font-semibold text-zinc-700">
@@ -218,7 +218,7 @@ function DonationConfirmationContent() {
                 type="checkbox"
                 checked={anonymous}
                 onChange={(event) => setAnonymous(event.target.checked)}
-                className="accent-emerald-600"
+                className="accent-brand-700"
               />
               Post anonymously
             </label>
@@ -237,7 +237,7 @@ function DonationConfirmationContent() {
             type="button"
             onClick={shareSupport}
             disabled={submitting}
-            className="mt-5 w-full rounded-lg bg-emerald-600 px-5 py-3.5 text-base font-black text-white transition hover:bg-emerald-700 disabled:bg-emerald-300"
+            className="mt-5 w-full rounded-lg bg-brand-700 px-5 py-3.5 text-base font-black text-white transition hover:bg-brand-800 disabled:bg-brand-300"
           >
             {submitting ? "Posting..." : "Post support"}
           </button>
@@ -259,7 +259,7 @@ export default function DonationConfirmationPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-zinc-50">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-500 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
         </div>
       }
     >

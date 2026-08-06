@@ -50,7 +50,7 @@ export default function AdminFundraiserStatusActions({
 
   const badge =
     status === "published"
-      ? "bg-emerald-100 text-emerald-700"
+      ? "bg-brand-100 text-brand-800"
       : status === "rejected"
       ? "bg-red-100 text-red-700"
       : "bg-amber-100 text-amber-700";
@@ -79,7 +79,7 @@ export default function AdminFundraiserStatusActions({
             type="button"
             disabled={working}
             onClick={() => patch({ status: "published" })}
-            className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50"
+            className="rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-brand-800 disabled:opacity-50"
           >
             {working ? "Working…" : "Approve & Publish"}
           </button>

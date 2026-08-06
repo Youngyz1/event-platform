@@ -116,12 +116,12 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
                   priority={isPriority}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/45 to-zinc-950/10" />
-                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-orange-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
+                <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
                   <Ticket className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   Event
                 </span>
                 <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4">
-                  <p className="mb-0.5 text-[10px] font-black uppercase tracking-wide text-orange-400 sm:mb-1 sm:text-xs">
+                  <p className="mb-0.5 text-[10px] font-black uppercase tracking-wide text-brand-400 sm:mb-1 sm:text-xs">
                     {formatDate(item.date)}
                   </p>
                   <h3 className="line-clamp-2 text-xs font-black leading-tight text-white sm:text-sm">
@@ -149,7 +149,7 @@ export default function FeaturedSlider({ items }: { items: FeaturedSliderItem[] 
                 priority={isPriority}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/95 via-zinc-950/50 to-zinc-950/10" />
-              <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
+              <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-brand-600 px-2 py-0.5 text-[9px] font-black uppercase tracking-wide text-white sm:right-3 sm:top-3 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-[10px]">
                 <Heart className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                 Fundraise
               </span>

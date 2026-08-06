@@ -24,7 +24,7 @@ export default async function OrgReviewsPage({
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-xs font-black uppercase tracking-wide text-orange-600">Organization</p>
+        <p className="text-xs font-black uppercase tracking-wide text-brand-700">Organization</p>
         <h1 className="mt-1 text-2xl font-black">Reviews</h1>
         {org?.average_rating && (
           <p className="mt-1 text-sm font-medium text-zinc-500">

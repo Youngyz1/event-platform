@@ -280,16 +280,16 @@ export default function SeatMap({ seats, sections, basePrice, maxSelectable = 10
 
       {/* Selection summary */}
       {selectedCount > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-4 flex items-center justify-between">
+        <div className="bg-brand-50 border border-brand-200 rounded-2xl p-4 flex items-center justify-between">
           <div>
-            <p className="font-black text-orange-900">
+            <p className="font-black text-brand-950">
               {selectedCount} seat{selectedCount > 1 ? "s" : ""} selected
             </p>
-            <p className="text-sm text-orange-700">
+            <p className="text-sm text-brand-800">
               {selectedSeats.map((s) => `${s.section}-${s.row_label}${s.seat_number}`).join(", ")}
             </p>
           </div>
-          <p className="text-2xl font-black text-orange-600">${totalPrice.toFixed(2)}</p>
+          <p className="text-2xl font-black text-brand-700">${totalPrice.toFixed(2)}</p>
         </div>
       )}
 

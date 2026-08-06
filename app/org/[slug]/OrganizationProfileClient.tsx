@@ -77,12 +77,12 @@ const ORG_TYPE_LABELS: Record<string, string> = {
 };
 
 const ORG_TYPE_COLORS: Record<string, string> = {
-  nonprofit: "bg-emerald-100 text-emerald-800",
+  nonprofit: "bg-brand-100 text-brand-900",
   business: "bg-blue-100 text-blue-800",
   church: "bg-purple-100 text-purple-800",
   school: "bg-yellow-100 text-yellow-800",
   creator: "bg-pink-100 text-pink-800",
-  community: "bg-orange-100 text-orange-800",
+  community: "bg-brand-100 text-brand-900",
   government: "bg-slate-100 text-slate-800",
   restaurant: "bg-red-100 text-red-800",
   sports_club: "bg-cyan-100 text-cyan-800",
@@ -142,7 +142,7 @@ function EmptyTabState({ label }: { label: string }) {
 function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center py-16">
-      <div className="h-7 w-7 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+      <div className="h-7 w-7 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
     </div>
   );
 }
@@ -161,7 +161,7 @@ function CampaignRow({ f }: { f: FundraiserItem }) {
   return (
     <Link
       href={`/fundraisers/${f.slug}`}
-      className="group flex gap-4 rounded-xl border border-zinc-100 p-3 transition hover:border-orange-200 hover:bg-orange-50/40"
+      className="group flex gap-4 rounded-xl border border-zinc-100 p-3 transition hover:border-brand-200 hover:bg-brand-50/40"
     >
       <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-100">
         {imageSrc ? (
@@ -178,7 +178,7 @@ function CampaignRow({ f }: { f: FundraiserItem }) {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-black text-zinc-900 line-clamp-1 group-hover:text-orange-700">
+        <p className="font-black text-zinc-900 line-clamp-1 group-hover:text-brand-800">
           {f.title}
         </p>
         <div className="mt-1.5">
@@ -189,7 +189,7 @@ function CampaignRow({ f }: { f: FundraiserItem }) {
           raised of {formatMoney(goal)} goal
         </p>
       </div>
-      <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-300 group-hover:text-orange-500" />
+      <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-300 group-hover:text-brand-600" />
     </Link>
   );
 }
@@ -208,7 +208,7 @@ function ConnectSection({ org }: { org: Organization }) {
             href={org.website.startsWith("http") ? org.website : `https://${org.website}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2.5 text-sm font-medium text-zinc-700 hover:text-orange-600"
+            className="flex items-center gap-2.5 text-sm font-medium text-zinc-700 hover:text-brand-700"
           >
             <Globe className="h-4 w-4 shrink-0 text-zinc-400" />
             <span className="truncate">{org.website.replace(/^https?:\/\//, "")}</span>
@@ -218,7 +218,7 @@ function ConnectSection({ org }: { org: Organization }) {
         {org.contact_email && (
           <a
             href={`mailto:${org.contact_email}`}
-            className="flex items-center gap-2.5 text-sm font-medium text-zinc-700 hover:text-orange-600"
+            className="flex items-center gap-2.5 text-sm font-medium text-zinc-700 hover:text-brand-700"
           >
             <Mail className="h-4 w-4 shrink-0 text-zinc-400" />
             <span className="truncate">{org.contact_email}</span>
@@ -433,7 +433,7 @@ export default function OrganizationProfileClient({
                         <button
                           type="button"
                           onClick={() => setActiveTab("campaigns")}
-                          className="text-sm font-bold text-orange-600 hover:text-orange-700"
+                          className="text-sm font-bold text-brand-700 hover:text-brand-800"
                         >
                           View all {fundraisers.length} campaigns →
                         </button>

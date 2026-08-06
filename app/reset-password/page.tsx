@@ -131,7 +131,7 @@ function ResetPasswordForm() {
         )}
 
         {success && (
-          <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+          <div className="mb-6 rounded-2xl border border-brand-200 bg-brand-50 px-5 py-4 text-sm text-brand-800">
             Password updated. Redirecting you to log in.
           </div>
         )}
@@ -150,7 +150,7 @@ function ResetPasswordForm() {
                 required
                 type="password"
                 placeholder="Min. 6 characters"
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600"
               />
             </div>
 
@@ -162,14 +162,14 @@ function ResetPasswordForm() {
                 required
                 type="password"
                 placeholder="Repeat your password"
-                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-orange-500"
+                className="w-full rounded-2xl border border-zinc-300 px-5 py-4 outline-none focus:border-brand-600"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading || success}
-              className="w-full rounded-2xl bg-orange-500 py-4 text-lg font-bold text-white transition hover:bg-orange-600 disabled:bg-orange-300"
+              className="w-full rounded-2xl bg-brand-600 py-4 text-lg font-bold text-white transition hover:bg-brand-700 disabled:bg-brand-300"
             >
               {loading ? "Updating password..." : "Update Password"}
             </button>
@@ -181,7 +181,7 @@ function ResetPasswordForm() {
             </div>
             <Link
               href="/forgot-password"
-              className="block rounded-2xl bg-orange-500 py-4 text-center text-lg font-bold text-white transition hover:bg-orange-600"
+              className="block rounded-2xl bg-brand-600 py-4 text-center text-lg font-bold text-white transition hover:bg-brand-700"
             >
               Request New Link
             </Link>
@@ -190,7 +190,7 @@ function ResetPasswordForm() {
 
         <p className="mt-6 text-center text-zinc-500">
           Back to{" "}
-          <Link href="/login" className="font-semibold text-orange-500">
+          <Link href="/login" className="font-semibold text-brand-600">
             log in
           </Link>
         </p>

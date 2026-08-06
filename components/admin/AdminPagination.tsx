@@ -37,7 +37,7 @@ export default function AdminPagination({
           <select
             value={perPage}
             onChange={(e) => onPerPageChange(Number(e.target.value))}
-            className="rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-xs font-bold text-zinc-800 outline-none focus:border-orange-500"
+            className="rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-xs font-bold text-zinc-800 outline-none focus:border-brand-600"
           >
             {PER_PAGE_OPTIONS.map((n) => (
               <option key={n} value={n}>{n}</option>

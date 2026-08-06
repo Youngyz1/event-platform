@@ -43,7 +43,7 @@ export default function RejectionReasonModal({
               rows={4}
               autoFocus
               placeholder="Let the owner know why this was rejected..."
-              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-semibold outline-none transition focus:border-orange-500 focus:bg-white focus:ring-2 focus:ring-orange-500/20"
+              className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2 text-sm font-semibold outline-none transition focus:border-brand-600 focus:bg-white focus:ring-2 focus:ring-brand-600/20"
             />
           </div>
 

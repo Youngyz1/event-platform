@@ -99,7 +99,7 @@ export default function HowItWorks({ eyebrow, heading, subheading, steps }: HowI
                 key={`bg-${i}`}
                 className={cn(
                   "absolute inset-0 bg-gradient-to-b transition-opacity duration-500",
-                  step.bgGradientClass || "from-emerald-50/60 to-white",
+                  step.bgGradientClass || "from-brand-50/60 to-white",
                   i === active ? "opacity-100 z-10" : "opacity-0 z-0"
                 )}
               />
@@ -124,7 +124,7 @@ export default function HowItWorks({ eyebrow, heading, subheading, steps }: HowI
           {/* ── Right: heading + numbered steps ── */}
           <div>
             {eyebrow && (
-              <p className="text-xs font-black uppercase tracking-widest text-emerald-600">
+              <p className="text-xs font-black uppercase tracking-widest text-brand-700">
                 {eyebrow}
               </p>
             )}
@@ -148,7 +148,7 @@ export default function HowItWorks({ eyebrow, heading, subheading, steps }: HowI
                       className={cn(
                         "flex w-full items-start gap-4 rounded-2xl border p-4 text-left transition sm:p-5",
                         isActive
-                          ? "border-emerald-200 bg-emerald-50/60 ring-1 ring-emerald-200"
+                          ? "border-brand-200 bg-brand-50/60 ring-1 ring-brand-200"
                           : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
                       )}
                     >
@@ -156,7 +156,7 @@ export default function HowItWorks({ eyebrow, heading, subheading, steps }: HowI
                         className={cn(
                           "flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-black transition",
                           isActive
-                            ? "bg-emerald-600 text-white"
+                            ? "bg-brand-700 text-white"
                             : "bg-zinc-100 text-zinc-500"
                         )}
                       >
@@ -262,7 +262,7 @@ function MobileStepWalkthrough({ eyebrow, heading, subheading, steps }: HowItWor
   return (
     <div onKeyDown={handleKeyDown}>
       {eyebrow && (
-        <p className="text-xs font-black uppercase tracking-widest text-emerald-600">{eyebrow}</p>
+        <p className="text-xs font-black uppercase tracking-widest text-brand-700">{eyebrow}</p>
       )}
       <h2 className="mt-2 text-3xl font-black tracking-tight text-zinc-950">{heading}</h2>
       {subheading && <p className="mt-3 text-base font-medium text-zinc-600">{subheading}</p>}
@@ -285,7 +285,7 @@ function MobileStepWalkthrough({ eyebrow, heading, subheading, steps }: HowItWor
               aria-hidden
               className={cn(
                 "absolute inset-0 bg-gradient-to-b transition-opacity duration-500 motion-reduce:transition-none",
-                s.bgGradientClass || "from-emerald-50/60 to-white",
+                s.bgGradientClass || "from-brand-50/60 to-white",
                 i === active ? "opacity-100 z-10" : "opacity-0 z-0"
               )}
             />
@@ -309,7 +309,7 @@ function MobileStepWalkthrough({ eyebrow, heading, subheading, steps }: HowItWor
 
         {/* Active step copy — announced to screen readers as it changes */}
         <div className="mt-5 flex items-start gap-3" aria-live="polite" aria-atomic="true">
-          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-emerald-600 text-sm font-black text-white">
+          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-brand-700 text-sm font-black text-white">
             {active + 1}
           </span>
           <div>
@@ -354,7 +354,7 @@ function MobileStepWalkthrough({ eyebrow, heading, subheading, steps }: HowItWor
               aria-current={i === active ? "true" : undefined}
               className={cn(
                 "h-2 rounded-full transition-all duration-300 motion-reduce:transition-none",
-                i === active ? "w-6 bg-emerald-600" : "w-2 bg-zinc-300"
+                i === active ? "w-6 bg-brand-700" : "w-2 bg-zinc-300"
               )}
             />
           ))}

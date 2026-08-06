@@ -70,7 +70,7 @@ const RECOMMENDED_ICONS = [
   "MapPin","Music","Trophy","Smile","Globe","Megaphone","Leaf","Flame",
 ];
 
-function DynIcon({ name, className = "w-5 h-5 text-orange-600" }: { name: string; className?: string }) {
+function DynIcon({ name, className = "w-5 h-5 text-brand-700" }: { name: string; className?: string }) {
   const Ico = (LucideIcons as Record<string, any>)[name] ?? LucideIcons.HelpCircle;
   return <Ico className={className} />;
 }
@@ -87,7 +87,7 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
       {...props}
-      className={`w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-zinc-900 outline-none transition focus:border-orange-500 focus:ring-1 focus:ring-orange-200 ${props.className ?? ""}`}
+      className={`w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-zinc-900 outline-none transition focus:border-brand-600 focus:ring-1 focus:ring-brand-200 ${props.className ?? ""}`}
     />
   );
 }
@@ -96,7 +96,7 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       {...props}
-      className={`w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-zinc-900 outline-none transition focus:border-orange-500 focus:ring-1 focus:ring-orange-200 ${props.className ?? ""}`}
+      className={`w-full rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 text-sm font-semibold text-zinc-900 outline-none transition focus:border-brand-600 focus:ring-1 focus:ring-brand-200 ${props.className ?? ""}`}
     />
   );
 }
@@ -106,7 +106,7 @@ function SaveBtn({ saving, label }: { saving: boolean; label: string }) {
     <button
       type="submit"
       disabled={saving}
-      className="w-full rounded-xl bg-orange-600 py-3 text-sm font-black text-white transition hover:bg-orange-700 disabled:opacity-60"
+      className="w-full rounded-xl bg-brand-700 py-3 text-sm font-black text-white transition hover:bg-brand-800 disabled:opacity-60"
     >
       {saving ? "Saving…" : label}
     </button>
@@ -279,8 +279,8 @@ export default function HomepageCmsTabs({
 
       {/* Toasts */}
       {toast && (
-        <div className="flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3 text-sm font-semibold text-emerald-700">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />{toast}
+        <div className="flex items-center gap-2 rounded-2xl border border-brand-200 bg-brand-50 px-5 py-3 text-sm font-semibold text-brand-800">
+          <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />{toast}
         </div>
       )}
       {err && (
@@ -300,7 +300,7 @@ export default function HomepageCmsTabs({
               onClick={() => changeTab(tab.id)}
               className={`flex items-center gap-2 rounded-full px-3.5 py-2 text-xs font-bold transition whitespace-nowrap ${
                 active
-                  ? "bg-orange-600 text-white"
+                  ? "bg-brand-700 text-white"
                   : "text-zinc-500 hover:text-zinc-800"
               }`}
             >
@@ -349,10 +349,10 @@ export default function HomepageCmsTabs({
             >
               <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/55 to-black/20" />
               <div className="relative space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-400">{settings.fundraisersHeroEyebrow}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-400">{settings.fundraisersHeroEyebrow}</p>
                 <h2 className="text-3xl font-black leading-tight text-white drop-shadow-lg sm:text-4xl">
                   {settings.fundraisersHeroHeadlineLine1}
-                  {settings.fundraisersHeroHeadlineLine2 && <><br /><span className="text-emerald-300">{settings.fundraisersHeroHeadlineLine2}</span></>}
+                  {settings.fundraisersHeroHeadlineLine2 && <><br /><span className="text-brand-300">{settings.fundraisersHeroHeadlineLine2}</span></>}
                 </h2>
                 <p className="text-sm font-medium text-zinc-300 max-w-md">{settings.fundraisersHeroDescription}</p>
                 {/* Dynamic Stats Row mock in preview */}
@@ -408,10 +408,10 @@ export default function HomepageCmsTabs({
             >
               <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/55 to-black/20" />
               <div className="relative space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-orange-400">{settings.organizersHeroEyebrow}</p>
+                <p className="text-[10px] font-black uppercase tracking-widest text-brand-400">{settings.organizersHeroEyebrow}</p>
                 <h2 className="text-3xl font-black leading-tight text-white drop-shadow-lg sm:text-4xl">
                   {settings.organizersHeroHeadlineLine1}
-                  {settings.organizersHeroHeadlineLine2 && <><br /><span className="text-orange-300">{settings.organizersHeroHeadlineLine2}</span></>}
+                  {settings.organizersHeroHeadlineLine2 && <><br /><span className="text-brand-300">{settings.organizersHeroHeadlineLine2}</span></>}
                 </h2>
                 <p className="text-sm font-medium text-zinc-300 max-w-md">{settings.organizersHeroDescription}</p>
                 {/* Dynamic Stats Row mock in preview */}
@@ -429,7 +429,7 @@ export default function HomepageCmsTabs({
           <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-black text-zinc-950">Featured Fundraisers</h2>
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-black text-emerald-700">{featuredFundraisers.length} items</span>
+              <span className="rounded-full bg-brand-100 px-2.5 py-1 text-xs font-black text-brand-800">{featuredFundraisers.length} items</span>
             </div>
             {featuredFundraisers.length === 0 ? (
               <p className="py-8 text-center text-sm text-zinc-400">No featured fundraisers. Search to add.</p>
@@ -471,9 +471,9 @@ export default function HomepageCmsTabs({
                       </div>
                       <button
                         onClick={() => toggleFundraiser(item, !isFeat)}
-                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition ${isFeat ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}
+                        className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-black transition ${isFeat ? "bg-brand-100 text-brand-800 hover:bg-brand-200" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}
                       >
-                        {isFeat ? <><Star className="h-3.5 w-3.5 fill-emerald-500 text-emerald-500" />Featured</> : <><Plus className="h-3.5 w-3.5" />Add</>}
+                        {isFeat ? <><Star className="h-3.5 w-3.5 fill-brand-600 text-brand-600" />Featured</> : <><Plus className="h-3.5 w-3.5" />Add</>}
                       </button>
                     </div>
                   );
@@ -637,7 +637,7 @@ function CategoriesPanel({ categories, setCats, flash, setErr }: {
                     <tr key={cat.id} className="hover:bg-zinc-50/60 transition">
                       <td className="py-2.5 pr-3">
                         {editing
-                          ? <div className="flex items-center gap-1"><DynIcon name={editIcon} className="h-4 w-4 text-orange-600" /><input value={editIcon} onChange={e=>setEIcon(e.target.value)} className="w-20 rounded border border-zinc-200 px-2 py-1 text-xs" /></div>
+                          ? <div className="flex items-center gap-1"><DynIcon name={editIcon} className="h-4 w-4 text-brand-700" /><input value={editIcon} onChange={e=>setEIcon(e.target.value)} className="w-20 rounded border border-zinc-200 px-2 py-1 text-xs" /></div>
                           : <DynIcon name={cat.icon} />
                         }
                       </td>
@@ -649,18 +649,18 @@ function CategoriesPanel({ categories, setCats, flash, setErr }: {
                       </td>
                       <td className="py-2.5 text-center">
                         {editing
-                          ? <input type="checkbox" checked={editVis} onChange={e=>setEVis(e.target.checked)} className="rounded text-orange-600" />
+                          ? <input type="checkbox" checked={editVis} onChange={e=>setEVis(e.target.checked)} className="rounded text-brand-700" />
                           : cat.is_visible
-                            ? <span className="inline-flex rounded bg-emerald-100 p-1 text-emerald-700"><Eye className="h-3 w-3" /></span>
+                            ? <span className="inline-flex rounded bg-brand-100 p-1 text-brand-800"><Eye className="h-3 w-3" /></span>
                             : <span className="inline-flex rounded bg-zinc-100 p-1 text-zinc-400"><EyeOff className="h-3 w-3" /></span>
                         }
                       </td>
                       <td className="py-2.5 text-right">
                         <div className="flex justify-end gap-1">
                           {editing
-                            ? <><button onClick={() => saveEdit(cat.id)} className="rounded-lg bg-orange-100 p-1.5 text-orange-700 hover:bg-orange-200"><Check className="h-3.5 w-3.5" /></button>
+                            ? <><button onClick={() => saveEdit(cat.id)} className="rounded-lg bg-brand-100 p-1.5 text-brand-800 hover:bg-brand-200"><Check className="h-3.5 w-3.5" /></button>
                                 <button onClick={() => setEditId(null)} className="rounded-lg bg-zinc-100 p-1.5 text-zinc-600 hover:bg-zinc-200"><X className="h-3.5 w-3.5" /></button></>
-                            : <><button onClick={() => startEdit(cat)} className="rounded-lg p-1.5 text-zinc-400 hover:bg-orange-50 hover:text-orange-600 transition"><Edit2 className="h-3.5 w-3.5" /></button>
+                            : <><button onClick={() => startEdit(cat)} className="rounded-lg p-1.5 text-zinc-400 hover:bg-brand-50 hover:text-brand-700 transition"><Edit2 className="h-3.5 w-3.5" /></button>
                                 <button onClick={() => del(cat.id)} className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500 transition"><Trash2 className="h-3.5 w-3.5" /></button></>
                           }
                         </div>
@@ -678,27 +678,27 @@ function CategoriesPanel({ categories, setCats, flash, setErr }: {
       <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6 space-y-4">
         <h2 className="text-base font-black text-zinc-950">Add Category</h2>
         <form onSubmit={addCat} className="space-y-4">
-          <div><FieldLabel>Name</FieldLabel><input value={nName} onChange={e=>setNName(e.target.value)} placeholder="e.g. Music" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
+          <div><FieldLabel>Name</FieldLabel><input value={nName} onChange={e=>setNName(e.target.value)} placeholder="e.g. Music" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
           <div>
             <FieldLabel>Lucide Icon Name</FieldLabel>
             <div className="flex items-center gap-2 mb-2">
-              <div className="rounded-xl border border-zinc-200 p-2"><DynIcon name={nIcon} className="h-5 w-5 text-orange-600" /></div>
-              <input value={nIcon} onChange={e=>setNIcon(e.target.value)} className="flex-1 rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" placeholder="Mic" />
+              <div className="rounded-xl border border-zinc-200 p-2"><DynIcon name={nIcon} className="h-5 w-5 text-brand-700" /></div>
+              <input value={nIcon} onChange={e=>setNIcon(e.target.value)} className="flex-1 rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" placeholder="Mic" />
             </div>
             <div className="flex flex-wrap gap-1 mt-1">
               {RECOMMENDED_ICONS.map(ico => (
                 <button key={ico} type="button" onClick={() => setNIcon(ico)}
-                  className={`rounded border px-2 py-0.5 text-[10px] font-bold transition ${nIcon===ico ? "border-orange-500 bg-orange-600 text-white" : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-orange-300"}`}>
+                  className={`rounded border px-2 py-0.5 text-[10px] font-bold transition ${nIcon===ico ? "border-brand-600 bg-brand-700 text-white" : "border-zinc-200 bg-zinc-50 text-zinc-600 hover:border-brand-300"}`}>
                   {ico}
                 </button>
               ))}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div><FieldLabel>Position</FieldLabel><input type="number" value={nPos} onChange={e=>setNPos(+e.target.value)} className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
-            <div className="flex items-end pb-2.5"><label className="flex items-center gap-2 text-sm font-bold text-zinc-700 cursor-pointer"><input type="checkbox" checked={nVis} onChange={e=>setNVis(e.target.checked)} className="rounded text-orange-600 h-4 w-4" />Visible</label></div>
+            <div><FieldLabel>Position</FieldLabel><input type="number" value={nPos} onChange={e=>setNPos(+e.target.value)} className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
+            <div className="flex items-end pb-2.5"><label className="flex items-center gap-2 text-sm font-bold text-zinc-700 cursor-pointer"><input type="checkbox" checked={nVis} onChange={e=>setNVis(e.target.checked)} className="rounded text-brand-700 h-4 w-4" />Visible</label></div>
           </div>
-          <button type="submit" disabled={saving} className="w-full rounded-xl bg-orange-600 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-60 transition">
+          <button type="submit" disabled={saving} className="w-full rounded-xl bg-brand-700 py-3 text-sm font-black text-white hover:bg-brand-800 disabled:opacity-60 transition">
             {saving ? "Adding…" : "Add Category"}
           </button>
         </form>
@@ -764,19 +764,19 @@ function TestimonialsPanel({ testimonials, setTestimonials, flash, setErr }: {
             {testimonials.map(t => {
               const editing = editId === t.id;
               return (
-                <div key={t.id} className={`rounded-xl border p-4 transition ${editing ? "border-orange-200 bg-orange-50/30" : "border-zinc-100 bg-zinc-50/30 hover:bg-zinc-50"}`}>
+                <div key={t.id} className={`rounded-xl border p-4 transition ${editing ? "border-brand-200 bg-brand-50/30" : "border-zinc-100 bg-zinc-50/30 hover:bg-zinc-50"}`}>
                   {editing ? (
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
-                        <div><FieldLabel>Name</FieldLabel><input defaultValue={t.name} onChange={e=>setEdit(p=>({...p,name:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-orange-500" /></div>
-                        <div><FieldLabel>Role</FieldLabel><input defaultValue={t.role} onChange={e=>setEdit(p=>({...p,role:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-orange-500" /></div>
+                        <div><FieldLabel>Name</FieldLabel><input defaultValue={t.name} onChange={e=>setEdit(p=>({...p,name:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-brand-600" /></div>
+                        <div><FieldLabel>Role</FieldLabel><input defaultValue={t.role} onChange={e=>setEdit(p=>({...p,role:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-brand-600" /></div>
                       </div>
-                      <div><FieldLabel>Photo URL</FieldLabel><input defaultValue={t.photo_url} onChange={e=>setEdit(p=>({...p,photo_url:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-orange-500" /></div>
-                      <div><FieldLabel>Quote</FieldLabel><textarea rows={3} defaultValue={t.quote} onChange={e=>setEdit(p=>({...p,quote:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-orange-500" /></div>
+                      <div><FieldLabel>Photo URL</FieldLabel><input defaultValue={t.photo_url} onChange={e=>setEdit(p=>({...p,photo_url:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-brand-600" /></div>
+                      <div><FieldLabel>Quote</FieldLabel><textarea rows={3} defaultValue={t.quote} onChange={e=>setEdit(p=>({...p,quote:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-brand-600" /></div>
                       <div className="flex items-center justify-between">
-                        <label className="flex items-center gap-2 text-xs font-bold text-zinc-600"><input type="checkbox" defaultChecked={t.is_visible} onChange={e=>setEdit(p=>({...p,is_visible:e.target.checked}))} className="rounded text-orange-600" />Visible</label>
+                        <label className="flex items-center gap-2 text-xs font-bold text-zinc-600"><input type="checkbox" defaultChecked={t.is_visible} onChange={e=>setEdit(p=>({...p,is_visible:e.target.checked}))} className="rounded text-brand-700" />Visible</label>
                         <div className="flex gap-2">
-                          <button onClick={() => saveEdit(t.id)} className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-black text-white hover:bg-orange-700">Save</button>
+                          <button onClick={() => saveEdit(t.id)} className="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-black text-white hover:bg-brand-800">Save</button>
                           <button onClick={() => {setEditId(null);setEdit({});}} className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 hover:bg-zinc-50">Cancel</button>
                         </div>
                       </div>
@@ -796,7 +796,7 @@ function TestimonialsPanel({ testimonials, setTestimonials, flash, setErr }: {
                         <p className="mt-1 text-xs text-zinc-500 leading-relaxed line-clamp-2">"{t.quote}"</p>
                       </div>
                       <div className="flex gap-1 shrink-0">
-                        <button onClick={() => {setEditId(t.id);setEdit({});}} className="rounded-lg p-1.5 text-zinc-400 hover:bg-orange-50 hover:text-orange-600 transition"><Edit2 className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => {setEditId(t.id);setEdit({});}} className="rounded-lg p-1.5 text-zinc-400 hover:bg-brand-50 hover:text-brand-700 transition"><Edit2 className="h-3.5 w-3.5" /></button>
                         <button onClick={() => del(t.id)} className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500 transition"><Trash2 className="h-3.5 w-3.5" /></button>
                       </div>
                     </div>
@@ -812,15 +812,15 @@ function TestimonialsPanel({ testimonials, setTestimonials, flash, setErr }: {
       <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6 space-y-4">
         <h2 className="text-base font-black text-zinc-950">Add Testimonial</h2>
         <form onSubmit={save} className="space-y-3">
-          <div><FieldLabel>Full Name *</FieldLabel><input required value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Jane Smith" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
-          <div><FieldLabel>Role / Title</FieldLabel><input value={form.role} onChange={e=>setForm(p=>({...p,role:e.target.value}))} placeholder="Founder, Acme Corp." className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
-          <div><FieldLabel>Photo URL</FieldLabel><input type="url" value={form.photo_url} onChange={e=>setForm(p=>({...p,photo_url:e.target.value}))} placeholder="https://…" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
-          <div><FieldLabel>Quote *</FieldLabel><textarea required rows={4} value={form.quote} onChange={e=>setForm(p=>({...p,quote:e.target.value}))} placeholder="This platform is incredible…" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
+          <div><FieldLabel>Full Name *</FieldLabel><input required value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Jane Smith" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
+          <div><FieldLabel>Role / Title</FieldLabel><input value={form.role} onChange={e=>setForm(p=>({...p,role:e.target.value}))} placeholder="Founder, Acme Corp." className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
+          <div><FieldLabel>Photo URL</FieldLabel><input type="url" value={form.photo_url} onChange={e=>setForm(p=>({...p,photo_url:e.target.value}))} placeholder="https://…" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
+          <div><FieldLabel>Quote *</FieldLabel><textarea required rows={4} value={form.quote} onChange={e=>setForm(p=>({...p,quote:e.target.value}))} placeholder="This platform is incredible…" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
           <div className="flex items-center gap-4">
-            <div className="flex-1"><FieldLabel>Sort Position</FieldLabel><input type="number" value={form.position} onChange={e=>setForm(p=>({...p,position:+e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
-            <label className="mt-4 flex items-center gap-2 text-sm font-bold text-zinc-700 cursor-pointer"><input type="checkbox" checked={form.is_visible} onChange={e=>setForm(p=>({...p,is_visible:e.target.checked}))} className="rounded text-orange-600 h-4 w-4" />Visible</label>
+            <div className="flex-1"><FieldLabel>Sort Position</FieldLabel><input type="number" value={form.position} onChange={e=>setForm(p=>({...p,position:+e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
+            <label className="mt-4 flex items-center gap-2 text-sm font-bold text-zinc-700 cursor-pointer"><input type="checkbox" checked={form.is_visible} onChange={e=>setForm(p=>({...p,is_visible:e.target.checked}))} className="rounded text-brand-700 h-4 w-4" />Visible</label>
           </div>
-          <button type="submit" disabled={saving} className="w-full rounded-xl bg-orange-600 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-60 transition">
+          <button type="submit" disabled={saving} className="w-full rounded-xl bg-brand-700 py-3 text-sm font-black text-white hover:bg-brand-800 disabled:opacity-60 transition">
             {saving ? "Adding…" : "Add Testimonial"}
           </button>
         </form>
@@ -886,18 +886,18 @@ function SponsorsPanel({ sponsors, setSponsors, flash, setErr }: {
             {sponsors.map(s => {
               const editing = editId === s.id;
               return (
-                <div key={s.id} className={`rounded-xl border p-4 transition ${editing ? "border-orange-200 bg-orange-50/30" : "border-zinc-100 bg-zinc-50/30 hover:bg-zinc-50"}`}>
+                <div key={s.id} className={`rounded-xl border p-4 transition ${editing ? "border-brand-200 bg-brand-50/30" : "border-zinc-100 bg-zinc-50/30 hover:bg-zinc-50"}`}>
                   {editing ? (
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
-                        <div><FieldLabel>Name</FieldLabel><input defaultValue={s.name} onChange={e=>setEdit(p=>({...p,name:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-orange-500" /></div>
-                        <div><FieldLabel>Website URL</FieldLabel><input defaultValue={s.website_url} onChange={e=>setEdit(p=>({...p,website_url:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-orange-500" /></div>
+                        <div><FieldLabel>Name</FieldLabel><input defaultValue={s.name} onChange={e=>setEdit(p=>({...p,name:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-brand-600" /></div>
+                        <div><FieldLabel>Website URL</FieldLabel><input defaultValue={s.website_url} onChange={e=>setEdit(p=>({...p,website_url:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-brand-600" /></div>
                       </div>
-                      <div><FieldLabel>Logo URL</FieldLabel><input defaultValue={s.logo_url} onChange={e=>setEdit(p=>({...p,logo_url:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-orange-500" /></div>
+                      <div><FieldLabel>Logo URL</FieldLabel><input defaultValue={s.logo_url} onChange={e=>setEdit(p=>({...p,logo_url:e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3 py-2 text-sm font-semibold outline-none focus:border-brand-600" /></div>
                       <div className="flex items-center justify-between">
-                        <label className="flex items-center gap-2 text-xs font-bold text-zinc-600"><input type="checkbox" defaultChecked={s.is_visible} onChange={e=>setEdit(p=>({...p,is_visible:e.target.checked}))} className="rounded text-orange-600" />Visible</label>
+                        <label className="flex items-center gap-2 text-xs font-bold text-zinc-600"><input type="checkbox" defaultChecked={s.is_visible} onChange={e=>setEdit(p=>({...p,is_visible:e.target.checked}))} className="rounded text-brand-700" />Visible</label>
                         <div className="flex gap-2">
-                          <button onClick={() => saveEdit(s.id)} className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-black text-white hover:bg-orange-700">Save</button>
+                          <button onClick={() => saveEdit(s.id)} className="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-black text-white hover:bg-brand-800">Save</button>
                           <button onClick={() => {setEditId(null);setEdit({});}} className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-bold text-zinc-600 hover:bg-zinc-50">Cancel</button>
                         </div>
                       </div>
@@ -910,12 +910,12 @@ function SponsorsPanel({ sponsors, setSponsors, flash, setErr }: {
                       }
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-black text-zinc-900">{s.name}</p>
-                        {s.website_url && <a href={s.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-orange-600 hover:underline mt-0.5"><Globe className="h-3 w-3" />{s.website_url.replace(/^https?:\/\//, "")}</a>}
+                        {s.website_url && <a href={s.website_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-brand-700 hover:underline mt-0.5"><Globe className="h-3 w-3" />{s.website_url.replace(/^https?:\/\//, "")}</a>}
                       </div>
                       <span className="text-[10px] text-zinc-300">#{s.position}</span>
-                      {s.is_visible ? <Eye className="h-3.5 w-3.5 text-emerald-500" /> : <EyeOff className="h-3.5 w-3.5 text-zinc-300" />}
+                      {s.is_visible ? <Eye className="h-3.5 w-3.5 text-brand-600" /> : <EyeOff className="h-3.5 w-3.5 text-zinc-300" />}
                       <div className="flex gap-1">
-                        <button onClick={() => {setEditId(s.id);setEdit({});}} className="rounded-lg p-1.5 text-zinc-400 hover:bg-orange-50 hover:text-orange-600 transition"><Edit2 className="h-3.5 w-3.5" /></button>
+                        <button onClick={() => {setEditId(s.id);setEdit({});}} className="rounded-lg p-1.5 text-zinc-400 hover:bg-brand-50 hover:text-brand-700 transition"><Edit2 className="h-3.5 w-3.5" /></button>
                         <button onClick={() => del(s.id)} className="rounded-lg p-1.5 text-zinc-400 hover:bg-red-50 hover:text-red-500 transition"><Trash2 className="h-3.5 w-3.5" /></button>
                       </div>
                     </div>
@@ -931,15 +931,15 @@ function SponsorsPanel({ sponsors, setSponsors, flash, setErr }: {
       <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6 space-y-4">
         <h2 className="text-base font-black text-zinc-950">Add Sponsor</h2>
         <form onSubmit={save} className="space-y-3">
-          <div><FieldLabel>Sponsor Name *</FieldLabel><input required value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Acme Corp" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
-          <div><FieldLabel>Logo URL</FieldLabel><input type="url" value={form.logo_url} onChange={e=>setForm(p=>({...p,logo_url:e.target.value}))} placeholder="https://…/logo.png" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
+          <div><FieldLabel>Sponsor Name *</FieldLabel><input required value={form.name} onChange={e=>setForm(p=>({...p,name:e.target.value}))} placeholder="Acme Corp" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
+          <div><FieldLabel>Logo URL</FieldLabel><input type="url" value={form.logo_url} onChange={e=>setForm(p=>({...p,logo_url:e.target.value}))} placeholder="https://…/logo.png" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
           {form.logo_url && <div className="flex items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50 py-3"><img src={form.logo_url} alt="Logo preview" className="max-h-12 max-w-full object-contain" /></div>}
-          <div><FieldLabel>Website URL</FieldLabel><input type="url" value={form.website_url} onChange={e=>setForm(p=>({...p,website_url:e.target.value}))} placeholder="https://acme.com" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
+          <div><FieldLabel>Website URL</FieldLabel><input type="url" value={form.website_url} onChange={e=>setForm(p=>({...p,website_url:e.target.value}))} placeholder="https://acme.com" className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
           <div className="flex items-center gap-4">
-            <div className="flex-1"><FieldLabel>Sort Position</FieldLabel><input type="number" value={form.position} onChange={e=>setForm(p=>({...p,position:+e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-orange-500" /></div>
-            <label className="mt-4 flex items-center gap-2 text-sm font-bold text-zinc-700 cursor-pointer"><input type="checkbox" checked={form.is_visible} onChange={e=>setForm(p=>({...p,is_visible:e.target.checked}))} className="rounded text-orange-600 h-4 w-4" />Visible</label>
+            <div className="flex-1"><FieldLabel>Sort Position</FieldLabel><input type="number" value={form.position} onChange={e=>setForm(p=>({...p,position:+e.target.value}))} className="w-full rounded-xl border border-zinc-200 px-3.5 py-2.5 text-sm font-semibold outline-none focus:border-brand-600" /></div>
+            <label className="mt-4 flex items-center gap-2 text-sm font-bold text-zinc-700 cursor-pointer"><input type="checkbox" checked={form.is_visible} onChange={e=>setForm(p=>({...p,is_visible:e.target.checked}))} className="rounded text-brand-700 h-4 w-4" />Visible</label>
           </div>
-          <button type="submit" disabled={saving} className="w-full rounded-xl bg-orange-600 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-60 transition">
+          <button type="submit" disabled={saving} className="w-full rounded-xl bg-brand-700 py-3 text-sm font-black text-white hover:bg-brand-800 disabled:opacity-60 transition">
             {saving ? "Adding…" : "Add Sponsor"}
           </button>
         </form>

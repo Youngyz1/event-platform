@@ -69,7 +69,7 @@ export default function MobileHomepageSearch() {
     <section className="border-b border-zinc-800 bg-zinc-950 px-5 py-2 lg:hidden">
       <div className="mx-auto max-w-xl">
         <p className="mb-2 flex items-center gap-2 text-[10px] font-black text-zinc-100">
-          <LocateFixed className="h-3 w-3 text-orange-600" />
+          <LocateFixed className="h-3 w-3 text-brand-700" />
           {status === "detecting" ? "Finding events near you..." : `Events near ${cityLabel}`}
         </p>
 
@@ -81,7 +81,7 @@ export default function MobileHomepageSearch() {
               onChange={(event) => setQuery(event.target.value)}
               type="search"
               placeholder="Search"
-              className="h-8 w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-8 pr-2 text-[10px] font-semibold text-white outline-none placeholder:text-zinc-400 focus:border-orange-500"
+              className="h-8 w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-8 pr-2 text-[10px] font-semibold text-white outline-none placeholder:text-zinc-400 focus:border-brand-600"
             />
           </label>
 
@@ -95,13 +95,13 @@ export default function MobileHomepageSearch() {
               }}
               type="search"
               placeholder="City"
-              className="h-8 w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-8 pr-2 text-[10px] font-semibold text-white outline-none placeholder:text-zinc-400 focus:border-orange-500"
+              className="h-8 w-full rounded-xl border border-zinc-800 bg-zinc-900 pl-8 pr-2 text-[10px] font-semibold text-white outline-none placeholder:text-zinc-400 focus:border-brand-600"
             />
           </label>
 
           <button
             type="submit"
-            className="flex h-8 w-9 items-center justify-center rounded-xl bg-orange-600 text-white shadow-sm transition hover:bg-orange-700"
+            className="flex h-8 w-9 items-center justify-center rounded-xl bg-brand-700 text-white shadow-sm transition hover:bg-brand-800"
             aria-label="Search events"
           >
             <Search className="h-4 w-4" />

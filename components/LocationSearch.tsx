@@ -97,7 +97,7 @@ export default function LocationSearch() {
       )}
       {locationStatus === 'denied' && (
         <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm font-semibold text-zinc-600">
-          <i className="ti ti-current-location text-base text-orange-600" aria-hidden="true" />
+          <i className="ti ti-current-location text-base text-brand-700" aria-hidden="true" />
           Enable location or pick a city.
         </div>
       )}
@@ -108,7 +108,7 @@ export default function LocationSearch() {
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search city"
-          className="w-full rounded-xl border border-zinc-200 px-10 py-3 text-sm font-semibold outline-none focus:border-orange-500"
+          className="w-full rounded-xl border border-zinc-200 px-10 py-3 text-sm font-semibold outline-none focus:border-brand-600"
         />
       </div>
       {cityResults.length > 0 && (
@@ -117,7 +117,7 @@ export default function LocationSearch() {
             <button
               key={i}
               onClick={() => router.push(`/events?location=${encodeURIComponent(c.city)}`)}
-              className="block w-full px-4 py-3 text-left text-sm font-bold hover:bg-orange-50"
+              className="block w-full px-4 py-3 text-left text-sm font-bold hover:bg-brand-50"
             >
               {c.city}
             </button>
@@ -129,7 +129,7 @@ export default function LocationSearch() {
           <button
             key={city}
             onClick={() => router.push(`/events?location=${encodeURIComponent(city)}`)}
-            className="shrink-0 rounded-full bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-800 hover:bg-orange-100 hover:text-orange-700"
+            className="shrink-0 rounded-full bg-zinc-100 px-4 py-2 text-xs font-bold text-zinc-800 hover:bg-brand-100 hover:text-brand-800"
           >
             {city}
           </button>

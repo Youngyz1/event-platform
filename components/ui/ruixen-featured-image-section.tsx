@@ -91,7 +91,7 @@ const FeatureTab = (
       onClick={props.onClick}
       className={`relative flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-3 transition-all duration-200 ${
         props.selected
-          ? "border-orange-500/40 bg-orange-500/5"
+          ? "border-brand-600/40 bg-brand-600/5"
           : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900/50 dark:hover:border-zinc-700"
       }`}
     >
@@ -99,7 +99,7 @@ const FeatureTab = (
       {props.selected && (
         <motion.div
           style={{ maskImage }}
-          className="absolute inset-0 -m-px rounded-xl border border-orange-500"
+          className="absolute inset-0 -m-px rounded-xl border border-brand-600"
         />
       )}
 
@@ -107,7 +107,7 @@ const FeatureTab = (
       <div
         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
           props.selected
-            ? "bg-orange-500 text-white"
+            ? "bg-brand-600 text-white"
             : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
         }`}
       >
@@ -117,7 +117,7 @@ const FeatureTab = (
       <div className="min-w-0">
         <p
           className={`truncate text-sm font-bold ${
-            props.selected ? "text-orange-600 dark:text-orange-400" : "text-zinc-700 dark:text-zinc-300"
+            props.selected ? "text-brand-700 dark:text-brand-400" : "text-zinc-700 dark:text-zinc-300"
           }`}
         >
           {props.title}
@@ -128,7 +128,7 @@ const FeatureTab = (
       </div>
 
       {props.isNew && (
-        <span className="ml-2 shrink-0 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-orange-600 dark:bg-orange-500/10 dark:text-orange-400">
+        <span className="ml-2 shrink-0 rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-brand-700 dark:bg-brand-600/10 dark:text-brand-400">
           New
         </span>
       )}
@@ -171,12 +171,12 @@ export default function RuixenFeaturedImageSection() {
       <div className="container mx-auto max-w-6xl px-6">
         {/* Heading */}
         <div className="text-center">
-          <span className="inline-block rounded-full border border-orange-200 bg-orange-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-orange-600 dark:border-orange-500/20 dark:bg-orange-500/10 dark:text-orange-400">
+          <span className="inline-block rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-brand-700 dark:border-brand-600/20 dark:bg-brand-600/10 dark:text-brand-400">
             Platform Features
           </span>
           <h2 className="mt-5 text-4xl font-black tracking-tight text-zinc-900 dark:text-white md:text-5xl lg:text-6xl">
             Everything you need to{" "}
-            <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-brand-600 to-brand-700 bg-clip-text text-transparent">
               run a great fundraiser.
             </span>
           </h2>
@@ -227,7 +227,7 @@ export default function RuixenFeaturedImageSection() {
         <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <a
             href="/signup"
-            className="rounded-xl bg-orange-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600"
+            className="rounded-xl bg-brand-600 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-600/20 transition hover:bg-brand-700"
           >
             Start for free →
           </a>

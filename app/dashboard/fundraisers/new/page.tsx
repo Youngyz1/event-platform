@@ -15,7 +15,7 @@ export default async function NewDashboardFundraiserPage() {
         </p>
         <Link
           href="/create-organizer"
-          className="mt-6 inline-block rounded-xl bg-emerald-600 px-6 py-3 text-sm font-black text-white hover:bg-emerald-700"
+          className="mt-6 inline-block rounded-xl bg-brand-700 px-6 py-3 text-sm font-black text-white hover:bg-brand-800"
         >
           Create Organizer Profile
         </Link>
@@ -26,7 +26,7 @@ export default async function NewDashboardFundraiserPage() {
   return (
     <div className="space-y-6">
       <header>
-        <p className="text-xs font-black uppercase tracking-wide text-emerald-600">Fundraisers</p>
+        <p className="text-xs font-black uppercase tracking-wide text-brand-700">Fundraisers</p>
         <h1 className="mt-1 text-3xl font-black tracking-tight">Create New Fundraiser</h1>
         <p className="mt-1 text-sm font-medium text-zinc-500">
           Start a campaign from scratch or import one from a source page.
@@ -36,28 +36,28 @@ export default async function NewDashboardFundraiserPage() {
       <div className="grid gap-5 md:grid-cols-2">
         <Link
           href="/create-fundraiser"
-          className="rounded-xl border border-emerald-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-emerald-300"
+          className="rounded-xl border border-brand-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-brand-300"
         >
-          <p className="text-sm font-black uppercase tracking-wide text-emerald-600">Create</p>
+          <p className="text-sm font-black uppercase tracking-wide text-brand-700">Create</p>
           <h2 className="mt-2 text-2xl font-black text-zinc-950">Create from scratch</h2>
           <p className="mt-3 text-sm leading-6 text-zinc-600">
             Build a new campaign with your story, goal, images, and Fund4Good donation checkout.
           </p>
-          <span className="mt-5 inline-block rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white">
+          <span className="mt-5 inline-block rounded-xl bg-brand-700 px-5 py-3 text-sm font-black text-white">
             Start Fundraiser
           </span>
         </Link>
 
         <Link
           href="/import"
-          className="rounded-xl border border-zinc-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-emerald-200"
+          className="rounded-xl border border-zinc-200 bg-white p-6 transition hover:-translate-y-0.5 hover:border-brand-200"
         >
           <p className="text-sm font-black uppercase tracking-wide text-zinc-500">Import</p>
           <h2 className="mt-2 text-2xl font-black text-zinc-950">Import fundraiser</h2>
           <p className="mt-3 text-sm leading-6 text-zinc-600">
             Bring in campaign data from a URL or CSV, review it, then save it to your organizer account.
           </p>
-          <span className="mt-5 inline-block rounded-xl border border-emerald-200 px-5 py-3 text-sm font-black text-emerald-700">
+          <span className="mt-5 inline-block rounded-xl border border-brand-200 px-5 py-3 text-sm font-black text-brand-800">
             Import Fundraiser
           </span>
         </Link>

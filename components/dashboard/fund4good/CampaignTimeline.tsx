@@ -30,10 +30,10 @@ const eventConfig = {
   },
   donation_spike: {
     icon: TrendingUp,
-    iconBg: "bg-emerald-100",
-    iconColor: "text-emerald-600",
+    iconBg: "bg-brand-100",
+    iconColor: "text-brand-700",
     badge: "Surge",
-    badgeClass: "bg-emerald-50 text-emerald-600 border-emerald-200",
+    badgeClass: "bg-brand-50 text-brand-700 border-brand-200",
   },
 };
 

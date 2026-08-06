@@ -227,7 +227,7 @@ export default async function OrgAnalyticsPage({
       <header className="flex flex-col gap-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-wide text-orange-600">Organization</p>
+            <p className="text-xs font-bold uppercase tracking-wide text-brand-700">Organization</p>
             <h1 className="mt-1 text-2xl font-bold text-slate-900">Organization Analytics</h1>
             <p className="text-sm text-slate-500">Performance for this workspace</p>
           </div>
@@ -249,7 +249,7 @@ export default async function OrgAnalyticsPage({
               className={cn(
                 "shrink-0 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-xs font-semibold transition",
                 range === opt.value
-                  ? "border-orange-200 bg-orange-50 text-orange-700"
+                  ? "border-brand-200 bg-brand-50 text-brand-800"
                   : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               )}
             >
@@ -262,10 +262,10 @@ export default async function OrgAnalyticsPage({
       {/* Top stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         {[
-          { label: "Raised", value: `$${raisedInRange.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: DollarSign, tint: "bg-orange-50 text-orange-600" },
+          { label: "Raised", value: `$${raisedInRange.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: DollarSign, tint: "bg-brand-50 text-brand-700" },
           { label: "Goal", value: `$${totalGoal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: TrendingUp, tint: "bg-violet-50 text-violet-600" },
           { label: "Donors", value: donorsInRange.toLocaleString(), icon: Users, tint: "bg-sky-50 text-sky-600" },
-          { label: "Avg Donation", value: `$${avgDonation.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: Receipt, tint: "bg-emerald-50 text-emerald-600" },
+          { label: "Avg Donation", value: `$${avgDonation.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: Receipt, tint: "bg-brand-50 text-brand-700" },
           { label: "Campaigns", value: activeCampaigns.toLocaleString(), icon: Heart, tint: "bg-rose-50 text-rose-600" },
         ].map((stat) => (
           <div key={stat.label} className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5">
@@ -320,7 +320,7 @@ export default async function OrgAnalyticsPage({
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-100">
-                    <div className="h-full rounded-full bg-orange-400 transition-all" style={{ width: `${pct}%` }} />
+                    <div className="h-full rounded-full bg-brand-400 transition-all" style={{ width: `${pct}%` }} />
                   </div>
                 </div>
               );
@@ -345,7 +345,7 @@ export default async function OrgAnalyticsPage({
             <p className="mt-1 max-w-xs text-sm text-slate-500">Launch a campaign to start seeing performance data here.</p>
             <Link
               href="/create-fundraiser"
-              className="mt-4 inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-orange-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-700"
+              className="mt-4 inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800"
             >
               Create Campaign
             </Link>

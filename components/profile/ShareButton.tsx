@@ -31,7 +31,7 @@ export default function ShareButton({ getUrl, label = "Share" }: ShareButtonProp
       className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
     >
       {status === "copied" ? (
-        <Check className="h-4 w-4 text-emerald-600" />
+        <Check className="h-4 w-4 text-brand-700" />
       ) : status === "failed" ? (
         <AlertCircle className="h-4 w-4 text-red-600" />
       ) : (

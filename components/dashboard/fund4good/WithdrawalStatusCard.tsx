@@ -11,8 +11,8 @@ import { EmptyState } from "./EmptyState";
 const statusConfig = {
   completed: {
     icon: CheckCircle2,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
+    color: "text-brand-700",
+    bg: "bg-brand-50",
     label: "Completed",
   },
   processing: {
@@ -55,7 +55,7 @@ export function WithdrawalStatusCard({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
         <div className="flex items-center gap-2">
-          <CircleDollarSign className="h-4 w-4 text-emerald-500" aria-hidden />
+          <CircleDollarSign className="h-4 w-4 text-brand-600" aria-hidden />
           <h2 className="text-sm font-semibold text-slate-900">Withdrawals</h2>
         </div>
         <button
@@ -133,7 +133,7 @@ export function WithdrawalStatusCard({
                     config.color,
                     config.bg,
                     "border",
-                    w.status === "completed" ? "border-emerald-200" :
+                    w.status === "completed" ? "border-brand-200" :
                     w.status === "processing" ? "border-sky-200" :
                     w.status === "pending" ? "border-amber-200" :
                     "border-red-200"

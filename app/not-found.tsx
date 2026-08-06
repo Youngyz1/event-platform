@@ -10,7 +10,7 @@ export default function NotFound() {
   return (
     <main className="min-h-screen bg-white text-zinc-950 flex items-center justify-center px-4">
       <div className="max-w-md w-full text-center">
-        <p className="text-6xl font-black text-orange-500">404</p>
+        <p className="text-6xl font-black text-brand-600">404</p>
         <h1 className="mt-4 text-2xl font-black">Page not found</h1>
         <p className="mt-3 text-zinc-500 leading-7">
           The page you are looking for might have been removed, renamed, or
@@ -19,7 +19,7 @@ export default function NotFound() {
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
             href="/fundraisers"
-            className="w-full sm:w-auto rounded-xl bg-orange-500 px-6 py-3 font-black text-white hover:bg-orange-600 transition"
+            className="w-full sm:w-auto rounded-xl bg-brand-600 px-6 py-3 font-black text-white hover:bg-brand-700 transition"
           >
             Browse fundraisers
           </Link>

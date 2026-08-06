@@ -29,7 +29,7 @@ export default function FollowButton({
         size === "sm" ? "px-4 py-2 text-xs" : "px-5 py-2.5 text-sm",
         isFollowing
           ? "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-          : "bg-zinc-950 text-white hover:bg-orange-600"
+          : "bg-zinc-950 text-white hover:bg-brand-700"
       )}
     >
       <Heart className={cn("h-4 w-4", isFollowing && "fill-current")} />

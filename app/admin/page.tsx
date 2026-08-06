@@ -29,8 +29,8 @@ function StatCard({
 }) {
   const iconClasses: Record<string, string> = {
     indigo: 'bg-indigo-50 text-indigo-700',
-    orange: 'bg-orange-50 text-orange-700',
-    green:  'bg-emerald-50 text-emerald-700',
+    orange: 'bg-brand-50 text-brand-800',
+    green:  'bg-brand-50 text-brand-800',
     zinc:   'bg-zinc-100 text-zinc-700',
     blue:   'bg-blue-50 text-blue-700',
     rose:   'bg-rose-50 text-rose-700',

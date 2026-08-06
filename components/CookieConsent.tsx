@@ -43,7 +43,7 @@ export default function CookieConsent() {
         >
           <div className="mx-auto flex max-w-7xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-700 dark:bg-brand-950/50 dark:text-brand-400">
                 <Cookie className="h-5 w-5" />
               </div>
               <p className="text-xs leading-5 text-zinc-600 dark:text-zinc-400">
@@ -59,7 +59,7 @@ export default function CookieConsent() {
                 to keep only essential ones. Learn more in our{" "}
                 <Link
                   href="/cookies"
-                  className="font-semibold text-orange-600 underline hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300"
+                  className="font-semibold text-brand-700 underline hover:text-brand-800 dark:text-brand-400 dark:hover:text-brand-300"
                 >
                   Cookie Policy
                 </Link>
@@ -81,7 +81,7 @@ export default function CookieConsent() {
               <button
                 id="cookie-accept"
                 onClick={() => dismiss("accepted")}
-                className="rounded-full bg-orange-600 px-5 py-2 text-xs font-black text-white shadow-sm transition-all hover:scale-[1.02] hover:bg-orange-700 active:scale-[0.98]"
+                className="rounded-full bg-brand-700 px-5 py-2 text-xs font-black text-white shadow-sm transition-all hover:scale-[1.02] hover:bg-brand-800 active:scale-[0.98]"
               >
                 Accept
               </button>

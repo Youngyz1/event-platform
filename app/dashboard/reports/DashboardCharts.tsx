@@ -135,18 +135,18 @@ export function TopEventsChart({ data }: { data: TopEvent[] }) {
           <div key={ev.title}>
             <div className="mb-1 flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-2">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-orange-100 text-xs font-black text-orange-700">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-black text-brand-800">
                   {i + 1}
                 </span>
                 <span className="truncate text-sm font-bold text-zinc-900">{ev.title}</span>
               </div>
-              <span className="shrink-0 text-sm font-black text-emerald-700">
+              <span className="shrink-0 text-sm font-black text-brand-800">
                 ${Number(ev.revenue).toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-zinc-100">
               <div
-                className="h-full rounded-full bg-orange-400 transition-all"
+                className="h-full rounded-full bg-brand-400 transition-all"
                 style={{ width: `${pct}%` }}
               />
             </div>

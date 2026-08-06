@@ -65,7 +65,7 @@ export default function SmartCTAButton({ className }: SmartCTAButtonProps) {
   if (state === "loading") {
     return (
       <span
-        className={`inline-flex items-center gap-2 rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white opacity-70 ${className ?? ""}`}
+        className={`inline-flex items-center gap-2 rounded-xl bg-brand-700 px-6 py-3 text-sm font-black text-white opacity-70 ${className ?? ""}`}
       >
         <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
         Loading…
@@ -76,7 +76,7 @@ export default function SmartCTAButton({ className }: SmartCTAButtonProps) {
   return (
     <Link
       href={DEST[state]}
-      className={`inline-flex items-center gap-2 rounded-xl bg-orange-600 hover:bg-orange-700 px-6 py-3 text-sm font-black text-white transition-colors ${className ?? ""}`}
+      className={`inline-flex items-center gap-2 rounded-xl bg-brand-700 hover:bg-brand-800 px-6 py-3 text-sm font-black text-white transition-colors ${className ?? ""}`}
     >
       {LABEL[state]} <ArrowRight className="w-4 h-4" />
     </Link>

@@ -53,7 +53,7 @@ export default function DashboardLayout({
   if (!authed) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-100">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-orange-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
       </div>
     );
   }
@@ -83,7 +83,7 @@ export default function DashboardLayout({
           <button
             onClick={() => setDrawerOpen(false)}
             aria-label="Close navigation menu"
-            className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2"
+            className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
           >
             <X size={20} />
           </button>
@@ -97,9 +97,9 @@ export default function DashboardLayout({
                 key={href}
                 href={href}
                 onClick={() => setDrawerOpen(false)}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 focus-visible:ring-offset-2 ${
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 ${
                   active
-                    ? "bg-orange-50 text-orange-600"
+                    ? "bg-brand-50 text-brand-700"
                     : "text-zinc-600 hover:bg-zinc-100"
                 }`}
               >
@@ -134,8 +134,8 @@ export default function DashboardLayout({
             <Link
               key={href}
               href={href}
-              className={`flex h-full flex-1 flex-col items-center justify-center gap-0.5 transition focus-visible:outline-none focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-orange-500 ${
-                active ? "text-orange-600" : "text-zinc-400"
+              className={`flex h-full flex-1 flex-col items-center justify-center gap-0.5 transition focus-visible:outline-none focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-brand-600 ${
+                active ? "text-brand-700" : "text-zinc-400"
               }`}
             >
               <Icon className="h-[22px] w-[22px] shrink-0" />

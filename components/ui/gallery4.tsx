@@ -95,7 +95,7 @@ export function Gallery4({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-8 flex items-end justify-between md:mb-14 lg:mb-16">
           <div className="flex max-w-xl flex-col gap-4">
-            <p className="text-sm font-black uppercase tracking-wide text-emerald-600">
+            <p className="text-sm font-black uppercase tracking-wide text-brand-700">
               {eyebrow}
             </p>
             <h2 className="text-4xl font-black tracking-tight md:text-5xl">
@@ -167,7 +167,7 @@ export function Gallery4({
                       <div className="mb-8 line-clamp-2 text-sm leading-6 text-zinc-200 md:mb-12 lg:mb-9">
                         {item.description}
                       </div>
-                      <div className="flex items-center text-sm font-black text-emerald-300">
+                      <div className="flex items-center text-sm font-black text-brand-300">
                         {item.cta ?? "Read more"}{" "}
                         <ArrowRight className="ml-2 size-5 transition-transform group-hover:translate-x-1" />
                       </div>
@@ -183,7 +183,7 @@ export function Gallery4({
             <button
               key={index}
               className={`h-2 w-2 rounded-full transition-colors ${
-                currentSlide === index ? "bg-emerald-500" : "bg-zinc-200"
+                currentSlide === index ? "bg-brand-600" : "bg-zinc-200"
               }`}
               onClick={() => carouselApi?.scrollTo(index)}
               aria-label={`Go to slide ${index + 1}`}

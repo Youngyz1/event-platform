@@ -36,7 +36,7 @@ export default function ProfileNotSetUpModal({
       >
         {/* Avatar + name */}
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-2xl font-black text-emerald-700">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 text-2xl font-black text-brand-800">
             {initial}
           </div>
           <h2 className="mt-3 text-xl font-black text-zinc-950">{name}</h2>
@@ -52,7 +52,7 @@ export default function ProfileNotSetUpModal({
               <p className="text-xs font-bold uppercase tracking-wide text-zinc-400">
                 Donated to this fundraiser
               </p>
-              <p className="mt-1 text-lg font-black text-emerald-700">
+              <p className="mt-1 text-lg font-black text-brand-800">
                 {money(activity.amount)}
               </p>
             </div>

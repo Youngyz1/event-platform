@@ -22,7 +22,7 @@ export default function DashboardEmptyState({
       {actionLabel && actionHref && (
         <Link
           href={actionHref}
-          className="rounded-lg bg-orange-600 px-5 py-2.5 text-xs font-black text-white hover:bg-orange-700 sm:rounded-xl sm:px-6 sm:py-3 sm:text-sm"
+          className="rounded-lg bg-brand-700 px-5 py-2.5 text-xs font-black text-white hover:bg-brand-800 sm:rounded-xl sm:px-6 sm:py-3 sm:text-sm"
         >
           {actionLabel}
         </Link>

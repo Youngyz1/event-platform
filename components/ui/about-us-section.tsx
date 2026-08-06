@@ -129,8 +129,8 @@ export default function AboutUsSection({
       className="w-full py-24 px-4 bg-gradient-to-b from-zinc-50 to-white text-zinc-950 overflow-hidden relative"
     >
       {/* Decorative blobs */}
-      <motion.div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-orange-400/5 blur-3xl" style={{ y: y1, rotate: rotate1 }} />
-      <motion.div className="absolute bottom-20 right-10 w-80 h-80 rounded-full bg-emerald-400/5 blur-3xl" style={{ y: y2, rotate: rotate2 }} />
+      <motion.div className="absolute top-20 left-10 w-64 h-64 rounded-full bg-brand-400/5 blur-3xl" style={{ y: y1, rotate: rotate1 }} />
+      <motion.div className="absolute bottom-20 right-10 w-80 h-80 rounded-full bg-brand-400/5 blur-3xl" style={{ y: y2, rotate: rotate2 }} />
 
       <motion.div
         className="container mx-auto max-w-6xl relative z-10"
@@ -140,12 +140,12 @@ export default function AboutUsSection({
       >
         {/* Heading */}
         <motion.div className="flex flex-col items-center mb-6" variants={item}>
-          <motion.span className="text-orange-600 font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
+          <motion.span className="text-brand-700 font-black text-xs uppercase tracking-widest mb-3 flex items-center gap-2">
             <Zap className="w-4 h-4" /> Our Story
           </motion.span>
           <h2 className="text-4xl md:text-5xl font-black mb-4 text-center tracking-tight">About Fund4Good</h2>
           <motion.div
-            className="w-24 h-1 bg-orange-500 rounded-full"
+            className="w-24 h-1 bg-brand-600 rounded-full"
             initial={{ width: 0 }}
             animate={{ width: 96 }}
             transition={{ duration: 1, delay: 0.4 }}
@@ -179,7 +179,7 @@ export default function AboutUsSection({
               </motion.div>
               {/* Border accent */}
               <motion.div
-                className="absolute inset-0 border-4 border-orange-400/30 rounded-2xl -m-3 z-[-1]"
+                className="absolute inset-0 border-4 border-brand-400/30 rounded-2xl -m-3 z-[-1]"
                 initial={{ opacity: 0, scale: 1.1 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.5 }}
@@ -244,13 +244,13 @@ function ServiceItem({
         transition={{ duration: 0.6, delay: delay + 0.2 }}
       >
         <motion.div
-          className="text-orange-600 bg-orange-50 p-3 rounded-xl relative group-hover:bg-orange-100 transition-colors"
+          className="text-brand-700 bg-brand-50 p-3 rounded-xl relative group-hover:bg-brand-100 transition-colors"
           whileHover={{ rotate: [0, -8, 8, -4, 0], transition: { duration: 0.4 } }}
         >
           {icon}
           {secondaryIcon}
         </motion.div>
-        <h3 className="text-base font-black text-zinc-950 group-hover:text-orange-600 transition-colors">{title}</h3>
+        <h3 className="text-base font-black text-zinc-950 group-hover:text-brand-700 transition-colors">{title}</h3>
       </motion.div>
       <p className="text-sm text-zinc-500 leading-relaxed pl-14">{description}</p>
     </motion.div>
@@ -276,12 +276,12 @@ function StatCounter({ icon, value, label, suffix, prefix, delay }: AboutStat & 
 
   return (
     <motion.div
-      className="bg-zinc-50 hover:bg-white border border-zinc-200 hover:border-orange-200 p-6 rounded-2xl flex flex-col items-center text-center group transition-colors"
+      className="bg-zinc-50 hover:bg-white border border-zinc-200 hover:border-brand-200 p-6 rounded-2xl flex flex-col items-center text-center group transition-colors"
       variants={countVariants}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
     >
       <motion.div
-        className="w-12 h-12 rounded-full bg-orange-50 flex items-center justify-center mb-4 text-orange-600 group-hover:bg-orange-100 transition-colors"
+        className="w-12 h-12 rounded-full bg-brand-50 flex items-center justify-center mb-4 text-brand-700 group-hover:bg-brand-100 transition-colors"
         whileHover={{ rotate: 360, transition: { duration: 0.6 } }}
       >
         {icon}
@@ -292,7 +292,7 @@ function StatCounter({ icon, value, label, suffix, prefix, delay }: AboutStat & 
         <span>{suffix}</span>
       </div>
       <p className="text-zinc-500 text-sm mt-1">{label}</p>
-      <motion.div className="w-8 h-0.5 bg-orange-500 mt-3 group-hover:w-14 transition-all duration-300 rounded-full" />
+      <motion.div className="w-8 h-0.5 bg-brand-600 mt-3 group-hover:w-14 transition-all duration-300 rounded-full" />
     </motion.div>
   );
 }

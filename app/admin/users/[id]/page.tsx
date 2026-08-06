@@ -25,14 +25,14 @@ function money(value: number | string | null | undefined) {
 
 function statusBadge(status: string) {
   return status === "active"
-    ? "bg-emerald-100 text-emerald-700"
+    ? "bg-brand-100 text-brand-800"
     : "bg-red-100 text-red-600";
 }
 
 function roleBadge(role: string) {
   const classes: Record<string, string> = {
     admin: "bg-zinc-900 text-white",
-    organizer: "bg-orange-100 text-orange-700",
+    organizer: "bg-brand-100 text-brand-800",
     user: "bg-zinc-100 text-zinc-600",
   };
   return classes[role] ?? classes.user;
@@ -146,7 +146,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
       <header>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <Link href="/admin/users" className="text-xs font-black uppercase tracking-wide text-orange-600 hover:text-orange-700">
+            <Link href="/admin/users" className="text-xs font-black uppercase tracking-wide text-brand-700 hover:text-brand-800">
               Back to users
             </Link>
             <h1 className="mt-2 text-3xl font-black tracking-tight">{fullName}</h1>
@@ -231,7 +231,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link href={`/org/${organizer.slug ?? organizer.id}`} className="rounded-lg border border-zinc-200 px-3 py-2 text-xs font-black text-zinc-700 hover:bg-zinc-50">View Organizer</Link>
-                <Link href={`/organizers/${organizer.id}/edit`} className="rounded-lg border border-orange-200 px-3 py-2 text-xs font-black text-orange-700 hover:bg-orange-50">Edit</Link>
+                <Link href={`/organizers/${organizer.id}/edit`} className="rounded-lg border border-brand-200 px-3 py-2 text-xs font-black text-brand-800 hover:bg-brand-50">Edit</Link>
               </div>
             </div>
           ))}
@@ -300,7 +300,7 @@ function SectionHeader({ title, href, action }: { title: string; href?: string; 
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
       <h2 className="text-xl font-black">{title}</h2>
-      {href && action && <Link href={href} className="text-sm font-black text-orange-700 hover:text-orange-800">{action}</Link>}
+      {href && action && <Link href={href} className="text-sm font-black text-brand-800 hover:text-brand-900">{action}</Link>}
     </div>
   );
 }

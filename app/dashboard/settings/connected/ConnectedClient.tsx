@@ -88,7 +88,7 @@ export default function ConnectedClient({
   return (
     <div className="space-y-6">
       {toast && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+        <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-800">
           {toast}
         </div>
       )}
@@ -115,12 +115,12 @@ export default function ConnectedClient({
               <div>
                 {/* Header */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 shrink-0">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-700 shrink-0">
                     <Icon size={20} className={syncingId === app.id ? "animate-spin" : ""} />
                   </div>
                   <div>
                     {app.status === "connected" && (
-                      <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-black uppercase text-emerald-700">
+                      <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-[10px] font-black uppercase text-brand-800">
                         Connected
                       </span>
                     )}
@@ -172,7 +172,7 @@ export default function ConnectedClient({
                       type="button"
                       onClick={() => handleSync(app.id)}
                       disabled={syncingId === app.id}
-                      className="rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-black text-white hover:bg-orange-700 transition"
+                      className="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-black text-white hover:bg-brand-800 transition"
                     >
                       {syncingId === app.id ? "Syncing..." : "Sync Now"}
                     </button>

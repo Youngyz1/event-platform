@@ -27,20 +27,20 @@ interface FeaturedTopicsProps {
 }
 
 const BADGE_CLASS: Record<FeaturedTopicTone, string> = {
-  "emerald-solid": "bg-emerald-600 text-white",
-  "emerald-soft": "bg-white/90 text-emerald-700 ring-1 ring-emerald-100 backdrop-blur",
+  "emerald-solid": "bg-brand-700 text-white",
+  "emerald-soft": "bg-white/90 text-brand-800 ring-1 ring-brand-100 backdrop-blur",
   neutral: "bg-zinc-900/90 text-white backdrop-blur",
 };
 
 const TILE_CLASS: Record<FeaturedTopicTone, string> = {
-  "emerald-solid": "bg-gradient-to-br from-emerald-500 to-emerald-700",
-  "emerald-soft": "bg-gradient-to-br from-emerald-500 to-emerald-700",
+  "emerald-solid": "bg-gradient-to-br from-brand-600 to-brand-800",
+  "emerald-soft": "bg-gradient-to-br from-brand-600 to-brand-800",
   neutral: "bg-gradient-to-br from-zinc-700 to-zinc-900",
 };
 
 const CTA_CLASS: Record<FeaturedTopicTone, string> = {
-  "emerald-solid": "text-emerald-700",
-  "emerald-soft": "text-emerald-700",
+  "emerald-solid": "text-brand-800",
+  "emerald-soft": "text-brand-800",
   neutral: "text-zinc-800",
 };
 

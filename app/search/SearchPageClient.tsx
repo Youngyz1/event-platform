@@ -71,7 +71,7 @@ function SearchResultsContent({ query, fundraisers, organizers }: SearchResultsP
               <section>
                 <div className="mb-5 flex items-end justify-between">
                   <h2 className="text-xl font-black text-zinc-950">Fundraisers</h2>
-                  <Link href="/fundraisers" className="text-sm font-bold text-orange-600 hover:text-orange-700">
+                  <Link href="/fundraisers" className="text-sm font-bold text-brand-700 hover:text-brand-800">
                     View all →
                   </Link>
                 </div>
@@ -95,7 +95,7 @@ function SearchResultsContent({ query, fundraisers, organizers }: SearchResultsP
               <section>
                 <div className="mb-5 flex items-end justify-between">
                   <h2 className="text-xl font-black text-zinc-950">Organizers</h2>
-                  <Link href={`/organizers?q=${encodeURIComponent(query)}`} className="text-sm font-bold text-orange-600 hover:text-orange-700">
+                  <Link href={`/organizers?q=${encodeURIComponent(query)}`} className="text-sm font-bold text-brand-700 hover:text-brand-800">
                     View all →
                   </Link>
                 </div>

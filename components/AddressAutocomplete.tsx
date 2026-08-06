@@ -129,7 +129,7 @@ export default function AddressAutocomplete({
             <button
               key={`${result.lat}:${result.lng}:${result.displayName}`}
               type="button"
-              className="block w-full px-4 py-3 text-left hover:bg-orange-50 focus:bg-orange-50 focus:outline-none"
+              className="block w-full px-4 py-3 text-left hover:bg-brand-50 focus:bg-brand-50 focus:outline-none"
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => selectResult(result)}
             >

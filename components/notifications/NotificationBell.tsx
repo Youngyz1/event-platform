@@ -30,11 +30,11 @@ function NotificationItem({
     <div
       className={cn(
         "flex flex-col gap-0.5 border-b border-zinc-100 px-4 py-3 text-left transition last:border-0 hover:bg-zinc-50",
-        isUnread && "bg-orange-50/60 hover:bg-orange-50"
+        isUnread && "bg-brand-50/60 hover:bg-brand-50"
       )}
     >
       <div className="flex items-center gap-2">
-        {isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500" />}
+        {isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600" />}
         <p className="truncate text-sm font-bold text-zinc-900">{notification.title}</p>
       </div>
       {notification.body && (
@@ -84,11 +84,11 @@ export default function NotificationBell({ userId }: { userId: string }) {
         onClick={() => setOpen((o) => !o)}
         aria-label="Notifications"
         aria-expanded={open}
-        className="relative hidden h-10 w-10 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition hover:border-orange-200 hover:text-orange-600 sm:flex"
+        className="relative hidden h-10 w-10 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition hover:border-brand-200 hover:text-brand-700 sm:flex"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-black text-white ring-2 ring-white">
+          <span className="absolute right-1.5 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-black text-white ring-2 ring-white">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}

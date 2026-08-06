@@ -29,7 +29,7 @@ export default function ProfileMetrics({ metrics, layout }: ProfileMetricsProps)
           {metrics.map((m) => (
             <div key={m.label} className="flex items-center justify-between gap-3">
               <span className="flex items-center gap-2 text-sm font-medium text-zinc-500">
-                {m.icon && <m.icon className="h-4 w-4 text-orange-500" />}
+                {m.icon && <m.icon className="h-4 w-4 text-brand-600" />}
                 {m.label}
               </span>
               <span className="text-base font-black text-zinc-950">{m.value}</span>

@@ -55,7 +55,7 @@ export default function CampaignShowcaseCard({
       <article
         className={cn(
           "flex h-full flex-col overflow-hidden rounded-2xl border bg-white transition hover:-translate-y-0.5 hover:shadow-lg",
-          featured ? "border-emerald-200 ring-1 ring-emerald-100" : "border-zinc-200"
+          featured ? "border-brand-200 ring-1 ring-brand-100" : "border-zinc-200"
         )}
       >
         <div
@@ -82,7 +82,7 @@ export default function CampaignShowcaseCard({
           )}
 
           {featured && (
-            <span className="absolute left-3 top-3 rounded-full bg-emerald-600 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
+            <span className="absolute left-3 top-3 rounded-full bg-brand-700 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-white">
               Featured
             </span>
           )}
@@ -105,7 +105,7 @@ export default function CampaignShowcaseCard({
           </h3>
 
           <div className="mt-3">
-            <p className="text-lg font-black text-emerald-700">
+            <p className="text-lg font-black text-brand-800">
               ${raised.toLocaleString()}{" "}
               <span className="text-sm font-semibold text-zinc-500">raised</span>
             </p>

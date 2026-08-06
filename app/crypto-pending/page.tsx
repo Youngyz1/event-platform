@@ -130,10 +130,10 @@ function CryptoPendingContent() {
     return (
       <div className="w-full max-w-md mx-auto rounded-3xl border border-zinc-200 bg-white p-10 text-center shadow-2xl relative overflow-hidden">
         {/* Colorful top border bar */}
-        <div className={`absolute top-0 left-0 right-0 h-2 ${isDonation ? "bg-green-600" : "bg-orange-500"}`} />
+        <div className={`absolute top-0 left-0 right-0 h-2 ${isDonation ? "bg-green-600" : "bg-brand-600"}`} />
 
-        <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full mb-6 ${isDonation ? "bg-green-100" : "bg-orange-100"}`}>
-          <CheckCircle2 className={`h-10 w-10 ${isDonation ? "text-green-600" : "text-orange-500"}`} />
+        <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full mb-6 ${isDonation ? "bg-green-100" : "bg-brand-100"}`}>
+          <CheckCircle2 className={`h-10 w-10 ${isDonation ? "text-green-600" : "text-brand-600"}`} />
         </div>
 
         <h1 className="text-3xl font-black text-zinc-900">Payment Confirmed!</h1>
@@ -174,7 +174,7 @@ function CryptoPendingContent() {
             {paymentDetails.slug && (
               <Link
                 href={`/products/${paymentDetails.slug}`}
-                className="flex items-center justify-center gap-2 w-full rounded-2xl bg-orange-500 hover:bg-orange-600 py-4 text-sm font-black text-white transition shadow-md"
+                className="flex items-center justify-center gap-2 w-full rounded-2xl bg-brand-600 hover:bg-brand-700 py-4 text-sm font-black text-white transition shadow-md"
               >
                 View Product →
               </Link>
@@ -191,7 +191,7 @@ function CryptoPendingContent() {
             {paymentDetails.qrCode && paymentDetails.slug && (
               <Link
                 href={`/ticket-confirmation?qr=${paymentDetails.qrCode}&event=${paymentDetails.slug}`}
-                className="flex items-center justify-center gap-2 w-full rounded-2xl bg-orange-500 hover:bg-orange-600 py-4 text-sm font-black text-white transition shadow-md"
+                className="flex items-center justify-center gap-2 w-full rounded-2xl bg-brand-600 hover:bg-brand-700 py-4 text-sm font-black text-white transition shadow-md"
               >
                 <Ticket className="h-4 w-4" />
                 View Ticket Details →

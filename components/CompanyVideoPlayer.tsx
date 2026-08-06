@@ -56,7 +56,7 @@ export default function CompanyVideoPlayer({
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-zinc-950/80 to-transparent p-6">
               <Link
                 href="/fundraisers"
-                className="pointer-events-auto flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-black text-zinc-950 transition-colors hover:bg-orange-50"
+                className="pointer-events-auto flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-black text-zinc-950 transition-colors hover:bg-brand-50"
               >
                 Browse Fundraisers <ArrowRight className="h-4 w-4" />
               </Link>
@@ -76,7 +76,7 @@ export default function CompanyVideoPlayer({
             >
               <X className="h-4 w-4" />
             </button>
-            <div className="mx-auto mt-3 flex h-14 w-14 items-center justify-center rounded-full bg-orange-100 text-orange-600">
+            <div className="mx-auto mt-3 flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-brand-700">
               <Play className="ml-0.5 h-6 w-6 fill-current" />
             </div>
             <p className="mt-5 text-lg font-black text-zinc-950">

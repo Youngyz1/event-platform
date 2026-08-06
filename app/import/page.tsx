@@ -372,13 +372,13 @@ function ImportClient() {
       <section className="mx-auto max-w-7xl px-6 py-12">
         <div className="mb-10 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            <p className="text-base font-black uppercase tracking-wide text-orange-600">Import</p>
+            <p className="text-base font-black uppercase tracking-wide text-brand-700">Import</p>
             <h1 className="mt-2 text-5xl font-black">Import Fundraisers</h1>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-zinc-600">
               Upload a CSV, preview the rows, fix any errors, then save them into your account.
             </p>
           </div>
-          <Link href="/dashboard" className="text-base font-black text-orange-600 hover:text-orange-700">
+          <Link href="/dashboard" className="text-base font-black text-brand-700 hover:text-brand-800">
             Back to dashboard
           </Link>
         </div>
@@ -392,7 +392,7 @@ function ImportClient() {
               <select
                 value={organizerId}
                 onChange={(event) => setOrganizerId(event.target.value)}
-                className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base font-bold outline-none focus:border-orange-500"
+                className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base font-bold outline-none focus:border-brand-600"
               >
                 {organizers.length === 0 ? (
                   <option value="">No organizer profiles yet</option>
@@ -405,7 +405,7 @@ function ImportClient() {
                 )}
               </select>
               {organizers.length === 0 && (
-                <Link href="/create-organizer" className="mt-3 inline-block font-bold text-orange-600">
+                <Link href="/create-organizer" className="mt-3 inline-block font-bold text-brand-700">
                   Create an organizer profile
                 </Link>
               )}
@@ -419,7 +419,7 @@ function ImportClient() {
                 type="file"
                 accept=".csv,text/csv"
                 onChange={(event) => handleFile(event.target.files?.[0])}
-                className="block w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-base file:mr-4 file:rounded-full file:border-0 file:bg-orange-600 file:px-4 file:py-2 file:font-black file:text-white"
+                className="block w-full rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-5 text-base file:mr-4 file:rounded-full file:border-0 file:bg-brand-700 file:px-4 file:py-2 file:font-black file:text-white"
               />
             </div>
 
@@ -432,7 +432,7 @@ function ImportClient() {
                 value={sourceUrl}
                 onChange={(event) => setSourceUrl(event.target.value)}
                 placeholder="https://example.com/fundraiser-page"
-                className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-orange-500"
+                className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-brand-600"
               />
               <button
                 onClick={handleUrlPreview}
@@ -465,7 +465,7 @@ function ImportClient() {
               <button
                 onClick={handleImport}
                 disabled={loading || validRows.length === 0 || !organizerId}
-                className="rounded-xl bg-orange-600 px-6 py-4 text-base font-black text-white transition hover:bg-orange-700 disabled:bg-orange-300"
+                className="rounded-xl bg-brand-700 px-6 py-4 text-base font-black text-white transition hover:bg-brand-800 disabled:bg-brand-300"
               >
                 {loading ? "Importing..." : `Import ${validRows.length} fundraisers`}
               </button>
@@ -505,7 +505,7 @@ function ImportClient() {
                     <input
                       value={previewRows[0].data.title || ""}
                       onChange={(event) => updatePreviewRow(previewRows[0].rowNumber, "title", event.target.value)}
-                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-brand-600"
                     />
                   </label>
 
@@ -517,7 +517,7 @@ function ImportClient() {
                       value={previewRows[0].data.goal || ""}
                       onChange={(event) => updatePreviewRow(previewRows[0].rowNumber, "goal", event.target.value)}
                       placeholder="20000"
-                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-brand-600"
                     />
                   </label>
 
@@ -528,7 +528,7 @@ function ImportClient() {
                     <input
                       value={previewRows[0].data.organizer || ""}
                       onChange={(event) => updatePreviewRow(previewRows[0].rowNumber, "organizer", event.target.value)}
-                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-brand-600"
                     />
                   </label>
 
@@ -540,7 +540,7 @@ function ImportClient() {
                       value={previewRows[0].data.story || ""}
                       onChange={(event) => updatePreviewRow(previewRows[0].rowNumber, "story", event.target.value)}
                       rows={4}
-                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-brand-600"
                     />
                   </label>
 
@@ -551,7 +551,7 @@ function ImportClient() {
                     <input
                       value={previewRows[0].data.banner || ""}
                       onChange={(event) => updatePreviewRow(previewRows[0].rowNumber, "banner", event.target.value)}
-                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-orange-500"
+                      className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-base outline-none focus:border-brand-600"
                     />
                   </label>
                 </div>

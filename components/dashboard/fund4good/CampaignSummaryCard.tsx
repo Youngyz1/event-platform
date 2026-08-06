@@ -63,7 +63,7 @@ export function CampaignSummaryCard({ campaign, className }: CampaignSummaryCard
           icon={<TrendingUp className="h-3.5 w-3.5 text-slate-400" />}
           label="Avg / Day"
           value={formatCurrency(campaign.averageDailyRaised, campaign.currency, true)}
-          valueClass="text-emerald-600"
+          valueClass="text-brand-700"
         />
       </div>
     </div>

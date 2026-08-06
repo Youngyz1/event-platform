@@ -116,10 +116,10 @@ function LoginForm() {
     <div className="w-full min-h-screen flex">
 
       {/* LEFT — Hero */}
-      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-slate-900 via-orange-900 to-orange-600 items-center justify-center p-12 relative overflow-hidden">
+      <div className="hidden lg:flex flex-1 bg-gradient-to-br from-slate-900 via-brand-950 to-brand-700 items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-20 left-20 w-64 h-64 rounded-full bg-white blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-orange-300 blur-3xl" />
+          <div className="absolute bottom-20 right-20 w-96 h-96 rounded-full bg-brand-300 blur-3xl" />
         </div>
         <div className="text-white max-w-lg relative z-10">
           <div className="flex items-center gap-3 mb-12">
@@ -132,7 +132,7 @@ function LoginForm() {
           <h1 className="text-5xl font-bold mb-6 leading-tight">
             Welcome back to your events hub.
           </h1>
-          <p className="text-lg text-orange-100 mb-10">
+          <p className="text-lg text-brand-100 mb-10">
             Manage your events, track donations, and connect with your
             community — all in one place.
           </p>
@@ -140,15 +140,15 @@ function LoginForm() {
           <div className="grid grid-cols-3 gap-6">
             <div>
               <p className="text-3xl font-black text-white">10K+</p>
-              <p className="text-sm text-orange-200">Events hosted</p>
+              <p className="text-sm text-brand-200">Events hosted</p>
             </div>
             <div>
               <p className="text-3xl font-black text-white">$2M+</p>
-              <p className="text-sm text-orange-200">Funds raised</p>
+              <p className="text-sm text-brand-200">Funds raised</p>
             </div>
             <div>
               <p className="text-3xl font-black text-white">98%</p>
-              <p className="text-sm text-orange-200">Satisfaction</p>
+              <p className="text-sm text-brand-200">Satisfaction</p>
             </div>
           </div>
         </div>
@@ -171,7 +171,7 @@ function LoginForm() {
             Don&apos;t have an account?{" "}
             <Link
               href="/signup"
-              className="text-orange-500 font-semibold hover:text-orange-600"
+              className="text-brand-600 font-semibold hover:text-brand-700"
             >
               Sign up free
             </Link>
@@ -191,7 +191,7 @@ function LoginForm() {
           )}
 
           {resetSuccess && (
-            <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-700">
+            <div className="mb-6 rounded-2xl border border-brand-200 bg-brand-50 px-5 py-4 text-sm text-brand-800">
               ✓ Password updated. You can now log in with your new password.
             </div>
           )}
@@ -259,7 +259,7 @@ function LoginForm() {
                   required
                   type="email"
                   placeholder="you@example.com"
-                  className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-orange-500 bg-white"
+                  className="w-full border border-zinc-300 rounded-2xl px-5 py-4 outline-none focus:border-brand-600 bg-white"
                 />
               </div>
 
@@ -270,7 +270,7 @@ function LoginForm() {
                   </label>
                   <Link
                     href={`/forgot-password${form.email ? `?email=${encodeURIComponent(form.email)}` : ""}`}
-                    className="text-sm font-black text-orange-600 hover:text-orange-700"
+                    className="text-sm font-black text-brand-700 hover:text-brand-800"
                   >
                     Forgot password?
                   </Link>
@@ -283,7 +283,7 @@ function LoginForm() {
                     required
                     type={showPassword ? "text" : "password"}
                     placeholder="Your password"
-                    className="w-full border border-zinc-300 rounded-2xl px-5 py-4 pr-12 outline-none focus:border-orange-500 bg-white"
+                    className="w-full border border-zinc-300 rounded-2xl px-5 py-4 pr-12 outline-none focus:border-brand-600 bg-white"
                   />
                   <button
                     type="button"
@@ -307,7 +307,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white py-4 rounded-2xl font-bold text-lg transition"
+                className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-brand-300 text-white py-4 rounded-2xl font-bold text-lg transition"
               >
                 {loading ? "Logging in..." : "Log In"}
               </button>

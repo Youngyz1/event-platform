@@ -95,7 +95,7 @@ export default function UpdatesClient({
           className={`rounded-xl border px-4 py-3 text-sm font-bold ${
             error
               ? "border-red-200 bg-red-50 text-red-700"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              : "border-brand-200 bg-brand-50 text-brand-800"
           }`}
         >
           {error || notice}
@@ -110,7 +110,7 @@ export default function UpdatesClient({
             onChange={(event) => setTitle(event.target.value)}
             maxLength={120}
             placeholder="Title (optional)"
-            className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-500"
+            className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm font-semibold outline-none focus:border-brand-600"
           />
           <textarea
             value={content}
@@ -119,12 +119,12 @@ export default function UpdatesClient({
             minLength={20}
             rows={6}
             placeholder="Share news, milestones, or next steps..."
-            className="w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 text-sm font-semibold outline-none focus:border-emerald-500"
+            className="w-full resize-none rounded-xl border border-zinc-300 px-4 py-3 text-sm font-semibold outline-none focus:border-brand-600"
           />
           <button
             type="submit"
             disabled={busy}
-            className="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-black text-white hover:bg-emerald-700 disabled:bg-emerald-300"
+            className="rounded-xl bg-brand-700 px-5 py-3 text-sm font-black text-white hover:bg-brand-800 disabled:bg-brand-300"
           >
             {busy ? "Posting..." : "Post Update"}
           </button>

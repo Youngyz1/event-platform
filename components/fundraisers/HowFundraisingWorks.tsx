@@ -51,7 +51,7 @@ function Step2CardMockup() {
       {/* ── Card body ── */}
       <div className="p-4 space-y-2.5">
         {/* Raised badge */}
-        <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-[13px] font-bold text-emerald-800">
+        <span className="inline-flex items-center rounded-full bg-brand-100 px-3 py-1 text-[13px] font-bold text-brand-900">
           $2,580 raised
         </span>
 
@@ -108,7 +108,7 @@ const FUNDRAISER_STEPS: HowItWorksStep[] = [
     description:
       "Publish your page and send the link to friends, family, and social networks. Every share puts your campaign in front of people ready to give.",
     media: <Step2CardMockup />,
-    bgGradientClass: "from-emerald-50 to-white",
+    bgGradientClass: "from-brand-50 to-white",
   },
   {
     title: "Receive funds securely",

@@ -21,7 +21,7 @@ const SORT_OPTIONS = [
 ] as const;
 
 const SELECT_CLASS =
-  "w-full appearance-none rounded-xl border border-zinc-200 bg-white py-2.5 pl-4 pr-9 text-sm font-bold text-zinc-700 transition hover:border-zinc-300 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500";
+  "w-full appearance-none rounded-xl border border-zinc-200 bg-white py-2.5 pl-4 pr-9 text-sm font-bold text-zinc-700 transition hover:border-zinc-300 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600";
 
 type EventsFilterControlsProps = {
   activeCategory?: string;

@@ -3,7 +3,7 @@ export default function GlobalLoading() {
     <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div
-          className="h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-orange-500"
+          className="h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-brand-600"
           role="status"
           aria-label="Loading"
         />

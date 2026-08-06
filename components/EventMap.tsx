@@ -136,7 +136,7 @@ export default function EventMap({ events, userLat, userLng, height = "420px" }:
       {!mapReady && (
         <div className="absolute inset-0 bg-zinc-100 flex items-center justify-center z-10">
           <div className="text-center">
-            <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <div className="w-8 h-8 border-4 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
             <p className="text-zinc-500 text-sm font-semibold">Loading map...</p>
           </div>
         </div>
@@ -156,14 +156,14 @@ export default function EventMap({ events, userLat, userLng, height = "420px" }:
             />
           )}
           <div className="min-w-0 flex-1">
-            <p className="text-xs text-orange-500 font-bold uppercase">{activeEvent.category}</p>
+            <p className="text-xs text-brand-600 font-bold uppercase">{activeEvent.category}</p>
             <h3 className="font-black text-zinc-900 truncate">{activeEvent.title}</h3>
             <p className="text-xs text-zinc-500">{activeEvent.city}</p>
           </div>
           <div className="flex flex-col gap-2 flex-shrink-0">
             <a
               href={`/events/${activeEvent.slug}`}
-              className="bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
+              className="bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition"
             >
               View
             </a>

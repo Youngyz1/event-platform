@@ -28,7 +28,7 @@ function Toggle({
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-hidden ${
-          checked ? "bg-orange-600" : "bg-zinc-200"
+          checked ? "bg-brand-700" : "bg-zinc-200"
         }`}
       >
         <span
@@ -81,7 +81,7 @@ export default function PrivacyClient({
   return (
     <form onSubmit={handleSave} className="space-y-6">
       {toast && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+        <div className="rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-800">
           {toast}
         </div>
       )}
@@ -107,7 +107,7 @@ export default function PrivacyClient({
             <select
               value={privacy.profile_visibility}
               onChange={(e) => setPrivacy((prev) => ({ ...prev, profile_visibility: e.target.value as "public" | "private" }))}
-              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold outline-hidden transition focus:border-orange-500 focus:ring-4 focus:ring-orange-100 sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm shrink-0"
+              className="rounded-lg border border-zinc-200 bg-white px-3 py-2 text-xs font-semibold outline-hidden transition focus:border-brand-600 focus:ring-4 focus:ring-brand-100 sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm shrink-0"
             >
               <option value="public">Public (Everyone)</option>
               <option value="private">Private (Only You)</option>
@@ -152,7 +152,7 @@ export default function PrivacyClient({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-xl bg-orange-600 px-6 py-3 text-sm font-black text-white hover:bg-orange-700 disabled:opacity-60 transition"
+          className="rounded-xl bg-brand-700 px-6 py-3 text-sm font-black text-white hover:bg-brand-800 disabled:opacity-60 transition"
         >
           {saving ? "Saving Privacy..." : "Save Privacy Settings"}
         </button>
