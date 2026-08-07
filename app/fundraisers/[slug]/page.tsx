@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import DonationProtectedBadge from "@/components/DonationProtectedBadge";
 import SupportMessages from "@/components/SupportMessages";
+import BeneficiaryNameWithPopup from "@/components/fundraisers/BeneficiaryNameWithPopup";
 import FundraiserMediaSlider, {
   type FundraiserMediaSlide,
 } from "@/components/FundraiserMediaSlider";
@@ -374,8 +375,25 @@ export default async function FundraiserPage({
 
   // Claimed beneficiaries have a real account, so their name links to it.
   const beneficiaryProfileId: string | null = beneficiaryRecord?.user_id ?? null;
-  const beneficiaryClaimPending = Boolean(
-    beneficiaryRecord && !beneficiaryRecord.user_id
+
+  /**
+   * Whether to show a beneficiary at all.
+   *
+   * A campaign with no beneficiary — everything created before the feature
+   * existed, plus anyone who picked "Myself" — is run by and for the same
+   * person. Listing them twice under "Organiser" and "Beneficiary" is noise, so
+   * those campaigns show only the organizer. Used by both the hero attribution
+   * and the organiser/beneficiary block below so the two cannot disagree.
+   */
+  // Compared trimmed and case-folded: several organizer names carry stray
+  // whitespace (" I Love Venezuela Foundation"), which an exact comparison
+  // treats as a different person and so renders the same name in both roles.
+  const sameAsOrganizer =
+    beneficiaryDisplayName.trim().toLowerCase() ===
+    (organizerName ?? "").trim().toLowerCase();
+
+  const showBeneficiary = Boolean(
+    hasExplicitBeneficiary && beneficiaryDisplayName && !sameAsOrganizer
   );
 
   const raised = Number(fundraiser.raised ?? 0);
@@ -527,16 +545,7 @@ export default async function FundraiserPage({
               organizerProfileId ? `/organizers/${organizerProfileId}` : null
             }
             organizerPhoto={organizer?.photo ?? null}
-            // Only when the campaign actually names someone other than the
-            // organizer. With no explicit beneficiary the organizer IS the
-            // beneficiary, and "Jane Doe for themselves" reads as noise.
-            beneficiaryLabel={
-              hasExplicitBeneficiary &&
-              beneficiaryDisplayName &&
-              beneficiaryDisplayName !== organizerName
-                ? beneficiaryDisplayName
-                : null
-            }
+            beneficiaryLabel={showBeneficiary ? beneficiaryDisplayName : null}
           />
         </div>
       </div>
@@ -664,7 +673,7 @@ export default async function FundraiserPage({
         {/* ── Organiser & Beneficiary ─────────────────────────── */}
         <section className="min-w-0 border-t border-zinc-200 pt-8">
           <h2 className="text-lg font-black text-zinc-950 break-words">
-            Organiser and beneficiary
+            {showBeneficiary ? "Organiser and beneficiary" : "Organiser"}
           </h2>
           <div className="mt-5 flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -700,59 +709,46 @@ export default async function FundraiserPage({
               </div>
             </div>
 
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 shrink-0 text-zinc-400 rotate-90 sm:rotate-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
-              />
-            </svg>
+            {/* Arrow and beneficiary are omitted entirely when the campaign has
+                no beneficiary distinct from the organizer — otherwise the same
+                person is listed twice, once under each role. */}
+            {showBeneficiary && (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 shrink-0 text-zinc-400 rotate-90 sm:rotate-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+                  />
+                </svg>
 
-            <div className="flex min-w-0 flex-1 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sm font-black text-brand-800">
-                {initial(beneficiaryDisplayName)}
-              </div>
-              <div className="min-w-0">
-                {/* Links only once the beneficiary has claimed their profile
-                    and therefore has a real account to link to. Before that the
-                    name still shows — the invitation being pending never
-                    changes WHO is displayed. */}
-                {beneficiaryProfileId ? (
-                  <Link
-                    href={`/profile/${beneficiaryProfileId}`}
-                    className="block truncate text-sm font-black text-zinc-950 hover:text-brand-700 hover:underline transition"
-                  >
-                    {beneficiaryDisplayName}
-                  </Link>
-                ) : (
-                  <span className="block truncate text-sm font-black text-zinc-950">
-                    {beneficiaryDisplayName}
-                  </span>
-                )}
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  {/* Always "Beneficiary" for an explicit beneficiary. This
-                      used to print the creation-form's type label, so a
-                      campaign for someone else read "Another person" — copy
-                      meant for the "who are you fundraising for?" picker, not
-                      for describing a real person on their own campaign. */}
-                  <span className="inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-800">
-                    Beneficiary
-                  </span>
-                  {beneficiaryClaimPending && (
-                    <span className="inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-500">
-                      Invitation pending
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sm font-black text-brand-800">
+                    {initial(beneficiaryDisplayName)}
+                  </div>
+                  <div className="min-w-0">
+                    {/* Always interactive: links to the profile once claimed,
+                        otherwise opens the same "profile not set up yet" card
+                        used for donor names. */}
+                    <BeneficiaryNameWithPopup
+                      name={beneficiaryDisplayName}
+                      fundraiserTitle={fundraiser.title}
+                      profileId={beneficiaryProfileId}
+                    />
+                    <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-800">
+                      Beneficiary
                     </span>
-                  )}
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
           <p className="mt-4 text-xs text-zinc-400">

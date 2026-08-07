@@ -6,6 +6,14 @@ type DonorPopupProps = {
   name: string;
   fundraiserTitle: string;
   onClose: () => void;
+  /**
+   * Sentence describing this person's relationship to the campaign. Defaults to
+   * the donor wording; the beneficiary card passes its own so the same popup
+   * can be reused instead of duplicated.
+   */
+  relationLabel?: string;
+  /** Screen-reader label for the dialog. Defaults to the donor wording. */
+  dialogLabel?: string;
 };
 
 function initial(name: string) {
@@ -29,6 +37,8 @@ export default function DonorPopup({
   name,
   fundraiserTitle,
   onClose,
+  relationLabel,
+  dialogLabel,
 }: DonorPopupProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -46,7 +56,7 @@ export default function DonorPopup({
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       aria-modal="true"
       role="dialog"
-      aria-label={`Donor profile for ${name}`}
+      aria-label={dialogLabel ?? `Donor profile for ${name}`}
       // Backdrop click
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose();
@@ -101,7 +111,7 @@ export default function DonorPopup({
         {/* Donated to */}
         <div className="w-full rounded-xl bg-zinc-50 px-4 py-3 text-center">
           <p className="text-sm font-semibold text-zinc-700">
-            {name} donated to this fundraiser
+            {relationLabel ?? `${name} donated to this fundraiser`}
           </p>
           <p className="mt-0.5 text-xs text-zinc-400">{fundraiserTitle}</p>
         </div>
