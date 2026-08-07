@@ -162,15 +162,22 @@ function DonationConfirmationContent() {
               >
                 Download Receipt PDF
               </a>
+              {/* See the matching note in DonatePage: the nonprofit flag is
+                  self-declared and unverified, so this reports the claim rather
+                  than asserting deductibility on the donor's behalf. */}
               {isNonprofit ? (
                 <div className="rounded-2xl bg-brand-50 border border-brand-100 p-4 text-left text-xs text-brand-900 leading-relaxed">
-                  <span className="font-black block mb-1">★ Tax-Deductible Donation</span>
-                  This fundraiser is run by a registered nonprofit. Your contribution qualifies for tax-deductible benefits.
+                  <span className="font-black block mb-1">Nonprofit fundraiser</span>
+                  The organizer has listed this fundraiser as run by a registered
+                  nonprofit. Whether your donation is tax-deductible depends on
+                  that organization&apos;s status and on your local tax rules —
+                  check with the organizer or a tax adviser before claiming it.
                 </div>
               ) : (
                 <div className="rounded-2xl bg-zinc-50 border border-zinc-200 p-4 text-left text-xs text-zinc-500 leading-relaxed">
                   <span className="font-bold block mb-1">Standard Donation</span>
-                  This is a standard donation receipt. Donations to individuals are generally not tax-deductible.
+                  This is a standard donation receipt. Donations to individuals
+                  are generally not tax-deductible.
                 </div>
               )}
             </div>

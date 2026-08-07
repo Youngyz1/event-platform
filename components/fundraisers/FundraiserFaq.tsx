@@ -51,6 +51,20 @@ const FAQS: FaqItem[] = [
     ),
   },
   {
+    question: "How do I receive the money I raise?",
+    answer: (
+      <>
+        Donations are collected securely by Fund4Good through Stripe, and we
+        transfer them to you. Payouts are arranged by our team rather than on an
+        automatic schedule — request one from{" "}
+        <Link href="/dashboard/settings/payments">Payouts</Link> in your
+        dashboard and we&apos;ll confirm your bank details and the amount
+        available. Connecting your own Stripe account, so payouts settle
+        automatically, is planned.
+      </>
+    ),
+  },
+  {
     question: "Who can I raise money for?",
     answer: (
       <>
