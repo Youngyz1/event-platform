@@ -31,6 +31,21 @@ export const metadata: Metadata = {
 
 const PAGE_SIZE = 9;
 
+/**
+ * Explicit column list, not `*`.
+ *
+ * migration_53 revokes table-wide SELECT on `organizers` from anon/authenticated
+ * and re-grants per column, so that tax_id and nonprofit_registration_number are
+ * unreachable through PostgREST. `select("*")` expands to every column including
+ * those two and would fail with a permission error, taking this whole directory
+ * page down. Keep this list in sync with the GRANT in that migration.
+ */
+// Single literal, not a concatenation: supabase-js infers the row type from the
+// literal string type, and `+` widens it to `string`, which collapses the
+// result type to GenericStringError.
+// prettier-ignore
+const ORGANIZER_PUBLIC_COLUMNS = "id, user_id, name, bio, photo, banner, slug, org_type, visibility, status, verified_at, website, facebook, twitter, instagram, linkedin, youtube, tiktok, contact_email, average_rating, review_count, follower_offset, events_offset, organization_name, created_at, updated_at, deleted_at" as const;
+
 async function getOrganizerStats(ids: string[]) {
   const stats = new Map<string, { events: number; fundraisers: number; followers: number }>();
   if (ids.length === 0) return stats;
@@ -42,7 +57,13 @@ async function getOrganizerStats(ids: string[]) {
   const [{ data: events }, { data: fundraisers }, { data: follows }] = await Promise.all([
     supabase.from("events").select("organizer_id").in("organizer_id", ids).eq("visibility", "public"),
     supabase.from("fundraisers").select("organizer_id").in("organizer_id", ids),
-    supabase.from("organizer_follows").select("organizer_id").in("organizer_id", ids),
+    // Aggregate view, not the raw table: migration_53 stopped publishing the
+    // (user_id, organizer_id) follow graph to anonymous callers. This directory
+    // only ever needed the count.
+    supabase
+      .from("organizer_follower_counts")
+      .select("organizer_id, follower_count")
+      .in("organizer_id", ids),
   ]);
 
   for (const row of events ?? []) {
@@ -57,7 +78,7 @@ async function getOrganizerStats(ids: string[]) {
   }
   for (const row of follows ?? []) {
     if (row.organizer_id && stats.has(row.organizer_id)) {
-      stats.get(row.organizer_id)!.followers += 1;
+      stats.get(row.organizer_id)!.followers = Number(row.follower_count ?? 0);
     }
   }
 
@@ -128,7 +149,7 @@ export default async function OrganizersDirectoryPage({
   // 2. Fetch main directory organizers (Step 3)
   let organizersQuery = supabase
     .from("organizers")
-    .select("*", { count: "exact" })
+    .select(ORGANIZER_PUBLIC_COLUMNS, { count: "exact" })
     .eq("visibility", "public")
     .is("deleted_at", null);
 
@@ -159,7 +180,7 @@ export default async function OrganizersDirectoryPage({
   const { data: featuredOrganizers } = !query
     ? await supabase
         .from("organizers")
-        .select("*")
+        .select(ORGANIZER_PUBLIC_COLUMNS)
         .eq("visibility", "public")
         .eq("status", "verified")
         .is("deleted_at", null)
