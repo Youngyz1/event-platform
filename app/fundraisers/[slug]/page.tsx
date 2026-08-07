@@ -112,6 +112,8 @@ type MediaRow = {
 type OrganizerRow = {
   id: string;
   name: string | null;
+  /** Avatar for the hero attribution overlay. */
+  photo: string | null;
 };
 
 type PublicProfileRow = {
@@ -263,7 +265,8 @@ export default async function FundraiserPage({
     fundraiser.organizer_id
       ? supabase
           .from("organizers")
-          .select("id, name")
+          // `photo` powers the avatar in the hero attribution overlay.
+          .select("id, name, photo")
           .eq("id", fundraiser.organizer_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
@@ -332,7 +335,8 @@ export default async function FundraiserPage({
     organizer?.id ?? organizerByName?.id ?? null;
 
   const raised = Number(fundraiser.raised ?? 0);
-  const goal = Number(optionalFundraiser.goal_amount ?? fundraiser.goal ?? 0);
+  // `goal` is the real column; there is no `goal_amount` on fundraisers.
+  const goal = Number(fundraiser.goal ?? 0);
   const coverImage = safeImageSrc(
     fundraiser.image_url || fundraiser.banner
   );
@@ -377,11 +381,8 @@ export default async function FundraiserPage({
   const updates = (updatesResult.data ?? []) as UpdateRow[];
   const donationCount = donationsResult.count ?? recentDonors.length;
   const percentage = calculateFundraisingPercentage(raised, goal);
-  const description =
-    optionalFundraiser.description ||
-    fundraiser.story ||
-    optionalFundraiser.short_description ||
-    "";
+  // `story` is the real column; there is no `description`/`short_description`.
+  const description = fundraiser.story || "";
   void commentsResult.count;
 
   // Story-overlay slide: excerpt + donor cluster, reusing the same donor
@@ -395,8 +396,7 @@ export default async function FundraiserPage({
       "Anonymous"
   );
   const storyExcerpt = truncateWords(
-    stripHtml(optionalFundraiser.short_description || description) ||
-      "Read the full story.",
+    stripHtml(description) || "Read the full story.",
     160
   );
 
@@ -478,32 +478,23 @@ export default async function FundraiserPage({
             media={media}
             title={fundraiser.title}
             category={fundraiserCategory}
+            organizerName={organizerName}
+            organizerHref={
+              organizerProfileId ? `/organizers/${organizerProfileId}` : null
+            }
+            organizerPhoto={organizer?.photo ?? null}
+            beneficiaryLabel={
+              beneficiary ? beneficiaryForLabel(beneficiary) : null
+            }
           />
         </div>
       </div>
 
       <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
-        {/* Organizer → beneficiary attribution. Sits directly beneath the
-            title (which is overlaid on the hero photo above), so the first
-            thing read after the campaign name is who runs it and who it
-            helps. */}
-        {beneficiary && (
-          <p className="-mb-4 text-sm font-medium text-zinc-500">
-            Organized by{" "}
-            {organizerProfileId ? (
-              <Link
-                href={`/organizers/${organizerProfileId}`}
-                className="font-black text-zinc-900 hover:text-brand-700 hover:underline"
-              >
-                {organizerName}
-              </Link>
-            ) : (
-              <span className="font-black text-zinc-900">{organizerName}</span>
-            )}
-            <span aria-hidden> · </span>
-            for <span className="font-black text-zinc-900">{beneficiaryForLabel(beneficiary)}</span>
-          </p>
-        )}
+        {/* The organizer → beneficiary attribution used to render here. It now
+            overlays the top-left of the hero photo (see FundraiserMediaSlider),
+            where it has room — in this column its `-mb-4` pulled it into the
+            progress ring below and the two rendered on top of each other. */}
 
         {/* Raised / progress / goal / donation count + Donate + Share — the
             first fundraising content the user sees, immediately below the

@@ -97,6 +97,15 @@ export async function getCroppedImageBlob(
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get a 2D canvas context.");
 
+  // Paint the canvas white before drawing.
+  //
+  // The cropper allows zooming out past the edges of the photo, so the crop
+  // area can legitimately extend beyond the image. Those regions are never
+  // touched by drawImage and stay transparent — which JPEG cannot represent
+  // and renders as solid black. White matches the surrounding UI instead.
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
   ctx.drawImage(
     image,
     cropAreaPixels.x,

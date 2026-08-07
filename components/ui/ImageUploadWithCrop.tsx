@@ -21,6 +21,18 @@ import {
 // at all previously, so this must not be stricter than what already worked.
 const DEFAULT_MAX_BYTES = 15 * 1024 * 1024;
 
+/**
+ * Zoom bounds for the crop modal.
+ *
+ * 1 means "the photo exactly fills the crop box", which is where it opens — so
+ * the default result is still a full-bleed crop with no margins. Going below 1
+ * shrinks the photo inside the box, which is what makes the whole image
+ * reachable on shots the box would otherwise cut off. 0.3 is low enough to fit
+ * a very tall or very wide photo entirely within a landscape box.
+ */
+const MIN_ZOOM = 0.3;
+const MAX_ZOOM = 3;
+
 export interface ImageUploadWithCropProps {
   /** Width / height the cropped output must satisfy, e.g. 1 for square, 16/9 for widescreen. */
   aspectRatio: number;
@@ -243,6 +255,18 @@ export default function ImageUploadWithCrop({
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
+                // Zoom 1 is "fill the crop box", so with the default minimum of
+                // 1 there was no way to see the parts of the photo outside it —
+                // a tall photo could only ever be used as a tight centre crop.
+                // Allowing zoom below 1 lets the whole image be pulled into
+                // frame; getCroppedImageBlob paints white behind it so the
+                // resulting margins are not black.
+                minZoom={MIN_ZOOM}
+                maxZoom={MAX_ZOOM}
+                // Required for minZoom < 1: with position restricted, the
+                // library clamps the image back to covering the crop box and
+                // the extra zoom range does nothing.
+                restrictPosition={false}
               />
             </div>
           )}
@@ -251,8 +275,8 @@ export default function ImageUploadWithCrop({
             <ZoomIn className="h-4 w-4 shrink-0 text-zinc-500" />
             <input
               type="range"
-              min={1}
-              max={3}
+              min={MIN_ZOOM}
+              max={MAX_ZOOM}
               step={0.01}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}

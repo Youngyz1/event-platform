@@ -1,7 +1,6 @@
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { notFound } from "next/navigation";
 import { getVisitorCountry } from "@/lib/request-geo";
-import { getOptionalFundraiserFields } from "@/lib/fundraiser-data";
 import DonatePage from "./DonatePage";
 
 export default async function FundraiserDonatePage({
@@ -32,8 +31,7 @@ export default async function FundraiserDonatePage({
 
   if (!fundraiser) return notFound();
 
-  const optionalFundraiser = await getOptionalFundraiserFields(fundraiser.id);
-  const goal = Number(optionalFundraiser.goal_amount ?? fundraiser.goal ?? 0);
+  const goal = Number(fundraiser.goal ?? 0);
 
   return (
     <DonatePage

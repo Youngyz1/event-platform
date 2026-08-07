@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { ChevronLeft, ChevronRight, Share2, Check, Copy, AlertCircle } from "lucide-react";
 import { FaFacebookF, FaWhatsapp, FaXTwitter, FaLinkedinIn } from "react-icons/fa6";
 import { useMemo, useState } from "react";
@@ -40,9 +41,24 @@ export default function FundraiserMediaSlider({
   media,
   title,
   category,
+  organizerName,
+  organizerHref,
+  organizerPhoto,
+  beneficiaryLabel,
 }: {
   media: FundraiserMediaSlide[];
   title: string;
+  /**
+   * Attribution shown over the top-left of the cover slide ("Organizer for
+   * Beneficiary"). It used to sit in the content column below the hero, where
+   * a negative margin dragged it into the progress ring and the two overlapped.
+   * On the photo it has room, and it reads immediately with the title.
+   */
+  organizerName?: string;
+  organizerHref?: string | null;
+  organizerPhoto?: string | null;
+  /** Already resolved to a display string ("themselves" for self-beneficiary). */
+  beneficiaryLabel?: string | null;
   /** Optional category badge shown alongside the title, overlaid on the cover slide only. */
   category?: string;
 }) {
@@ -330,6 +346,42 @@ export default function FundraiserMediaSlider({
           ) : (
             <LocalBrandedPlaceholder variant="fundraiser" title={title} />
           )}
+          {/* Attribution overlay — top-left of the cover slide only, so it
+              reads before the title without competing with it. Sits above the
+              photo with its own downward scrim; z-20 keeps the organizer link
+              clickable over the slider's drag surface. */}
+          {activeIndex === 0 && organizerName && (
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/65 via-black/25 to-transparent px-4 pb-10 pt-4 sm:px-6 sm:pt-5">
+              <div className="pointer-events-auto flex items-center gap-2.5">
+                {organizerPhoto && (
+                  <Image
+                    src={organizerPhoto}
+                    alt=""
+                    aria-hidden
+                    width={40}
+                    height={40}
+                    className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-white/70 sm:h-10 sm:w-10"
+                  />
+                )}
+                <p className="min-w-0 truncate text-sm font-black text-white drop-shadow-sm sm:text-base">
+                  {organizerHref ? (
+                    <Link href={organizerHref} className="hover:underline">
+                      {organizerName}
+                    </Link>
+                  ) : (
+                    organizerName
+                  )}
+                  {beneficiaryLabel && (
+                    <>
+                      <span className="font-medium text-white/80"> for </span>
+                      {beneficiaryLabel}
+                    </>
+                  )}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Title overlay — cover slide only (index 0), matching the
               GoFundMe-style "title lives on the hero photo" treatment.
               Gradient scrim keeps white text legible over any photo, and
