@@ -262,6 +262,18 @@ export default function EditFundraiserPage() {
         throw new Error(beneficiaryResult.error);
       }
 
+      // Same find-or-create as the create flow, so editing an older campaign
+      // (or changing who it helps) also produces an invitable profile.
+      const beneficiaryRes = await fetch("/api/beneficiary/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ beneficiary: beneficiaryResult.value }),
+      });
+      const beneficiaryData = await beneficiaryRes.json();
+      if (!beneficiaryRes.ok) {
+        throw new Error(beneficiaryData.error || "Could not save the beneficiary.");
+      }
+
       const { error: updateError } = await supabase
         .from("fundraisers")
         .update({
@@ -270,6 +282,7 @@ export default function EditFundraiserPage() {
           organizer: selectedOrganizer.name,
           organizer_id: selectedOrganizer.id,
           beneficiary: beneficiaryResult.value,
+          beneficiary_id: beneficiaryData.beneficiaryId,
           goal: Number(form.goal),
           raised: Number(form.raised) || 0,
           banner: form.banner,

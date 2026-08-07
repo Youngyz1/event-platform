@@ -217,6 +217,26 @@ export default function CreateFundraiserPage() {
       return;
     }
 
+    // Resolve the beneficiary to a row in `beneficiaries` before creating the
+    // fundraiser, so the campaign links to a profile that can be invited to
+    // claim an account. Reuses one of this organizer's existing beneficiaries
+    // when it matches, otherwise creates a new one.
+    let beneficiaryId: string | null = null;
+    try {
+      const res = await fetch("/api/beneficiary/resolve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ beneficiary: beneficiaryResult.value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not save the beneficiary.");
+      beneficiaryId = data.beneficiaryId;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save the beneficiary.");
+      setLoading(false);
+      return;
+    }
+
     let video_url = null;
     if (videoFile) {
       setUploadProgress("Uploading video...");
@@ -248,6 +268,7 @@ export default function CreateFundraiserPage() {
         organizer: form.organizer,
         organizer_id: form.organizer_id,
         beneficiary: beneficiaryResult.value,
+        beneficiary_id: beneficiaryId,
         category: form.category,
         video_url,
         user_id: session.user.id,
