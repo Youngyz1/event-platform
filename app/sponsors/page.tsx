@@ -50,7 +50,7 @@ export default function SponsorsPage() {
             Businesses can discover organizers, browse fundraising campaigns, and apply for sponsorship packages.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/fundraisers" className="rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-800">
+            <Link href="/campaigns" className="rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white hover:bg-brand-800">
               Browse Campaigns
             </Link>
           </div>

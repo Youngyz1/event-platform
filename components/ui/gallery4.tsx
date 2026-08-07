@@ -32,7 +32,7 @@ const fallbackItems: Gallery4Item[] = [
     id: "community-care",
     title: "Support Community Care",
     description: "Help local organizers raise funds for neighbors and families.",
-    href: "/fundraisers",
+    href: "/campaigns",
     image:
       "https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?w=1080&auto=format&fit=crop",
     cta: "Donate Now",
@@ -41,7 +41,7 @@ const fallbackItems: Gallery4Item[] = [
     id: "school-drive",
     title: "Build Better Community Spaces",
     description: "Back campaigns that create lasting impact for local communities.",
-    href: "/fundraisers",
+    href: "/campaigns",
     image:
       "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1080&auto=format&fit=crop",
     cta: "Donate Now",
@@ -50,7 +50,7 @@ const fallbackItems: Gallery4Item[] = [
     id: "medical-support",
     title: "Fund Urgent Medical Needs",
     description: "Contribute to campaigns where every donation helps move a story forward.",
-    href: "/fundraisers",
+    href: "/campaigns",
     image:
       "https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=1080&auto=format&fit=crop",
     cta: "Donate Now",
@@ -103,7 +103,7 @@ export function Gallery4({
             </h2>
             <p className="text-lg leading-8 text-zinc-600">{description}</p>
             <a
-              href="/fundraisers"
+              href="/campaigns"
               className="mt-2 w-fit rounded-xl bg-zinc-950 px-5 py-3 text-sm font-black text-white transition hover:bg-black"
             >
               Browse campaigns

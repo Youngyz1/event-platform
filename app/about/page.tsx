@@ -37,14 +37,14 @@ const pathways = [
     title: "Discover",
     description:
       "Find causes and campaigns worth supporting from organizers and communities around New Jersey and nearby cities.",
-    href: "/fundraisers",
+    href: "/campaigns",
     label: "Browse fundraisers",
   },
   {
     title: "Support",
     description:
       "Give to fundraisers that explain the need, show progress, share success stories, and make supporters feel confident.",
-    href: "/fundraisers",
+    href: "/campaigns",
     label: "View fundraisers",
   },
 ];
@@ -82,7 +82,7 @@ export default function AboutPage() {
             Fund4Good helps people create, discover, and support real causes. The goal is simple: make it easier for communities to show up for each other.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/fundraisers" className="rounded-full bg-brand-700 px-6 py-3 font-semibold text-white transition hover:bg-brand-800">
+            <Link href="/campaigns" className="rounded-full bg-brand-700 px-6 py-3 font-semibold text-white transition hover:bg-brand-800">
               Find a cause
             </Link>
             <Link href="/create-fundraiser" className="rounded-full bg-white px-6 py-3 font-semibold text-zinc-950 transition hover:bg-zinc-100">

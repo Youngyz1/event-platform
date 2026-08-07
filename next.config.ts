@@ -158,7 +158,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/fundraisers",
-        destination: "/",
+        destination: "/campaigns",
         permanent: true,
       },
     ];

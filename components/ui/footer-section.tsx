@@ -26,7 +26,7 @@ import {
 const quickLinks = [
   ["Home", "/"],
   ["About", "/about"],
-  ["Fundraisers", "/fundraisers"],
+  ["Fundraisers", "/campaigns"],
   ["Organizers", "/organizers"],
   ["Platform Reviews", "/reviews"],
   ["Search", "/search"],

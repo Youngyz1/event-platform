@@ -14,7 +14,7 @@ function DonationConfirmationContent() {
   const amount = searchParams.get("amount") || "0";
   const fundraiserHref = fundraiserSlug
     ? `/fundraisers/${fundraiserSlug}`
-    : "/fundraisers";
+    : "/campaigns";
   const [name, setName] = useState(donorName);
   const [message, setMessage] = useState("");
   const [anonymous, setAnonymous] = useState(false);

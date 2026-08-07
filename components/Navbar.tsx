@@ -24,7 +24,7 @@ type DropdownLink = { label: string; href: string };
 type DropdownSection = { label?: string; items: DropdownLink[] };
 
 const DISCOVER_TOP_LINKS: DropdownLink[] = [
-  { label: "Browse Fundraisers", href: "/fundraisers" },
+  { label: "Browse Fundraisers", href: "/campaigns" },
 ];
 
 const DISCOVER_BOTTOM_LINKS: DropdownLink[] = [

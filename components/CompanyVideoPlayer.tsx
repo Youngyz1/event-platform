@@ -55,7 +55,7 @@ export default function CompanyVideoPlayer({
             </button>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center bg-gradient-to-t from-zinc-950/80 to-transparent p-6">
               <Link
-                href="/fundraisers"
+                href="/campaigns"
                 className="pointer-events-auto flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-black text-zinc-950 transition-colors hover:bg-brand-50"
               >
                 Browse Fundraisers <ArrowRight className="h-4 w-4" />

@@ -447,7 +447,7 @@ export default function PrivacyPage() {
 
             <div className="mt-10 flex flex-wrap gap-x-5 gap-y-3 border-t border-zinc-100 pt-6 text-sm font-medium text-zinc-500">
               <Link href="/about" className="hover:text-brand-700">About</Link>
-              <Link href="/fundraisers" className="hover:text-brand-700">Fundraisers</Link>
+              <Link href="/campaigns" className="hover:text-brand-700">Fundraisers</Link>
               <Link href="/organizers" className="hover:text-brand-700">Organizers</Link>
               <Link href="/signup" className="hover:text-brand-700">Create account</Link>
             </div>

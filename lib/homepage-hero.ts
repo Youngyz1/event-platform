@@ -40,7 +40,7 @@ export const DEFAULT_HOMEPAGE_SETTINGS: HomepageSettings = {
   title: "Raise Funds.",
   subtitle: "FUNDRAISING • COMMUNITY",
   buttonText: "Browse Fundraisers",
-  buttonHref: "/fundraisers",
+  buttonHref: "/campaigns",
   secondaryButtonText: "Start a Fundraiser",
   secondaryButtonHref: "/create-fundraiser",
   seoTitle: "Fund4Good — Support Causes, Start a Fundraiser",

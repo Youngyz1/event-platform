@@ -18,7 +18,7 @@ export default function NotFound() {
         </p>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            href="/fundraisers"
+            href="/campaigns"
             className="w-full sm:w-auto rounded-xl bg-brand-600 px-6 py-3 font-black text-white hover:bg-brand-700 transition"
           >
             Browse fundraisers

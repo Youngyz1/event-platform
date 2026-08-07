@@ -130,7 +130,7 @@ export default function PlatformPage() {
           </div>
           <div className="mt-6 flex flex-wrap gap-3 md:mt-0">
             <Link
-              href="/fundraisers"
+              href="/campaigns"
               className="rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-800"
             >
               Browse Fundraisers

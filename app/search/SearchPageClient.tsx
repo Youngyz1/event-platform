@@ -63,7 +63,7 @@ function SearchResultsContent({ query, fundraisers, organizers }: SearchResultsP
                 ? "Try different keywords or browse categories below."
                 : "Enter a keyword to search across the platform."
             }
-            action={{ label: "Browse fundraisers", href: "/fundraisers" }}
+            action={{ label: "Browse fundraisers", href: "/campaigns" }}
           />
         ) : (
           <div className="space-y-12">
@@ -71,7 +71,7 @@ function SearchResultsContent({ query, fundraisers, organizers }: SearchResultsP
               <section>
                 <div className="mb-5 flex items-end justify-between">
                   <h2 className="text-xl font-black text-zinc-950">Fundraisers</h2>
-                  <Link href="/fundraisers" className="text-sm font-bold text-brand-700 hover:text-brand-800">
+                  <Link href="/campaigns" className="text-sm font-bold text-brand-700 hover:text-brand-800">
                     View all →
                   </Link>
                 </div>
