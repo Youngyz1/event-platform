@@ -65,6 +65,8 @@ export default function CreateFundraiserPage() {
   const [visibility, setVisibility] = useState("public");
   const [organizers, setOrganizers] = useState<OrganizerProfile[]>([]);
   const [beneficiary, setBeneficiary] = useState<BeneficiaryDraft>(EMPTY_BENEFICIARY_DRAFT);
+  // Collected during creation, sent once the campaign exists — see handleSubmit.
+  const [beneficiaryInviteEmail, setBeneficiaryInviteEmail] = useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -315,6 +317,28 @@ export default function CreateFundraiserPage() {
       }
     }
 
+    // Invite the beneficiary, now that a fundraiser naming them exists — the
+    // invite route rejects the call otherwise, since its whole authorisation
+    // check is "does the caller run a campaign for this beneficiary?".
+    //
+    // Best-effort on purpose: the campaign is already created and the organizer
+    // should not be dropped back into the form over a failed email. If it does
+    // not go through, the same invite is available on the edit page.
+    if (beneficiaryId && beneficiaryInviteEmail.trim()) {
+      try {
+        await fetch("/api/beneficiary/invite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            beneficiaryId,
+            email: beneficiaryInviteEmail.trim(),
+          }),
+        });
+      } catch (err) {
+        console.error("[create-fundraiser] beneficiary invite failed:", err);
+      }
+    }
+
     localStorage.removeItem("fundraiser-draft");
     router.push(`/fundraisers/${slug}`);
   }
@@ -477,6 +501,31 @@ export default function CreateFundraiserPage() {
                 inputClassName={greenInputClass}
                 onError={setError}
               />
+
+              {/* Invite is offered here as well as on the edit page, so it does
+                  not depend on the organizer knowing to come back and edit.
+                  Hidden for "Myself" — there is nobody to invite.
+
+                  The email is only collected here; the invite is sent after the
+                  campaign exists, because /api/beneficiary/invite requires the
+                  caller to already own a fundraiser naming this beneficiary. */}
+              {beneficiary.type && beneficiary.type !== "self" && (
+                <div className="mt-5 border-t border-zinc-200 pt-5">
+                  <CreatorField
+                    label="Invite them to manage their profile (optional)"
+                    hint="We'll email a link so they can add a photo, a short bio, and ways for supporters to reach them. They never get control of your campaign."
+                  >
+                    <input
+                      type="email"
+                      value={beneficiaryInviteEmail}
+                      onChange={(event) => setBeneficiaryInviteEmail(event.target.value)}
+                      placeholder="their@email.com"
+                      className={greenInputClass}
+                      autoComplete="off"
+                    />
+                  </CreatorField>
+                </div>
+              )}
             </CreatorPanel>
 
             <CreatorPanel title="Fundraiser Photos">
