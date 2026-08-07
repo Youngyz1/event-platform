@@ -7,6 +7,7 @@ import HowFundraisingWorks from "@/components/fundraisers/HowFundraisingWorks";
 import WhyFund4Good from "@/components/fundraisers/WhyFund4Good";
 import FundraiserFeaturedTopics from "@/components/fundraisers/FundraiserFeaturedTopics";
 import TrustSection from "@/components/fundraisers/TrustSection";
+import FundraiserFaq from "@/components/fundraisers/FundraiserFaq";
 import { supabase } from "@/lib/supabase";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { HOMEPAGE_SETTING_KEYS, getHomepageSettings } from "@/lib/homepage-hero";
@@ -256,8 +257,13 @@ export default async function HomePage({
       {/* ── Featured topics (on page background, below the coral band) ── */}
       <FundraiserFeaturedTopics />
 
-      {/* ── Trust band (teal; FAQ + final CTA follow later, before the footer) ── */}
+      {/* ── Trust band (teal) ── */}
       <TrustSection />
+
+      {/* ── FAQ — the #faq anchor target for the "answers to common questions"
+           link in TrustSection and "Read the FAQ" in WhyFund4Good. Must stay on
+           this page for those in-page anchors to resolve. ── */}
+      <FundraiserFaq />
     </main>
   );
 }

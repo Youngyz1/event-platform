@@ -8,8 +8,8 @@ import { getCuratedFundraiserImages } from "@/lib/fundraiser-data";
 /**
  * Fundraisers trust band. Both inline links are real destinations:
  *  - /reviews : the Platform Reviews page (also used in FeaturedTopics).
- *  - #faq     : in-page FAQ anchor (placeholder — FAQ isn't built yet; the
- *               future FAQ section must carry id="faq", per the project note).
+ *  - #faq     : in-page anchor to <FundraiserFaq>, rendered further down this
+ *               same page. That section must keep id="faq" or this breaks.
  *
  * Right column: a real, warm campaign photo from the same verified curated Hero
  * pool (getCuratedFundraiserImages). Of that pool, this is the only genuine

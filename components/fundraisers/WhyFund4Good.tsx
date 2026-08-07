@@ -5,10 +5,14 @@ import CoverageBand from "@/components/marketing/CoverageBand";
  * Fundraisers "we've got you covered" band. Supplies the copy and real inline
  * links to the generic <CoverageBand>.
  *
- * NOTE — dependency for the upcoming FAQ section: the "Still have questions?"
- * link points to the in-page anchor `#faq`. When the FAQ section is built
- * (next in the build order, further down this same page), its root element
- * MUST carry `id="faq"` or this link will not resolve.
+ * The "Read the FAQ" link targets the in-page `#faq` anchor, which is
+ * <FundraiserFaq> further down this same page. That section must keep
+ * `id="faq"` or this link stops resolving.
+ *
+ * The two browse links point at /campaigns, NOT the homepage. They previously
+ * used `/?filter=…`, but the homepage only reads `q`, `sort` and `categories`
+ * — `filter` was ignored, so both links simply reloaded the homepage. Only
+ * /campaigns resolves `filter`, via resolveSmartFilter().
  */
 export default function WhyFund4Good() {
   return (
@@ -18,9 +22,9 @@ export default function WhyFund4Good() {
       stillHaveQuestions={{ label: "Read the FAQ", href: "#faq" }}
     >
       From{" "}
-      <Link href="/?filter=trending">trending campaigns</Link>{" "}
+      <Link href="/campaigns?filter=trending">trending campaigns</Link>{" "}
       building real momentum to{" "}
-      <Link href="/?filter=just-launched">newly launched causes</Link>{" "}
+      <Link href="/campaigns?filter=just-launched">newly launched causes</Link>{" "}
       finding their first backers, Fund4Good hands every organizer the tools to
       go from idea to funded. When you&apos;re ready,{" "}
       <Link href="/create-fundraiser">start your fundraiser</Link> — it takes
