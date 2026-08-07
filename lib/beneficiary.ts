@@ -259,6 +259,22 @@ export function validateBeneficiary(input: {
  * Returns null only when there is genuinely nothing to show, letting callers
  * omit the line entirely rather than render a placeholder.
  */
+/**
+ * Whether a stored JSONB blob actually names a beneficiary.
+ *
+ * `resolveBeneficiary` never returns null for a campaign that has an organizer
+ * — it synthesises `{ type: "self", name: organizerName }` so the UI always has
+ * something to show. That fallback is indistinguishable from a campaign whose
+ * organizer genuinely is the beneficiary, so callers that need to know whether
+ * an explicit beneficiary was *stored* (to decide labelling, or whether to fall
+ * back to the organizer at all) must ask this instead.
+ */
+export function isExplicitBeneficiaryJson(raw: unknown): boolean {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return false;
+  const record = raw as Record<string, unknown>;
+  return isBeneficiaryType(record.type) && Boolean(cleanString(record.name));
+}
+
 export function resolveBeneficiary(
   raw: unknown,
   organizerName?: string | null

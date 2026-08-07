@@ -32,8 +32,7 @@ import {
 } from "@/lib/fundraiser-data";
 import {
   resolveBeneficiary,
-  beneficiaryForLabel,
-  beneficiaryTypeLabel,
+  isExplicitBeneficiaryJson,
 } from "@/lib/beneficiary";
 import { getSiteUrl } from "@/lib/site-url";
 import { truncateWords, stripHtml } from "@/lib/text";
@@ -200,7 +199,7 @@ export default async function FundraiserPage({
   const { data: fundraiser } = await supabaseAdmin
     .from("fundraisers")
     .select(
-      "id, title, slug, banner, image_url, goal, raised, raised_amount, organizer_id, organizer, story, category, created_at, review_count, average_rating, user_id, status, rejection_reason"
+      "id, title, slug, banner, image_url, goal, raised, raised_amount, organizer_id, organizer, story, category, created_at, review_count, average_rating, user_id, status, rejection_reason, beneficiary_id"
     )
     .eq("slug", slug)
     .is("deleted_at", null)
@@ -300,7 +299,7 @@ export default async function FundraiserPage({
   const [
     { data: organizerByName },
     publicProfileById,
-    { data: beneficiaryOrganizer },
+    { data: beneficiaryRow },
   ] = await Promise.all([
     // If no organizer_id was stored, try to resolve the organizer profile by
     // matching the organizer name — same fallback pattern used for the beneficiary.
@@ -319,13 +318,23 @@ export default async function FundraiserPage({
         .filter((id): id is string => Boolean(id)),
       supabaseAdmin
     ),
-    beneficiaryName
-      ? supabase
-          .from("organizers")
-          .select("id")
-          .eq("name", beneficiaryName)
-          .eq("visibility", "public")
-          .not("status", "in", "(rejected,suspended)")
+    // The real beneficiary record, when the campaign has one.
+    //
+    // This replaces a lookup that matched an `organizers` row whose *name*
+    // equalled the beneficiary name. Names are not identity: it linked to a
+    // stranger who happened to share a name, and it could never link a
+    // beneficiary who had claimed their profile but did not also run an
+    // organizer page — which is why Nona P stayed unclickable despite having
+    // claimed hers.
+    //
+    // Read with the service-role client because migration_55 revoked the
+    // claim columns from anon; the safe columns are fetched here in one place.
+    fundraiser.beneficiary_id
+      ? supabaseAdmin
+          .from("beneficiaries")
+          .select("id, name, type, photo, user_id, claimed_at")
+          .eq("id", fundraiser.beneficiary_id)
+          .is("deleted_at", null)
           .maybeSingle()
       : Promise.resolve({ data: null }),
   ]);
@@ -333,6 +342,41 @@ export default async function FundraiserPage({
   // Single source-of-truth for the organizer profile link
   const organizerProfileId: string | null =
     organizer?.id ?? organizerByName?.id ?? null;
+
+  /**
+   * Who the campaign is for, and whether that person has an account yet.
+   *
+   * Precedence is explicit-beneficiary-first, per the product rule: a campaign
+   * that names a beneficiary always shows that beneficiary, whether or not the
+   * invitation has been accepted. Only campaigns with no beneficiary at all —
+   * everything created before the feature existed — fall back to the organizer.
+   * Claim status decides whether the name LINKS, never who is displayed.
+   */
+  const beneficiaryRecord = beneficiaryRow as {
+    id: string;
+    name: string | null;
+    type: string | null;
+    photo: string | null;
+    user_id: string | null;
+    claimed_at: string | null;
+  } | null;
+
+  // An explicit beneficiary is one stored against the campaign — either the
+  // normalized row or the older JSONB blob. `resolveBeneficiary`'s
+  // organizer-named fallback is not one.
+  const hasExplicitBeneficiary = Boolean(
+    beneficiaryRecord || isExplicitBeneficiaryJson(optionalFundraiser.beneficiary)
+  );
+
+  // The normalized row wins when present: it is what the claim flow updates.
+  const beneficiaryDisplayName =
+    beneficiaryRecord?.name || beneficiaryName;
+
+  // Claimed beneficiaries have a real account, so their name links to it.
+  const beneficiaryProfileId: string | null = beneficiaryRecord?.user_id ?? null;
+  const beneficiaryClaimPending = Boolean(
+    beneficiaryRecord && !beneficiaryRecord.user_id
+  );
 
   const raised = Number(fundraiser.raised ?? 0);
   // `goal` is the real column; there is no `goal_amount` on fundraisers.
@@ -483,8 +527,15 @@ export default async function FundraiserPage({
               organizerProfileId ? `/organizers/${organizerProfileId}` : null
             }
             organizerPhoto={organizer?.photo ?? null}
+            // Only when the campaign actually names someone other than the
+            // organizer. With no explicit beneficiary the organizer IS the
+            // beneficiary, and "Jane Doe for themselves" reads as noise.
             beneficiaryLabel={
-              beneficiary ? beneficiaryForLabel(beneficiary) : null
+              hasExplicitBeneficiary &&
+              beneficiaryDisplayName &&
+              beneficiaryDisplayName !== organizerName
+                ? beneficiaryDisplayName
+                : null
             }
           />
         </div>
@@ -666,30 +717,40 @@ export default async function FundraiserPage({
 
             <div className="flex min-w-0 flex-1 items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center text-sm font-black text-brand-800">
-                {initial(beneficiaryName)}
+                {initial(beneficiaryDisplayName)}
               </div>
               <div className="min-w-0">
-                {beneficiaryOrganizer?.id ? (
+                {/* Links only once the beneficiary has claimed their profile
+                    and therefore has a real account to link to. Before that the
+                    name still shows — the invitation being pending never
+                    changes WHO is displayed. */}
+                {beneficiaryProfileId ? (
                   <Link
-                    href={`/organizers/${beneficiaryOrganizer.id}`}
+                    href={`/profile/${beneficiaryProfileId}`}
                     className="block truncate text-sm font-black text-zinc-950 hover:text-brand-700 hover:underline transition"
                   >
-                    {beneficiaryName}
+                    {beneficiaryDisplayName}
                   </Link>
                 ) : (
                   <span className="block truncate text-sm font-black text-zinc-950">
-                    {beneficiaryName}
+                    {beneficiaryDisplayName}
                   </span>
                 )}
-                <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-800">
-                  {/* Relationship when we have one ("Mother"), otherwise the
-                      beneficiary type ("Registered charity"), falling back to
-                      the generic label. */}
-                  {beneficiary?.relationship ||
-                    (beneficiary && beneficiary.type !== "self"
-                      ? beneficiaryTypeLabel(beneficiary.type)
-                      : "Beneficiary")}
-                </span>
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  {/* Always "Beneficiary" for an explicit beneficiary. This
+                      used to print the creation-form's type label, so a
+                      campaign for someone else read "Another person" — copy
+                      meant for the "who are you fundraising for?" picker, not
+                      for describing a real person on their own campaign. */}
+                  <span className="inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-800">
+                    Beneficiary
+                  </span>
+                  {beneficiaryClaimPending && (
+                    <span className="inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-500">
+                      Invitation pending
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>

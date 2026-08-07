@@ -153,19 +153,22 @@ export default function EditFundraiserPage() {
       );
       // Beneficiary record lookup is best-effort: it only drives the optional
       // invite box, so a failure here must not block editing the campaign.
+      //
+      // Fetched through an ownership-checked API route rather than PostgREST,
+      // because migration_55 revoked claim_email/claim_token from the anon and
+      // authenticated roles — reading them from the browser is what made every
+      // claim token on the platform publicly listable.
       if (fundraiser.beneficiary_id) {
-        const { data: record } = await supabase
-          .from("beneficiaries")
-          .select("id, name, user_id, claimed_at, claim_email")
-          .eq("id", fundraiser.beneficiary_id)
-          .maybeSingle();
-        if (record) {
-          setBeneficiaryRecord({
-            id: record.id,
-            name: record.name,
-            claimed: Boolean(record.user_id || record.claimed_at),
-            claimEmail: record.claim_email,
-          });
+        try {
+          const res = await fetch(
+            `/api/beneficiary/record?fundraiserId=${encodeURIComponent(fundraiser.id)}`
+          );
+          if (res.ok) {
+            const { record } = await res.json();
+            if (record) setBeneficiaryRecord(record);
+          }
+        } catch {
+          // Non-fatal — the invite panel simply stays hidden.
         }
       }
 
