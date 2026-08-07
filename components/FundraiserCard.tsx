@@ -21,6 +21,12 @@ type FundraiserCardProps = {
   featured?: boolean;
   category?: string | null;
   organizer?: string | null;
+  /** Who the fundraiser helps. Shown as a second attribution line where the
+   *  card has room; falls back to organizer-only when absent. */
+  beneficiaryName?: string | null;
+  /** Suppresses the "for …" line for self-beneficiary campaigns, where the
+   *  beneficiary is the organizer and the line carries no new information. */
+  beneficiaryType?: string | null;
 };
 
 export default function FundraiserCard({
@@ -34,6 +40,8 @@ export default function FundraiserCard({
   featured = false,
   category,
   organizer,
+  beneficiaryName,
+  beneficiaryType,
 }: FundraiserCardProps) {
   const [imgError, setImgError] = useState(false);
   const progress = calculateFundraisingPercentage(raised, goal);
@@ -79,9 +87,17 @@ export default function FundraiserCard({
         </div>
         <div className="flex flex-1 flex-col p-4 sm:p-5">
           <h3 className="line-clamp-2 text-base font-black leading-snug text-zinc-950 sm:text-lg">{title}</h3>
+          {/* Organizer then beneficiary, each on its own line so neither gets
+              truncated into the other. The beneficiary line is suppressed when
+              it would just repeat the organizer (self-beneficiary). */}
           {organizer && (
             <p className="mt-1 truncate text-xs font-semibold text-zinc-500">
               by {organizer}
+            </p>
+          )}
+          {beneficiaryName && beneficiaryType !== "self" && (
+            <p className="truncate text-xs font-semibold text-zinc-500">
+              for <span className="text-zinc-700">{beneficiaryName}</span>
             </p>
           )}
 

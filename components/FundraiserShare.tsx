@@ -65,7 +65,7 @@ export default function FundraiserShare({
   // Hero variant (used inside the campaign-page carousel, see
   // FundraiserMediaSlider): phone-frame mockup rendering around the campaign card
   const heroCardMarkup = (
-    <div className="mx-auto flex w-full max-w-[280px] sm:max-w-[310px] flex-col items-center">
+    <div className="mx-auto flex w-full max-w-[300px] sm:max-w-[340px] flex-col items-center">
       {/* Outer phone frame mockup outline */}
       <div className="relative w-full rounded-[26px] border border-brand-400/40 bg-[#02241e] p-2 shadow-lg">
         {/* Phone top notch */}
@@ -75,7 +75,10 @@ export default function FundraiserShare({
 
         {/* Inner phone screen — clean, single container without nested card borders */}
         <div className="flex w-full flex-col overflow-hidden rounded-[18px] bg-[#062A22] text-white">
-          <div className="relative h-[110px] sm:h-[125px] w-full shrink-0 overflow-hidden bg-zinc-900">
+          {/* Fixed aspect rather than a fixed height — at ~284px wide, the old
+              110px height was a 2.4:1 frame that cropped ~37% off a normal
+              photo (heads/feet chopped). 3/2 shows the subject intact. */}
+          <div className="relative aspect-[3/2] w-full shrink-0 overflow-hidden bg-zinc-900">
             {safeSrc ? (
               <img
                 src={safeSrc}
@@ -132,9 +135,12 @@ export default function FundraiserShare({
   );
 
   const defaultCardMarkup = (
-    <div className="flex flex-col overflow-hidden rounded-xl sm:rounded-2xl border border-zinc-200 bg-white w-full">
-      {/* Top Image Area */}
-      <div className="relative w-full shrink-0 bg-zinc-100 overflow-hidden h-[220px]">
+    <div className="flex w-full max-w-xl flex-col overflow-hidden rounded-xl sm:rounded-2xl border border-zinc-200 bg-white">
+      {/* Top Image Area — fixed aspect, not a fixed pixel height: a fixed
+          height turns into an extreme letterbox (and crops the subject out)
+          as the card gets wider on desktop. 3/2 matches typical photos, so
+          the framing stays consistent at every width. */}
+      <div className="relative aspect-[3/2] w-full shrink-0 overflow-hidden bg-zinc-100">
         {/* Logo Mark */}
         <div className="absolute left-1/2 -translate-x-1/2 z-10 top-3">
           <img

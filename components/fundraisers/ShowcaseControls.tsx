@@ -2,21 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
-
-interface SmartFilterOption {
-  value: string;
-  label: string;
-}
-
-/** Behavioural discovery filters — each backed by real ranking logic in
- *  getFundraiserList (`smartFilter`). "all" is the default browse view. */
-const SMART_FILTERS: SmartFilterOption[] = [
-  { value: "all", label: "Browse all" },
-  { value: "close-to-target", label: "Close to target" },
-  { value: "just-launched", label: "Just launched" },
-  { value: "needs-momentum", label: "Needs momentum" },
-  { value: "trending", label: "Trending" },
-];
+import { SMART_FILTER_OPTIONS } from "@/lib/smart-filters";
 
 interface ShowcaseControlsProps {
   basePath: string;
@@ -48,7 +34,7 @@ export default function ShowcaseControls({ basePath, activeFilter }: ShowcaseCon
         onChange={(e) => onFilterChange(e.target.value)}
         className="w-full appearance-none rounded-xl border border-zinc-200 bg-white py-2.5 pl-4 pr-9 text-sm font-bold text-zinc-700 transition hover:border-zinc-300 focus:border-brand-600 focus:outline-none focus:ring-1 focus:ring-brand-600"
       >
-        {SMART_FILTERS.map((opt) => (
+        {SMART_FILTER_OPTIONS.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
           </option>

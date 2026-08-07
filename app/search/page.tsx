@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
+import { buildFundraiserSearchFilter } from "@/lib/fundraiser-data";
 import SearchPageClient from "./SearchPageClient";
 
 export const metadata: Metadata = {
@@ -36,15 +37,26 @@ export default async function SearchPage({
 
   const pattern = `%${query}%`;
 
-  const [fundraisersResult, organizersResult] =
-    await Promise.all([
+  // Searching beneficiary_name needs migration_50; retry without it if the
+  // column isn't there yet, so search degrades to title/category instead of
+  // silently returning nothing.
+  const searchFundraisers = async () => {
+    const run = (withBeneficiary: boolean) =>
       supabase
         .from("fundraisers")
         .select("id, title, slug, goal, raised, banner, category")
         .is("deleted_at", null)
-        .or(`title.ilike.${pattern},category.ilike.${pattern}`)
+        .or(buildFundraiserSearchFilter(query, withBeneficiary))
         .order("created_at", { ascending: false })
-        .limit(8),
+        .limit(8);
+
+    const first = await run(true);
+    return first.error ? run(false) : first;
+  };
+
+  const [fundraisersResult, organizersResult] =
+    await Promise.all([
+      searchFundraisers(),
       supabase
         .from("organizers")
         .select("id, name, bio, photo, banner, status")

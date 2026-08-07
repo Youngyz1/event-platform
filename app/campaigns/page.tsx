@@ -2,102 +2,154 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
 import PublicEmptyState from "@/components/public/PublicEmptyState";
-import FundraiserCard from "@/components/FundraiserCard";
+import CampaignBrowseList from "@/components/fundraisers/CampaignBrowseList";
 import ShowcaseControls from "@/components/fundraisers/ShowcaseControls";
-import { getFundraiserList, type FundraiserSmartFilter } from "@/lib/fundraiser-data";
-import { CAMPAIGN_CATEGORIES, categoryToSlug } from "@/lib/categories";
+import { getFundraiserList } from "@/lib/fundraiser-data";
+import { getDonationCounts } from "@/lib/donation-counts";
+import { resolveSmartFilter } from "@/lib/smart-filters";
+import { CAMPAIGN_CATEGORIES, categoryFromSlug, categoryToSlug } from "@/lib/categories";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Browse Campaigns — Fund4Good",
-  description: "Explore fundraising campaigns by category on Fund4Good.",
+  description: "Browse fundraising campaigns by status — trending, just launched, close to target, and more.",
 };
 
-const SMART_FILTERS = ["close-to-target", "just-launched", "needs-momentum", "trending"] as const;
+// Pagination was removed platform-wide, so this is a single generous batch
+// rather than a paged list.
+const BROWSE_PAGE_SIZE = 100;
 
-// Cards shown per category before linking out to that category's own page.
-const CATEGORY_SECTION_SIZE = 4;
-
+/**
+ * Campaign browse page. The primary axis is campaign **status** (trending,
+ * just launched, close to target…), not category — picking a browse option
+ * immediately shows the matching campaigns as one flat list. Category is
+ * per-campaign metadata (badge on each row) and an optional secondary filter
+ * that narrows within the selected status; it never decides what the page
+ * shows on its own.
+ */
 export default async function CampaignsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; category?: string }>;
 }) {
-  const { filter } = await searchParams;
-  const smartFilter: FundraiserSmartFilter = (SMART_FILTERS as readonly string[]).includes(
-    filter ?? ""
-  )
-    ? (filter as FundraiserSmartFilter)
-    : "all";
+  const { filter, category: categoryParam } = await searchParams;
+  const browse = resolveSmartFilter(filter);
+  const activeCategory = categoryParam ? categoryFromSlug(categoryParam) : null;
 
-  const sections = await Promise.all(
-    CAMPAIGN_CATEGORIES.map(async (category) => {
-      const { fundraisers, total } = await getFundraiserList({
-        categories: [category],
-        smartFilter,
-        page: 1,
-        pageSize: CATEGORY_SECTION_SIZE,
-      });
-      return { category, fundraisers, total };
-    })
+  // Fetched WITHOUT the category narrowing so the chips below can be derived
+  // from real results. Querying with the category applied would collapse the
+  // chip list to whichever one is selected. Narrowing then happens in JS —
+  // same single query either way. (Categories are derived from this capped
+  // batch; fine while the catalogue is far under BROWSE_PAGE_SIZE.)
+  const { fundraisers: statusMatches } = await getFundraiserList({
+    smartFilter: browse.value,
+    page: 1,
+    pageSize: BROWSE_PAGE_SIZE,
+  });
+
+  // Only categories that actually contain campaigns under the selected status.
+  // Showing all 19 meant most chips were dead ends landing on "No campaigns
+  // found". Canonical order is preserved rather than sorting by count, so the
+  // row doesn't reshuffle as data changes.
+  const categoriesWithCampaigns = CAMPAIGN_CATEGORIES.filter((category) =>
+    statusMatches.some((f) => f.category === category)
   );
 
-  const visibleSections = sections.filter((section) => section.total > 0);
-  const filterQuery = smartFilter !== "all" ? `?filter=${smartFilter}` : "";
+  const fundraisers = activeCategory
+    ? statusMatches.filter((f) => f.category === activeCategory)
+    : statusMatches;
+  const total = fundraisers.length;
+
+  const donationCounts = await getDonationCounts(fundraisers.map((f) => f.id));
+
+  /** Preserves the selected browse option when switching the category filter. */
+  function buildHref(nextCategory: string | null) {
+    const params = new URLSearchParams();
+    if (browse.value !== "all") params.set("filter", browse.value);
+    if (nextCategory) params.set("category", nextCategory);
+    const qs = params.toString();
+    return qs ? `/campaigns?${qs}` : "/campaigns";
+  }
+
+  const chipClass = (isActive: boolean) =>
+    `shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-bold transition ${
+      isActive
+        ? "border-brand-700 bg-brand-700 text-white"
+        : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
+    }`;
 
   return (
-    <main className="min-h-screen bg-zinc-50 text-zinc-950 pb-16">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+    <main className="min-h-screen bg-zinc-50 pb-16 text-zinc-950">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12">
         <PublicPageHeader
           eyebrow="Browse"
-          title="All Campaigns"
-          description="Explore fundraisers by category and find causes to support."
+          title={browse.heading}
+          description={browse.description}
         />
 
-        <div className="mb-10 max-w-xs">
-          <ShowcaseControls basePath="/campaigns" activeFilter={smartFilter} />
+        {/* Primary: campaign status */}
+        <div className="mb-4 max-w-xs">
+          <ShowcaseControls basePath="/campaigns" activeFilter={browse.value} />
         </div>
 
-        {visibleSections.length === 0 ? (
+        {/* Secondary: optional category narrowing within the selected status.
+            Hidden entirely when the status has campaigns in one category or
+            fewer — a lone chip next to "All categories" filters nothing. */}
+        {categoriesWithCampaigns.length > 1 && (
+          <div className="scrollbar-hide -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            <Link href={buildHref(null)} className={chipClass(!activeCategory)}>
+              All categories
+            </Link>
+            {categoriesWithCampaigns.map((category) => (
+              <Link
+                key={category}
+                href={buildHref(categoryToSlug(category))}
+                className={chipClass(activeCategory === category)}
+              >
+                {category}
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {fundraisers.length === 0 ? (
           <PublicEmptyState
             icon="💚"
             title="No campaigns found"
-            description="Try a different filter to discover more campaigns to support."
+            description={
+              activeCategory
+                ? `No ${activeCategory.toLowerCase()} campaigns match this filter yet. Try another category or browse all.`
+                : "Try a different filter to discover more campaigns to support."
+            }
             action={{ label: "Start a fundraiser", href: "/create-fundraiser" }}
           />
         ) : (
-          <div className="space-y-14">
-            {visibleSections.map(({ category, fundraisers, total }) => (
-              <section key={category}>
-                <div className="mb-5 flex items-end justify-between gap-3">
-                  <h2 className="text-xl font-black text-zinc-950 sm:text-2xl">
-                    {category} <span className="font-bold text-zinc-400">({total})</span>
-                  </h2>
-                  <Link
-                    href={`/campaigns/${categoryToSlug(category)}${filterQuery}`}
-                    className="shrink-0 text-sm font-bold text-brand-700 hover:text-brand-800"
-                  >
-                    View all in {category} →
-                  </Link>
-                </div>
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                  {fundraisers.map((f) => (
-                    <FundraiserCard
-                      key={f.id}
-                      slug={f.slug}
-                      title={f.title}
-                      raised={f.raised}
-                      goal={f.goal}
-                      image={f.image}
-                      category={f.category}
-                      organizer={f.organizer}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
+          <>
+            <p className="mb-2 text-sm font-bold text-zinc-500">
+              {total} {total === 1 ? "campaign" : "campaigns"}
+              {activeCategory ? ` in ${activeCategory}` : ""}
+            </p>
+            {/* Keyed on the active filters so the reveal count resets to the
+                first page whenever the browse option or category changes —
+                without it, React keeps the client component mounted across
+                client-side navigations and carries the old count over. */}
+            <CampaignBrowseList
+              key={`${browse.value}:${activeCategory ?? "all"}`}
+              items={fundraisers.map((f) => ({
+                id: f.id,
+                slug: f.slug,
+                title: f.title,
+                raised: f.raised,
+                goal: f.goal,
+                image: f.image,
+                category: f.category,
+                beneficiaryName: f.beneficiaryName,
+                beneficiaryType: f.beneficiaryType,
+                donationCount: donationCounts.get(f.id),
+              }))}
+            />
+          </>
         )}
       </div>
     </main>

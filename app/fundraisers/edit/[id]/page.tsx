@@ -7,6 +7,12 @@ import { supabase } from "@/lib/supabase";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import ImageUploadWithCrop from "@/components/ui/ImageUploadWithCrop";
+import BeneficiarySelector, {
+  EMPTY_BENEFICIARY_DRAFT,
+  type BeneficiaryDraft,
+} from "@/components/fundraisers/BeneficiarySelector";
+import BeneficiaryInvite from "@/components/fundraisers/BeneficiaryInvite";
+import { validateBeneficiary, resolveBeneficiary } from "@/lib/beneficiary";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
 
 // Matches the detail-page hero (FundraiserMediaSlider)'s mobile ratio — the
@@ -56,6 +62,14 @@ export default function EditFundraiserPage() {
     { url: "", caption: "" },
     { url: "", caption: "" },
   ]);
+  const [beneficiary, setBeneficiary] = useState<BeneficiaryDraft>(EMPTY_BENEFICIARY_DRAFT);
+  // The saved beneficiary record (migration_51), which the invite attaches to.
+  const [beneficiaryRecord, setBeneficiaryRecord] = useState<{
+    id: string;
+    name: string;
+    claimed: boolean;
+    claimEmail: string | null;
+  } | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -130,6 +144,44 @@ export default function EditFundraiserPage() {
         category: fundraiser.category || "",
       });
 
+      // Tolerates rows saved before the beneficiary column existed — those
+      // resolve to a self-beneficiary named after the organizer, matching the
+      // migration's backfill, so editing them doesn't wipe anything.
+      const existingBeneficiary = resolveBeneficiary(
+        (fundraiser as { beneficiary?: unknown }).beneficiary,
+        selectedOrganizer?.name || fundraiser.organizer
+      );
+      // Beneficiary record lookup is best-effort: it only drives the optional
+      // invite box, so a failure here must not block editing the campaign.
+      if (fundraiser.beneficiary_id) {
+        const { data: record } = await supabase
+          .from("beneficiaries")
+          .select("id, name, user_id, claimed_at, claim_email")
+          .eq("id", fundraiser.beneficiary_id)
+          .maybeSingle();
+        if (record) {
+          setBeneficiaryRecord({
+            id: record.id,
+            name: record.name,
+            claimed: Boolean(record.user_id || record.claimed_at),
+            claimEmail: record.claim_email,
+          });
+        }
+      }
+
+      if (existingBeneficiary) {
+        setBeneficiary({
+          type: existingBeneficiary.type,
+          name: existingBeneficiary.name,
+          relationship: existingBeneficiary.relationship ?? "",
+          description: existingBeneficiary.description ?? "",
+          website: existingBeneficiary.website ?? "",
+          registrationNumber: existingBeneficiary.registrationNumber ?? "",
+          species: existingBeneficiary.species ?? "",
+          photo: existingBeneficiary.photo ?? "",
+        });
+      }
+
       const { data: media } = await supabase
         .from("fundraiser_media")
         .select("url, caption, position")
@@ -202,6 +254,14 @@ export default function EditFundraiserPage() {
         throw new Error("Choose an organizer profile that belongs to your account.");
       }
 
+      const beneficiaryResult = validateBeneficiary({
+        ...beneficiary,
+        name: beneficiary.type === "self" ? selectedOrganizer.name : beneficiary.name,
+      });
+      if (!beneficiaryResult.ok) {
+        throw new Error(beneficiaryResult.error);
+      }
+
       const { error: updateError } = await supabase
         .from("fundraisers")
         .update({
@@ -209,6 +269,7 @@ export default function EditFundraiserPage() {
           slug: nextSlug,
           organizer: selectedOrganizer.name,
           organizer_id: selectedOrganizer.id,
+          beneficiary: beneficiaryResult.value,
           goal: Number(form.goal),
           raised: Number(form.raised) || 0,
           banner: form.banner,
@@ -285,6 +346,31 @@ export default function EditFundraiserPage() {
             <input value={form.goal} onChange={(event) => update("goal", event.target.value)} required type="number" min="1" placeholder="Goal" className={inputClass} />
             <input value={form.raised} onChange={(event) => update("raised", event.target.value)} type="number" min="0" placeholder="Raised so far" className={inputClass} />
           </div>
+          <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+            <h2 className="mb-1 text-lg font-black text-zinc-950">Who are you fundraising for?</h2>
+            <p className="mb-4 text-sm font-semibold text-zinc-500">
+              The organizer runs this fundraiser — the beneficiary is who it helps.
+            </p>
+            <BeneficiarySelector
+              value={beneficiary}
+              onChange={setBeneficiary}
+              organizerName={form.organizer}
+              inputClassName={inputClass}
+              onError={setError}
+            />
+
+            {beneficiaryRecord && (
+              <div className="mt-4">
+                <BeneficiaryInvite
+                  beneficiaryId={beneficiaryRecord.id}
+                  beneficiaryName={beneficiaryRecord.name}
+                  alreadyClaimed={beneficiaryRecord.claimed}
+                  initialInviteEmail={beneficiaryRecord.claimEmail}
+                />
+              </div>
+            )}
+          </div>
+
           <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
             <h2 className="mb-4 text-lg font-black text-zinc-950">Banner Image</h2>
             <div className="flex items-center gap-4">

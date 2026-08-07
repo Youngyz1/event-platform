@@ -14,6 +14,11 @@ import { supabase } from "@/lib/supabase";
 import RichTextEditor from "@/components/editor/RichTextEditor";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import ImageUploadWithCrop from "@/components/ui/ImageUploadWithCrop";
+import BeneficiarySelector, {
+  EMPTY_BENEFICIARY_DRAFT,
+  type BeneficiaryDraft,
+} from "@/components/fundraisers/BeneficiarySelector";
+import { validateBeneficiary, beneficiaryTypeLabel } from "@/lib/beneficiary";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
 
 // Matches the detail-page hero (FundraiserMediaSlider)'s mobile ratio — the
@@ -59,6 +64,7 @@ export default function CreateFundraiserPage() {
   const [uploadProgress, setUploadProgress] = useState("");
   const [visibility, setVisibility] = useState("public");
   const [organizers, setOrganizers] = useState<OrganizerProfile[]>([]);
+  const [beneficiary, setBeneficiary] = useState<BeneficiaryDraft>(EMPTY_BENEFICIARY_DRAFT);
 
   const [form, setForm] = useState({
     title: "",
@@ -199,6 +205,18 @@ export default function CreateFundraiserPage() {
       return;
     }
 
+    // Type + name are required; the validator also strips fields that don't
+    // apply to the chosen type before storage.
+    const beneficiaryResult = validateBeneficiary({
+      ...beneficiary,
+      name: beneficiary.type === "self" ? selectedOrganizer.name : beneficiary.name,
+    });
+    if (!beneficiaryResult.ok) {
+      setError(beneficiaryResult.error);
+      setLoading(false);
+      return;
+    }
+
     let video_url = null;
     if (videoFile) {
       setUploadProgress("Uploading video...");
@@ -229,6 +247,7 @@ export default function CreateFundraiserPage() {
         raised: Number(form.raised) || 0,
         organizer: form.organizer,
         organizer_id: form.organizer_id,
+        beneficiary: beneficiaryResult.value,
         category: form.category,
         video_url,
         user_id: session.user.id,
@@ -427,6 +446,18 @@ export default function CreateFundraiserPage() {
               </div>
             </CreatorPanel>
 
+            {/* Sits immediately after Organizer: who runs the fundraiser, then
+                who it actually helps. */}
+            <CreatorPanel title="Who are you fundraising for?">
+              <BeneficiarySelector
+                value={beneficiary}
+                onChange={setBeneficiary}
+                organizerName={form.organizer}
+                inputClassName={greenInputClass}
+                onError={setError}
+              />
+            </CreatorPanel>
+
             <CreatorPanel title="Fundraiser Photos">
               <div className="grid gap-5">
                 <CreatorField label={`Add photos (${photoUrls.length}/${MAX_FUNDRAISER_PHOTOS})`} hint="The first image becomes the fundraiser cover.">
@@ -524,10 +555,46 @@ export default function CreateFundraiserPage() {
 
         {currentStep === 3 && (
           <CreatorPanel title="Review & Publish">
+            {/* Organizer → Beneficiary → Fundraiser, so the relationship
+                between who runs it and who it helps reads at a glance. */}
+            <div className="mb-5 rounded-2xl border border-zinc-200 bg-zinc-50/60 p-4 sm:p-5">
+              <p className="text-xs font-black uppercase tracking-wide text-zinc-500">
+                Organized by
+              </p>
+              <p className="mt-0.5 text-base font-black text-zinc-950">
+                {form.organizer || "Not set"}
+              </p>
+
+              <div className="my-2 h-4 w-px bg-zinc-300" aria-hidden />
+
+              <p className="text-xs font-black uppercase tracking-wide text-zinc-500">
+                Helping
+              </p>
+              <p className="mt-0.5 text-base font-black text-zinc-950">
+                {beneficiary.type === "self"
+                  ? form.organizer || "You"
+                  : beneficiary.name || "Not set"}
+              </p>
+              {beneficiary.type && (
+                <p className="mt-1 text-xs font-semibold text-zinc-500">
+                  {beneficiaryTypeLabel(beneficiary.type)}
+                  {beneficiary.relationship ? ` · ${beneficiary.relationship}` : ""}
+                  {beneficiary.species ? ` · ${beneficiary.species}` : ""}
+                </p>
+              )}
+
+              <div className="my-2 h-4 w-px bg-zinc-300" aria-hidden />
+
+              <p className="text-xs font-black uppercase tracking-wide text-zinc-500">
+                Fundraiser
+              </p>
+              <p className="mt-0.5 text-base font-black text-zinc-950">
+                {form.title || "Not set"}
+              </p>
+            </div>
+
             <div className="grid gap-4">
               {[
-                ["Fundraiser", form.title || "Not set"],
-                ["Organizer", form.organizer || "Not set"],
                 ["Category", form.category],
                 ["Goal", money(form.goal)],
                 ["Raised", money(form.raised)],

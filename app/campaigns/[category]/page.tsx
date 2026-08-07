@@ -5,9 +5,10 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
 import PublicEmptyState from "@/components/public/PublicEmptyState";
-import FundraiserCard from "@/components/FundraiserCard";
+import FundraiserListRow from "@/components/FundraiserListRow";
 import ShowcaseControls from "@/components/fundraisers/ShowcaseControls";
 import { getFundraiserList, type FundraiserSmartFilter } from "@/lib/fundraiser-data";
+import { getDonationCounts } from "@/lib/donation-counts";
 import { categoryFromSlug, categoryToSlug } from "@/lib/categories";
 
 const SMART_FILTERS = ["close-to-target", "just-launched", "needs-momentum", "trending"] as const;
@@ -55,6 +56,7 @@ export default async function CampaignCategoryPage({
     page: 1,
     pageSize: CATEGORY_PAGE_SIZE,
   });
+  const donationCounts = await getDonationCounts(fundraisers.map((f) => f.id));
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-950 pb-16">
@@ -84,9 +86,9 @@ export default async function CampaignCategoryPage({
             action={{ label: "Start a fundraiser", href: "/create-fundraiser" }}
           />
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="divide-y divide-zinc-100">
             {fundraisers.map((f) => (
-              <FundraiserCard
+              <FundraiserListRow
                 key={f.id}
                 slug={f.slug}
                 title={f.title}
@@ -94,7 +96,9 @@ export default async function CampaignCategoryPage({
                 goal={f.goal}
                 image={f.image}
                 category={f.category}
-                organizer={f.organizer}
+                beneficiaryName={f.beneficiaryName}
+                beneficiaryType={f.beneficiaryType}
+                donationCount={donationCounts.get(f.id)}
               />
             ))}
           </div>

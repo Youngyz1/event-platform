@@ -30,6 +30,11 @@ import {
   getOptionalFundraiserFields,
   getRelatedFundraisers,
 } from "@/lib/fundraiser-data";
+import {
+  resolveBeneficiary,
+  beneficiaryForLabel,
+  beneficiaryTypeLabel,
+} from "@/lib/beneficiary";
 import { getSiteUrl } from "@/lib/site-url";
 import { truncateWords, stripHtml } from "@/lib/text";
 
@@ -277,11 +282,15 @@ export default async function FundraiserPage({
   const recentDonors = (donationsResult.data ?? []) as DonationRow[];
   // Computed early (was previously computed just before use, much later)
   // so its lookup query can join Batch 2 below instead of running alone.
-  const beneficiaryName: string =
-    optionalFundraiser.beneficiary ||
-    optionalFundraiser.beneficiary_name ||
-    fundraiser.title ||
-    "This Cause";
+  // Was falling through to `fundraiser.title` whenever no beneficiary was
+  // stored — which, since the column never existed, meant every campaign
+  // showed its own title as the beneficiary. Now reads the real object,
+  // defaulting to a self-beneficiary named after the organizer.
+  const beneficiary = resolveBeneficiary(
+    optionalFundraiser.beneficiary,
+    organizerName
+  );
+  const beneficiaryName: string = beneficiary?.name || organizerName;
 
   // Batch 2: three lookups that each depend on Batch 1's results, but not on
   // each other — previously run as three separate sequential awaits.
@@ -474,6 +483,28 @@ export default async function FundraiserPage({
       </div>
 
       <div className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
+        {/* Organizer → beneficiary attribution. Sits directly beneath the
+            title (which is overlaid on the hero photo above), so the first
+            thing read after the campaign name is who runs it and who it
+            helps. */}
+        {beneficiary && (
+          <p className="-mb-4 text-sm font-medium text-zinc-500">
+            Organized by{" "}
+            {organizerProfileId ? (
+              <Link
+                href={`/organizers/${organizerProfileId}`}
+                className="font-black text-zinc-900 hover:text-brand-700 hover:underline"
+              >
+                {organizerName}
+              </Link>
+            ) : (
+              <span className="font-black text-zinc-900">{organizerName}</span>
+            )}
+            <span aria-hidden> · </span>
+            for <span className="font-black text-zinc-900">{beneficiaryForLabel(beneficiary)}</span>
+          </p>
+        )}
+
         {/* Raised / progress / goal / donation count + Donate + Share — the
             first fundraising content the user sees, immediately below the
             hero (the campaign title now lives as an overlay on the hero
@@ -509,16 +540,16 @@ export default async function FundraiserPage({
             </div>
           </div>
 
-          <div className="flex flex-col gap-2.5 sm:flex-row">
+          <div className="flex gap-2.5">
             <a
               href={`/fundraisers/${fundraiser.slug}/donate`}
-              className="flex w-full min-h-[48px] items-center justify-center rounded-full bg-[#c0f269] px-6 py-3.5 text-base font-black text-[#1b3e10] transition hover:bg-[#b5eb57] active:scale-[0.98] shadow-sm sm:flex-1"
+              className="flex min-h-[48px] flex-1 items-center justify-center whitespace-nowrap rounded-full bg-[#c0f269] px-4 py-3.5 text-base font-black text-[#1b3e10] transition hover:bg-[#b5eb57] active:scale-[0.98] shadow-sm sm:px-6"
             >
               Donate now
             </a>
             <ShareFundraiserButton
               title={fundraiser.title}
-              className="flex w-full min-h-[48px] items-center justify-center gap-2 rounded-full bg-[#1c3a27] px-6 py-3.5 text-base font-black text-[#c0f269] transition hover:bg-[#152f1e] active:scale-[0.98] shadow-sm sm:flex-1"
+              className="flex min-h-[48px] flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-[#1c3a27] px-4 py-3.5 text-base font-black text-[#c0f269] transition hover:bg-[#152f1e] active:scale-[0.98] shadow-sm sm:px-6"
             />
           </div>
         </section>
@@ -660,7 +691,13 @@ export default async function FundraiserPage({
                   </span>
                 )}
                 <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-800">
-                  Beneficiary
+                  {/* Relationship when we have one ("Mother"), otherwise the
+                      beneficiary type ("Registered charity"), falling back to
+                      the generic label. */}
+                  {beneficiary?.relationship ||
+                    (beneficiary && beneficiary.type !== "self"
+                      ? beneficiaryTypeLabel(beneficiary.type)
+                      : "Beneficiary")}
                 </span>
               </div>
             </div>

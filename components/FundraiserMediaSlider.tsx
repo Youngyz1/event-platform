@@ -297,14 +297,36 @@ export default function FundraiserMediaSlider({
       ) : (
         <div className="relative aspect-[4/5] sm:aspect-[16/9] w-full bg-zinc-900 overflow-hidden">
           {active.url ? (
-            <Image
-              src={active.url}
-              alt={title}
-              fill
-              priority={activeIndex === 0}
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1200px"
-              className="object-cover"
-            />
+            <>
+              {/* Blurred backdrop (mobile only). The photo itself is contained
+                  on mobile so nothing gets cropped out of frame — campaign
+                  photos arrive both as 4:5 (this platform's upload crop) and
+                  3:2 landscape (imported/synced campaigns), and covering a
+                  landscape shot in the tall 4:5 frame chopped subjects off.
+                  A scaled, blurred copy of the same photo fills the leftover
+                  space so it reads as a soft colour-matched surround rather
+                  than hard black bars. Deliberately requested at a tiny size —
+                  it is blurred beyond recognition, so a full-resolution second
+                  fetch would be pure waste. */}
+              <Image
+                src={active.url}
+                alt=""
+                aria-hidden
+                fill
+                sizes="64px"
+                className="scale-110 object-cover blur-2xl sm:hidden"
+              />
+              <Image
+                src={active.url}
+                alt={title}
+                fill
+                priority={activeIndex === 0}
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1200px"
+                // Desktop's 16/9 frame already matches landscape photos
+                // closely, so it keeps covering — unchanged there.
+                className="object-contain sm:object-cover"
+              />
+            </>
           ) : (
             <LocalBrandedPlaceholder variant="fundraiser" title={title} />
           )}

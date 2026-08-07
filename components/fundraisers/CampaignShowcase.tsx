@@ -1,5 +1,5 @@
 import PublicEmptyState from "@/components/public/PublicEmptyState";
-import CampaignShowcaseCarousel from "@/components/fundraisers/CampaignShowcaseCarousel";
+import CampaignShowcaseMobileList from "@/components/fundraisers/CampaignShowcaseMobileList";
 import CampaignShowcasePager, {
   type CampaignShowcasePage,
 } from "@/components/fundraisers/CampaignShowcasePager";
@@ -85,10 +85,10 @@ export default function CampaignShowcase({
         <CampaignShowcasePager pages={pages} controls={controls} />
       </div>
 
-      {/* Mobile: existing per-card carousel (unchanged). */}
+      {/* Mobile: compact GoFundMe-style vertical list, no horizontal scrolling. */}
       <div className="sm:hidden">
         <div className="mb-6">{controls}</div>
-        <CampaignShowcaseCarousel featured={featured} items={items} />
+        <CampaignShowcaseMobileList featured={featured} items={items} />
       </div>
     </div>
   );

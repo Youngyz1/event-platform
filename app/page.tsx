@@ -15,6 +15,7 @@ import {
   getCuratedFundraiserImages,
   type FundraiserListParams,
 } from "@/lib/fundraiser-data";
+import { getDonationCounts } from "@/lib/donation-counts";
 import { CURATED_HERO_FUNDRAISER_SLUGS } from "@/lib/fundraiser-hero-curation";
 import { normalizeImageUrl } from "@/lib/image-url";
 import { money } from "@/lib/format";
@@ -160,21 +161,7 @@ export default async function HomePage({
     ...(featuredItem ? [featuredItem.id] : []),
     ...fundraisers.map((f) => f.id),
   ];
-  const donorCounts = new Map<string, number>();
-
-  if (fundraiserIds.length > 0) {
-    const { data: donationRows } = await supabase
-      .from("donations")
-      .select("fundraiser_id")
-      .in("fundraiser_id", fundraiserIds)
-      .in("status", ["succeeded", "completed"]);
-
-    for (const row of donationRows ?? []) {
-      if (row.fundraiser_id) {
-        donorCounts.set(row.fundraiser_id, (donorCounts.get(row.fundraiser_id) ?? 0) + 1);
-      }
-    }
-  }
+  const donorCounts = await getDonationCounts(fundraiserIds);
 
   const showcaseFeatured: CampaignShowcaseItem | null = featuredItem
     ? {
