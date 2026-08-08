@@ -333,7 +333,7 @@ export default async function FundraiserPage({
     fundraiser.beneficiary_id
       ? supabaseAdmin
           .from("beneficiaries")
-          .select("id, name, type, photo, user_id, claimed_at")
+          .select("id, name, type, photo, user_id, claimed_at, slug")
           .eq("id", fundraiser.beneficiary_id)
           .is("deleted_at", null)
           .maybeSingle()
@@ -360,6 +360,7 @@ export default async function FundraiserPage({
     photo: string | null;
     user_id: string | null;
     claimed_at: string | null;
+    slug: string | null;
   } | null;
 
   // An explicit beneficiary is one stored against the campaign — either the
@@ -373,8 +374,21 @@ export default async function FundraiserPage({
   const beneficiaryDisplayName =
     beneficiaryRecord?.name || beneficiaryName;
 
-  // Claimed beneficiaries have a real account, so their name links to it.
-  const beneficiaryProfileId: string | null = beneficiaryRecord?.user_id ?? null;
+  /**
+   * Link to the public beneficiary profile, only once the profile has been
+   * claimed — an unclaimed one has nothing on it to show.
+   *
+   * `?from=` scopes that page to THIS campaign. It shows the referring campaign
+   * only, never every campaign the person has been a beneficiary of, and it
+   * verifies the pairing server-side so the parameter cannot be used to assert
+   * a relationship that does not exist.
+   */
+  const beneficiaryProfileHref: string | null =
+    beneficiaryRecord?.user_id && beneficiaryRecord.slug
+      ? `/beneficiaries/${beneficiaryRecord.slug}?from=${encodeURIComponent(
+          fundraiser.slug
+        )}`
+      : null;
 
   /**
    * Whether to show a beneficiary at all.
@@ -740,7 +754,7 @@ export default async function FundraiserPage({
                     <BeneficiaryNameWithPopup
                       name={beneficiaryDisplayName}
                       fundraiserTitle={fundraiser.title}
-                      profileId={beneficiaryProfileId}
+                      profileHref={beneficiaryProfileHref}
                     />
                     <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-800">
                       Beneficiary

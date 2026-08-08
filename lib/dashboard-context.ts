@@ -25,6 +25,21 @@ export type DashboardContext = {
   organizer: { id: string; name: string; bio?: string | null; photo?: string | null; slug?: string | null; org_type?: string | null; status?: string | null } | null;
   organizerIds: string[];
   organizerId: string | null;
+  /**
+   * The beneficiary profile this user has claimed, if any.
+   *
+   * A claimed beneficiary is a real account with no organizer of their own, so
+   * without this the dashboard sees them as a user with nothing and sends them
+   * to the organizer view. `isBeneficiaryOnly` is what routing should key on.
+   */
+  beneficiary: {
+    id: string;
+    name: string | null;
+    slug: string | null;
+    photo: string | null;
+  } | null;
+  /** Claimed a beneficiary profile and runs no organizer of their own. */
+  isBeneficiaryOnly: boolean;
 };
 
 /**
@@ -44,11 +59,21 @@ export const getDashboardContext = cache(async (): Promise<DashboardContext | nu
 
   if (!profile || profile.deleted_at) return null;
 
-  const { data: organizers } = await supabaseAdmin
-    .from('organizers')
-    .select('id, name, bio, photo, slug, org_type, status')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: true });
+  // Both lookups depend only on user.id, so they run together rather than
+  // adding a second round-trip for the beneficiary check.
+  const [{ data: organizers }, { data: beneficiary }] = await Promise.all([
+    supabaseAdmin
+      .from('organizers')
+      .select('id, name, bio, photo, slug, org_type, status')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: true }),
+    supabaseAdmin
+      .from('beneficiaries')
+      .select('id, name, slug, photo')
+      .eq('user_id', user.id)
+      .is('deleted_at', null)
+      .maybeSingle(),
+  ]);
 
   const safeOrganizers = organizers ?? [];
   const primaryOrganizer = safeOrganizers[0] ?? null;
@@ -59,6 +84,11 @@ export const getDashboardContext = cache(async (): Promise<DashboardContext | nu
     organizer: primaryOrganizer,
     organizerIds: safeOrganizers.map((organizer) => organizer.id),
     organizerId: primaryOrganizer?.id ?? null,
+    beneficiary: beneficiary ?? null,
+    // Someone who runs campaigns AND has claimed a beneficiary profile keeps
+    // the organizer dashboard — it is the larger surface, and the beneficiary
+    // view remains reachable at /dashboard/beneficiary.
+    isBeneficiaryOnly: Boolean(beneficiary) && safeOrganizers.length === 0,
   };
 });
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,6 +12,7 @@ export default function SignupPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [showEmailForm, setShowEmailForm] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
@@ -20,6 +21,18 @@ export default function SignupPage() {
     password: "",
     confirmPassword: "",
   });
+
+  // Where the user was headed before signup interrupted them, forwarded from
+  // /login. Only same-origin paths are honoured — an absolute URL here would be
+  // an open redirect, and this value ends up in an email link.
+  const rawRedirect = searchParams.get("redirect");
+  const redirectTarget =
+    rawRedirect && rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")
+      ? rawRedirect
+      : null;
+  const isClaimingBeneficiary = Boolean(
+    redirectTarget?.startsWith("/beneficiary/claim/")
+  );
 
   const password = form.password;
   const isMinLength = password.length >= 8;
@@ -107,9 +120,14 @@ export default function SignupPage() {
       // Guard API failure is non-fatal; proceed with signup
     }
 
+    // Carry any pending errand through email confirmation, so someone who came
+    // from a claim link lands back on that link after verifying rather than on
+    // a bare login page with no idea what they were doing.
     const emailRedirectTo =
       typeof window !== "undefined"
-        ? `${window.location.origin}/login`
+        ? `${window.location.origin}/login${
+            redirectTarget ? `?redirect=${encodeURIComponent(redirectTarget)}` : ""
+          }`
         : undefined;
 
     const { data, error: signupError } = await supabase.auth.signUp({
@@ -207,9 +225,21 @@ export default function SignupPage() {
             <span className="text-xl font-black">Fund4Good</span>
           </div>
 
+          {/* Arrival copy reflects why they are here. Someone sent from a
+              beneficiary claim link is not signing up for its own sake — they
+              are part-way through claiming a profile, and saying so keeps the
+              detour from looking like a dead end. */}
           <h2 className="text-3xl font-black text-zinc-900 mb-2">
-            Create your account
+            {isClaimingBeneficiary
+              ? "Create your account to claim your profile"
+              : "Create your account"}
           </h2>
+          {isClaimingBeneficiary && (
+            <p className="-mt-1 mb-4 text-sm font-semibold text-brand-700">
+              You&apos;ll be taken straight back to your invitation once
+              you&apos;re signed up.
+            </p>
+          )}
           <p className="text-zinc-500 mb-8">
             Already have an account?{" "}
             <Link

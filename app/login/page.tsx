@@ -169,8 +169,19 @@ function LoginForm() {
           </h2>
           <p className="text-zinc-500 mb-8">
             Don&apos;t have an account?{" "}
+            {/* Forwards ?redirect= so an errand that started elsewhere survives
+                the detour into signup. A beneficiary arriving from a claim link
+                is bounced here, and without this they lost the claim
+                destination the moment they chose "Sign up" — they would finish
+                signing up on /dashboard, never having claimed anything. */}
             <Link
-              href="/signup"
+              href={
+                searchParams.get("redirect")
+                  ? `/signup?redirect=${encodeURIComponent(
+                      searchParams.get("redirect")!
+                    )}`
+                  : "/signup"
+              }
               className="text-brand-600 font-semibold hover:text-brand-700"
             >
               Sign up free

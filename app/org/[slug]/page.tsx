@@ -78,10 +78,18 @@ export default async function OrganizationProfilePage({
     return notFound();
   }
 
-  // Normal slug lookup
+  // Explicit column list, not `*`.
+  //
+  // This fetch uses the service-role client, which bypasses the column grants
+  // added in migration_53 — so `*` pulled tax_id and nonprofit_registration_number
+  // and handed them to a client component, serialising both into the RSC payload
+  // of every public organizer profile. Blocking them at PostgREST did nothing
+  // about this path.
   const { data: org } = await supabase
     .from("organizers")
-    .select("*")
+    .select(
+      "id, user_id, name, bio, photo, banner, slug, org_type, visibility, status, verified_at, website, facebook, twitter, instagram, linkedin, youtube, tiktok, contact_email, average_rating, review_count, follower_offset, events_offset, organization_name, created_at, updated_at, deleted_at"
+    )
     .eq("slug", slug)
     .is("deleted_at", null)
     .maybeSingle();

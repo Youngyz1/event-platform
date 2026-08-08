@@ -8,11 +8,14 @@ type Props = {
   name: string;
   fundraiserTitle: string;
   /**
-   * The beneficiary's user id, present once they have claimed their profile.
-   * With one, the name is a link to that profile; without one there is nothing
-   * to navigate to, so it opens the "profile not set up yet" card instead.
+   * Link to the beneficiary's public profile, set only once they have claimed
+   * it. Without one there is no profile to navigate to, so the name opens the
+   * "not set up yet" card instead of being a dead link.
+   *
+   * The href carries the referring campaign (`?from=`), because the public
+   * profile shows only that one campaign and never a list.
    */
-  profileId?: string | null;
+  profileHref?: string | null;
   className?: string;
 };
 
@@ -29,7 +32,7 @@ type Props = {
 export default function BeneficiaryNameWithPopup({
   name,
   fundraiserTitle,
-  profileId,
+  profileHref,
   className,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -38,9 +41,9 @@ export default function BeneficiaryNameWithPopup({
     className ??
     "block max-w-full truncate text-left text-sm font-black text-zinc-950 transition hover:text-brand-700 hover:underline";
 
-  if (profileId) {
+  if (profileHref) {
     return (
-      <Link href={`/profile/${profileId}`} className={style}>
+      <Link href={profileHref} className={style}>
         {name}
       </Link>
     );
