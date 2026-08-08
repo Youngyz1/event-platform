@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "supabase": "supabase"
+    "supabase": "supabase",
+    "verify:requirements": "node --experimental-strip-types scripts/verify-requirements.mts"
   },
   "overrides": {
     "postcss": "^8.5.23",
