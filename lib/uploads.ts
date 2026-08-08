@@ -137,3 +137,73 @@ export async function uploadPublicFile<TFile extends UploadableFile & Blob>({
     size: file.size,
   };
 }
+
+/** Bucket holding identity and registration documents. Private — migration_58. */
+export const VERIFICATION_BUCKET = "verification-documents";
+
+/** Mirrors the bucket's allowed_mime_types so a bad file fails before upload. */
+export const VERIFICATION_DOCUMENT_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "application/pdf",
+] as const;
+
+const VERIFICATION_MAX_BYTES = 10 * 1024 * 1024; // matches the bucket limit
+
+export type UploadedPrivateDocument = {
+  bucket: string;
+  /** Storage path. There is no URL — reads go through the signed-URL route. */
+  path: string;
+};
+
+/**
+ * Upload a verification document to the private bucket.
+ *
+ * Deliberately NOT a variant of uploadPublicFile: that function ends by calling
+ * getPublicUrl(), which is exactly what must never happen to a government ID.
+ * This returns only a storage path, so there is no public URL for a caller to
+ * accidentally persist or render.
+ *
+ * The path is forced to `<userId>/…` to satisfy the RLS policy, which requires
+ * the first folder segment to equal auth.uid(). Passing another user's id here
+ * fails at the database, not just in application code.
+ *
+ * Reading a document back is not possible with this client — the bucket has no
+ * SELECT policy at all. Use POST /api/verification/document-url, which
+ * authorises owner-or-admin server-side and mints a short-lived signed URL.
+ */
+export async function uploadPrivateDocument<TFile extends UploadableFile & Blob>({
+  supabase,
+  userId,
+  file,
+  upsert = false,
+}: {
+  supabase: SupabaseClient;
+  userId: string;
+  file: TFile;
+  upsert?: boolean;
+}): Promise<UploadedPrivateDocument> {
+  if (!userId) {
+    throw new Error("A user id is required to upload a verification document.");
+  }
+
+  validateUploadFile(file, {
+    kind: "image",
+    maxBytes: VERIFICATION_MAX_BYTES,
+    allowedTypes: [...VERIFICATION_DOCUMENT_TYPES],
+  });
+
+  const path = buildUploadPath(userId, file.name);
+
+  const { error } = await supabase.storage
+    .from(VERIFICATION_BUCKET)
+    .upload(path, file, { contentType: file.type, upsert });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { bucket: VERIFICATION_BUCKET, path };
+}
