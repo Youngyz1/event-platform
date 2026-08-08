@@ -235,3 +235,92 @@ export async function fetchRequirements(
 
   return resolveRequirements(scope, (data ?? []) as RequirementRow[]);
 }
+
+/**
+ * Organizer type vocabulary for the onboarding UI.
+ *
+ * Lives here rather than in the component so the admin review queue and the
+ * requirement seed share one source of truth for these strings. `value` is what
+ * gets written to organizer_verification.organizer_type / .subcategory.
+ *
+ * Subcategories are UI vocabulary, not a constraint — the column is free text
+ * on purpose (see migration_59), so adding one here needs no migration. Only
+ * `orphanage` currently changes the required documents; the rest exist so an
+ * admin can see what kind of body they are reviewing.
+ */
+export type OrganizerTypeOption = {
+  value: OrganizerType;
+  label: string;
+  helper: string;
+  subcategories: { value: string; label: string }[];
+};
+
+export const ORGANIZER_TYPE_OPTIONS: OrganizerTypeOption[] = [
+  {
+    value: "individual",
+    label: "An individual",
+    helper: "Raising money for yourself, someone you know, or a personal cause.",
+    subcategories: [
+      { value: "personal", label: "Personal cause" },
+      { value: "medical", label: "Medical" },
+      { value: "education", label: "Education" },
+      { value: "funeral", label: "Funeral or burial" },
+      { value: "housing", label: "Housing or basic needs" },
+      { value: "emergency", label: "Emergency" },
+      // A creator raising money personally is an individual. Audience size is
+      // never treated as evidence; if they are raising for an organisation they
+      // should pick that organisation's type instead.
+      { value: "creator", label: "Creator or public figure (personal)" },
+      { value: "other", label: "Something else" },
+    ],
+  },
+  {
+    value: "nonprofit",
+    label: "A nonprofit, charity or NGO",
+    helper: "A formally established organisation registered in its country.",
+    subcategories: [
+      { value: "ngo", label: "NGO" },
+      { value: "charity", label: "Charity" },
+      { value: "foundation", label: "Foundation" },
+      { value: "orphanage", label: "Orphanage or children's home" },
+      { value: "community_development", label: "Community development" },
+      { value: "religious", label: "Religious nonprofit" },
+      { value: "educational", label: "Educational nonprofit" },
+      { value: "health", label: "Health or medical nonprofit" },
+      { value: "humanitarian", label: "Humanitarian organisation" },
+      { value: "other", label: "Other nonprofit" },
+    ],
+  },
+  {
+    value: "business",
+    label: "A business or company",
+    helper: "A registered company, small business or corporate campaign.",
+    subcategories: [
+      { value: "company", label: "Registered company" },
+      { value: "small_business", label: "Small business" },
+      { value: "startup", label: "Startup" },
+      { value: "csr", label: "Corporate social responsibility" },
+      { value: "other", label: "Other commercial organisation" },
+    ],
+  },
+  {
+    value: "community",
+    label: "A community group",
+    helper:
+      "A group organised around a cause that may not be formally registered — that is fine.",
+    subcategories: [
+      { value: "community_group", label: "Community group" },
+      { value: "student_group", label: "Student group" },
+      { value: "neighborhood", label: "Neighbourhood association" },
+      { value: "volunteer", label: "Volunteer group" },
+      { value: "sports_club", label: "Sports or community club" },
+      { value: "religious_group", label: "Religious community" },
+      { value: "informal", label: "Informal charitable initiative" },
+      { value: "other", label: "Other" },
+    ],
+  },
+];
+
+export function organizerTypeOption(value: string | null | undefined) {
+  return ORGANIZER_TYPE_OPTIONS.find((option) => option.value === value) ?? null;
+}
