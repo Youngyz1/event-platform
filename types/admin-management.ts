@@ -16,7 +16,10 @@ export type UserSort =
   | 'most_fundraisers';
 
 export type UserRole = 'admin' | 'organizer' | 'user';
-export type UserStatus = 'active' | 'suspended';
+// Mirrors profiles_status_check (migration_57). 'purged' is the terminal
+// state after the 14-day grace period — the row and its data are retained,
+// access is blocked at the application layer.
+export type UserStatus = 'active' | 'suspended' | 'pending_deletion' | 'purged';
 export type UserActivity = 'all' | 'has_events' | 'has_fundraisers' | 'has_organizers';
 
 export type AdminOrganizerRow = {
@@ -65,6 +68,8 @@ export type AdminOrganizerDetail = AdminOrganizerRow & {
 };
 
 export type AdminUserRow = {
+  /** Set while status is 'pending_deletion'; drives the grace-period countdown. */
+  purge_at?: string | null;
   id: string;
   full_name: string;
   username: string;

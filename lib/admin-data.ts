@@ -375,7 +375,7 @@ export async function queryUsers(params: {
   const dateStart = getDateRangeStart(date);
   let profileQuery = supabaseAdmin
     .from('profiles')
-    .select('id, role, status, created_at, account_info');
+    .select('id, role, status, created_at, account_info, deleted_at, purge_at');
 
   if (role !== 'all') profileQuery = profileQuery.eq('role', role);
   if (status !== 'all') profileQuery = profileQuery.eq('status', status);
@@ -448,6 +448,7 @@ export async function queryUsers(params: {
       created_at: profile.created_at ?? authUser.created_at,
       last_login: authUser.last_sign_in_at ?? null,
       is_current_user: currentUserId === authUser.id,
+      purge_at: profile.purge_at ?? null,
     };
   });
 

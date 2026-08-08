@@ -25,6 +25,22 @@ const BULK_ACTIONS = [
   { id: "demote", label: "Demote" },
 ] as const;
 
+/**
+ * Human-readable time left in a pending deletion's 14-day grace period.
+ * Past the deadline the cron has either already flipped the row to 'purged' or
+ * is about to, so "expired" is the honest reading rather than a negative count.
+ */
+function daysRemaining(purgeAt?: string | null): string {
+  if (!purgeAt) return "unknown time";
+  const ms = new Date(purgeAt).getTime() - Date.now();
+  if (Number.isNaN(ms)) return "unknown time";
+  if (ms <= 0) return "expired";
+  const days = Math.floor(ms / 86_400_000);
+  if (days >= 1) return `${days} day${days === 1 ? "" : "s"}`;
+  const hours = Math.max(1, Math.floor(ms / 3_600_000));
+  return `${hours} hour${hours === 1 ? "" : "s"}`;
+}
+
 export default function UsersClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -236,6 +252,10 @@ export default function UsersClient() {
               { value: "all", label: "All Statuses" },
               { value: "active", label: "Active" },
               { value: "suspended", label: "Suspended" },
+              // Deletion lifecycle. pending_deletion is the actionable one —
+              // those users are inside the 14-day window and can be revoked.
+              { value: "pending_deletion", label: "Pending deletion" },
+              { value: "purged", label: "Deactivated" },
             ],
             onChange: (v) => updateParams({ status: v === "all" ? null : v }),
           },
@@ -379,6 +399,28 @@ export default function UsersClient() {
                               {working === row.id ? "…" : "Suspend"}
                             </button>
                           )}
+                          {/* Revoke a deletion on the user's behalf — support,
+                              fraud review, or someone who has lost their login
+                              and cannot self-cancel. Offered for 'purged' too:
+                              nothing is destroyed at 14 days any more, so a
+                              genuine restore is still possible. */}
+                          {!isSelf &&
+                            (row.status === "pending_deletion" ||
+                              row.status === "purged") && (
+                              <button
+                                type="button"
+                                disabled={working === row.id}
+                                onClick={() => patchUser(row.id, { status: "active" })}
+                                className="rounded-lg border border-brand-300 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50 disabled:opacity-50"
+                                title={
+                                  row.status === "pending_deletion"
+                                    ? `${daysRemaining(row.purge_at)} left in grace period`
+                                    : "Grace period elapsed — restoring is still possible"
+                                }
+                              >
+                                {working === row.id ? "…" : "Revoke deletion"}
+                              </button>
+                            )}
                           {!isSelf && row.status === "suspended" && (
                             <button
                               type="button"

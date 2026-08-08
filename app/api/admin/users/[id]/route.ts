@@ -53,13 +53,35 @@ export async function PATCH(
     }
   }
 
-  const update: Record<string, string> = {};
+  const update: Record<string, string | null> = {};
 
   if (status) {
     if (!['active', 'suspended'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status value.' }, { status: 400 });
     }
     update.status = status;
+
+    /**
+     * Revoking a pending deletion on the user's behalf.
+     *
+     * Setting status back to 'active' is not enough on its own: `deleted_at`
+     * is what hides the account from every public query, and `purge_at` is
+     * what the nightly cron selects on. Leaving either behind would produce an
+     * account that reports itself active but stays invisible, and gets flipped
+     * to 'purged' on the next run anyway.
+     *
+     * Clearing them here mirrors what /api/account/recover does for a user
+     * restoring themselves. Admin revoke exists for the cases where they
+     * cannot — support, fraud review, a lost login.
+     *
+     * Note this deliberately also works AFTER the grace period, on a 'purged'
+     * account. Nothing is destroyed at 14 days any more, so there is nothing
+     * stopping a genuine restore; only the app layer was blocking access.
+     */
+    if (status === 'active') {
+      update.deleted_at = null;
+      update.purge_at = null;
+    }
   }
 
   if (role) {
