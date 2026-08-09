@@ -68,18 +68,24 @@ check(
   individual
 );
 
-// migration_60 made proof_of_authority optional for the nonprofit BASE tier.
+/**
+ * proof_of_authority is REQUIRED for both organisation types (migration_61,
+ * reversing migration_60). The registration documents prove the organisation
+ * exists; this one proves the submitter may act for it. Relaxing it would let
+ * someone verify an organisation they have no connection to using its public
+ * registration certificate alone.
+ */
 const nonprofit = split({ organizerType: "nonprofit" });
 check(
-  "nonprofit required = registration_certificate + representative_id",
-  eq(nonprofit.required, ["registration_certificate", "representative_id"]),
+  "nonprofit required = registration + representative_id + proof_of_authority",
+  eq(nonprofit.required, [
+    "proof_of_authority",
+    "registration_certificate",
+    "representative_id",
+  ]),
   nonprofit
 );
-check(
-  "nonprofit proof_of_authority is OPTIONAL",
-  eq(nonprofit.optional, ["proof_of_authority"]),
-  nonprofit
-);
+check("nonprofit has no optional documents", nonprofit.optional.length === 0, nonprofit);
 
 /**
  * The subtle one. Resolution unions across tiers and picks the winning rule PER
@@ -89,25 +95,22 @@ check(
  */
 const orphanage = split({ organizerType: "nonprofit", subcategory: "orphanage" });
 check(
-  "orphanage required = base two + facility_authorisation",
+  "orphanage required = restored nonprofit base + facility_authorisation",
   eq(orphanage.required, [
     "facility_authorisation",
+    "proof_of_authority",
     "registration_certificate",
     "representative_id",
   ]),
   orphanage
 );
-check(
-  "orphanage keeps proof_of_authority OPTIONAL",
-  eq(orphanage.optional, ["proof_of_authority"]),
-  orphanage
-);
+check("orphanage has no optional documents", orphanage.optional.length === 0, orphanage);
 
-// The regression migration_60 could most easily have caused: business has its
-// own separate proof_of_authority row and must be unaffected.
+// Business has required proof_of_authority continuously since migration_59 —
+// a migration to relax it was written then discarded before being applied.
 const business = split({ organizerType: "business" });
 check(
-  "business required (proof_of_authority still required)",
+  "business required = business_registration + representative_id + proof_of_authority",
   eq(business.required, [
     "business_registration",
     "proof_of_authority",
