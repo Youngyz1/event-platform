@@ -162,27 +162,20 @@ export async function POST(req: NextRequest) {
   }
 
   /**
-   * organizers.status is the OUTCOME, set here and nowhere else.
+   * organizers.status is deliberately NOT written here.
    *
-   * It stayed deliberately untouched through migrations 59-61 because the
-   * public directory filters on it. This is the one place a review result is
-   * allowed to move it, which keeps "what the directory shows" downstream of
-   * "what a reviewer decided" rather than the two drifting apart.
+   * An earlier version of this route set it, on the mistaken belief that this
+   * was its only writer. It is not: the admin organizers panel has long set it
+   * via PATCH /api/admin/organizers/[id] and the bulk route, where 'verified'
+   * means "an admin listed this organizer in the directory" — a claim about
+   * visibility, made without documents. Thirteen live organizers carry that
+   * value today and none of them have been through this flow.
+   *
+   * Writing it from here would have overloaded one column with two different
+   * claims and made the public directory's filter mean whichever system wrote
+   * last. Verification facts live in organizer_verification and are read from
+   * there; the directory keeps its own, separate meaning.
    */
-  const organizerStatus =
-    action === "approve" ? "verified" : action === "suspend" ? "suspended" : null;
-
-  if (organizerStatus) {
-    const { error: orgError } = await admin
-      .from("organizers")
-      .update({ status: organizerStatus, verified_at: action === "approve" ? now : null })
-      .eq("id", verification.organizer_id);
-    if (orgError) {
-      console.error(
-        `[verification] decision recorded for ${verificationId} but organizer status update failed: ${orgError.message}`
-      );
-    }
-  }
 
   // Append-only trail. Internal notes go in metadata, never in a column the
   // organizer can read.

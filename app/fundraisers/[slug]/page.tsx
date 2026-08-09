@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 
 import DonationProtectedBadge from "@/components/DonationProtectedBadge";
+import VerificationFactsPanel from "@/components/trust/VerificationFacts";
+import { fetchVerificationFacts } from "@/lib/verification-facts";
 import SupportMessages from "@/components/SupportMessages";
 import BeneficiaryNameWithPopup from "@/components/fundraisers/BeneficiaryNameWithPopup";
 import FundraiserMediaSlider, {
@@ -280,6 +282,18 @@ export default async function FundraiserPage({
   ]);
 
   const organizer = organizerResult.data as OrganizerRow | null;
+
+  /**
+   * Read with the service-role client: `organizer_verification` has no public
+   * SELECT policy, so the anon client would return nothing and every campaign
+   * would silently read as unverified. The helper selects four columns by name
+   * and returns booleans, so nothing else on that row can reach the page.
+   */
+  const verificationFacts = await fetchVerificationFacts(
+    supabaseAdmin,
+    fundraiser.organizer_id
+  );
+
   const organizerName =
     organizer?.name || fundraiser.organizer || "Campaign organizer";
   const recentDonors = (donationsResult.data ?? []) as DonationRow[];
@@ -778,6 +792,14 @@ export default async function FundraiserPage({
             Report fundraiser
           </a>
         </section>
+
+        {/* What we've checked — the three verification facts, kept separate.
+            Sits above the protection badge because it is specific to THIS
+            campaign and organizer, where the badge below is a general promise. */}
+        <VerificationFactsPanel
+          facts={verificationFacts}
+          campaignApproved={fundraiser.status === "published"}
+        />
 
         {/* Donation protection — moved out of the top section per the new
             hierarchy; still present, just lower-priority than the campaign
