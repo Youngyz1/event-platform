@@ -1,11 +1,18 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check, FileText, Info } from "lucide-react";
+import { Check, FileText, Info, Loader2, Upload, X } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import {
+  VERIFICATION_DOCUMENT_TYPES,
+  uploadPrivateDocument,
+} from "@/lib/uploads";
 import {
   ORGANIZER_TYPE_OPTIONS,
+  evaluateSubmission,
   organizerTypeOption,
   resolveRequirements,
+  type DocumentRecord,
   type OrganizerType,
   type RequirementRow,
 } from "@/lib/verification-requirements";
@@ -13,9 +20,11 @@ import {
 /**
  * Verification onboarding wizard — type selection and requirement preview.
  *
- * Phase 2c-i: this component writes NOTHING. It exists to prove the requirement
- * engine drives the right document list from a real user's selections before
- * uploads are wired in (2c-ii).
+ * Uploads go straight from the browser to the private bucket, so the bytes
+ * never pass through a server route. The bucket's INSERT policy pins the path
+ * to the caller's own folder, and the metadata row is written by
+ * /api/verification/document running as the caller, so migration_59's RLS
+ * stays the backstop rather than being bypassed.
  *
  * Follows the progressive-disclosure pattern BeneficiarySelector established:
  * one question per step, and only the fields the chosen type actually needs.
@@ -42,9 +51,11 @@ type Draft = {
 export default function VerificationWizard({
   requirementRows,
   organizers,
+  userId,
 }: {
   requirementRows: RequirementRow[];
   organizers: { id: string; name: string }[];
+  userId: string;
 }) {
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<Draft>({
@@ -60,6 +71,12 @@ export default function VerificationWizard({
   useEffect(() => {
     topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [step]);
+
+  const [verificationId, setVerificationId] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+  const [status, setStatus] = useState<string>("draft");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState("");
 
   const typeOption = organizerTypeOption(draft.organizerType);
 
@@ -77,8 +94,123 @@ export default function VerificationWizard({
     );
   }, [draft.organizerType, draft.subcategory, draft.country, requirementRows]);
 
+  const readiness = useMemo(
+    () => evaluateSubmission(requirements, documents),
+    [requirements, documents]
+  );
   const requiredCount = requirements.filter((r) => r.isRequired).length;
   const canAdvance = step === 0 ? Boolean(draft.organizerType) : true;
+  const locked = status !== "draft" && status !== "changes_requested";
+
+  /**
+   * Create or update the draft before showing upload slots.
+   *
+   * A verification row has to exist before any document can reference it, so
+   * this runs when entering the documents step rather than on first render —
+   * merely opening the wizard should not create a record.
+   */
+  async function ensureVerification(): Promise<string | null> {
+    if (verificationId) return verificationId;
+    setBusy("verification");
+    setError("");
+    try {
+      const res = await fetch("/api/verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          organizerId: draft.organizerId,
+          organizerType: draft.organizerType,
+          subcategory: draft.subcategory || null,
+          country: draft.country || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Could not start your verification.");
+        return null;
+      }
+      setVerificationId(data.verification.id);
+      setStatus(data.verification.status);
+      return data.verification.id as string;
+    } catch {
+      setError("Could not start your verification.");
+      return null;
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleUpload(documentType: string, file: File) {
+    setError("");
+    const id = await ensureVerification();
+    if (!id) return;
+
+    setBusy(documentType);
+    try {
+      // Straight to the private bucket. uploadPrivateDocument forces the path
+      // to <userId>/… so it satisfies the storage policy, and returns a path
+      // rather than a URL — there is no public URL for one of these.
+      const { path } = await uploadPrivateDocument({
+        supabase,
+        userId,
+        file,
+      });
+
+      const res = await fetch("/api/verification/document", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          verificationId: id,
+          documentType,
+          storagePath: path,
+          fileName: file.name,
+          mimeType: file.type,
+          sizeBytes: file.size,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Could not attach that document.");
+        return;
+      }
+      setDocuments((current) => [
+        ...current,
+        { document_type: documentType, status: "pending" },
+      ]);
+    } catch (err) {
+      // Surfaces the size/type message uploadPrivateDocument throws.
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function handleSubmit() {
+    if (!verificationId) return;
+    setBusy("submit");
+    setError("");
+    try {
+      const res = await fetch("/api/verification/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ verificationId }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(
+          data.missing?.length
+            ? `Still needed: ${data.missing.join(", ")}`
+            : (data.error ?? "Could not submit for review.")
+        );
+        return;
+      }
+      setStatus(data.verification.status);
+    } catch {
+      setError("Could not submit for review.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
@@ -242,41 +374,95 @@ export default function VerificationWizard({
           </p>
 
           <ul className="mt-5 space-y-3">
-            {requirements.map((req) => (
-              <li
-                key={req.documentType}
-                className="flex gap-3 rounded-2xl border border-zinc-200 bg-white p-4"
-              >
-                <FileText
-                  size={18}
-                  aria-hidden
-                  className="mt-0.5 shrink-0 text-zinc-400"
-                />
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-black text-zinc-950">
-                      {req.label}
-                    </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                        req.isRequired
-                          ? "bg-brand-50 text-brand-800"
-                          : "bg-zinc-100 text-zinc-500"
-                      }`}
-                    >
-                      {req.isRequired ? "Required" : "Optional"}
-                    </span>
-                  </div>
-                  {/* Explaining why a document is wanted is the difference
-                      between a form people complete and one they abandon. */}
-                  {req.description && (
-                    <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-                      {req.description}
-                    </p>
+            {readiness.requirements.map((req) => {
+              const uploading = busy === req.documentType;
+              return (
+                <li
+                  key={req.documentType}
+                  className="flex gap-3 rounded-2xl border border-zinc-200 bg-white p-4"
+                >
+                  {req.status === "accepted" || req.status === "uploaded" ? (
+                    <Check size={18} aria-hidden className="mt-0.5 shrink-0 text-brand-700" />
+                  ) : req.status === "rejected" ? (
+                    <X size={18} aria-hidden className="mt-0.5 shrink-0 text-red-600" />
+                  ) : (
+                    <FileText size={18} aria-hidden className="mt-0.5 shrink-0 text-zinc-400" />
                   )}
-                </div>
-              </li>
-            ))}
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-black text-zinc-950">
+                        {req.label}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                          req.isRequired
+                            ? "bg-brand-50 text-brand-800"
+                            : "bg-zinc-100 text-zinc-500"
+                        }`}
+                      >
+                        {req.isRequired ? "Required" : "Optional"}
+                      </span>
+                      {/* Four distinct states rather than a checkbox: uploaded
+                          and accepted are different claims, and a reviewer
+                          rejecting a document has to be visible. */}
+                      {req.status !== "missing" && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                            req.status === "accepted"
+                              ? "bg-brand-100 text-brand-800"
+                              : req.status === "rejected"
+                                ? "bg-red-50 text-red-600"
+                                : "bg-zinc-100 text-zinc-600"
+                          }`}
+                        >
+                          {req.status === "accepted"
+                            ? "Verified"
+                            : req.status === "rejected"
+                              ? "Needs attention"
+                              : "Uploaded"}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Explaining why a document is wanted is the difference
+                        between a form people complete and one they abandon. */}
+                    {req.description && (
+                      <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+                        {req.description}
+                      </p>
+                    )}
+
+                    {!locked && (
+                      <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-300 px-3 py-2 text-xs font-black text-zinc-700 transition hover:bg-zinc-50">
+                        {uploading ? (
+                          <Loader2 size={14} className="animate-spin" aria-hidden />
+                        ) : (
+                          <Upload size={14} aria-hidden />
+                        )}
+                        {uploading
+                          ? "Uploading…"
+                          : req.status === "missing"
+                            ? "Upload"
+                            : "Replace"}
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept={VERIFICATION_DOCUMENT_TYPES.join(",")}
+                          disabled={Boolean(busy)}
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            // Cleared so picking the same file twice still fires.
+                            event.target.value = "";
+                            if (file) handleUpload(req.documentType, file);
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
 
           {requirements.length === 0 && (
@@ -285,14 +471,29 @@ export default function VerificationWizard({
             </p>
           )}
 
-          <p className="mt-6 flex gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-xs leading-relaxed text-zinc-500">
-            <Info size={16} aria-hidden className="mt-0.5 shrink-0" />
-            <span>
-              Uploading isn&apos;t available yet — this step currently shows what
-              will be asked for. Your documents are stored privately and are only
-              ever visible to you and our review team.
-            </span>
-          </p>
+          {error && (
+            <p className="mt-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+              {error}
+            </p>
+          )}
+
+          {locked ? (
+            <p className="mt-6 flex gap-2 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-xs leading-relaxed text-brand-900">
+              <Check size={16} aria-hidden className="mt-0.5 shrink-0" />
+              <span>
+                Submitted for review. We&apos;ll be in touch — documents
+                can&apos;t be changed while a review is in progress.
+              </span>
+            </p>
+          ) : (
+            <p className="mt-6 flex gap-2 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-xs leading-relaxed text-zinc-500">
+              <Info size={16} aria-hidden className="mt-0.5 shrink-0" />
+              <span>
+                Your documents are stored privately. They are never public, and
+                only you and our review team can open them.
+              </span>
+            </p>
+          )}
         </section>
       )}
 
@@ -310,21 +511,38 @@ export default function VerificationWizard({
         {step < STEPS.length - 1 ? (
           <button
             type="button"
-            onClick={() => setStep((s) => s + 1)}
-            disabled={!canAdvance}
+            onClick={() => {
+              const next = step + 1;
+              setStep(next);
+              // Entering the documents step is the point a record is needed.
+              if (next === STEPS.length - 1) void ensureVerification();
+            }}
+            disabled={!canAdvance || Boolean(busy)}
             className="rounded-xl bg-brand-700 px-5 py-3 text-sm font-black text-white transition hover:bg-brand-800 disabled:opacity-40"
           >
             Continue
           </button>
         ) : (
-          // Submission lands in 2c-ii along with the uploads it depends on.
           <button
             type="button"
-            disabled
-            title="Available once document upload is added"
-            className="rounded-xl bg-zinc-200 px-5 py-3 text-sm font-black text-zinc-500"
+            onClick={handleSubmit}
+            // Mirrors the server gate. The route re-checks completeness itself,
+            // so this only saves a round-trip — it is not the enforcement.
+            disabled={locked || !readiness.canSubmit || Boolean(busy)}
+            title={
+              locked
+                ? "Already submitted"
+                : readiness.canSubmit
+                  ? undefined
+                  : `Still needed: ${readiness.missingRequired.join(", ")}`
+            }
+            className="rounded-xl bg-brand-700 px-5 py-3 text-sm font-black text-white transition hover:bg-brand-800 disabled:bg-zinc-200 disabled:text-zinc-500"
           >
-            Continue to documents
+            {busy === "submit"
+              ? "Submitting…"
+              : locked
+                ? "Submitted"
+                : "Submit for review"}
           </button>
         )}
       </div>

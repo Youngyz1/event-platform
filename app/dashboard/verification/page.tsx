@@ -28,6 +28,10 @@ export default async function VerificationPage() {
   return (
     <VerificationWizard
       requirementRows={(data ?? []) as RequirementRow[]}
+      // Passed from the session rather than read client-side: it becomes the
+      // storage path prefix, and the bucket's RLS policy requires that prefix
+      // to equal auth.uid(). Deriving it here keeps the two in step.
+      userId={context.user.id}
       organizers={context.organizers.map((organizer) => ({
         id: organizer.id,
         name: organizer.name,
