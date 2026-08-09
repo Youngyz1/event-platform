@@ -85,9 +85,17 @@ export default function OrgSettingsPage() {
         return;
       }
 
+      // Explicit column list, not `*` — migration_53 revoked SELECT on
+      // tax_id/nonprofit_registration_number for anon/authenticated (they're
+      // registration identifiers, read only via the service-role client), and
+      // Postgres fails `SELECT *` outright if the caller lacks privilege on
+      // any column, ownership notwithstanding. None of these are used by this
+      // form anyway.
       const { data: org, error: orgError } = await supabase
         .from("organizers")
-        .select("*")
+        .select(
+          "id, name, slug, bio, photo, banner, org_type, contact_email, website, facebook, twitter, instagram, linkedin, youtube, tiktok, visibility"
+        )
         .eq("id", orgId)
         .eq("user_id", session.user.id)
         .single();
