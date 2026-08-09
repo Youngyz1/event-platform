@@ -23,8 +23,13 @@ import type { VerificationFacts } from "@/lib/verification-facts";
 
 type Props = {
   facts: VerificationFacts;
-  /** fundraisers.status === "published" — the migration-41 approval gate. */
-  campaignApproved: boolean;
+  /**
+   * fundraisers.status === "published" — the migration-41 approval gate.
+   * Omit on organizer-level pages (app/org/[slug]) where there's no single
+   * campaign in view; the "This campaign" row is left out entirely rather
+   * than guessing at one fundraiser's status.
+   */
+  campaignApproved?: boolean;
   className?: string;
 };
 
@@ -72,15 +77,19 @@ export default function VerificationFactsPanel({
           ? "Registration and authority to fundraise confirmed"
           : "Not yet verified",
     },
-    {
-      key: "campaign",
-      icon: FileCheck2,
-      label: "This campaign",
-      state: campaignApproved ? "confirmed" : "unconfirmed",
-      detail: campaignApproved
-        ? "Reviewed and approved before going live"
-        : "Awaiting review",
-    },
+    ...(campaignApproved === undefined
+      ? []
+      : [
+          {
+            key: "campaign",
+            icon: FileCheck2,
+            label: "This campaign",
+            state: campaignApproved ? "confirmed" : "unconfirmed",
+            detail: campaignApproved
+              ? "Reviewed and approved before going live"
+              : "Awaiting review",
+          } as Row,
+        ]),
   ];
 
   return (

@@ -14,6 +14,8 @@ import ProfileTabs, { type ProfileTab } from "@/components/profile/ProfileTabs";
 import ProfileSection from "@/components/profile/ProfileSection";
 import FollowButton from "@/components/profile/FollowButton";
 import ShareButton from "@/components/profile/ShareButton";
+import VerificationFactsPanel from "@/components/trust/VerificationFacts";
+import type { VerificationFacts } from "@/lib/verification-facts";
 import {
   Globe, Mail, Calendar, ExternalLink, ArrowUpRight,
   Rocket, Users, Star, DollarSign, Pencil, Link2,
@@ -241,8 +243,10 @@ function ConnectSection({ org }: { org: Organization }) {
 
 export default function OrganizationProfileClient({
   initialData,
+  verificationFacts,
 }: {
   initialData: Organization;
+  verificationFacts: VerificationFacts;
 }) {
   const router = useRouter();
   const [org] = useState<Organization>(initialData);
@@ -409,6 +413,7 @@ export default function OrganizationProfileClient({
 
         <div className="mt-8 grid gap-8 border-t border-zinc-200 pt-8 lg:grid-cols-[288px_1fr]">
           <ProfileSidebar metrics={metrics} className="lg:border-r lg:border-zinc-200 lg:pr-8">
+            <VerificationFactsPanel facts={verificationFacts} />
             <ConnectSection org={org} />
           </ProfileSidebar>
 

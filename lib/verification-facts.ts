@@ -48,6 +48,39 @@ export const NO_VERIFICATION: VerificationFacts = {
  */
 const CLAIMING_STATUSES = new Set(["approved"]);
 
+const VERIFICATION_COLUMNS =
+  "organizer_type, status, identity_verified_at, organization_verified_at";
+
+type VerificationRow = {
+  organizer_type: string | null;
+  status: string;
+  identity_verified_at: string | null;
+  organization_verified_at: string | null;
+};
+
+function factsFromRow(data: VerificationRow): VerificationFacts {
+  const claiming = CLAIMING_STATUSES.has(data.status);
+  const organizationApplicable = data.organizer_type !== "individual";
+
+  return {
+    organizerType: data.organizer_type ?? null,
+    identityVerified: claiming && Boolean(data.identity_verified_at),
+    organizationApplicable,
+    organizationVerified:
+      claiming && organizationApplicable && Boolean(data.organization_verified_at),
+  };
+}
+
+/**
+ * The single bar a card-sized badge can show without room for three separate
+ * rows: identity confirmed, and organization confirmed wherever it applies.
+ * An unconfirmed individual and an unconfirmed nonprofit both read as "not
+ * fully verified" here — the distinction only matters at facts-panel detail.
+ */
+export function isFullyVerified(facts: VerificationFacts): boolean {
+  return facts.identityVerified && (!facts.organizationApplicable || facts.organizationVerified);
+}
+
 export async function fetchVerificationFacts(
   client: SupabaseClient,
   organizerId: string | null | undefined
@@ -56,7 +89,7 @@ export async function fetchVerificationFacts(
 
   const { data, error } = await client
     .from("organizer_verification")
-    .select("organizer_type, status, identity_verified_at, organization_verified_at")
+    .select(VERIFICATION_COLUMNS)
     .eq("organizer_id", organizerId)
     .maybeSingle();
 
@@ -69,14 +102,33 @@ export async function fetchVerificationFacts(
   }
   if (!data) return NO_VERIFICATION;
 
-  const claiming = CLAIMING_STATUSES.has(data.status);
-  const organizationApplicable = data.organizer_type !== "individual";
+  return factsFromRow(data);
+}
 
-  return {
-    organizerType: data.organizer_type ?? null,
-    identityVerified: claiming && Boolean(data.identity_verified_at),
-    organizationApplicable,
-    organizationVerified:
-      claiming && organizationApplicable && Boolean(data.organization_verified_at),
-  };
+/**
+ * Batched lookup for lists (search results, related-fundraiser carousels)
+ * where fetching one row per card would turn a page render into one query
+ * per card. Callers default a missing id to NO_VERIFICATION themselves via
+ * `map.get(id) ?? NO_VERIFICATION`.
+ */
+export async function fetchVerificationFactsBatch(
+  client: SupabaseClient,
+  organizerIds: readonly (string | null | undefined)[]
+): Promise<Map<string, VerificationFacts>> {
+  const ids = Array.from(new Set(organizerIds.filter((id): id is string => Boolean(id))));
+  if (ids.length === 0) return new Map();
+
+  const { data, error } = await client
+    .from("organizer_verification")
+    .select(`organizer_id, ${VERIFICATION_COLUMNS}`)
+    .in("organizer_id", ids);
+
+  if (error) {
+    console.error(
+      `[verification-facts] batch lookup failed for ${ids.length} organizers: ${error.message}`
+    );
+    return new Map();
+  }
+
+  return new Map((data ?? []).map((row) => [row.organizer_id as string, factsFromRow(row)]));
 }

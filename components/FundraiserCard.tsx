@@ -9,6 +9,7 @@ import { safeImageSrc } from "@/lib/image-url";
 import ProgressBar from "@/components/ui/ProgressBar";
 import { calculateFundraisingPercentage } from "@/lib/fundraising-progress";
 import LocalBrandedPlaceholder from "@/components/ui/LocalBrandedPlaceholder";
+import VerificationBadge from "@/components/trust/VerificationBadge";
 
 type FundraiserCardProps = {
   title: string;
@@ -27,6 +28,9 @@ type FundraiserCardProps = {
   /** Suppresses the "for …" line for self-beneficiary campaigns, where the
    *  beneficiary is the organizer and the line carries no new information. */
   beneficiaryType?: string | null;
+  /** Identity + organization (where applicable) both confirmed via the
+   *  document-based verification flow. Omit/false renders no badge. */
+  organizerVerified?: boolean;
 };
 
 export default function FundraiserCard({
@@ -42,6 +46,7 @@ export default function FundraiserCard({
   organizer,
   beneficiaryName,
   beneficiaryType,
+  organizerVerified = false,
 }: FundraiserCardProps) {
   const [imgError, setImgError] = useState(false);
   const progress = calculateFundraisingPercentage(raised, goal);
@@ -91,8 +96,9 @@ export default function FundraiserCard({
               truncated into the other. The beneficiary line is suppressed when
               it would just repeat the organizer (self-beneficiary). */}
           {organizer && (
-            <p className="mt-1 truncate text-xs font-semibold text-zinc-500">
+            <p className="mt-1 flex items-center gap-1 truncate text-xs font-semibold text-zinc-500">
               by {organizer}
+              <VerificationBadge verified={organizerVerified} />
             </p>
           )}
           {beneficiaryName && beneficiaryType !== "self" && (

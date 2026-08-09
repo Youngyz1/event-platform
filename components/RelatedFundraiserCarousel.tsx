@@ -125,6 +125,7 @@ export default function RelatedFundraiserCarousel({
                     slug={related.slug}
                     title={related.title}
                     organizer={related.organizer}
+                    organizerVerified={related.organizerVerified}
                     raised={Number(related.raised ?? 0)}
                     goal={Number(related.goal ?? 0)}
                     image={related.image_url || related.banner || null}

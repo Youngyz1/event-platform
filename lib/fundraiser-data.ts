@@ -3,8 +3,14 @@ import { cache } from "react";
 import { calculateFundraisingPercentage } from "@/lib/fundraising-progress";
 import { safeImageSrc, normalizeImageUrl } from "@/lib/image-url";
 import { supabase } from "@/lib/supabase";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getDonationCounts } from "@/lib/donation-counts";
 import { resolveBeneficiary } from "@/lib/beneficiary";
+import {
+  fetchVerificationFactsBatch,
+  isFullyVerified,
+  NO_VERIFICATION,
+} from "@/lib/verification-facts";
 
 export const FUNDRAISER_FALLBACK_IMAGE: string | null = null;
 
@@ -134,6 +140,7 @@ export type RelatedFundraiser = {
   goal: number | string | null;
   raised: number | string | null;
   raised_amount: number | string | null;
+  organizerVerified: boolean;
 };
 
 export type RelatedFundraiserCategory =
@@ -260,15 +267,32 @@ export async function getRelatedFundraisers(
   const { data } = await supabase
     .from("fundraisers")
     .select(
-      "id, title, slug, banner, image_url, organizer, goal, raised, raised_amount"
+      "id, title, slug, banner, image_url, organizer, organizer_id, goal, raised, raised_amount"
     )
     .in("id", pickedIds);
+
+  const rows = (data ?? []) as (RelatedFundraiser & { organizer_id: string | null })[];
+
+  // organizer_verification has no public SELECT policy, so this needs the
+  // service-role client even though the rows above came from the anon one.
+  const verificationByOrganizer = await fetchVerificationFactsBatch(
+    createSupabaseAdmin(),
+    rows.map((row) => row.organizer_id)
+  );
 
   // `.in(...)` doesn't preserve row order, so re-sort to match the
   // category-specific ranking computed above (closest-to-target first,
   // newest first, etc.) rather than whatever order Postgres returns.
   const rowsById = new Map(
-    ((data ?? []) as RelatedFundraiser[]).map((row) => [row.id, row])
+    rows.map(({ organizer_id, ...row }) => [
+      row.id,
+      {
+        ...row,
+        organizerVerified: isFullyVerified(
+          verificationByOrganizer.get(organizer_id ?? "") ?? NO_VERIFICATION
+        ),
+      },
+    ])
   );
   return pickedIds
     .map((id) => rowsById.get(id))

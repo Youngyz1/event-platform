@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect, notFound } from "next/navigation";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { normalizeImageUrl } from "@/lib/image-url";
+import { fetchVerificationFacts } from "@/lib/verification-facts";
 import OrganizationProfileClient from "./OrganizationProfileClient";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -96,5 +97,11 @@ export default async function OrganizationProfilePage({
 
   if (!org) return notFound();
 
-  return <OrganizationProfileClient initialData={org} />;
+  // organizer_verification has no public SELECT policy; read with the
+  // service-role client already in scope for this page's org fetch.
+  const verificationFacts = await fetchVerificationFacts(supabase, org.id);
+
+  return (
+    <OrganizationProfileClient initialData={org} verificationFacts={verificationFacts} />
+  );
 }

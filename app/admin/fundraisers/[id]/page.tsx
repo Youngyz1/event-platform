@@ -10,12 +10,41 @@ import Link from "next/link";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { money } from "@/lib/format";
 import { formatAdminDate } from "@/lib/admin-query";
+import {
+  fetchVerificationFacts,
+  isFullyVerified,
+  type VerificationFacts,
+} from "@/lib/verification-facts";
 import FundraiserImportPanel from "@/components/admin/FundraiserImportPanel";
 import AdminFundraiserStatusActions from "./AdminFundraiserStatusActions";
 
 export const dynamic = "force-dynamic";
 
 type FundraiserStatus = "pending_review" | "published" | "rejected";
+
+/**
+ * Informational only — does not gate the Approve action below. Phase 2e made
+ * a deliberate call not to hard-block publishing on organizer verification;
+ * this just gives the reviewer the context to decide case by case.
+ */
+function OrganizerVerificationPill({ facts }: { facts: VerificationFacts }) {
+  const label = isFullyVerified(facts)
+    ? "Organizer fully verified"
+    : facts.identityVerified
+      ? "Organizer partially verified"
+      : "Organizer not verified";
+  const style = isFullyVerified(facts)
+    ? "bg-brand-100 text-brand-800"
+    : facts.identityVerified
+      ? "bg-amber-100 text-amber-700"
+      : "bg-zinc-100 text-zinc-500";
+
+  return (
+    <span className={`rounded-full px-2 py-0.5 text-xs font-black ${style}`}>
+      {label}
+    </span>
+  );
+}
 
 export default async function AdminFundraiserManagePage({
   params,
@@ -27,13 +56,13 @@ export default async function AdminFundraiserManagePage({
 
   const { data: fundraiser } = await admin
     .from("fundraisers")
-    .select("id, title, slug, organizer, raised, goal, status, rejection_reason, category, created_at")
+    .select("id, title, slug, organizer, organizer_id, raised, goal, status, rejection_reason, category, created_at")
     .eq("id", id)
     .maybeSingle();
 
   if (!fundraiser) return notFound();
 
-  const [{ count: donationCount }, { count: commentCount }] = await Promise.all([
+  const [{ count: donationCount }, { count: commentCount }, verificationFacts] = await Promise.all([
     admin
       .from("donations")
       .select("id", { count: "exact", head: true })
@@ -45,6 +74,7 @@ export default async function AdminFundraiserManagePage({
       .eq("target_type", "fundraiser")
       .eq("target_id", id)
       .eq("status", "approved"),
+    fetchVerificationFacts(admin, fundraiser.organizer_id),
   ]);
 
   const raised = Number(fundraiser.raised ?? 0);
@@ -63,9 +93,12 @@ export default async function AdminFundraiserManagePage({
               ← Fundraisers
             </Link>
             <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">{fundraiser.title}</h1>
-            <p className="mt-1 text-sm text-zinc-500">
-              {fundraiser.organizer || "—"} · {fundraiser.category || "Other"} · Created{" "}
-              {formatAdminDate(fundraiser.created_at)}
+            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-500">
+              <span>
+                {fundraiser.organizer || "—"} · {fundraiser.category || "Other"} · Created{" "}
+                {formatAdminDate(fundraiser.created_at)}
+              </span>
+              <OrganizerVerificationPill facts={verificationFacts} />
             </p>
           </div>
           {fundraiser.slug && (
