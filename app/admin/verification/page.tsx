@@ -31,6 +31,8 @@ type VerificationRecord = {
   identity_verified_at: string | null;
   organization_verified_at: string | null;
   created_at: string;
+  on_behalf_of_org: boolean;
+  on_behalf_relationship: string | null;
 };
 
 export default async function AdminVerificationPage() {
@@ -39,7 +41,7 @@ export default async function AdminVerificationPage() {
   const { data: verifications, error } = await admin
     .from("organizer_verification")
     .select(
-      "id, user_id, organizer_id, organizer_type, subcategory, country, status, submitted_at, reviewed_at, identity_verified_at, organization_verified_at, created_at"
+      "id, user_id, organizer_id, organizer_type, subcategory, country, status, submitted_at, reviewed_at, identity_verified_at, organization_verified_at, created_at, on_behalf_of_org, on_behalf_relationship"
     )
     .order("submitted_at", { ascending: true, nullsFirst: false });
 
@@ -98,6 +100,8 @@ export default async function AdminVerificationPage() {
       identityVerifiedAt: record.identity_verified_at,
       organizationVerifiedAt: record.organization_verified_at,
       createdAt: record.created_at,
+      onBehalfOfOrg: record.on_behalf_of_org,
+      onBehalfRelationship: record.on_behalf_relationship,
       documents: (documents ?? [])
         .filter((doc) => doc.verification_id === record.id)
         .map((doc) => ({

@@ -41,6 +41,8 @@ export type QueueRow = {
   identityVerifiedAt: string | null;
   organizationVerifiedAt: string | null;
   createdAt: string;
+  onBehalfOfOrg: boolean;
+  onBehalfRelationship: string | null;
   documents: QueueDocument[];
 };
 
@@ -100,6 +102,7 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [pending, setPending] = useState<PendingDecision | null>(null);
+  const [staffNote, setStaffNote] = useState("");
 
   const selected = rows.find((row) => row.id === selectedId) ?? null;
 
@@ -176,7 +179,7 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
     }
   }
 
-  async function submitReview(action: string, reason?: string) {
+  async function submitReview(action: string, reason?: string, note?: string) {
     if (!selected) return;
     setBusy(action);
     setError("");
@@ -184,7 +187,12 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
       const res = await fetch("/api/admin/verification/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ verificationId: selected.id, action, reason }),
+        body: JSON.stringify({
+          verificationId: selected.id,
+          action,
+          reason,
+          note: note?.trim() || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -199,6 +207,7 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
         );
         return;
       }
+      setStaffNote("");
       router.refresh();
     } catch {
       setError("Could not record that decision.");
@@ -212,7 +221,7 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
     setPending(null);
     if (!decision || !reason.trim()) return;
     if (decision.kind === "review") {
-      void submitReview(decision.action, reason.trim());
+      void submitReview(decision.action, reason.trim(), staffNote);
     } else {
       void submitDocumentDecision(decision.documentId, "reject", reason.trim());
     }
@@ -282,6 +291,7 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
             onClick={() => {
               setSelectedId(row.id);
               setError("");
+              setStaffNote("");
             }}
             className="flex w-full flex-wrap items-center gap-3 rounded-2xl border border-zinc-200 bg-white p-4 text-left transition hover:border-brand-300 hover:bg-brand-50/30"
           >
@@ -327,7 +337,7 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => void submitReview("approve")}
+                onClick={() => void submitReview("approve", undefined, staffNote)}
                 disabled={Boolean(busy)}
                 className="rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-brand-800 disabled:opacity-50"
               >
@@ -395,6 +405,23 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
                 </dd>
               </div>
             </dl>
+
+            {selected.onBehalfOfOrg && (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-xs font-black uppercase tracking-wide text-amber-800">
+                  Fundraising on behalf of an organization
+                </p>
+                <p className="mt-1 text-sm font-bold text-amber-900">
+                  Stated relationship: {selected.onBehalfRelationship ?? "—"}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-amber-800">
+                  The submitter is an individual representing this
+                  organization, not its own staff. Check the relationship
+                  above against the proof-of-authority document before
+                  approving.
+                </p>
+              </div>
+            )}
 
             {selected.organizerSlug && (
               <a
@@ -486,6 +513,26 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
                 ))}
               </ul>
             </div>
+
+            <label className="block">
+              <span className="mb-2 block text-sm font-black text-zinc-800">
+                Staff note{" "}
+                <span className="font-medium text-zinc-400">
+                  (not visible to the organizer)
+                </span>
+              </span>
+              <textarea
+                value={staffNote}
+                onChange={(event) => setStaffNote(event.target.value)}
+                rows={3}
+                placeholder="Internal context for other reviewers — e.g. how you confirmed authorization…"
+                className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-brand-600"
+              />
+              <span className="mt-1.5 block text-xs text-zinc-500">
+                Sent with whichever decision you make below (approve, reject,
+                request changes, or suspend).
+              </span>
+            </label>
           </div>
         )}
       </AdminDrawer>

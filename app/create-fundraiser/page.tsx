@@ -299,6 +299,15 @@ export default function CreateFundraiserPage() {
     // migration_41's INSERT policy — organizer_verification never factors in.
     // See lib/verification-facts.ts for the current display-only status and
     // what a future hard gate at this point would look like.
+    //
+    // Spec item 3 (2026-08-09 audit) — "reuse an existing verification on a
+    // second campaign" — is moot today for the same reason: there's nothing
+    // here to skip. organizer_verification.organizer_id is UNIQUE by design
+    // (migration_59), specifically so that whenever this connection DOES get
+    // built, looking up the organizer's one existing row and skipping
+    // re-collection for an already-approved organizer works correctly without
+    // any schema change — the reuse case was designed in from the start, just
+    // never wired to this insert.
     const story = [form.short_description, form.story].filter(Boolean).join("\n\n");
     const { data: insertedFundraiser, error: insertError } = await supabase
       .from("fundraisers")

@@ -268,8 +268,10 @@ export const ORGANIZER_TYPE_OPTIONS: OrganizerTypeOption[] = [
       { value: "housing", label: "Housing or basic needs" },
       { value: "emergency", label: "Emergency" },
       // A creator raising money personally is an individual. Audience size is
-      // never treated as evidence; if they are raising for an organisation they
-      // should pick that organisation's type instead.
+      // never treated as evidence; a creator raising ON BEHALF OF an
+      // organisation instead uses the "fundraising on behalf of an
+      // organization" toggle on this step, which routes them through that
+      // organisation's own requirement set instead (see VerificationWizard).
       { value: "creator", label: "Creator or public figure (personal)" },
       { value: "other", label: "Something else" },
     ],

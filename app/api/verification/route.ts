@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
     organizerType?: string;
     subcategory?: string | null;
     country?: string | null;
+    onBehalfOfOrg?: boolean;
+    onBehalfRelationship?: string | null;
   };
   try {
     body = await req.json();
@@ -51,6 +53,25 @@ export async function POST(req: NextRequest) {
 
   if (!ORGANIZER_TYPES.includes(organizerType as OrganizerType)) {
     return NextResponse.json({ error: "Unknown organizer type." }, { status: 400 });
+  }
+
+  const onBehalfOfOrg = Boolean(body.onBehalfOfOrg);
+  const onBehalfRelationship = body.onBehalfRelationship?.trim() || null;
+
+  // The client always sends the effective type ("nonprofit") once the
+  // on-behalf-of toggle is checked, so this only catches a tampered or
+  // malformed request — an "individual" row can never carry the declaration.
+  if (onBehalfOfOrg && organizerType === "individual") {
+    return NextResponse.json(
+      { error: "On-behalf-of submissions must use the organization's own type." },
+      { status: 400 }
+    );
+  }
+  if (onBehalfOfOrg && !onBehalfRelationship) {
+    return NextResponse.json(
+      { error: "Your relationship to the organization is required." },
+      { status: 400 }
+    );
   }
 
   // Normalised so the requirement lookup matches the seeded rules, which are
@@ -74,11 +95,13 @@ export async function POST(req: NextRequest) {
         organizer_type: organizerType,
         subcategory,
         country,
+        on_behalf_of_org: onBehalfOfOrg,
+        on_behalf_relationship: onBehalfRelationship,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "organizer_id" }
     )
-    .select("id, status, organizer_type, subcategory, country")
+    .select("id, status, organizer_type, subcategory, country, on_behalf_of_org, on_behalf_relationship")
     .maybeSingle();
 
   if (error) {

@@ -46,6 +46,17 @@ type Draft = {
   organizerType: OrganizerType | null;
   subcategory: string;
   country: string;
+  /**
+   * Only meaningful when organizerType is "individual" — a creator or other
+   * individual fundraising FOR an organization rather than personally. When
+   * true, the requirement preview and submission route through "nonprofit"
+   * instead (see effectiveOrganizerType below), which is the only schema
+   * change this needed: organizer_verification.on_behalf_of_org /
+   * .on_behalf_relationship just record the declaration alongside the
+   * otherwise-identical nonprofit submission (migration_62).
+   */
+  onBehalfOfOrg: boolean;
+  onBehalfRelationship: string;
 };
 
 export default function VerificationWizard({
@@ -63,6 +74,8 @@ export default function VerificationWizard({
     organizerType: null,
     subcategory: "",
     country: "",
+    onBehalfOfOrg: false,
+    onBehalfRelationship: "",
   });
 
   // Same step-change scroll reset used by the campaign wizard: advancing only
@@ -78,28 +91,44 @@ export default function VerificationWizard({
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
 
-  const typeOption = organizerTypeOption(draft.organizerType);
+  // An individual fundraising ON BEHALF OF an organization is routed through
+  // the nonprofit requirement set — same documents, same review queue, no
+  // parallel requirement table. The declaration and stated relationship are
+  // recorded separately (draft.onBehalfOfOrg/.onBehalfRelationship) so a
+  // reviewer still sees this is a creator representing an org, not the org's
+  // own staff submitting directly.
+  const effectiveOrganizerType: OrganizerType | null =
+    draft.organizerType === "individual" && draft.onBehalfOfOrg
+      ? "nonprofit"
+      : draft.organizerType;
+
+  const typeOption = organizerTypeOption(effectiveOrganizerType);
 
   // Resolved in memory on every change — no round-trip, so the preview updates
   // the instant a subcategory is picked.
   const requirements = useMemo(() => {
-    if (!draft.organizerType) return [];
+    if (!effectiveOrganizerType) return [];
     return resolveRequirements(
       {
-        organizerType: draft.organizerType,
+        organizerType: effectiveOrganizerType,
         subcategory: draft.subcategory || null,
         country: draft.country || null,
       },
       requirementRows
     );
-  }, [draft.organizerType, draft.subcategory, draft.country, requirementRows]);
+  }, [effectiveOrganizerType, draft.subcategory, draft.country, requirementRows]);
 
   const readiness = useMemo(
     () => evaluateSubmission(requirements, documents),
     [requirements, documents]
   );
   const requiredCount = requirements.filter((r) => r.isRequired).length;
-  const canAdvance = step === 0 ? Boolean(draft.organizerType) : true;
+  const canAdvance =
+    step === 0
+      ? Boolean(draft.organizerType)
+      : step === 1
+        ? !draft.onBehalfOfOrg || draft.onBehalfRelationship.trim().length > 0
+        : true;
   const locked = status !== "draft" && status !== "changes_requested";
 
   /**
@@ -119,9 +148,14 @@ export default function VerificationWizard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           organizerId: draft.organizerId,
-          organizerType: draft.organizerType,
+          organizerType: effectiveOrganizerType,
           subcategory: draft.subcategory || null,
           country: draft.country || null,
+          onBehalfOfOrg: draft.organizerType === "individual" ? draft.onBehalfOfOrg : false,
+          onBehalfRelationship:
+            draft.organizerType === "individual" && draft.onBehalfOfOrg
+              ? draft.onBehalfRelationship.trim()
+              : null,
         }),
       });
       const data = await res.json();
@@ -270,6 +304,12 @@ export default function VerificationWizard({
                       // Subcategories are per-type; keeping a stale one would
                       // silently mis-scope the requirement lookup.
                       subcategory: "",
+                      // Only individual shows the on-behalf-of toggle; leaving
+                      // it set while switching away would silently keep
+                      // routing requirements through "nonprofit" for a type
+                      // where the toggle is no longer even visible.
+                      onBehalfOfOrg: false,
+                      onBehalfRelationship: "",
                     }))
                   }
                   aria-pressed={selected}
@@ -299,9 +339,69 @@ export default function VerificationWizard({
             Tell us a bit more
           </h2>
 
+          {draft.organizerType === "individual" && (
+            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+              <label className="flex cursor-pointer items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={draft.onBehalfOfOrg}
+                  onChange={(event) =>
+                    setDraft((d) => ({
+                      ...d,
+                      onBehalfOfOrg: event.target.checked,
+                      // The subcategory list is about to switch between
+                      // individual's and nonprofit's — a value picked under
+                      // one would silently mis-scope the requirement lookup
+                      // under the other.
+                      subcategory: "",
+                      onBehalfRelationship: event.target.checked ? d.onBehalfRelationship : "",
+                    }))
+                  }
+                  className="mt-0.5 h-4 w-4 accent-brand-700"
+                />
+                <span>
+                  <span className="block text-sm font-black text-zinc-800">
+                    Are you fundraising on behalf of an organization?
+                  </span>
+                  <span className="mt-1 block text-xs leading-relaxed text-zinc-500">
+                    If you&apos;re raising money for a nonprofit, charity or
+                    other organization rather than for yourself, check this —
+                    we&apos;ll ask for that organization&apos;s documents
+                    instead of a personal ones.
+                  </span>
+                </span>
+              </label>
+
+              {draft.onBehalfOfOrg && (
+                <label className="mt-4 block">
+                  <span className="mb-2 block text-sm font-black text-zinc-800">
+                    Your relationship to the organization
+                  </span>
+                  <input
+                    value={draft.onBehalfRelationship}
+                    onChange={(event) =>
+                      setDraft((d) => ({
+                        ...d,
+                        onBehalfRelationship: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. authorized representative, volunteer, employee"
+                    className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-brand-600"
+                  />
+                  <span className="mt-2 block text-xs text-zinc-500">
+                    A reviewer will check this against the proof-of-authority
+                    document you upload for the organization.
+                  </span>
+                </label>
+              )}
+            </div>
+          )}
+
           <label className="block">
             <span className="mb-2 block text-sm font-black text-zinc-800">
-              Which best describes you?
+              {draft.onBehalfOfOrg
+                ? "Which best describes the organization?"
+                : "Which best describes you?"}
             </span>
             <select
               value={draft.subcategory}
@@ -518,6 +618,11 @@ export default function VerificationWizard({
               if (next === STEPS.length - 1) void ensureVerification();
             }}
             disabled={!canAdvance || Boolean(busy)}
+            title={
+              !canAdvance && step === 1
+                ? "Enter your relationship to the organization to continue"
+                : undefined
+            }
             className="rounded-xl bg-brand-700 px-5 py-3 text-sm font-black text-white transition hover:bg-brand-800 disabled:opacity-40"
           >
             Continue

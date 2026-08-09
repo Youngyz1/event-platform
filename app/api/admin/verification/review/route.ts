@@ -177,8 +177,12 @@ export async function POST(req: NextRequest) {
    * there; the directory keeps its own, separate meaning.
    */
 
-  // Append-only trail. Internal notes go in metadata, never in a column the
-  // organizer can read.
+  // Append-only trail. Internal notes go in metadata — genuinely never in a
+  // column the organizer can read as of migration_63, which column-restricted
+  // this table's SELECT grant to exclude metadata. Before that migration the
+  // claim in this comment wasn't actually enforced (RLS filters rows, not
+  // columns), even though nothing populated this field until the admin
+  // drawer's "Staff note" textarea shipped alongside the same fix.
   await admin.from("verification_events").insert({
     verification_id: verificationId,
     actor_id: user.id,
