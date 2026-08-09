@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { generateReceiptPdf } from "@/lib/receipt";
+import { fetchVerificationFacts } from "@/lib/verification-facts";
 import Stripe from "stripe";
 
 const supabaseAdmin = createClient(
@@ -104,10 +105,17 @@ export async function GET(
 
   // Generate PDF
   try {
+    // Same eligibility gate as lib/receipt.ts's webhook-triggered path —
+    // admin-approved organization verification, not self-reported text fields.
+    const verificationFacts = await fetchVerificationFacts(
+      supabaseAdmin,
+      fundraiser?.organizer_id
+    );
     const pdfBuffer = await generateReceiptPdf(
       donation,
       organizer,
-      fundraiser?.title || "Campaign"
+      fundraiser?.title || "Campaign",
+      verificationFacts.organizationVerified
     );
 
     const headers = new Headers();

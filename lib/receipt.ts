@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
+import { fetchVerificationFacts } from "@/lib/verification-facts";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,12 +27,22 @@ export interface OrganizerReceiptData {
 
 /**
  * Generates a donation receipt PDF.
- * If the organizer is a nonprofit, it formats it as a tax-deductible receipt/certificate.
+ *
+ * `isEligibleForTaxReceipt` is the caller's job to determine (see
+ * processDonationReceipt) — this function never derives it itself. It used to
+ * infer eligibility from `organization_name && nonprofit_registration_number`
+ * being present, which are self-reported free-text fields with no admin
+ * review; any organizer with both filled in got an unconditional
+ * "tax-deductible" certification. Fixed 2026-08-09 to require the same
+ * organization-verification fact the donor-facing UI relies on
+ * (lib/verification-facts.ts's `organizationVerified`), which only becomes
+ * true after an admin has actually approved that organizer.
  */
 export async function generateReceiptPdf(
   donation: DonationReceiptData,
   organizer: OrganizerReceiptData | null,
-  fundraiserTitle: string
+  fundraiserTitle: string,
+  isEligibleForTaxReceipt: boolean
 ): Promise<Buffer> {
   // Create jsPDF instance (A4 size, portrait)
   const doc = new jsPDF({
@@ -40,10 +51,14 @@ export async function generateReceiptPdf(
     format: "a4",
   });
 
-  const isNonprofit = !!(
-    organizer?.organization_name &&
-    organizer?.nonprofit_registration_number
-  );
+  // Both must hold: verification-approved (the real eligibility gate) AND the
+  // display fields actually present, so an eligible organizer who somehow
+  // hasn't filled in organization_name/nonprofit_registration_number gets the
+  // safe standard-receipt branch instead of a PDF printing "undefined".
+  const isNonprofit =
+    isEligibleForTaxReceipt &&
+    !!organizer?.organization_name &&
+    !!organizer?.nonprofit_registration_number;
 
   // Colors
   const primaryColor = isNonprofit ? [16, 185, 129] : [79, 70, 229]; // Emerald (green) vs Indigo (violet)
@@ -259,10 +274,26 @@ export async function processDonationReceipt(donationId: string) {
       organizer = org;
     }
 
-    const isNonprofit = !!(
-      organizer?.organization_name &&
-      organizer?.nonprofit_registration_number
-    );
+    // The real eligibility gate: an admin has approved this organizer AND
+    // (for non-individuals) specifically stamped organization_verified_at —
+    // never just "these two text fields happen to be filled in." Reuses the
+    // same fact the donor-facing VerificationFactsPanel shows, so the PDF/
+    // email never asserts something the public page doesn't also claim.
+    //
+    // Follow-up (not built here, out of scope for this fix): org-verified and
+    // tax-deductible-eligible are legally distinct facts — a verified
+    // nonprofit isn't automatically tax-exempt in every jurisdiction. A
+    // dedicated admin-set flag (e.g. tax_deductible_approved_at, stamped
+    // separately from identity/organization verification) would be more
+    // precise. Reusing organizationVerified closes the immediate exposure
+    // (no more unconditional self-reported claim) without inventing new
+    // schema in this pass.
+    const verificationFacts = await fetchVerificationFacts(supabaseAdmin, fundraiser.organizer_id);
+    const isEligibleForTaxReceipt = verificationFacts.organizationVerified;
+    const isNonprofit =
+      isEligibleForTaxReceipt &&
+      !!organizer?.organization_name &&
+      !!organizer?.nonprofit_registration_number;
 
     const receiptPath = `/api/receipts/${donation.id}`;
     const certificatePath = isNonprofit ? `/api/receipts/${donation.id}` : null;
@@ -285,7 +316,8 @@ export async function processDonationReceipt(donationId: string) {
     const pdfBuffer = await generateReceiptPdf(
       donation,
       organizer,
-      fundraiser.title || "Campaign"
+      fundraiser.title || "Campaign",
+      isEligibleForTaxReceipt
     );
     console.log("[processDonationReceipt] PDF generated successfully. Size:", pdfBuffer.length);
 

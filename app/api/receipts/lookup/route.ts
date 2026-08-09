@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
+import { fetchVerificationFacts } from "@/lib/verification-facts";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -60,16 +61,22 @@ export async function GET(request: NextRequest) {
     .eq("id", donation.fundraiser_id)
     .single();
 
+  // Same eligibility fact as lib/receipt.ts: admin-approved organization
+  // verification, not just self-reported org_name/registration-number text.
   let isNonprofit = false;
   if (fundraiser?.organizer_id) {
-    const { data: org } = await supabaseAdmin
-      .from("organizers")
-      .select("organization_name, nonprofit_registration_number")
-      .eq("id", fundraiser.organizer_id)
-      .single();
-    if (org?.organization_name && org?.nonprofit_registration_number) {
-      isNonprofit = true;
-    }
+    const [{ data: org }, facts] = await Promise.all([
+      supabaseAdmin
+        .from("organizers")
+        .select("organization_name, nonprofit_registration_number")
+        .eq("id", fundraiser.organizer_id)
+        .single(),
+      fetchVerificationFacts(supabaseAdmin, fundraiser.organizer_id),
+    ]);
+    isNonprofit =
+      facts.organizationVerified &&
+      !!org?.organization_name &&
+      !!org?.nonprofit_registration_number;
   }
 
   return NextResponse.json({
