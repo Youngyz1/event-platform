@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   ArrowLeft,
+  BadgeCheck,
   LayoutDashboard,
   Users,
   Building2,
@@ -31,6 +32,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { label: "Users",        href: "/admin/users",       icon: Users },
       { label: "Organizers",   href: "/admin/organizers",  icon: Building2 },
+      { label: "Verification", href: "/admin/verification", icon: BadgeCheck },
     ],
   },
   {
