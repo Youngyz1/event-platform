@@ -175,10 +175,14 @@ export default function CreateOrganizerPage() {
         user_id:  session.user.id,
       };
 
+      // .select("id"), not bare .select() — migration_53 revoked SELECT on
+      // tax_id/nonprofit_registration_number for anon/authenticated, and a
+      // bare .select() after insert requests every column (Postgres fails
+      // outright without full-column privilege). Only .id is used below.
       const { data: newOrg, error: insertErr } = await supabase
         .from("organizers")
         .insert(payload)
-        .select()
+        .select("id")
         .single();
 
       if (insertErr) {
