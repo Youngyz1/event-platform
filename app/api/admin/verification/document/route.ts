@@ -3,10 +3,18 @@ import { getCurrentUser, isAdmin } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 /**
- * Accept or reject a single verification document.
+ * Accept or reject a single verification document — organizer OR identity.
+ *
+ * Not split into two routes: this operation never depended on which kind of
+ * submission the document belongs to (organizer_verification vs
+ * identity_verification) — it always just read/wrote one
+ * verification_documents row by id. The only place that distinction ever
+ * mattered is the audit-event insert at the bottom, which now branches on
+ * whichever of the two parent FKs is set (migration_64's exactly-one-parent
+ * constraint guarantees exactly one is).
  *
  * Per-document rather than all-or-nothing: a submission is usually right in
- * parts, and telling an organizer "something was wrong" without saying which
+ * parts, and telling someone "something was wrong" without saying which
  * document forces them to re-upload everything.
  *
  * Service role, so this route is the boundary — see the note in ../review.
@@ -50,7 +58,7 @@ export async function POST(req: NextRequest) {
 
   const { data: document } = await admin
     .from("verification_documents")
-    .select("id, verification_id, document_type")
+    .select("id, verification_id, identity_verification_id, document_type")
     .eq("id", documentId)
     .maybeSingle();
 
@@ -80,6 +88,7 @@ export async function POST(req: NextRequest) {
 
   await admin.from("verification_events").insert({
     verification_id: document.verification_id,
+    identity_verification_id: document.identity_verification_id,
     actor_id: user.id,
     action: action === "accept" ? "document_accepted" : "document_rejected",
     reason,

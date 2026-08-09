@@ -25,24 +25,37 @@ export type QueueDocument = {
   uploadedAt: string | null;
 };
 
+/**
+ * "organizer" rows come from organizer_verification, "identity" rows come
+ * from identity_verification. Organizer-only fields are optional and simply
+ * absent on identity rows — kept as ONE row shape/ONE queue rather than two
+ * parallel admin surfaces, per the identity-verification split's Phase 1.
+ */
 export type QueueRow = {
+  kind: "organizer" | "identity";
   id: string;
-  organizerId: string;
+  organizerId?: string;
+  /** Row's primary display name for BOTH kinds — an identity row has no
+   *  organizer to name, so this holds the submitter's own display name. */
   organizerName: string;
-  organizerSlug: string | null;
-  organizerStatus: string | null;
-  organizerType: string;
-  subcategory: string | null;
-  country: string | null;
+  organizerSlug?: string | null;
+  organizerStatus?: string | null;
+  organizerType?: string;
+  subcategory?: string | null;
+  country?: string | null;
+  organizationVerifiedAt?: string | null;
+  onBehalfOfOrg?: boolean;
+  onBehalfRelationship?: string | null;
+  /** Read-only lookup against identity_verification for this submitter —
+   *  organizer rows only, never stored on organizer_verification itself. */
+  submitterIdentityVerified?: boolean;
+  submitterIdentityStatus?: string | null;
   status: string;
   submitterName: string | null;
   submittedAt: string | null;
   reviewedAt: string | null;
   identityVerifiedAt: string | null;
-  organizationVerifiedAt: string | null;
   createdAt: string;
-  onBehalfOfOrg: boolean;
-  onBehalfRelationship: string | null;
   documents: QueueDocument[];
 };
 
@@ -116,7 +129,14 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
     const term = search.trim().toLowerCase();
     return rows.filter((row) => {
       if (tab !== "all" && row.status !== tab) return false;
-      if (typeFilter !== "all" && row.organizerType !== typeFilter) return false;
+      if (typeFilter === "identity" && row.kind !== "identity") return false;
+      if (
+        typeFilter !== "all" &&
+        typeFilter !== "identity" &&
+        row.organizerType !== typeFilter
+      ) {
+        return false;
+      }
       if (!term) return true;
       return [row.organizerName, row.submitterName]
         .filter(Boolean)
@@ -184,16 +204,25 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
     setBusy(action);
     setError("");
     try {
-      const res = await fetch("/api/admin/verification/review", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          verificationId: selected.id,
-          action,
-          reason,
-          note: note?.trim() || undefined,
-        }),
-      });
+      // Separate backend routes by design (see the identity review route's
+      // own comment) — organizer approval-readiness depends on
+      // type/subcategory/country-resolved requirements; identity approval
+      // only ever checks one fixed document. Same request/response shape
+      // either way, so this is the only branch point needed in the client.
+      const isIdentity = selected.kind === "identity";
+      const res = await fetch(
+        isIdentity ? "/api/admin/identity-verification/review" : "/api/admin/verification/review",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...(isIdentity ? { identityVerificationId: selected.id } : { verificationId: selected.id }),
+            action,
+            reason,
+            note: note?.trim() || undefined,
+          }),
+        }
+      );
       const data = await res.json();
       if (!res.ok) {
         // The route returns which required documents are still unaccepted;
@@ -262,7 +291,8 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
             onChange: setTypeFilter,
             options: [
               { value: "all", label: "All types" },
-              { value: "individual", label: "Individual" },
+              { value: "identity", label: "Identity (individuals)" },
+              { value: "individual", label: "Individual (organizer)" },
               { value: "group", label: "Group" },
               { value: "nonprofit", label: "Nonprofit" },
               { value: "business", label: "Business" },
@@ -306,7 +336,7 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
                   {STATUS_LABELS[row.status] ?? humanise(row.status)}
                 </span>
                 <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-bold text-zinc-600">
-                  {humanise(row.organizerType)}
+                  {row.kind === "identity" ? "Identity" : humanise(row.organizerType ?? "")}
                 </span>
               </div>
               <p className="mt-1 truncate text-xs text-zinc-500">
@@ -328,7 +358,9 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
         title={selected?.organizerName ?? ""}
         subtitle={
           selected
-            ? `${humanise(selected.organizerType)}${selected.subcategory ? ` · ${humanise(selected.subcategory)}` : ""}${selected.country ? ` · ${selected.country}` : ""}`
+            ? selected.kind === "identity"
+              ? "Identity verification"
+              : `${humanise(selected.organizerType ?? "")}${selected.subcategory ? ` · ${humanise(selected.subcategory)}` : ""}${selected.country ? ` · ${selected.country}` : ""}`
             : undefined
         }
         width="xl"
@@ -396,15 +428,44 @@ export default function VerificationQueueClient({ rows }: { rows: QueueRow[] }) 
                 <dt className="text-xs font-black uppercase tracking-wide text-zinc-400">Identity verified</dt>
                 <dd className="mt-0.5 font-bold text-zinc-800">{formatDate(selected.identityVerifiedAt)}</dd>
               </div>
-              <div>
-                <dt className="text-xs font-black uppercase tracking-wide text-zinc-400">Organization verified</dt>
-                <dd className="mt-0.5 font-bold text-zinc-800">
-                  {selected.organizerType === "individual"
-                    ? "N/A"
-                    : formatDate(selected.organizationVerifiedAt)}
-                </dd>
-              </div>
+              {selected.kind === "organizer" && (
+                <div>
+                  <dt className="text-xs font-black uppercase tracking-wide text-zinc-400">Organization verified</dt>
+                  <dd className="mt-0.5 font-bold text-zinc-800">
+                    {selected.organizerType === "individual"
+                      ? "N/A"
+                      : formatDate(selected.organizationVerifiedAt ?? null)}
+                  </dd>
+                </div>
+              )}
             </dl>
+
+            {/*
+              Read-only cross-reference, organizer rows only: this is looked
+              up fresh from identity_verification every page load, never
+              stored on organizer_verification — the field above
+              ("Identity verified") is that submission's OWN per-organizer
+              stamp and is a separate, deliberately-unchanged fact for now
+              (see migration_64's header comment).
+            */}
+            {selected.kind === "organizer" && (
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+                <p className="text-xs font-black uppercase tracking-wide text-zinc-500">
+                  Submitter&apos;s platform identity
+                </p>
+                <p
+                  className={`mt-1 text-sm font-bold ${
+                    selected.submitterIdentityVerified ? "text-brand-700" : "text-zinc-600"
+                  }`}
+                >
+                  {selected.submitterIdentityVerified
+                    ? "Verified"
+                    : selected.submitterIdentityStatus
+                      ? `Not yet verified (${humanise(selected.submitterIdentityStatus)})`
+                      : "Not started"}
+                </p>
+              </div>
+            )}
 
             {selected.onBehalfOfOrg && (
               <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
