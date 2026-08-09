@@ -11,6 +11,7 @@ import ProfileTabs, { type ProfileTab } from "@/components/profile/ProfileTabs";
 import ProfileAvatar from "@/components/profile/ProfileAvatar";
 import FollowButton from "@/components/profile/FollowButton";
 import ShareButton from "@/components/profile/ShareButton";
+import IdentityStatusBadge from "@/components/trust/IdentityStatusBadge";
 import { Users, UserPlus, Pencil } from "lucide-react";
 
 interface ProfileClientProps {
@@ -24,6 +25,9 @@ interface ProfileClientProps {
   isFollowing: boolean;
   isOwnProfile: boolean;
   isLoggedIn: boolean;
+  /** From identity_verification, via a service-role read in page.tsx — this
+   *  page is public, and that table's RLS is owner-or-admin only. */
+  identityVerified: boolean;
 }
 
 type TabId = "overview" | "followers" | "following";
@@ -98,6 +102,7 @@ export default function ProfileClient({
   isFollowing: initialIsFollowing,
   isOwnProfile,
   isLoggedIn,
+  identityVerified,
 }: ProfileClientProps) {
   const router = useRouter();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
@@ -180,9 +185,12 @@ export default function ProfileClient({
           avatarSrc={profile.avatar_url}
           name={name}
           badge={
-            <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-bold text-zinc-600">
-              Public profile
-            </span>
+            <>
+              <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-bold text-zinc-600">
+                Public profile
+              </span>
+              <IdentityStatusBadge verified={identityVerified} />
+            </>
           }
           actions={
             isOwnProfile ? (

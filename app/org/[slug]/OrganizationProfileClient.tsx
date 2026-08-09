@@ -15,6 +15,7 @@ import ProfileSection from "@/components/profile/ProfileSection";
 import FollowButton from "@/components/profile/FollowButton";
 import ShareButton from "@/components/profile/ShareButton";
 import VerificationFactsPanel from "@/components/trust/VerificationFacts";
+import OrganizationStatusBadge from "@/components/trust/OrganizationStatusBadge";
 import type { VerificationFacts } from "@/lib/verification-facts";
 import {
   Globe, Mail, Calendar, ExternalLink, ArrowUpRight,
@@ -414,6 +415,16 @@ export default function OrganizationProfileClient({
         <div className="mt-8 grid gap-8 border-t border-zinc-200 pt-8 lg:grid-cols-[288px_1fr]">
           <ProfileSidebar metrics={metrics} className="lg:border-r lg:border-zinc-200 lg:pr-8">
             <VerificationFactsPanel facts={verificationFacts} />
+            {/* Separate, additive signal — not a replacement for the
+                Organization row already inside VerificationFactsPanel above.
+                Placed with the org's own contact/connect info per this
+                phase's brief; reconciling the overlap is a later decision. */}
+            <div className="flex flex-wrap gap-2">
+              <OrganizationStatusBadge
+                verified={verificationFacts.organizationVerified}
+                applicable={verificationFacts.organizationApplicable}
+              />
+            </div>
             <ConnectSection org={org} />
           </ProfileSidebar>
 

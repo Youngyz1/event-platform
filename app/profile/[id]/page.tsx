@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { fetchIdentityVerificationStatus, isIdentityVerified } from "@/lib/identity-verification";
 import ProfileClient from "./ProfileClient";
 
 type PublicProfile = {
@@ -42,7 +43,7 @@ export default async function PublicProfilePage({
   const supabaseAdmin = createSupabaseAdmin();
 
   // Fetch profile + follower/following counts in parallel
-  const [profileResult, followerResult, followingResult] = await Promise.all([
+  const [profileResult, followerResult, followingResult, identityStatus] = await Promise.all([
     supabaseAdmin
       .from("public_profiles")
       .select("id, display_name, avatar_url")
@@ -56,10 +57,18 @@ export default async function PublicProfilePage({
       .from("follows")
       .select("*", { count: "exact", head: true })
       .eq("follower_id", id),
+    // identity_verification's RLS is owner-or-admin only (Phase 1) — this
+    // page is public, so the read must go through the service-role client.
+    // Only the derived boolean below ever reaches the client component;
+    // the row itself (status, timestamps) never crosses that boundary, and
+    // the underlying documents were never reachable from here regardless.
+    fetchIdentityVerificationStatus(supabaseAdmin, id),
   ]);
 
   const profile = profileResult.data as PublicProfile | null;
   if (!profile) return notFound();
+
+  const isIdentityVerifiedForProfile = isIdentityVerified(identityStatus);
 
   const followerCount = followerResult.count ?? 0;
   const followingCount = followingResult.count ?? 0;
@@ -97,6 +106,7 @@ export default async function PublicProfilePage({
       isFollowing={isFollowing}
       isOwnProfile={isOwnProfile}
       isLoggedIn={Boolean(viewerId)}
+      identityVerified={isIdentityVerifiedForProfile}
     />
   );
 }
