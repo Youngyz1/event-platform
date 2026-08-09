@@ -33,6 +33,11 @@ There is no configured test runner (`playwright` is a devDependency but there is
 - `lib/supabase-server.ts` — `createSupabaseServer()`, async, reads/writes cookies via `next/headers`; use in Server Components, Server Actions, Route Handlers.
 - `lib/supabase-admin.ts` — service-role client, bypasses RLS. Only use server-side for privileged operations (role checks, admin mutations, webhook processing); never expose to the client.
 - DB schema lives in `db/` as sequential `migration_NN_*.sql` files (currently up to 36) plus feature schema files (`*_schema.sql`) and a consolidated `schema.sql`. Check the latest migration number before adding a new one.
+- **Any migration that narrows column-level `SELECT` grants (`REVOKE SELECT ... FROM anon, authenticated` + `GRANT SELECT (col, col, ...) ... TO anon, authenticated`, e.g. migrations 53, 55, 56) must be paired with a full-codebase grep of every call site touching that table**, checking two patterns against the newly-excluded columns:
+  - `.select("*")` (or a variable holding `"*"`)
+  - a **bare `.select()`** chained after `.insert(...)` / `.update(...)` — easy to miss, since it reads as "just insert/update," but supabase-js sends `Prefer: return=representation` and PostgREST expands that to every column. Postgres fails the *entire* statement (including the insert/update) if the caller lacks privilege on any one column — ownership and RLS are irrelevant once it gets that far.
+  - Every hit needs one of: an explicit column list drawn from the newly-granted set, or routing through the service-role client (which bypasses column grants entirely — the correct home for anything that actually needs the excluded columns).
+  - This exact gap shipped in migration_53 and broke both `/dashboard/org/[id]/settings` (page load) and `/create-organizer` (the bare `.select()` after insert — silently broke every new organizer signup for ~2 days) before being caught and fixed on 2026-08-09. Neither was caught by `tsc` or by RLS — the failure is a Postgres column-privilege error (`42501`), invisible to type-checking and easy to misdiagnose as an RLS/ownership bug since it only surfaces at runtime, on a real request, for the exact row an owner should be allowed to touch.
 
 ### Domain areas (mirrors `app/` route groups and `app/api/`)
 
