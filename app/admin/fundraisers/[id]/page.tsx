@@ -24,8 +24,11 @@ type FundraiserStatus = "pending_review" | "published" | "rejected";
 
 /**
  * Informational only — does not gate the Approve action below. Phase 2e made
- * a deliberate call not to hard-block publishing on organizer verification;
- * this just gives the reviewer the context to decide case by case.
+ * a deliberate call not to hard-block publishing on organizer verification
+ * while the pipeline is new and unproven; this just gives the reviewer the
+ * context to decide case by case. Not final: a future phase may turn this
+ * into an actual gate (see lib/verification-facts.ts) once the flow has run
+ * for real submissions over time — this pill is what that gate would key off.
  */
 function OrganizerVerificationPill({ facts }: { facts: VerificationFacts }) {
   const label = isFullyVerified(facts)

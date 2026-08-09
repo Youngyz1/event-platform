@@ -15,6 +15,22 @@ import type { SupabaseClient } from "@supabase/supabase-js";
  *
  * The third is NOT stored here. It has existed since migration 41 as
  * `fundraisers.status = 'published'`, and callers pass it in.
+ *
+ * STATUS AS OF PHASE 2E (2026-08-09): display-only. Nothing in
+ * app/create-fundraiser or the admin publish flow reads these facts —
+ * campaign creation and publishing are gated purely on `profiles.role` and
+ * `fundraisers.status` (migration_41's INSERT policy + status-transition
+ * trigger), independent of organizer_verification. This was a deliberate
+ * call, not an oversight: the pipeline is new and unproven, and a bad
+ * edge case shouldn't be able to block a legitimate organizer yet.
+ *
+ * This is not meant to be permanent. Once real submissions have gone
+ * through the pipeline for a while, a future phase may hard-gate on
+ * `isFullyVerified()` (or a per-tier variant) at creation and/or publish
+ * time. `isFullyVerified()` below is written as the single predicate that
+ * gate would consume, specifically so that turning it on later is a
+ * call-site change (an added check in the INSERT path / admin approve
+ * route), not a data-model or requirement-engine change.
  */
 
 export type VerificationFacts = {

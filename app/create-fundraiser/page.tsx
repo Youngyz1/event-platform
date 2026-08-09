@@ -294,6 +294,11 @@ export default function CreateFundraiserPage() {
       setUploadProgress("");
     }
 
+    // No organizer-verification check here, by design (Phase 2e, 2026-08-09):
+    // status = 'pending_review' comes from the column default, enforced by
+    // migration_41's INSERT policy — organizer_verification never factors in.
+    // See lib/verification-facts.ts for the current display-only status and
+    // what a future hard gate at this point would look like.
     const story = [form.short_description, form.story].filter(Boolean).join("\n\n");
     const { data: insertedFundraiser, error: insertError } = await supabase
       .from("fundraisers")
