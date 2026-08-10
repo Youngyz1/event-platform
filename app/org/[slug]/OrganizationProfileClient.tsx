@@ -14,7 +14,6 @@ import ProfileTabs, { type ProfileTab } from "@/components/profile/ProfileTabs";
 import ProfileSection from "@/components/profile/ProfileSection";
 import FollowButton from "@/components/profile/FollowButton";
 import ShareButton from "@/components/profile/ShareButton";
-import VerificationFactsPanel from "@/components/trust/VerificationFacts";
 import OrganizationStatusBadge from "@/components/trust/OrganizationStatusBadge";
 import type { VerificationFacts } from "@/lib/verification-facts";
 import {
@@ -344,7 +343,6 @@ export default function OrganizationProfileClient({
 
   const orgTypeLabel = ORG_TYPE_LABELS[org.org_type ?? "other"] ?? "Organization";
   const orgTypeColor = ORG_TYPE_COLORS[org.org_type ?? "other"] ?? "bg-zinc-100 text-zinc-700";
-  const verified = org.status === "verified";
   const totalRaised = fundraisers.reduce((sum, f) => sum + Number(f.raised ?? 0), 0);
 
   const metrics: ProfileMetric[] = [
@@ -374,7 +372,6 @@ export default function OrganizationProfileClient({
               {orgTypeLabel}
             </span>
           }
-          verified={verified}
           oneLiner={org.bio}
           ratingSlot={
             org.average_rating && org.review_count ? (
@@ -414,11 +411,13 @@ export default function OrganizationProfileClient({
 
         <div className="mt-8 grid gap-8 border-t border-zinc-200 pt-8 lg:grid-cols-[288px_1fr]">
           <ProfileSidebar metrics={metrics} className="lg:border-r lg:border-zinc-200 lg:pr-8">
-            <VerificationFactsPanel facts={verificationFacts} />
-            {/* Separate, additive signal — not a replacement for the
-                Organization row already inside VerificationFactsPanel above.
-                Placed with the org's own contact/connect info per this
-                phase's brief; reconciling the overlap is a later decision. */}
+            {/* The single, honest organization-verification signal on this
+                page (Phase 5). Previously stacked alongside the legacy
+                organizers.status directory badge (a manual admin toggle,
+                unrelated to real document review) and VerificationFactsPanel
+                (whose identity/campaign-approval facts belong on the user
+                profile and campaign page respectively, not here) — both
+                retired from this page in favor of this one fact. */}
             <div className="flex flex-wrap gap-2">
               <OrganizationStatusBadge
                 verified={verificationFacts.organizationVerified}
