@@ -99,6 +99,8 @@ export default function CreateFundraiserPage() {
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [uploadProgress, setUploadProgress] = useState("");
   const [visibility, setVisibility] = useState("public");
+  const [fundraisingAs, setFundraisingAs] = useState<"personal" | "organization">("organization");
+  const [ownerDisplayName, setOwnerDisplayName] = useState("");
   const [organizers, setOrganizers] = useState<OrganizerProfile[]>([]);
   const [beneficiary, setBeneficiary] = useState<BeneficiaryDraft>(EMPTY_BENEFICIARY_DRAFT);
   // Collected during creation, sent once the campaign exists — see handleSubmit.
@@ -126,13 +128,14 @@ export default function CreateFundraiserPage() {
       setEmail(data.session.user.email || "");
       const { data: profile } = await supabase
         .from("profiles")
-        .select("status")
+        .select("status, display_name")
         .eq("id", data.session.user.id)
         .maybeSingle();
       if (profile?.status === "suspended") {
         router.push("/login?suspended=1");
         return;
       }
+      setOwnerDisplayName(profile?.display_name || "");
       const { data: organizerProfiles, error: organizerError } = await supabase
         .from("organizers")
         .select("id, name, photo")
@@ -149,6 +152,12 @@ export default function CreateFundraiserPage() {
         profiles.find((organizer) => organizer.id === requestedOrganizerId) ??
         profiles[0];
       setOrganizers(profiles);
+      // Default to "personal" only when the requester has no organizer profiles
+      // and didn't arrive here via an organizer-scoped link — otherwise keep the
+      // existing "represent an organization" default.
+      if (profiles.length === 0 && !requestedOrganizerId) {
+        setFundraisingAs("personal");
+      }
       setForm((current) => ({
         ...current,
         organizer_id: current.organizer_id || selectedOrganizer?.id || "",
@@ -157,6 +166,15 @@ export default function CreateFundraiserPage() {
       setChecking(false);
     });
   }, [router]);
+
+  // The name attributed to this fundraiser: the chosen organizer in
+  // "organization" mode, or the account owner's own name in "personal" mode.
+  // Centralized here so the beneficiary "self" resolution, the insert payload,
+  // and every display surface (preview, review step) agree on one value.
+  const resolvedOwnerName =
+    fundraisingAs === "personal"
+      ? ownerDisplayName || "Fund4Good Member"
+      : form.organizer;
 
   const progress = useMemo(() => {
     const goal = Number(form.goal || 0);
@@ -224,17 +242,19 @@ export default function CreateFundraiserPage() {
       return;
     }
 
-    if (!form.organizer_id) {
-      setError("Choose an organizer profile before launching this fundraiser.");
-      setLoading(false);
-      return;
-    }
+    if (fundraisingAs === "organization") {
+      if (!form.organizer_id) {
+        setError("Choose an organizer profile before launching this fundraiser.");
+        setLoading(false);
+        return;
+      }
 
-    const selectedOrganizer = organizers.find((organizer) => organizer.id === form.organizer_id);
-    if (!selectedOrganizer) {
-      setError("Choose an organizer profile that belongs to your account.");
-      setLoading(false);
-      return;
+      const selectedOrganizer = organizers.find((organizer) => organizer.id === form.organizer_id);
+      if (!selectedOrganizer) {
+        setError("Choose an organizer profile that belongs to your account.");
+        setLoading(false);
+        return;
+      }
     }
 
     if (!form.category) {
@@ -247,7 +267,7 @@ export default function CreateFundraiserPage() {
     // apply to the chosen type before storage.
     const beneficiaryResult = validateBeneficiary({
       ...beneficiary,
-      name: beneficiary.type === "self" ? selectedOrganizer.name : beneficiary.name,
+      name: beneficiary.type === "self" ? resolvedOwnerName : beneficiary.name,
     });
     if (!beneficiaryResult.ok) {
       setError(beneficiaryResult.error);
@@ -317,8 +337,8 @@ export default function CreateFundraiserPage() {
         story,
         goal: Number(form.goal),
         raised: Number(form.raised) || 0,
-        organizer: form.organizer,
-        organizer_id: form.organizer_id,
+        organizer: resolvedOwnerName,
+        organizer_id: fundraisingAs === "personal" ? null : form.organizer_id,
         beneficiary: beneficiaryResult.value,
         beneficiary_id: beneficiaryId,
         category: form.category,
@@ -435,7 +455,7 @@ export default function CreateFundraiserPage() {
           )}
         </div>
         <h3 className="mt-4 text-xl font-black">{form.title || "Fundraiser Title"}</h3>
-        <p className="mt-1 text-sm font-medium text-zinc-500">by {form.organizer || "Organizer Name"}</p>
+        <p className="mt-1 text-sm font-medium text-zinc-500">by {resolvedOwnerName || "Organizer Name"}</p>
         <div className="mt-4">
           <p className="text-sm font-black">{money(form.raised)} raised of {money(form.goal)} goal</p>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-zinc-200">
@@ -525,18 +545,48 @@ export default function CreateFundraiserPage() {
                   <input name="title" value={form.title} onChange={handleChange} required type="text" placeholder="Support Education for Underprivileged Children" className={greenInputClass} />
                 </CreatorField>
 
-                <CreatorField label="Organizer Profile">
-                  <select name="organizer_id" value={form.organizer_id} onChange={handleChange} required disabled={organizers.length === 0} className={greenInputClass}>
-                    {organizers.length === 0
-                      ? <option value="">No organizer profiles yet</option>
-                      : organizers.map((organizer) => <option key={organizer.id} value={organizer.id}>{organizer.name}</option>)}
-                  </select>
-                  {organizers.length === 0 && (
-                    <Link href="/create-organizer" className="mt-2 inline-block text-sm font-black text-brand-800 hover:text-brand-900">
-                      Create an organizer profile
-                    </Link>
-                  )}
+                <CreatorField label="Who is this fundraiser for?" asGroup>
+                  <fieldset className="grid gap-3 sm:grid-cols-2">
+                    {(
+                      [
+                        ["personal", "Personal fundraiser", "Just me — no organization required"],
+                        ["organization", "On behalf of an organization", "Pick or create an organizer profile"],
+                      ] as const
+                    ).map(([value, label, detail]) => (
+                      <label
+                        key={value}
+                        className={`flex cursor-pointer gap-3 rounded-xl border px-4 py-3 ${fundraisingAs === value ? "border-brand-600 bg-brand-50" : "border-zinc-200"}`}
+                      >
+                        <input
+                          checked={fundraisingAs === value}
+                          className="mt-1 accent-brand-700"
+                          name="fundraisingAs"
+                          onChange={() => setFundraisingAs(value)}
+                          type="radio"
+                        />
+                        <span>
+                          <span className="block text-sm font-black">{label}</span>
+                          <span className="text-xs font-medium text-zinc-500">{detail}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </fieldset>
                 </CreatorField>
+
+                {fundraisingAs === "organization" && (
+                  <CreatorField label="Organizer Profile">
+                    <select name="organizer_id" value={form.organizer_id} onChange={handleChange} required disabled={organizers.length === 0} className={greenInputClass}>
+                      {organizers.length === 0
+                        ? <option value="">No organizer profiles yet</option>
+                        : organizers.map((organizer) => <option key={organizer.id} value={organizer.id}>{organizer.name}</option>)}
+                    </select>
+                    {organizers.length === 0 && (
+                      <Link href="/create-organizer" className="mt-2 inline-block text-sm font-black text-brand-800 hover:text-brand-900">
+                        Create an organizer profile
+                      </Link>
+                    )}
+                  </CreatorField>
+                )}
 
                 <CreatorField label="Short Description" hint={`${form.short_description.length}/160`}>
                   <textarea name="short_description" value={form.short_description} onChange={handleChange} maxLength={160} rows={4} placeholder="A short summary of your fundraiser..." className={greenInputClass} />
@@ -550,7 +600,7 @@ export default function CreateFundraiserPage() {
               <BeneficiarySelector
                 value={beneficiary}
                 onChange={setBeneficiary}
-                organizerName={form.organizer}
+                organizerName={resolvedOwnerName}
                 inputClassName={greenInputClass}
                 onError={setError}
               />
@@ -691,7 +741,7 @@ export default function CreateFundraiserPage() {
                 Organized by
               </p>
               <p className="mt-0.5 text-base font-black text-zinc-950">
-                {form.organizer || "Not set"}
+                {resolvedOwnerName || "Not set"}
               </p>
 
               <div className="my-2 h-4 w-px bg-zinc-300" aria-hidden />
@@ -701,7 +751,7 @@ export default function CreateFundraiserPage() {
               </p>
               <p className="mt-0.5 text-base font-black text-zinc-950">
                 {beneficiary.type === "self"
-                  ? form.organizer || "You"
+                  ? resolvedOwnerName || "You"
                   : beneficiary.name || "Not set"}
               </p>
               {beneficiary.type && (

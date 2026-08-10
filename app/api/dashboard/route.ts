@@ -43,13 +43,17 @@ export async function GET() {
           .in("organizer_id", organizerIds)
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] }),
-    organizerIds.length > 0
-      ? supabaseAdmin
-          .from("fundraisers")
-          .select("id, title, slug, goal, raised")
-          .in("organizer_id", organizerIds)
-          .order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] }),
+    // Owner-scoped OR organizer-scoped, same reasoning as app/dashboard/page.tsx:
+    // a personal fundraiser (organizer_id null) only surfaces via user_id.
+    supabaseAdmin
+      .from("fundraisers")
+      .select("id, title, slug, goal, raised")
+      .or(
+        organizerIds.length > 0
+          ? `organizer_id.in.(${organizerIds.join(",")}),user_id.eq.${user.id}`
+          : `user_id.eq.${user.id}`
+      )
+      .order("created_at", { ascending: false }),
   ]);
 
   const fundraiserIds = (fundraisers || []).map((fundraiser) => fundraiser.id);

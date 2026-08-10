@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest, context: RouteContext) {
   if (!auth.ok) return auth.response;
 
   const { id } = await context.params;
-  const donation = await getDashboardDonationDetail(auth.ctx.organizerIds, id);
+  const donation = await getDashboardDonationDetail(auth.ctx.organizerIds, id, auth.ctx.userId);
   if (!donation) {
     return NextResponse.json({ error: 'Donation not found.' }, { status: 404 });
   }

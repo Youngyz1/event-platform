@@ -216,6 +216,7 @@ export async function getDashboardEventDetail(
 
 export async function queryDashboardFundraisers(params: {
   organizerIds: string[];
+  userId: string;
   search?: string;
   status?: string;
   category?: string;
@@ -225,6 +226,7 @@ export async function queryDashboardFundraisers(params: {
 }): Promise<PaginatedResult<DashboardFundraiserRow, DashboardFundraiserStats>> {
   const {
     organizerIds,
+    userId,
     search = '',
     status = 'all',
     category = 'all',
@@ -233,22 +235,17 @@ export async function queryDashboardFundraisers(params: {
     perPage = 25,
   } = params;
 
-  const emptyStats: DashboardFundraiserStats = {
-    total: 0,
-    active: 0,
-    completed: 0,
-    raised: 0,
-    donors: 0,
-  };
-
-  if (organizerIds.length === 0) {
-    return { items: [], stats: emptyStats, total: 0, page: 1, per_page: perPage, total_pages: 1 };
-  }
-
+  // Owner-scoped OR organizer-scoped — a personal fundraiser (organizer_id
+  // null) only matches via user_id, so this can no longer early-return empty
+  // just because the caller owns zero organizers.
   const { data: fundraisers, error } = await supabaseAdmin
     .from('fundraisers')
     .select('id, title, slug, goal, raised, category, created_at, status')
-    .in('organizer_id', organizerIds);
+    .or(
+      organizerIds.length > 0
+        ? `organizer_id.in.(${organizerIds.join(',')}),user_id.eq.${userId}`
+        : `user_id.eq.${userId}`
+    );
 
   if (error) throw new Error(error.message);
 
@@ -327,20 +324,26 @@ export async function queryDashboardFundraisers(params: {
 
 export async function getDashboardFundraiserDetail(
   organizerIds: string[],
-  fundraiserId: string
+  fundraiserId: string,
+  userId: string
 ): Promise<DashboardFundraiserDetail | null> {
-  if (organizerIds.length === 0) return null;
-
+  // Owner-scoped OR organizer-scoped: a personal fundraiser (organizer_id
+  // null) only matches via user_id, so this can no longer early-return when
+  // organizerIds is empty.
   const { data: fr } = await supabaseAdmin
     .from('fundraisers')
-    .select('id, title, slug, goal, raised, category, status, created_at, story, organizer_id, organizers(name)')
+    .select('id, title, slug, goal, raised, category, status, created_at, story, organizer_id, user_id, organizers(name)')
     .eq('id', fundraiserId)
-    .in('organizer_id', organizerIds)
+    .or(
+      organizerIds.length > 0
+        ? `organizer_id.in.(${organizerIds.join(',')}),user_id.eq.${userId}`
+        : `user_id.eq.${userId}`
+    )
     .maybeSingle();
 
   if (!fr) return null;
 
-  const [{ count: donorCount }, { count: updateCount }] = await Promise.all([
+  const [{ count: donorCount }, { count: updateCount }, { data: ownerProfile }] = await Promise.all([
     supabaseAdmin
       .from('donations')
       .select('id', { count: 'exact', head: true })
@@ -350,6 +353,11 @@ export async function getDashboardFundraiserDetail(
       .from('fundraiser_updates')
       .select('id', { count: 'exact', head: true })
       .eq('fundraiser_id', fr.id),
+    // Only needed for a personal fundraiser's display name — skipped
+    // entirely when an organizer already covers it.
+    fr.organizer_id
+      ? Promise.resolve({ data: null })
+      : supabaseAdmin.from('profiles').select('display_name').eq('id', fr.user_id).maybeSingle(),
   ]);
 
   const goal = Number(fr.goal ?? 0);
@@ -371,7 +379,7 @@ export async function getDashboardFundraiserDetail(
     created_at: fr.created_at,
     short_description: fr.story ? String(fr.story).slice(0, 200) : null,
     story: fr.story,
-    organizer_name: (org as { name?: string } | null)?.name ?? '—',
+    organizer_name: (org as { name?: string } | null)?.name ?? ownerProfile?.display_name ?? 'Fund4Good Member',
     update_count: updateCount ?? 0,
   };
 }
@@ -532,6 +540,7 @@ export async function getDashboardOrganizerDetail(
 
 export async function queryDashboardDonations(params: {
   organizerIds: string[];
+  userId: string;
   search?: string;
   campaign?: string;
   status?: string;
@@ -542,6 +551,7 @@ export async function queryDashboardDonations(params: {
 }): Promise<PaginatedResult<DashboardDonationRow, DashboardDonationStats>> {
   const {
     organizerIds,
+    userId,
     search = '',
     campaign = 'all',
     status = 'all',
@@ -558,14 +568,15 @@ export async function queryDashboardDonations(params: {
     largest_gift: 0,
   };
 
-  if (organizerIds.length === 0) {
-    return { items: [], stats: emptyStats, total: 0, page: 1, per_page: perPage, total_pages: 1 };
-  }
+  const ownerFilter =
+    organizerIds.length > 0
+      ? `organizer_id.in.(${organizerIds.join(',')}),user_id.eq.${userId}`
+      : `user_id.eq.${userId}`;
 
   const { data: fundraisers } = await supabaseAdmin
     .from('fundraisers')
     .select('id, title, slug')
-    .in('organizer_id', organizerIds);
+    .or(ownerFilter);
 
   const frMap = Object.fromEntries((fundraisers ?? []).map((f) => [f.id, f]));
   const fundraiserIds = Object.keys(frMap);
@@ -637,18 +648,25 @@ export async function queryDashboardDonations(params: {
 
 export async function getDashboardDonationDetail(
   organizerIds: string[],
-  donationId: string
+  donationId: string,
+  userId: string
 ): Promise<DashboardDonationDetail | null> {
   const { data: d } = await supabaseAdmin
     .from('donations')
-    .select('id, fundraiser_id, donor_name, donor_email, amount, status, created_at, message, fundraisers(title, slug, organizer_id)')
+    .select('id, fundraiser_id, donor_name, donor_email, amount, status, created_at, message, fundraisers(title, slug, organizer_id, user_id)')
     .eq('id', donationId)
     .maybeSingle();
 
   if (!d) return null;
   const fr = Array.isArray(d.fundraisers) ? d.fundraisers[0] : d.fundraisers;
-  const orgId = (fr as { organizer_id?: string } | null)?.organizer_id;
-  if (!orgId || !organizerIds.includes(orgId)) return null;
+  const frTyped = fr as { organizer_id?: string | null; user_id?: string | null } | null;
+  // A donation to a personal fundraiser (organizer_id null) was previously
+  // unconditionally treated as not-yours here — !orgId always short-circuited
+  // to true. Now also owned via user_id, same as every other fundraiser
+  // access check in this file.
+  const isOwnedByOrganizer = Boolean(frTyped?.organizer_id && organizerIds.includes(frTyped.organizer_id));
+  const isOwnedByUser = frTyped?.user_id === userId;
+  if (!isOwnedByOrganizer && !isOwnedByUser) return null;
 
   return {
     id: d.id,

@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
   try {
     const result = await queryDashboardDonations({
       organizerIds: auth.ctx.organizerIds,
+      userId: auth.ctx.userId,
       search: sp.get('search') ?? '',
       campaign: sp.get('campaign') ?? 'all',
       status: sp.get('status') ?? 'all',
@@ -23,10 +24,14 @@ export async function GET(req: NextRequest) {
       perPage,
     });
 
+    const ownerFilter =
+      auth.ctx.organizerIds.length > 0
+        ? `organizer_id.in.(${auth.ctx.organizerIds.join(',')}),user_id.eq.${auth.ctx.userId}`
+        : `user_id.eq.${auth.ctx.userId}`;
     const { data: campaigns } = await supabaseAdmin
       .from('fundraisers')
       .select('id, title')
-      .in('organizer_id', auth.ctx.organizerIds);
+      .or(ownerFilter);
 
     return NextResponse.json({
       donations: result.items,

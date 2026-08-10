@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest, context: RouteContext) {
   if (!auth.ok) return auth.response;
 
   const { id } = await context.params;
-  const fundraiser = await getDashboardFundraiserDetail(auth.ctx.organizerIds, id);
+  const fundraiser = await getDashboardFundraiserDetail(auth.ctx.organizerIds, id, auth.ctx.userId);
   if (!fundraiser) {
     return NextResponse.json({ error: 'Fundraiser not found.' }, { status: 404 });
   }
@@ -24,11 +24,15 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
   if (!auth.ok) return auth.response;
 
   const { id } = await context.params;
+  const ownerFilter =
+    auth.ctx.organizerIds.length > 0
+      ? `organizer_id.in.(${auth.ctx.organizerIds.join(',')}),user_id.eq.${auth.ctx.userId}`
+      : `user_id.eq.${auth.ctx.userId}`;
   const { data: existing } = await supabaseAdmin
     .from('fundraisers')
     .select('id')
     .eq('id', id)
-    .in('organizer_id', auth.ctx.organizerIds)
+    .or(ownerFilter)
     .maybeSingle();
 
   if (!existing) {

@@ -50,27 +50,26 @@ export async function GET(req: NextRequest) {
   const auth = await getDashboardApiContext();
   if (!auth.ok) return auth.response;
 
-  const { organizerIds } = auth.ctx;
-  if (organizerIds.length === 0) {
-    return NextResponse.json({
-      stats: { tickets: 0, revenue: 0, donations: 0 },
-      tickets: [],
-      revenue: [],
-      donations: [],
-      topEvents: [],
-      revenueByEvent: [],
-      ticketsByEvent: [],
-      donationsByCampaign: [],
-      topOrganizers: [],
-    });
-  }
+  const { organizerIds, userId } = auth.ctx;
 
   const { sinceISO, dateRange } = resolveRange(req.nextUrl.searchParams);
 
+  // Events are organizer-only (no personal-ownership concept), so they still
+  // short-circuit cleanly on an empty organizerIds list. Fundraisers must
+  // also surface personal (organizer_id null) rows owned via user_id.
+  const fundraiserOwnerFilter =
+    organizerIds.length > 0
+      ? `organizer_id.in.(${organizerIds.join(',')}),user_id.eq.${userId}`
+      : `user_id.eq.${userId}`;
+
   const [eventsResult, fundraisersResult, organizersResult] = await Promise.all([
-    supabaseAdmin.from('events').select('id, title, organizer_id').in('organizer_id', organizerIds),
-    supabaseAdmin.from('fundraisers').select('id, title, organizer_id').in('organizer_id', organizerIds),
-    supabaseAdmin.from('organizers').select('id, name').in('id', organizerIds),
+    organizerIds.length > 0
+      ? supabaseAdmin.from('events').select('id, title, organizer_id').in('organizer_id', organizerIds)
+      : Promise.resolve({ data: [] }),
+    supabaseAdmin.from('fundraisers').select('id, title, organizer_id').or(fundraiserOwnerFilter),
+    organizerIds.length > 0
+      ? supabaseAdmin.from('organizers').select('id, name').in('id', organizerIds)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const events = eventsResult.data ?? [];

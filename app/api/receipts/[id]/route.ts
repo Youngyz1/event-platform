@@ -37,7 +37,7 @@ export async function GET(
   // Retrieve fundraiser
   const { data: fundraiser } = await supabaseAdmin
     .from("fundraisers")
-    .select("title, organizer_id")
+    .select("title, organizer_id, user_id")
     .eq("id", donation.fundraiser_id)
     .single();
 
@@ -94,6 +94,10 @@ export async function GET(
       }
       // Is organizer?
       else if (organizer?.user_id === user.id) {
+        authorized = true;
+      }
+      // Is the fundraiser's own owner (personal fundraiser, no organizer)?
+      else if (fundraiser?.user_id === user.id) {
         authorized = true;
       }
     }

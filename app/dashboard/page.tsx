@@ -172,17 +172,24 @@ export default async function DashboardPage() {
   // columns, and "raised" has a known split with "raised_amount" (see the
   // "fundraiser raised column split" memory note) — select real columns only
   // and reconcile raised/raised_amount below, the same way other pages do.
-  const { data: rawFundraisers, error: fundraisersError } = organizerIds.length
-    ? await supabaseAdmin
-        .from("fundraisers")
-        .select(
-          "id, title, story, category, raised, raised_amount, goal, slug, status, deleted_at, created_at, organizer_id"
-        )
-        .in("organizer_id", organizerIds)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .limit(10)
-    : { data: [], error: null };
+  //
+  // Owner-scoped OR organizer-scoped: a personal fundraiser (organizer_id
+  // null, no organizer of the owner's own) has to surface here via user_id
+  // alone, or it never appears on its own owner's dashboard at all. Building
+  // this filter string is safe — organizerIds come from organizers.id and
+  // user.id from auth, both always well-formed UUIDs, never arbitrary input.
+  const ownerFundraiserFilter = organizerIds.length
+    ? `organizer_id.in.(${organizerIds.join(",")}),user_id.eq.${user.id}`
+    : `user_id.eq.${user.id}`;
+  const { data: rawFundraisers, error: fundraisersError } = await supabaseAdmin
+    .from("fundraisers")
+    .select(
+      "id, title, story, category, raised, raised_amount, goal, slug, status, deleted_at, created_at, organizer_id"
+    )
+    .or(ownerFundraiserFilter)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false })
+    .limit(10);
 
   if (fundraisersError) {
     console.error("[dashboard] failed to load fundraisers:", fundraisersError);

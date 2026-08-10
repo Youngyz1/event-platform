@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
   try {
     const result = await queryDashboardDonations({
       organizerIds: auth.ctx.organizerIds,
+      userId: auth.ctx.userId,
       search: sp.get('search') ?? '',
       campaign: sp.get('campaign') ?? 'all',
       status: sp.get('status') ?? 'all',

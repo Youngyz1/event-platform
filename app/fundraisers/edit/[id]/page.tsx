@@ -46,6 +46,8 @@ export default function EditFundraiserPage() {
   const [error, setError] = useState("");
   const [slug, setSlug] = useState("");
   const [organizers, setOrganizers] = useState<OrganizerProfile[]>([]);
+  const [fundraisingAs, setFundraisingAs] = useState<"personal" | "organization">("organization");
+  const [ownerDisplayName, setOwnerDisplayName] = useState("");
   const [form, setForm] = useState({
     title: "",
     organizer_id: "",
@@ -84,13 +86,14 @@ export default function EditFundraiserPage() {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("status")
+        .select("status, display_name")
         .eq("id", session.user.id)
         .maybeSingle();
       if (profile?.status === "suspended") {
         router.push("/login?suspended=1");
         return;
       }
+      setOwnerDisplayName(profile?.display_name || "");
 
       const { data: organizerProfiles, error: organizerError } = await supabase
         .from("organizers")
@@ -127,9 +130,15 @@ export default function EditFundraiserPage() {
         return;
       }
 
-      const selectedOrganizer =
-        ownedOrganizers.find((organizer) => organizer.id === fundraiser.organizer_id) ??
-        ownedOrganizers[0];
+      // Only resolve against the caller's organizers when this fundraiser
+      // actually has one — previously this fell back to the caller's first
+      // organizer whenever organizer_id was null (personal fundraiser, or a
+      // stale/mismatched id), silently re-parenting it to an unrelated
+      // organizer the moment the form was saved.
+      const selectedOrganizer = fundraiser.organizer_id
+        ? ownedOrganizers.find((organizer) => organizer.id === fundraiser.organizer_id)
+        : undefined;
+      setFundraisingAs(fundraiser.organizer_id ? "organization" : "personal");
 
       setSlug(fundraiser.slug || "");
       setForm({
@@ -210,6 +219,13 @@ export default function EditFundraiserPage() {
     if (fundraiserId) load();
   }, [fundraiserId, router]);
 
+  // Same resolution as the create flow: the chosen organizer in
+  // "organization" mode, or the account owner's own name in "personal" mode.
+  const resolvedOwnerName =
+    fundraisingAs === "personal"
+      ? ownerDisplayName || "Fund4Good Member"
+      : form.organizer;
+
   function update(field: string, value: string) {
     if (field === "organizer_id") {
       const selectedOrganizer = organizers.find((organizer) => organizer.id === value);
@@ -252,14 +268,17 @@ export default function EditFundraiserPage() {
 
     try {
       const nextSlug = generateSlug(form.title);
-      const selectedOrganizer = organizers.find((organizer) => organizer.id === form.organizer_id);
-      if (!selectedOrganizer) {
-        throw new Error("Choose an organizer profile that belongs to your account.");
+      let selectedOrganizer: OrganizerProfile | undefined;
+      if (fundraisingAs === "organization") {
+        selectedOrganizer = organizers.find((organizer) => organizer.id === form.organizer_id);
+        if (!selectedOrganizer) {
+          throw new Error("Choose an organizer profile that belongs to your account.");
+        }
       }
 
       const beneficiaryResult = validateBeneficiary({
         ...beneficiary,
-        name: beneficiary.type === "self" ? selectedOrganizer.name : beneficiary.name,
+        name: beneficiary.type === "self" ? resolvedOwnerName : beneficiary.name,
       });
       if (!beneficiaryResult.ok) {
         throw new Error(beneficiaryResult.error);
@@ -282,8 +301,8 @@ export default function EditFundraiserPage() {
         .update({
           title: form.title,
           slug: nextSlug,
-          organizer: selectedOrganizer.name,
-          organizer_id: selectedOrganizer.id,
+          organizer: resolvedOwnerName,
+          organizer_id: fundraisingAs === "personal" ? null : (selectedOrganizer as OrganizerProfile).id,
           beneficiary: beneficiaryResult.value,
           beneficiary_id: beneficiaryData.beneficiaryId,
           goal: Number(form.goal),
@@ -347,17 +366,50 @@ export default function EditFundraiserPage() {
 
         <form onSubmit={handleSubmit} className="space-y-7 rounded-3xl border border-zinc-200 bg-white p-8 shadow-sm">
           <input value={form.title} onChange={(event) => update("title", event.target.value)} required placeholder="Fundraiser title" className={inputClass} />
-          <select value={form.organizer_id} onChange={(event) => update("organizer_id", event.target.value)} required className={inputClass}>
-            {organizers.length === 0 ? (
-              <option value="">No organizer profiles yet</option>
-            ) : (
-              organizers.map((organizer) => (
-                <option key={organizer.id} value={organizer.id}>
-                  {organizer.name}
-                </option>
-              ))
+
+          <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+            <h2 className="mb-4 text-lg font-black text-zinc-950">Who is this fundraiser for?</h2>
+            <fieldset className="grid gap-3 sm:grid-cols-2">
+              {(
+                [
+                  ["personal", "Personal fundraiser", "Just me — no organization required"],
+                  ["organization", "On behalf of an organization", "Pick or create an organizer profile"],
+                ] as const
+              ).map(([value, label, detail]) => (
+                <label
+                  key={value}
+                  className={`flex cursor-pointer gap-3 rounded-xl border bg-white px-4 py-3 ${fundraisingAs === value ? "border-green-500 bg-green-50" : "border-zinc-200"}`}
+                >
+                  <input
+                    checked={fundraisingAs === value}
+                    className="mt-1 accent-green-600"
+                    name="fundraisingAs"
+                    onChange={() => setFundraisingAs(value)}
+                    type="radio"
+                  />
+                  <span>
+                    <span className="block text-sm font-black">{label}</span>
+                    <span className="text-xs font-medium text-zinc-500">{detail}</span>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+
+            {fundraisingAs === "organization" && (
+              <select value={form.organizer_id} onChange={(event) => update("organizer_id", event.target.value)} required className={`${inputClass} mt-4`}>
+                {organizers.length === 0 ? (
+                  <option value="">No organizer profiles yet</option>
+                ) : (
+                  organizers.map((organizer) => (
+                    <option key={organizer.id} value={organizer.id}>
+                      {organizer.name}
+                    </option>
+                  ))
+                )}
+              </select>
             )}
-          </select>
+          </div>
+
           <div className="grid gap-5 md:grid-cols-2">
             <input value={form.goal} onChange={(event) => update("goal", event.target.value)} required type="number" min="1" placeholder="Goal" className={inputClass} />
             <input value={form.raised} onChange={(event) => update("raised", event.target.value)} type="number" min="0" placeholder="Raised so far" className={inputClass} />
@@ -370,7 +422,7 @@ export default function EditFundraiserPage() {
             <BeneficiarySelector
               value={beneficiary}
               onChange={setBeneficiary}
-              organizerName={form.organizer}
+              organizerName={resolvedOwnerName}
               inputClassName={inputClass}
               onError={setError}
             />

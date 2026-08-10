@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
   const { data: fundraiser, error: fundraiserError } = await supabaseAdmin
     .from("fundraisers")
-    .select("id, organizer_id")
+    .select("id, user_id, organizer_id")
     .eq("id", fundraiserId)
     .maybeSingle();
 
@@ -47,22 +47,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: fundraiserError.message }, { status: 500 });
   }
 
-  if (!fundraiser?.organizer_id) {
+  if (!fundraiser) {
     return NextResponse.json({ error: "You do not own this fundraiser." }, { status: 403 });
   }
 
-  const { data: organizer, error: organizerError } = await supabaseAdmin
-    .from("organizers")
-    .select("id")
-    .eq("id", fundraiser.organizer_id)
-    .eq("user_id", user.id)
-    .maybeSingle();
+  let owns = fundraiser.user_id === user.id;
 
-  if (organizerError) {
-    return NextResponse.json({ error: organizerError.message }, { status: 500 });
+  if (!owns && fundraiser.organizer_id) {
+    const { data: organizer, error: organizerError } = await supabaseAdmin
+      .from("organizers")
+      .select("id")
+      .eq("id", fundraiser.organizer_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (organizerError) {
+      return NextResponse.json({ error: organizerError.message }, { status: 500 });
+    }
+
+    owns = Boolean(organizer);
   }
 
-  if (!organizer) {
+  if (!owns) {
     return NextResponse.json({ error: "You do not own this fundraiser." }, { status: 403 });
   }
 

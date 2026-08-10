@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
   try {
     const result = await queryDashboardFundraisers({
       organizerIds: auth.ctx.organizerIds,
+      userId: auth.ctx.userId,
       search: sp.get('search') ?? '',
       status: sp.get('status') ?? 'all',
       category: sp.get('category') ?? 'all',
