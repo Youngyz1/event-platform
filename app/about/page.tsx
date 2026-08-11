@@ -51,9 +51,9 @@ const pathways = [
 
 const trustPoints = [
   "Organizer profiles can be updated with photos, bios, follower counts, and contact details.",
-  "Imported fundraisers remain editable, so listings can be cleaned up after they are pulled in.",
+  "Campaigns stay editable, so listings can be kept accurate and current.",
   "Campaign pages include story, impact, progress, and supporter-focused calls to action.",
-  "Source links help visitors understand where imported campaigns came from.",
+  "Every page is built with real details, strong images, and honest descriptions.",
 ];
 
 export default function AboutPage() {
@@ -105,7 +105,7 @@ export default function AboutPage() {
               We are building a home for fundraising campaigns that need more than a simple listing. A strong page should show who is behind it, why it matters, what supporters can expect, and how people can take action.
             </p>
             <p>
-              That means organizers can publish from scratch, import from places like GoFundMe, then edit the final page so it feels complete on their own website.
+              Organizers can build their page from scratch and shape every detail — story, goals, photos, and updates — so it feels like a true home for their cause.
             </p>
           </div>
         </div>
@@ -151,10 +151,10 @@ export default function AboutPage() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-brand-300">Built for trust</p>
             <h2 className="mt-3 text-2xl font-semibold leading-tight tracking-tight sm:text-3xl">
-              Imported does not have to mean unfinished.
+              A page people can believe in.
             </h2>
             <p className="mt-5 text-lg leading-8 text-violet-100">
-              Every imported organizer or campaign should still feel owned by your website. The page can be improved with real details, stronger images, better descriptions, and the right local organizer name.
+              Every organizer and campaign should feel fully owned by the people behind it — with real details, strong images, honest descriptions, and a name people recognize.
             </p>
           </div>
           <div className="grid gap-5 sm:grid-cols-2">
