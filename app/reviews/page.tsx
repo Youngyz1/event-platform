@@ -13,9 +13,9 @@ export const metadata: Metadata = {
     description: "See what people are saying about Fund4Good.",
     url: "https://www.fund4agoodcause.com/reviews",
     siteName: "Fund4Good",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Fund4Good Reviews" }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Fund4Good Reviews" }],
   },
-  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
+  twitter: { card: "summary_large_image", images: ["/og-image.jpg"] },
 };
 
 export default function PlatformReviewsPage() {

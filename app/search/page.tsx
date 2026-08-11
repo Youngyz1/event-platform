@@ -12,9 +12,9 @@ export const metadata: Metadata = {
     description: "Search fundraisers and organizers on Fund4Good.",
     url: "https://www.fund4agoodcause.com/search",
     siteName: "Fund4Good",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Search Fund4Good" }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Search Fund4Good" }],
   },
-  twitter: { card: "summary_large_image", images: ["/og-image.png"] },
+  twitter: { card: "summary_large_image", images: ["/og-image.jpg"] },
 };
 
 export default async function SearchPage({

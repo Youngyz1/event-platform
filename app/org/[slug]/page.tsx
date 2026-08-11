@@ -30,7 +30,7 @@ export async function generateMetadata({
   const title = org?.name ? `${org.name} — Fund4Good` : "Organization — Fund4Good";
   const description =
     org?.bio || "View this organization's events and fundraisers on Fund4Good.";
-  const image = normalizeImageUrl(org?.photo || org?.banner, "/og-image.png");
+  const image = normalizeImageUrl(org?.photo || org?.banner, "/og-image.jpg");
 
   return {
     metadataBase: new URL("https://www.fund4agoodcause.com"),

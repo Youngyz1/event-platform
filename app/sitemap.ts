@@ -1,7 +1,6 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
-
-const BASE_URL = "https://www.fund4agoodcause.com";
+import { getSiteUrl } from "@/lib/site-url";
 
 /** Build a supabase admin client that works in a server context (no browser cookies). */
 function getSupabase() {
@@ -13,20 +12,21 @@ function getSupabase() {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = getSiteUrl();
   const supabase = getSupabase();
   const now = new Date();
 
-  // ── Static pages ────────────────────────────────────────────────
+  // ── Static pages (public, canonical, indexable only) ──────────────
   const staticPages: MetadataRoute.Sitemap = [
-    { url: BASE_URL, lastModified: now, changeFrequency: "daily", priority: 1 },
-    { url: `${BASE_URL}/organizers`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
-    { url: `${BASE_URL}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${BASE_URL}/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${BASE_URL}/create-fundraiser`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${BASE_URL}/create-organizer`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${BASE_URL}/platform`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
-    { url: `${BASE_URL}/sponsors`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${BASE_URL}/reviews`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    { url: baseUrl, lastModified: now, changeFrequency: "daily", priority: 1 },
+    { url: `${baseUrl}/campaigns`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${baseUrl}/organizers`, lastModified: now, changeFrequency: "daily", priority: 0.8 },
+    { url: `${baseUrl}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${baseUrl}/platform`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${baseUrl}/reviews`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    { url: `${baseUrl}/sponsors`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${baseUrl}/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${baseUrl}/cookies`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
   ];
 
   // ── Dynamic: public fundraisers ──────────────────────────────────
@@ -39,7 +39,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .limit(5000);
 
   const fundraiserUrls: MetadataRoute.Sitemap = (fundraisers ?? []).map((f) => ({
-    url: `${BASE_URL}/fundraisers/${f.slug}`,
+    url: `${baseUrl}/fundraisers/${f.slug}`,
     lastModified: f.created_at ? new Date(f.created_at) : now,
     changeFrequency: "weekly" as const,
     priority: 0.8,
@@ -58,7 +58,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const organizerUrls: MetadataRoute.Sitemap = (organizers ?? [])
     .filter((o) => o.slug)
     .map((o) => ({
-      url: `${BASE_URL}/org/${o.slug}`,
+      url: `${baseUrl}/org/${o.slug}`,
       lastModified: o.updated_at ? new Date(o.updated_at) : o.created_at ? new Date(o.created_at) : now,
       changeFrequency: "weekly" as const,
       priority: 0.7,

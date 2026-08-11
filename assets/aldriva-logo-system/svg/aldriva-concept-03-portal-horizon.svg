@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 180" role="img" aria-labelledby="title desc">
+  <title id="title">ALDRIVA primary logo, portal horizon concept</title>
+  <desc id="desc">A portal and horizon abstract A-inspired mark paired with the ALDRIVA wordmark.</desc>
+  <rect width="760" height="180" fill="#ffffff"/>
+  <g transform="translate(34 24)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 118 C22 55 39 17 66 17 C93 17 110 55 110 118" stroke="#0b172a" stroke-width="18"/>
+    <path d="M37 118 L66 47 L95 118" stroke="#0b172a" stroke-width="15"/>
+    <path d="M43 82 C58 71 74 71 89 82" stroke="#20c7a5" stroke-width="15"/>
+  </g>
+  <g transform="translate(205 53) scale(.85)" fill="#0b172a" stroke="none">
+    <path d="M0 70 L24 10 H38 L62 70 H47 L42 56 H20 L15 70 Z M24 45 H38 L31 24 Z"/>
+    <path d="M82 10 H96 V58 H130 V70 H82 Z"/>
+    <path fill-rule="evenodd" d="M151 10 H180 C202 10 217 22 217 40 C217 58 202 70 180 70 H151 Z M165 22 V58 H179 C194 58 203 51 203 40 C203 29 194 22 179 22 Z"/>
+    <path fill-rule="evenodd" d="M238 10 H270 C289 10 302 21 302 37 C302 49 295 58 283 63 L305 70 H281 L263 64 H252 V70 H238 Z M252 22 V52 H268 C280 52 288 46 288 37 C288 28 280 22 268 22 Z"/>
+    <path d="M324 10 H338 V70 H324 Z"/>
+    <path d="M356 10 H371 L389 54 L407 10 H422 L396 70 H382 Z"/>
+    <path d="M444 70 L468 10 H482 L506 70 H491 L486 56 H464 L459 70 Z M468 45 H482 L475 24 Z"/>
+  </g>
+</svg>

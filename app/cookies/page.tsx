@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     description: "Read Fund4Good's cookie policy.",
     url: "https://www.fund4agoodcause.com/cookies",
     siteName: "Fund4Good",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
   },
 };
 

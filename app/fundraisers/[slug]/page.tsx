@@ -36,7 +36,7 @@ import {
   isExplicitBeneficiaryJson,
 } from "@/lib/beneficiary";
 import { getSiteUrl } from "@/lib/site-url";
-import { truncateWords, stripHtml } from "@/lib/text";
+import { truncateWords, stripHtml, cleanTitle } from "@/lib/text";
 
 export async function generateMetadata({
   params,
@@ -46,21 +46,22 @@ export async function generateMetadata({
   const { slug } = await params;
   const fundraiser = await getFundraiserBySlug(slug);
 
-  const title = fundraiser?.title
-    ? `${fundraiser.title} — Fund4Good`
-    : "Fundraiser — Fund4Good";
+  const rawTitle = fundraiser?.title || "Fundraiser";
+  const cleanFundraiserTitle = cleanTitle(rawTitle);
+  const title = `${cleanFundraiserTitle} — Fund4Good`;
   const raised = `$${Number(fundraiser?.raised ?? 0).toLocaleString()}`;
   const goal = `$${Number(fundraiser?.goal ?? 0).toLocaleString()}`;
-  const description =
-    fundraiser?.story ||
-    `${raised} raised of ${goal} goal. Support this fundraiser on Fund4Good.`;
+  const rawStory = fundraiser?.story ? stripHtml(fundraiser.story) : "";
+  const description = rawStory
+    ? truncateWords(rawStory, 160)
+    : `${raised} raised of ${goal} goal. Support this fundraiser on Fund4Good.`;
   // Use the auto-generated live-data campaign card (opengraph-image.tsx),
   // same as the hero-carousel share-card slide and FundraiserShare's
   // preview — not the raw banner photo, so social previews always show
   // current raised/goal/percentage rather than just the cover image.
   const image = fundraiser
     ? `${getSiteUrl()}/fundraisers/${fundraiser.slug}/opengraph-image`
-    : normalizeImageUrl(null, "/og-image.png");
+    : normalizeImageUrl(null, "/og-image.jpg");
 
   return {
     metadataBase: new URL("https://www.fund4agoodcause.com"),
@@ -74,7 +75,7 @@ export async function generateMetadata({
       description,
       url: `https://www.fund4agoodcause.com/fundraisers/${slug}`,
       siteName: "Fund4Good",
-      ...(image ? { images: [{ url: image, width: 1200, height: 630, alt: fundraiser?.title || "Fundraiser" }] } : {}),
+      ...(image ? { images: [{ url: image, width: 1200, height: 630, alt: cleanFundraiserTitle }] } : {}),
     },
     twitter: {
       card: "summary_large_image",
@@ -266,7 +267,7 @@ export default async function FundraiserPage({
       ? supabase
           .from("organizers")
           // `photo` powers the avatar in the hero attribution overlay.
-          .select("id, name, photo")
+          .select("id, name, photo, slug")
           .eq("id", fundraiser.organizer_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
@@ -279,7 +280,7 @@ export default async function FundraiserPage({
     getRelatedFundraisers(fundraiser.id, 10),
   ]);
 
-  const organizer = organizerResult.data as OrganizerRow | null;
+  const organizer = organizerResult.data as (OrganizerRow & { slug?: string | null }) | null;
 
   const organizerName =
     organizer?.name || fundraiser.organizer || "Campaign organizer";
@@ -308,7 +309,7 @@ export default async function FundraiserPage({
     !organizer && organizerName && organizerName !== "Campaign organizer"
       ? supabase
           .from("organizers")
-          .select("id")
+          .select("id, slug")
           .eq("name", organizerName)
           .eq("visibility", "public")
           .not("status", "in", "(rejected,suspended)")
@@ -344,6 +345,8 @@ export default async function FundraiserPage({
   // Single source-of-truth for the organizer profile link
   const organizerProfileId: string | null =
     organizer?.id ?? organizerByName?.id ?? null;
+  const organizerSlug: string | null =
+    organizer?.slug ?? (organizerByName as { slug?: string | null } | null)?.slug ?? null;
 
   /**
    * Who the campaign is for, and whether that person has an account yet.
@@ -498,15 +501,15 @@ export default async function FundraiserPage({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "DonateAction",
-    name: fundraiser.title,
-    description: description || undefined,
+    name: cleanTitle(fundraiser.title),
+    description: stripHtml(description) || undefined,
     image: coverImage || undefined,
     url: `https://www.fund4agoodcause.com/fundraisers/${slug}`,
     recipient: {
       "@type": "Organization",
       name: organizerName,
-      ...(organizerProfileId
-        ? { url: `https://www.fund4agoodcause.com/organizers/${organizerProfileId}` }
+      ...(organizerSlug
+        ? { url: `https://www.fund4agoodcause.com/org/${organizerSlug}` }
         : {}),
     },
     object: {

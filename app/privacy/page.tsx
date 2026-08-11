@@ -15,13 +15,13 @@ export const metadata: Metadata = {
     description: "Read Fund4Good's privacy policy.",
     url: "https://www.fund4agoodcause.com/privacy",
     siteName: "Fund4Good",
-    images: [{ url: "/og-image.png", width: 1200, height: 630 }],
+    images: [{ url: "/og-image.jpg", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Privacy Policy — Fund4Good",
     description: "Read Fund4Good's privacy policy.",
-    images: ["/og-image.png"],
+    images: ["/og-image.jpg"],
   },
 };
 
