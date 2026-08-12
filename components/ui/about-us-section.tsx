@@ -62,7 +62,7 @@ const DEFAULT_SERVICES: AboutService[] = [
   {
     icon: <Award className="w-5 h-5" />,
     title: "Sponsorships",
-    description: "Connect organizers with sponsors through our marketplace. Gold and Silver packages, easy to apply.",
+    description: "Partner with businesses and organisations that want to back causes they believe in — giving your campaign extra reach and credibility.",
     position: "right",
   },
   {
@@ -156,9 +156,9 @@ export default function AboutUsSection({
   className="text-center max-w-2xl mx-auto mb-16 text-zinc-500 text-lg leading-relaxed"
   variants={item}
 >
-  Fund4Good helps individuals, nonprofits, and organizers raise funds
-  and connect with sponsors. Everything you need to
-  grow your cause, engage supporters, and create meaningful impact.
+  Fund4Good helps individuals, families, nonprofits, and communities raise money
+  for the causes that matter most. Everything you need to
+  tell your story, engage donors, and create lasting impact.
 </motion.p>
 
         {/* Accordion + image layout */}

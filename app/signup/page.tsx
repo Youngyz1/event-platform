@@ -190,18 +190,18 @@ export default function SignupPage() {
           </div>
 
           <h1 className="text-5xl font-bold mb-6 leading-tight">
-            Create events, raise funds, find sponsors.
+            Start a fundraiser for the causes that matter.
           </h1>
           <p className="text-lg text-brand-100 mb-10">
-            Join thousands of organizers already using Fund4Good to run
-            successful events and campaigns.
+            Join thousands of organizers and donors using Fund4Good to make a
+            difference together.
           </p>
 
           {/* Stats */}
           <div className="grid grid-cols-3 gap-6">
             <div>
-              <p className="text-3xl font-black text-white">10K+</p>
-              <p className="text-sm text-brand-200">Events hosted</p>
+              <p className="text-3xl font-black text-white">100%</p>
+              <p className="text-sm text-brand-200">Direct to causes</p>
             </div>
             <div>
               <p className="text-3xl font-black text-white">$2M+</p>

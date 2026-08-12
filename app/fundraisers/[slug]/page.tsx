@@ -35,6 +35,7 @@ import {
   resolveBeneficiary,
   isExplicitBeneficiaryJson,
 } from "@/lib/beneficiary";
+import VerificationBadge from "@/components/trust/VerificationBadge";
 import { getSiteUrl } from "@/lib/site-url";
 import { truncateWords, stripHtml, cleanTitle } from "@/lib/text";
 
@@ -760,9 +761,16 @@ export default async function FundraiserPage({
                       fundraiserTitle={fundraiser.title}
                       profileHref={beneficiaryProfileHref}
                     />
-                    <span className="mt-1 inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-800">
-                      Beneficiary
-                    </span>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <span className="inline-block rounded-full bg-brand-50 px-2 py-0.5 text-xs font-bold text-brand-800">
+                        Beneficiary
+                      </span>
+                      {beneficiaryRecord?.claimed_at && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-bold text-emerald-700" title="Profile claimed and identity verified">
+                          <VerificationBadge verified={true} /> Verified Account
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </>

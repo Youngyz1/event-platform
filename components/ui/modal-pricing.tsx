@@ -27,22 +27,22 @@ export const RALLY_UP_PLANS: PlanOption[] = [
     id:          "starter",
     name:        "Starter",
     price:       "Free",
-    description: "Launch your first event or fundraiser",
-    features:    ["1 active event", "Basic ticket sales", "Public profile", "Email support"],
+    description: "Launch your first fundraising campaign",
+    features:    ["1 active campaign", "Donation processing", "Public profile", "Email support"],
   },
   {
     id:          "pro",
     name:        "Pro",
     price:       "$19",
     description: "For active organizers",
-    features:    ["Unlimited events", "Fundraiser campaigns", "Analytics dashboard", "Priority support", "Custom branding"],
+    features:    ["Unlimited campaigns", "Advanced analytics", "Custom story builder", "Priority support", "Custom branding"],
   },
   {
     id:          "business",
     name:        "Business",
     price:       "$49",
     description: "For agencies & large organizations",
-    features:    ["Everything in Pro", "Sponsor marketplace", "Team members", "Dedicated account manager", "SLA guarantee"],
+    features:    ["Everything in Pro", "Sponsor partnerships", "Team members", "Dedicated account manager", "SLA guarantee"],
   },
 ];
 

@@ -57,9 +57,9 @@ export const DEFAULT_HOMEPAGE_SETTINGS: HomepageSettings = {
   // Organizers defaults
   organizersHeroImageUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1800&auto=format&fit=crop",
   organizersHeroEyebrow: "ORGANIZER DIRECTORY",
-  organizersHeroHeadlineLine1: "Meet Event Creators",
+  organizersHeroHeadlineLine1: "Meet Campaign Organizers",
   organizersHeroHeadlineLine2: "",
-  organizersHeroDescription: "Discover trusted organizers building amazing experiences.",
+  organizersHeroDescription: "Discover trusted organizers raising money for causes that matter.",
 };
 
 export const DEFAULT_HOMEPAGE_HERO = DEFAULT_HOMEPAGE_SETTINGS;

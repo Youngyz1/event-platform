@@ -386,7 +386,7 @@ export default function HomepageCmsTabs({
             </div>
             <div>
               <FieldLabel>Headline Line 1</FieldLabel>
-              <Input value={settings.organizersHeroHeadlineLine1} onChange={e => setSettings({...settings, organizersHeroHeadlineLine1: e.target.value})} placeholder="Meet Event Creators" />
+              <Input value={settings.organizersHeroHeadlineLine1} onChange={e => setSettings({...settings, organizersHeroHeadlineLine1: e.target.value})} placeholder="Meet Campaign Organizers" />
             </div>
             <div>
               <FieldLabel>Headline Line 2</FieldLabel>
@@ -394,7 +394,7 @@ export default function HomepageCmsTabs({
             </div>
             <div>
               <FieldLabel>Description</FieldLabel>
-              <Textarea value={settings.organizersHeroDescription} onChange={e => setSettings({...settings, organizersHeroDescription: e.target.value})} placeholder="Discover trusted organizers building amazing experiences." />
+              <Textarea value={settings.organizersHeroDescription} onChange={e => setSettings({...settings, organizersHeroDescription: e.target.value})} placeholder="Discover trusted organizers raising money for causes that matter." />
             </div>
             <SaveBtn saving={saving} label="Save Organizers Landing Section" />
           </form>

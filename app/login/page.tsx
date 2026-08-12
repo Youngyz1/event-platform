@@ -134,25 +134,25 @@ function LoginForm() {
           </div>
 
           <h1 className="text-5xl font-bold mb-6 leading-tight">
-            Welcome back to your events hub.
+            Welcome back to your Fund4Good account.
           </h1>
           <p className="text-lg text-brand-100 mb-10">
-            Manage your events, track donations, and connect with your
+            Manage your campaigns, track donations, and connect with your
             community — all in one place.
           </p>
 
           <div className="grid grid-cols-3 gap-6">
             <div>
-              <p className="text-3xl font-black text-white">10K+</p>
-              <p className="text-sm text-brand-200">Events hosted</p>
+              <p className="text-3xl font-black text-white">100%</p>
+              <p className="text-sm text-brand-200">Direct to causes</p>
             </div>
             <div>
               <p className="text-3xl font-black text-white">$2M+</p>
               <p className="text-sm text-brand-200">Funds raised</p>
             </div>
             <div>
-              <p className="text-3xl font-black text-white">98%</p>
-              <p className="text-sm text-brand-200">Satisfaction</p>
+              <p className="text-3xl font-black text-white">0%</p>
+              <p className="text-sm text-brand-200">Platform fee</p>
             </div>
           </div>
         </div>

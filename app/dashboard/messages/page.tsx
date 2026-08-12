@@ -6,7 +6,7 @@ export default function AccountMessagesPage() {
     <div className="space-y-6">
       <DashboardPageHeader
         title="Messages"
-        description="Communicate with your followers, ticket holders, and donors across your organizations."
+        description="Communicate with your followers, donors, and supporters across your campaigns."
       />
 
       <DashboardEmptyState
