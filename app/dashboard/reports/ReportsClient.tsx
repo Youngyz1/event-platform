@@ -76,9 +76,7 @@ function ReportsClientInner() {
 
   const statItems = data
     ? [
-        { label: "Tickets Sold", value: data.stats.tickets },
-        { label: "Ticket Revenue", value: `$${data.stats.revenue.toLocaleString()}` },
-        { label: "Donations", value: `$${data.stats.donations.toLocaleString()}` },
+        { label: "Total Donations", value: `$${data.stats.donations.toLocaleString()}` },
       ]
     : [];
 
@@ -145,14 +143,10 @@ function ReportsClientInner() {
         </div>
       ) : data ? (
         <>
-          <DashboardStatsCards items={statItems} className="sm:grid-cols-3" />
+          <DashboardStatsCards items={statItems} className="sm:grid-cols-1" />
           <ChartsGrid
-            tickets={data.tickets}
             revenue={data.revenue}
             donations={data.donations}
-            topEvents={data.topEvents}
-            revenueByEvent={data.revenueByEvent}
-            ticketsByEvent={data.ticketsByEvent}
             donationsByCampaign={data.donationsByCampaign}
             topOrganizers={data.topOrganizers}
           />

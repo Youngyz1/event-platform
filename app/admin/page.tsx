@@ -53,20 +53,16 @@ export default async function AdminOverviewPage() {
   const [
     { count: userCount },
     { count: organizerCount },
-    { count: eventCount },
     { count: fundraiserCount },
     { count: activeFundraiserCount },
     { count: pendingFundraiserCount },
-    { count: ticketCount },
     { data: donationTotal },
   ] = await Promise.all([
     supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('organizers').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('events').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('fundraisers').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('fundraisers').select('*', { count: 'exact', head: true }).eq('status', 'published'),
     supabaseAdmin.from('fundraisers').select('*', { count: 'exact', head: true }).eq('status', 'pending_review'),
-    supabaseAdmin.from('ticket_orders').select('*', { count: 'exact', head: true }).eq('status', 'valid'),
     supabaseAdmin.from('donations').select('amount').in('status', ['succeeded', 'completed']),
   ]);
 
@@ -86,11 +82,9 @@ export default async function AdminOverviewPage() {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <StatCard label="Total Users"        value={String(userCount ?? 0)}      tone="indigo" />
         <StatCard label="Organizers"         value={String(organizerCount ?? 0)} tone="blue"   />
-        <StatCard label="Total Events"       value={String(eventCount ?? 0)}     tone="orange" />
         <StatCard label="Total Fundraisers"  value={String(fundraiserCount ?? 0)} tone="green" />
         <StatCard label="Active Fundraisers" value={String(activeFundraiserCount ?? 0)} tone="green" />
         <StatCard label="Pending Fundraisers" value={String(pendingFundraiserCount ?? 0)} tone="orange" />
-        <StatCard label="Tickets Sold"       value={String(ticketCount ?? 0)}    tone="zinc"   />
         <StatCard label="Total Donations"    value={money(totalDonations)}       tone="rose"   />
       </div>
     </div>

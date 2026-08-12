@@ -51,7 +51,7 @@ export const PLATFORM_SETTING_GROUPS: PlatformSettingGroup[] = [
     title: "Payments",
     description: "Platform fees and featured listing prices.",
     fields: [
-      { key: "platform_fee_percent", label: "Platform Fee %", inputType: "number", description: "Fee on ticket sales" },
+      { key: "platform_fee_percent", label: "Platform Fee %", inputType: "number", description: "Fee on platform transactions" },
       { key: "donation_fee_percent", label: "Donation Fee %", inputType: "number", description: "Fee on donations" },
       { key: "featured_event_price", label: "Featured Event Price ($)", inputType: "number" },
       { key: "featured_fundraiser_price", label: "Featured Fundraiser Price ($)", inputType: "number" },

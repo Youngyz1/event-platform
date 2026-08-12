@@ -107,7 +107,7 @@ export type AdminUserDetail = AdminUserRow & {
   }[];
   recent_activity: {
     id: string;
-    type: 'event' | 'fundraiser' | 'donation' | 'ticket';
+    type: 'fundraiser' | 'donation';
     title: string;
     detail: string;
     at: string;

@@ -196,25 +196,6 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
             ))}
           </dl>
         </div>
-
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
-          <h2 className="text-xl font-black">Activity Summary</h2>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            {[
-              ["Owned organizers", `${organizerRows.length}`],
-              ["Owned events", `${eventRows.length}`],
-              ["Owned fundraisers", `${fundraiserRows.length}`],
-              ["Ticket purchases", `${ticketPurchases.length}`],
-              ["Purchased total", money(ticketPurchaseTotal)],
-              ["Tickets sold on owned events", `${ticketSales.reduce((sum, order) => sum + Number(order.quantity ?? 0), 0)}`],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-xl border border-zinc-200 bg-zinc-50 p-4">
-                <p className="text-xs font-black uppercase tracking-wide text-zinc-400">{label}</p>
-                <p className="mt-1 text-lg font-black text-zinc-950">{value}</p>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
 
       <section className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
@@ -238,22 +219,9 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
         </div>
       </section>
 
-      <TwoColumnSection
-        leftTitle="Events Through Organizers"
-        rightTitle="Fundraisers Through Organizers"
-        rightAction="View Fundraisers"
-        rightHref="/admin/fundraisers"
-      >
-        <div className="space-y-3">
-          {eventRows.length === 0 ? <Empty label="No events owned through organizers." /> : eventRows.slice(0, 8).map((event) => (
-            <CompactRow
-              key={event.id}
-              title={event.title}
-              detail={`${organizerNameById[event.organizer_id] ?? "Organizer"} / ${event.status ?? "approved"} / ${dateLabel(event.event_date)}`}
-            />
-          ))}
-        </div>
-        <div className="space-y-3">
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
+        <SectionHeader title="Fundraisers Through Organizers" href="/admin/fundraisers" action="View Fundraisers" />
+        <div className="mt-5 space-y-3">
           {fundraiserRows.length === 0 ? <Empty label="No fundraisers owned through organizers." /> : fundraiserRows.slice(0, 8).map((fundraiser) => (
             <CompactRow
               key={fundraiser.id}
@@ -264,13 +232,11 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
             />
           ))}
         </div>
-      </TwoColumnSection>
+      </section>
 
-      <TwoColumnSection
-        leftTitle="Donations Received"
-        rightTitle="Ticket Purchases"
-      >
-        <div className="space-y-3">
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 sm:p-6">
+        <SectionHeader title="Donations Received" />
+        <div className="mt-5 space-y-3">
           {donations.length === 0 ? <Empty label="No donations received through owned fundraisers." /> : donations.slice(0, 8).map((donation) => (
             <CompactRow
               key={donation.id}
@@ -279,19 +245,27 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
             />
           ))}
         </div>
-        <div className="space-y-3">
-          {ticketPurchases.length === 0 ? <Empty label="No ticket purchases found for this email." /> : ticketPurchases.slice(0, 8).map((order) => {
-            const eventRelation = Array.isArray(order.events) ? order.events[0] : order.events;
-            return (
-              <CompactRow
-                key={order.id}
-                title={eventRelation?.title || "Ticket order"}
-                detail={`${order.quantity} ticket(s) / ${money(order.total_amount)} / ${order.status}`}
-              />
-            );
-          })}
-        </div>
-      </TwoColumnSection>
+      </section>
+    </div>
+  );
+}
+
+function DashboardPageHeader({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
+  return (
+    <header className="mb-8">
+      <p className="text-xs font-black uppercase tracking-wider text-brand-700">{eyebrow}</p>
+      <h1 className="mt-1 text-3xl font-black text-zinc-950">{title}</h1>
+      <p className="mt-2 text-zinc-600">{description}</p>
+    </header>
+  );
+}
+
+function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-white p-5">
+      <p className="text-xs font-black uppercase tracking-wide text-zinc-400">{label}</p>
+      <p className="mt-2 text-2xl font-black text-zinc-950">{value}</p>
+      <p className="mt-1 text-xs text-zinc-500">{helper}</p>
     </div>
   );
 }
