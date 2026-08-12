@@ -238,6 +238,8 @@ export default function CreateOrganizerPage() {
               aspectRatio={MIN_BANNER_WIDTH / MIN_BANNER_HEIGHT}
               minWidth={MIN_BANNER_WIDTH}
               minHeight={MIN_BANNER_HEIGHT}
+              maxOutputWidth={1600}
+              maxOutputHeight={400}
               onUploaded={setBannerUrl}
               onError={setError}
               renderTrigger={({ open }) => (
@@ -278,6 +280,8 @@ export default function CreateOrganizerPage() {
                   folder="photo"
                   aspectRatio={1}
                   shape="round"
+                  maxOutputWidth={512}
+                  maxOutputHeight={512}
                   onUploaded={setPhotoUrl}
                   onError={setError}
                   renderTrigger={({ open, uploading }) => (

@@ -160,6 +160,8 @@ export default function ProfileClient({
                 folder={userId}
                 aspectRatio={1}
                 shape="round"
+                maxOutputWidth={512}
+                maxOutputHeight={512}
                 onUploaded={setProfilePhoto}
                 onError={setError}
                 renderTrigger={({ open, uploading }) => (

@@ -449,6 +449,8 @@ export default function EditFundraiserPage() {
                 bucket="fundraiser-media"
                 folder="fundraiser-photos"
                 aspectRatio={FUNDRAISER_PHOTO_ASPECT_RATIO}
+                maxOutputWidth={1080}
+                maxOutputHeight={1350}
                 onUploaded={(url) => update("banner", url)}
                 onError={setError}
                 label={form.banner ? "Change banner" : "Upload banner"}
@@ -476,6 +478,8 @@ export default function EditFundraiserPage() {
                           bucket="fundraiser-media"
                           folder="fundraiser-photos"
                           aspectRatio={FUNDRAISER_PHOTO_ASPECT_RATIO}
+                          maxOutputWidth={1080}
+                          maxOutputHeight={1350}
                           onUploaded={(url) => updateGalleryItem(index, "url", url)}
                           onError={setError}
                           label={item.url ? "Change photo" : "Upload photo"}

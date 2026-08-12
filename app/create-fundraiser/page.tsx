@@ -638,6 +638,8 @@ export default function CreateFundraiserPage() {
                     bucket="fundraiser-media"
                     folder="fundraiser-photos"
                     aspectRatio={FUNDRAISER_PHOTO_ASPECT_RATIO}
+                    maxOutputWidth={1080}
+                    maxOutputHeight={1350}
                     onUploaded={addPhoto}
                     onError={setError}
                     disabled={photoUrls.length >= MAX_FUNDRAISER_PHOTOS}

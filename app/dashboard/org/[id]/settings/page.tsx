@@ -5,9 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import ImageUploadWithCrop from "@/components/ui/ImageUploadWithCrop";
 import { MIN_BANNER_WIDTH, MIN_BANNER_HEIGHT } from "@/lib/image-dimensions";
-import {
-  Globe, Mail, AlertTriangle, Check, ArrowRight, ShieldCheck, Loader2
-} from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
 import Image from "next/image";
 
 type OrgForm = {
@@ -366,6 +364,8 @@ export default function OrgSettingsPage() {
                   folder="photo"
                   aspectRatio={1}
                   shape="round"
+                  maxOutputWidth={512}
+                  maxOutputHeight={512}
                   onUploaded={setPhotoUrl}
                   onError={setError}
                   renderTrigger={({ open, uploading }) => (
@@ -406,6 +406,8 @@ export default function OrgSettingsPage() {
                   aspectRatio={MIN_BANNER_WIDTH / MIN_BANNER_HEIGHT}
                   minWidth={MIN_BANNER_WIDTH}
                   minHeight={MIN_BANNER_HEIGHT}
+                  maxOutputWidth={1600}
+                  maxOutputHeight={400}
                   onUploaded={setBannerUrl}
                   onError={setError}
                   renderTrigger={({ open, uploading }) => (

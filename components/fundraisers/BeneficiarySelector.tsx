@@ -235,6 +235,8 @@ export default function BeneficiarySelector({
                   folder="beneficiary-photos"
                   aspectRatio={1}
                   shape="round"
+                  maxOutputWidth={512}
+                  maxOutputHeight={512}
                   onUploaded={(url) => update("photo", url)}
                   onError={onError}
                   label={value.photo ? "Change photo" : "Add photo"}

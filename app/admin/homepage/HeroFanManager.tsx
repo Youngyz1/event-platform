@@ -177,6 +177,8 @@ export default function HeroFanManager({ initialImages }: { initialImages: strin
           bucket="fundraiser-media"
           folder="hero-fan"
           aspectRatio={HERO_FAN_ASPECT_RATIO}
+          maxOutputWidth={800}
+          maxOutputHeight={1067}
           disabled={atMax}
           onUploaded={addImage}
           onError={(text) => setMsg({ kind: "err", text })}

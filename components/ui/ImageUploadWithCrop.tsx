@@ -25,12 +25,9 @@ const DEFAULT_MAX_BYTES = 15 * 1024 * 1024;
  * Zoom bounds for the crop modal.
  *
  * 1 means "the photo exactly fills the crop box", which is where it opens — so
- * the default result is still a full-bleed crop with no margins. Going below 1
- * shrinks the photo inside the box, which is what makes the whole image
- * reachable on shots the box would otherwise cut off. 0.3 is low enough to fit
- * a very tall or very wide photo entirely within a landscape box.
+ * the default result is a full-bleed cover crop with zero blank margins.
  */
-const MIN_ZOOM = 0.3;
+const MIN_ZOOM = 1;
 const MAX_ZOOM = 3;
 
 export interface ImageUploadWithCropProps {
@@ -49,6 +46,9 @@ export interface ImageUploadWithCropProps {
   minWidth?: number;
   minHeight?: number;
   maxBytes?: number;
+  /** Max dimensions for exported cropped image canvas (preserves aspect ratio, never upscales). */
+  maxOutputWidth?: number;
+  maxOutputHeight?: number;
   /** Restrict to specific MIME types. Unset (default) accepts anything image/*. */
   allowedTypes?: readonly string[];
   /**
@@ -80,6 +80,8 @@ export default function ImageUploadWithCrop({
   minWidth,
   minHeight,
   maxBytes = DEFAULT_MAX_BYTES,
+  maxOutputWidth,
+  maxOutputHeight,
   allowedTypes,
   renderTrigger,
   label = "Upload image",
@@ -95,10 +97,10 @@ export default function ImageUploadWithCrop({
   const [uploading, setUploading] = useState(false);
   const [modalError, setModalError] = useState("");
 
-  function open() {
+  const open = useCallback(() => {
     if (disabled) return;
     inputRef.current?.click();
-  }
+  }, [disabled]);
 
   function reportError(message: string) {
     if (onError) onError(message);
@@ -178,7 +180,12 @@ export default function ImageUploadWithCrop({
     setUploading(true);
     setModalError("");
     try {
-      const blob = await getCroppedImageBlob(sourceUrl, croppedAreaPixels);
+      const blob = await getCroppedImageBlob(sourceUrl, croppedAreaPixels, {
+        mimeType: "image/jpeg",
+        quality: 0.92,
+        maxOutputWidth,
+        maxOutputHeight,
+      });
       const croppedFile = new File([blob], `cropped-${Date.now()}.jpg`, { type: "image/jpeg" });
 
       const uploaded = await uploadPublicFile({
@@ -213,6 +220,7 @@ export default function ImageUploadWithCrop({
       />
 
       {renderTrigger ? (
+        // eslint-disable-next-line react-hooks/refs
         renderTrigger({ open, uploading })
       ) : (
         <button
@@ -255,18 +263,9 @@ export default function ImageUploadWithCrop({
                 onCropChange={setCrop}
                 onZoomChange={setZoom}
                 onCropComplete={onCropComplete}
-                // Zoom 1 is "fill the crop box", so with the default minimum of
-                // 1 there was no way to see the parts of the photo outside it —
-                // a tall photo could only ever be used as a tight centre crop.
-                // Allowing zoom below 1 lets the whole image be pulled into
-                // frame; getCroppedImageBlob paints white behind it so the
-                // resulting margins are not black.
                 minZoom={MIN_ZOOM}
                 maxZoom={MAX_ZOOM}
-                // Required for minZoom < 1: with position restricted, the
-                // library clamps the image back to covering the crop box and
-                // the extra zoom range does nothing.
-                restrictPosition={false}
+                restrictPosition={true}
               />
             </div>
           )}

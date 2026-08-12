@@ -170,6 +170,8 @@ export default function BeneficiaryProfileForm({
             folder="beneficiary-photos"
             aspectRatio={1}
             shape="round"
+            maxOutputWidth={512}
+            maxOutputHeight={512}
             onUploaded={(url) => update("photo", url)}
             onError={setError}
             label={form.photo ? "Change photo" : "Add photo"}

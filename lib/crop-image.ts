@@ -86,36 +86,72 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 export async function getCroppedImageBlob(
   imageSrc: string,
   cropAreaPixels: CropAreaPixels,
-  mimeType = "image/jpeg",
-  quality = 0.92
+  mimeTypeOrOptions: string | { mimeType?: string; quality?: number; maxOutputWidth?: number; maxOutputHeight?: number } = "image/jpeg",
+  qualityParam = 0.92,
+  maxOutputWidthParam?: number,
+  maxOutputHeightParam?: number
 ): Promise<Blob> {
+  let mimeType = "image/jpeg";
+  let quality = 0.92;
+  let maxOutputWidth: number | undefined;
+  let maxOutputHeight: number | undefined;
+
+  if (typeof mimeTypeOrOptions === "object" && mimeTypeOrOptions !== null) {
+    mimeType = mimeTypeOrOptions.mimeType ?? "image/jpeg";
+    quality = mimeTypeOrOptions.quality ?? 0.92;
+    maxOutputWidth = mimeTypeOrOptions.maxOutputWidth;
+    maxOutputHeight = mimeTypeOrOptions.maxOutputHeight;
+  } else {
+    mimeType = mimeTypeOrOptions;
+    quality = qualityParam;
+    maxOutputWidth = maxOutputWidthParam;
+    maxOutputHeight = maxOutputHeightParam;
+  }
+
   const image = await loadImage(imageSrc);
+
+  // Enforce invariant: source coordinates must be strictly within natural image bounds.
+  const srcX = Math.max(0, Math.min(cropAreaPixels.x, image.naturalWidth - 1));
+  const srcY = Math.max(0, Math.min(cropAreaPixels.y, image.naturalHeight - 1));
+  const srcW = Math.max(1, Math.min(cropAreaPixels.width, image.naturalWidth - srcX));
+  const srcH = Math.max(1, Math.min(cropAreaPixels.height, image.naturalHeight - srcY));
+
+  // Determine output canvas size while preserving exact aspect ratio.
+  let outputWidth = Math.round(srcW);
+  let outputHeight = Math.round(srcH);
+
+  if (maxOutputWidth || maxOutputHeight) {
+    const scaleX = maxOutputWidth ? maxOutputWidth / outputWidth : 1;
+    const scaleY = maxOutputHeight ? maxOutputHeight / outputHeight : 1;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Only scale down if the crop area exceeds max output dimensions (never upscale smaller images).
+    if (scale < 1) {
+      outputWidth = Math.max(1, Math.round(outputWidth * scale));
+      outputHeight = Math.max(1, Math.round(outputHeight * scale));
+    }
+  }
+
   const canvas = document.createElement("canvas");
-  canvas.width = Math.round(cropAreaPixels.width);
-  canvas.height = Math.round(cropAreaPixels.height);
+  canvas.width = outputWidth;
+  canvas.height = outputHeight;
 
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Could not get a 2D canvas context.");
 
-  // Paint the canvas white before drawing.
-  //
-  // The cropper allows zooming out past the edges of the photo, so the crop
-  // area can legitimately extend beyond the image. Those regions are never
-  // touched by drawImage and stay transparent — which JPEG cannot represent
-  // and renders as solid black. White matches the surrounding UI instead.
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 
   ctx.drawImage(
     image,
-    cropAreaPixels.x,
-    cropAreaPixels.y,
-    cropAreaPixels.width,
-    cropAreaPixels.height,
+    srcX,
+    srcY,
+    srcW,
+    srcH,
     0,
     0,
-    canvas.width,
-    canvas.height
+    outputWidth,
+    outputHeight
   );
 
   return new Promise((resolve, reject) => {
