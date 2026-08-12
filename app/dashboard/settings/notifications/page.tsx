@@ -9,9 +9,7 @@ import NotificationsClient from "./NotificationsClient";
 import { type NotificationPreferences } from "@/types/settings";
 
 const defaultPrefs: NotificationPreferences = {
-  notify_ticket_purchase: true,
   notify_donation: true,
-  notify_event_reminder: false,
   notify_marketing: false,
   notify_security_alerts: true,
 };

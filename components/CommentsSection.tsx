@@ -71,20 +71,12 @@ function GatePrompt({
   const [checking, setChecking] = useState(false);
   const [error, setError] = useState("");
 
-  const actionLabel =
-    targetType === "event" ? "purchased a ticket" : "made a donation";
-  const gateIcon =
-    targetType === "event" ? (
-      // Ticket icon
-      <svg className={`w-10 h-10 ${styles.icon}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a3 3 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z" />
-      </svg>
-    ) : (
-      // Heart/donate icon
-      <svg className={`w-10 h-10 ${styles.icon}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
-      </svg>
-    );
+  const actionLabel = "made a donation";
+  const gateIcon = (
+    <svg className={`w-10 h-10 ${styles.icon}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+    </svg>
+  );
 
   async function handleVerify(e: React.FormEvent) {
     e.preventDefault();
@@ -104,11 +96,7 @@ function GatePrompt({
       if (data.eligible) {
         onVerified(trimmedEmail, name.trim());
       } else {
-        setError(
-          targetType === "event"
-            ? "We couldn't find a ticket purchase for this email on this event. Only ticket holders can comment."
-            : "We couldn't find a donation for this email on this fundraiser. Only donors can comment."
-        );
+        setError("We couldn't find a donation for this email on this fundraiser. Only donors can comment.");
       }
     } catch {
       setError("Unable to verify eligibility. Please try again.");
@@ -121,7 +109,7 @@ function GatePrompt({
     <div className="mt-6 rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 p-6 text-center">
       <div className="flex justify-center mb-4">{gateIcon}</div>
       <h3 className="text-lg font-black text-zinc-900">
-        Comments are for {targetType === "event" ? "ticket holders" : "donors"} only
+        Comments are for donors only
       </h3>
       <p className="mt-2 text-sm text-zinc-500 max-w-sm mx-auto">
         To keep the conversation genuine, only people who have {actionLabel} can leave a comment.
@@ -143,7 +131,7 @@ function GatePrompt({
           onChange={(e) => setEmail(e.target.value)}
           maxLength={255}
           required
-          placeholder={`Email used to ${targetType === "event" ? "buy your ticket" : "donate"}`}
+          placeholder="Email used to donate"
           className={`w-full rounded-2xl border border-zinc-300 px-4 py-3 text-sm outline-none ${styles.ring}`}
         />
 

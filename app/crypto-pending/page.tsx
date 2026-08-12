@@ -140,9 +140,7 @@ function CryptoPendingContent() {
         <p className="mt-3 text-sm text-zinc-500 leading-relaxed">
           {isDonation
             ? "Your crypto donation has been successfully processed. Thank you for your support!"
-            : isProduct
-            ? `Your order${paymentDetails.productName ? ` for "${paymentDetails.productName}"` : ""} has been confirmed. A confirmation email has been sent.`
-            : "Your tickets have been successfully booked. A confirmation email has been sent."}
+            : "Your transaction has been confirmed. A confirmation email has been sent."}
         </p>
 
         <hr className="my-8 border-zinc-100" />
@@ -169,42 +167,14 @@ function CryptoPendingContent() {
               </Link>
             )}
           </div>
-        ) : isProduct ? (
-          <div className="space-y-4">
-            {paymentDetails.slug && (
-              <Link
-                href={`/products/${paymentDetails.slug}`}
-                className="flex items-center justify-center gap-2 w-full rounded-2xl bg-brand-600 hover:bg-brand-700 py-4 text-sm font-black text-white transition shadow-md"
-              >
-                View Product →
-              </Link>
-            )}
-            <Link
-              href="/products"
-              className="block text-sm font-bold text-zinc-500 hover:text-zinc-800 transition py-2"
-            >
-              Back to Shop
-            </Link>
-          </div>
         ) : (
           <div className="space-y-4">
-            {paymentDetails.qrCode && paymentDetails.slug && (
-              <Link
-                href={`/ticket-confirmation?qr=${paymentDetails.qrCode}&event=${paymentDetails.slug}`}
-                className="flex items-center justify-center gap-2 w-full rounded-2xl bg-brand-600 hover:bg-brand-700 py-4 text-sm font-black text-white transition shadow-md"
-              >
-                <Ticket className="h-4 w-4" />
-                View Ticket Details →
-              </Link>
-            )}
-            {paymentDetails.slug && (
-              <Link
-                href={`/events/${paymentDetails.slug}`}
-                className="block text-sm font-bold text-zinc-500 hover:text-zinc-800 transition py-2"
-              >
-                Back to Event
-              </Link>
-            )}
+            <Link
+              href="/campaigns"
+              className="block text-sm font-bold text-zinc-500 hover:text-zinc-800 transition py-2"
+            >
+              Back to Campaigns
+            </Link>
           </div>
         )}
       </div>

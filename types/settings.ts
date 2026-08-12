@@ -27,9 +27,9 @@ export interface AccountInfo {
 }
 
 export interface NotificationPreferences {
-  notify_ticket_purchase: boolean;
+  notify_ticket_purchase?: boolean;
   notify_donation: boolean;
-  notify_event_reminder: boolean;
+  notify_event_reminder?: boolean;
   notify_marketing?: boolean;
   notify_security_alerts?: boolean;
 }
@@ -37,7 +37,7 @@ export interface NotificationPreferences {
 export interface PrivacySettings {
   profile_visibility: 'public' | 'private';
   show_email: boolean;
-  show_organized_events: boolean;
+  show_organized_events?: boolean;
   show_donations: boolean;
   allow_search_indexing: boolean;
 }

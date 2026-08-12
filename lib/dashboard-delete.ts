@@ -13,36 +13,6 @@ function moneyValue(value: unknown) {
 }
 
 export async function checkEventDeleteBlocked(eventIds: string[]): Promise<BlockingCheck> {
-  if (eventIds.length === 0) return { blocked: false };
-
-  const { data: orders, error } = await supabaseAdmin
-    .from("ticket_orders")
-    .select("id, status, total_amount, stripe_session_id, stripe_payment_intent_id")
-    .in("event_id", eventIds);
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  const blockingOrders = (orders ?? []).filter((order) => {
-    const totalAmount = moneyValue(order.total_amount);
-    return (
-      totalAmount > 0 ||
-      order.status === "pending" ||
-      order.status === "refunded" ||
-      Boolean(order.stripe_session_id) ||
-      Boolean(order.stripe_payment_intent_id)
-    );
-  });
-
-  if (blockingOrders.length > 0) {
-    return {
-      blocked: true,
-      message:
-        "This event has paid, pending, or refunded ticket orders. Archive or unpublish it instead of deleting payment history.",
-    };
-  }
-
   return { blocked: false };
 }
 

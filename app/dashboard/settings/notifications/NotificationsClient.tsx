@@ -97,14 +97,8 @@ export default function NotificationsClient({
       {/* Organizer Notifications */}
       <SettingsCard
         title="Organizer Alerts"
-        description="Configure what emails you receive in relation to hosting and managing events."
+        description="Configure what emails you receive in relation to hosting and managing campaigns."
       >
-        <Toggle
-          checked={!!prefs.notify_ticket_purchase}
-          onChange={(v) => setPrefs((prev) => ({ ...prev, notify_ticket_purchase: v }))}
-          label="Ticket Purchases"
-          description="Receive a notification email whenever a customer purchases a ticket to one of your events."
-        />
         <Toggle
           checked={!!prefs.notify_donation}
           onChange={(v) => setPrefs((prev) => ({ ...prev, notify_donation: v }))}

@@ -231,49 +231,40 @@ export function Dashboard() {
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <StatCard
-          label="Total Revenue"
+          label="Total Donations"
           value="$39,200"
-          sub="From ticket sales this year"
+          sub="Raised via fundraisers this year"
           change="+18.4%"
           positive={true}
           icon={DollarSign}
           gradient="from-brand-600 to-brand-700"
         />
         <StatCard
-          label="Tickets Sold"
+          label="Supporters"
           value="1,284"
-          sub="Across all active events"
+          sub="Across all active campaigns"
           change="+12.1%"
           positive={true}
-          icon={Ticket}
-          gradient="from-violet-500 to-violet-600"
-        />
-        <StatCard
-          label="Total Donations"
-          value="$14,850"
-          sub="Raised via fundraisers"
-          change="+9.7%"
-          positive={true}
           icon={Heart}
-          gradient="from-brand-600 to-brand-700"
+          gradient="from-emerald-500 to-emerald-600"
         />
         <StatCard
           label="Active Campaigns"
           value="7"
-          sub="Events & fundraisers live"
-          change="-1"
-          positive={false}
+          sub="Fundraisers currently live"
+          change="+2"
+          positive={true}
           icon={TrendingUp}
           gradient="from-sky-500 to-sky-600"
         />
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4">
         {/* Revenue + Donations Area Chart */}
-        <div className="xl:col-span-2 rounded-2xl bg-[#16161d] p-5 ring-1 ring-white/[0.06]">
+        <div className="rounded-2xl bg-[#16161d] p-5 ring-1 ring-white/[0.06]">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <p className="text-sm font-black text-white">Revenue & Donations</p>
@@ -313,29 +304,6 @@ export function Dashboard() {
               Donations
             </span>
           </div>
-        </div>
-
-        {/* Ticket Sales Bar Chart */}
-        <div className="rounded-2xl bg-[#16161d] p-5 ring-1 ring-white/[0.06]">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-black text-white">Ticket Sales</p>
-              <p className="text-xs text-white/30">This week</p>
-            </div>
-            <span className="flex items-center gap-1 rounded-full bg-brand-600/10 px-2.5 py-0.5 text-xs font-bold text-brand-400">
-              <TrendingUp size={11} />
-              +24%
-            </span>
-          </div>
-          <ResponsiveContainer width="100%" height={210}>
-            <BarChart data={ticketData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-              <XAxis dataKey="day" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-              <Bar dataKey="tickets" fill="#a78bfa" radius={[6, 6, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
         </div>
       </div>
 

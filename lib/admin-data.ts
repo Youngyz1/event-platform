@@ -608,32 +608,14 @@ export async function getUserDetail(
   const recentActivity: AdminUserDetail['recent_activity'] = [];
 
   if (organizerIds.length > 0) {
-    const [eventsRes, fundraisersRes] = await Promise.all([
-      supabaseAdmin
-        .from('events')
-        .select('id, title, slug, created_at, organizer_id')
-        .in('organizer_id', organizerIds)
-        .order('created_at', { ascending: false })
-        .limit(5),
-      supabaseAdmin
-        .from('fundraisers')
-        .select('id, title, slug, raised, created_at, organizer_id')
-        .in('organizer_id', organizerIds)
-        .order('created_at', { ascending: false })
-        .limit(5),
-    ]);
+    const { data: fundraisers } = await supabaseAdmin
+      .from('fundraisers')
+      .select('id, title, slug, raised, created_at, organizer_id')
+      .in('organizer_id', organizerIds)
+      .order('created_at', { ascending: false })
+      .limit(10);
 
-    for (const event of eventsRes.data ?? []) {
-      recentActivity.push({
-        id: event.id,
-        type: 'event',
-        title: event.title,
-        detail: 'Event created',
-        at: event.created_at,
-      });
-    }
-
-    for (const fr of fundraisersRes.data ?? []) {
+    for (const fr of fundraisers ?? []) {
       revenue += Number(fr.raised ?? 0);
       recentActivity.push({
         id: fr.id,
@@ -645,7 +627,7 @@ export async function getUserDetail(
       });
     }
 
-    const fundraiserIds = (fundraisersRes.data ?? []).map((f) => f.id);
+    const fundraiserIds = (fundraisers ?? []).map((f) => f.id);
     if (fundraiserIds.length > 0) {
       const { data: donations } = await supabaseAdmin
         .from('donations')

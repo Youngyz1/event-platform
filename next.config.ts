@@ -161,6 +161,21 @@ const nextConfig: NextConfig = {
         destination: "/campaigns",
         permanent: true,
       },
+      {
+        source: "/events",
+        destination: "/campaigns",
+        permanent: true,
+      },
+      {
+        source: "/events/:slug*",
+        destination: "/campaigns",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/events",
+        destination: "/dashboard/fundraisers",
+        permanent: true,
+      },
     ];
   },
   async headers() {
