@@ -61,9 +61,28 @@ export default async function DashboardOrganizationsPage() {
   const fundraiserIds = fundraisers.map((f) => f.id);
   const follows = followsRes.data ?? [];
 
+  const donationsPromise = (async () => {
+    if (!fundraiserIds.length) return { data: [] };
+    let allDonations: { fundraiser_id: string; created_at: string }[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    while (true) {
+      const { data: pageData, error } = await supabaseAdmin
+        .from("donations")
+        .select("fundraiser_id, created_at")
+        .in("fundraiser_id", fundraiserIds)
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+      if (error) return { data: [] };
+      allDonations = allDonations.concat(pageData || []);
+      if (!pageData || pageData.length < pageSize) break;
+      page++;
+    }
+    return { data: allDonations };
+  })();
+
   const [donationsRes, updatesRes] = fundraiserIds.length
     ? await Promise.all([
-        supabaseAdmin.from("donations").select("fundraiser_id, created_at").in("fundraiser_id", fundraiserIds),
+        donationsPromise,
         supabaseAdmin.from("fundraiser_updates").select("fundraiser_id, created_at").in("fundraiser_id", fundraiserIds),
       ])
     : [{ data: [] }, { data: [] }];

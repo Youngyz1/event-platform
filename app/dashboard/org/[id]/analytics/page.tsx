@@ -70,19 +70,30 @@ export default async function OrgAnalyticsPage({
   const fundraiserIds = ownFundraisers.map((f) => f.id);
   const fundraiserTitleById = new Map(ownFundraisers.map((f) => [f.id, f.title] as const));
 
-  let donationsQuery = fundraiserIds.length
-    ? supabase
+  const donationsPromise = (async () => {
+    if (!fundraiserIds.length) return { data: [] };
+    let allDonations: any[] = [];
+    let page = 0;
+    const pageSize = 1000;
+    while (true) {
+      let q = supabase
         .from("donations")
         .select("id, donor_name, amount, currency, message, created_at, fundraiser_id, source")
         .in("fundraiser_id", fundraiserIds)
-        .order("created_at", { ascending: false })
-    : null;
-  if (donationsQuery && sinceDate) {
-    donationsQuery = donationsQuery.gte("created_at", sinceDate);
-  }
+        .order("created_at", { ascending: false });
+      if (sinceDate) q = q.gte("created_at", sinceDate);
+
+      const { data: pageData, error } = await q.range(page * pageSize, (page + 1) * pageSize - 1);
+      if (error) return { data: [], error };
+      allDonations = allDonations.concat(pageData || []);
+      if (!pageData || pageData.length < pageSize) break;
+      page++;
+    }
+    return { data: allDonations };
+  })();
 
   const [donationsRes, updatesRes] = await Promise.all([
-    donationsQuery ?? Promise.resolve({ data: [] as never[] }),
+    donationsPromise,
     fundraiserIds.length
       ? supabase
           .from("fundraiser_updates")

@@ -253,13 +253,25 @@ export async function queryDashboardFundraisers(params: {
   const donorMap: Record<string, number> = {};
 
   if (fundraiserIds.length > 0) {
-    const { data: donations } = await supabaseAdmin
-      .from('donations')
-      .select('fundraiser_id')
-      .in('fundraiser_id', fundraiserIds)
-      .in('status', ['succeeded', 'completed']);
+    let allDonations: { fundraiser_id: string }[] = [];
+    let page = 0;
+    const pageSize = 1000;
 
-    for (const d of donations ?? []) {
+    while (true) {
+      const { data: pageData } = await supabaseAdmin
+        .from('donations')
+        .select('fundraiser_id')
+        .in('fundraiser_id', fundraiserIds)
+        .in('status', ['succeeded', 'completed'])
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (!pageData || pageData.length === 0) break;
+      allDonations = allDonations.concat(pageData);
+      if (pageData.length < pageSize) break;
+      page++;
+    }
+
+    for (const d of allDonations) {
       donorMap[d.fundraiser_id] = (donorMap[d.fundraiser_id] ?? 0) + 1;
     }
   }
@@ -585,15 +597,25 @@ export async function queryDashboardDonations(params: {
   }
 
   const dateStart = getDateRangeStart(date);
-  let donationQuery = supabaseAdmin
-    .from('donations')
-    .select('id, fundraiser_id, donor_name, donor_email, amount, status, created_at')
-    .in('fundraiser_id', fundraiserIds);
+  let donations: any[] = [];
+  let pageNum = 0;
+  const pageSize = 1000;
 
-  if (dateStart) donationQuery = donationQuery.gte('created_at', dateStart);
+  while (true) {
+    let donationQuery = supabaseAdmin
+      .from('donations')
+      .select('id, fundraiser_id, donor_name, donor_email, amount, status, created_at')
+      .in('fundraiser_id', fundraiserIds);
 
-  const { data: donations, error } = await donationQuery;
-  if (error) throw new Error(error.message);
+    if (dateStart) donationQuery = donationQuery.gte('created_at', dateStart);
+
+    const { data: pageData, error } = await donationQuery.range(pageNum * pageSize, (pageNum + 1) * pageSize - 1);
+    if (error) throw new Error(error.message);
+    if (!pageData || pageData.length === 0) break;
+    donations = donations.concat(pageData);
+    if (pageData.length < pageSize) break;
+    pageNum++;
+  }
 
   let rows: DashboardDonationRow[] = (donations ?? []).map((d) => {
     const fr = frMap[d.fundraiser_id];

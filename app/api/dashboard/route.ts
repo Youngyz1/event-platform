@@ -60,13 +60,25 @@ export async function GET() {
   const eventIds = (events || []).map((event) => event.id);
 
   const [{ data: donations }, { data: ticketOrders }] = await Promise.all([
-    fundraiserIds.length > 0
-      ? supabaseAdmin
+    (async () => {
+      if (fundraiserIds.length === 0) return { data: [] };
+      let allDonations: any[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: pageData, error } = await supabaseAdmin
           .from("donations")
           .select("id, fundraiser_id, donor_name, donor_email, amount, status, created_at, fundraisers(title, slug)")
           .in("fundraiser_id", fundraiserIds)
           .order("created_at", { ascending: false })
-      : Promise.resolve({ data: [] }),
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error) return { data: [], error };
+        allDonations = allDonations.concat(pageData || []);
+        if (!pageData || pageData.length < pageSize) break;
+        page++;
+      }
+      return { data: allDonations };
+    })(),
     eventIds.length > 0
       ? supabaseAdmin
           .from("ticket_orders")

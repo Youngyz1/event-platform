@@ -19,13 +19,25 @@ export async function getDonationCounts(
   if (fundraiserIds.length === 0) return counts;
 
   const supabaseAdmin = createSupabaseAdmin();
-  const { data } = await supabaseAdmin
-    .from("donations")
-    .select("fundraiser_id")
-    .in("fundraiser_id", fundraiserIds)
-    .in("status", ["succeeded", "completed"]);
+  let allDonations: { fundraiser_id: string }[] = [];
+  let page = 0;
+  const pageSize = 1000;
 
-  for (const row of data ?? []) {
+  while (true) {
+    const { data: pageData } = await supabaseAdmin
+      .from("donations")
+      .select("fundraiser_id")
+      .in("fundraiser_id", fundraiserIds)
+      .in("status", ["succeeded", "completed"])
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+
+    if (!pageData || pageData.length === 0) break;
+    allDonations = allDonations.concat(pageData);
+    if (pageData.length < pageSize) break;
+    page++;
+  }
+
+  for (const row of allDonations) {
     if (row.fundraiser_id) {
       counts.set(row.fundraiser_id, (counts.get(row.fundraiser_id) ?? 0) + 1);
     }
