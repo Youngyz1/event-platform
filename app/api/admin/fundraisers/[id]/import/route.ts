@@ -111,41 +111,50 @@ export async function POST(
   const importBatchId = randomUUID();
 
   if (donors.rows.length > 0) {
-    const { error } = await supabaseAdmin.from("donations").insert(
-      donors.rows.map((r) => ({
-        fundraiser_id: id,
-        donor_name: r.name,
-        amount: r.amount,
-        currency: "USD",
-        status: "completed", // counts toward raised, count, and the donor list
-        source: "imported",
-        payment_method: "imported",
-        import_batch_id: importBatchId,
-        user_id: null,
-        created_at: `${r.date}T00:00:00`,
-      }))
-    );
-    if (error) {
-      return NextResponse.json({ error: `Donation import failed: ${error.message}` }, { status: 500 });
+    const donorPayload = donors.rows.map((r) => ({
+      fundraiser_id: id,
+      donor_name: r.name,
+      amount: r.amount,
+      currency: "USD",
+      status: "completed", // counts toward raised, count, and the donor list
+      source: "imported",
+      payment_method: "imported",
+      import_batch_id: importBatchId,
+      user_id: null,
+      created_at: `${r.date}T00:00:00`,
+    }));
+
+    // Chunk inserts into batches of 500 rows to prevent DB trigger statement timeouts on large pastes
+    const chunkSize = 500;
+    for (let i = 0; i < donorPayload.length; i += chunkSize) {
+      const chunk = donorPayload.slice(i, i + chunkSize);
+      const { error } = await supabaseAdmin.from("donations").insert(chunk);
+      if (error) {
+        return NextResponse.json({ error: `Donation import failed: ${error.message}` }, { status: 500 });
+      }
     }
   }
 
   if (comments.rows.length > 0) {
-    const { error } = await supabaseAdmin.from("comments").insert(
-      comments.rows.map((r) => ({
-        target_type: "fundraiser",
-        target_id: id,
-        author_name: r.name,
-        body: r.body,
-        status: "approved",
-        source: "imported",
-        likes: r.likes,
-        import_batch_id: importBatchId,
-        created_at: `${r.date}T00:00:00`,
-      }))
-    );
-    if (error) {
-      return NextResponse.json({ error: `Comment import failed: ${error.message}` }, { status: 500 });
+    const commentPayload = comments.rows.map((r) => ({
+      target_type: "fundraiser",
+      target_id: id,
+      author_name: r.name,
+      body: r.body,
+      status: "approved",
+      source: "imported",
+      likes: r.likes,
+      import_batch_id: importBatchId,
+      created_at: `${r.date}T00:00:00`,
+    }));
+
+    const chunkSize = 500;
+    for (let i = 0; i < commentPayload.length; i += chunkSize) {
+      const chunk = commentPayload.slice(i, i + chunkSize);
+      const { error } = await supabaseAdmin.from("comments").insert(chunk);
+      if (error) {
+        return NextResponse.json({ error: `Comment import failed: ${error.message}` }, { status: 500 });
+      }
     }
   }
 
