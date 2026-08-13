@@ -19,13 +19,23 @@ export async function checkEventDeleteBlocked(eventIds: string[]): Promise<Block
 export async function checkFundraiserDeleteBlocked(fundraiserIds: string[]): Promise<BlockingCheck> {
   if (fundraiserIds.length === 0) return { blocked: false };
 
-  const { data: donations, error } = await supabaseAdmin
-    .from("donations")
-    .select("id, status, payment_intent_id")
-    .in("fundraiser_id", fundraiserIds);
+  let donations: { id: string; status: string | null; payment_intent_id: string | null }[] = [];
+  let page = 0;
+  const pageSize = 1000;
 
-  if (error) {
-    throw new Error(error.message);
+  while (true) {
+    const { data: pageData, error } = await supabaseAdmin
+      .from("donations")
+      .select("id, status, payment_intent_id")
+      .in("fundraiser_id", fundraiserIds)
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+    donations = donations.concat(pageData || []);
+    if (!pageData || pageData.length < pageSize) break;
+    page++;
   }
 
   const blockingDonations = (donations ?? []).filter(

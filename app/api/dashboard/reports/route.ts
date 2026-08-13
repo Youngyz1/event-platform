@@ -91,14 +91,26 @@ export async function GET(req: NextRequest) {
           .in('event_id', eventIds)
           .gte('created_at', sinceISO)
       : Promise.resolve({ data: [] }),
-    fundraiserIds.length > 0
-      ? supabaseAdmin
+    (async () => {
+      if (fundraiserIds.length === 0) return { data: [] };
+      let allDonations: { fundraiser_id: string; amount: number | null; created_at: string }[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: pageData, error } = await supabaseAdmin
           .from('donations')
           .select('fundraiser_id, amount, created_at')
           .in('status', ['succeeded', 'completed'])
           .in('fundraiser_id', fundraiserIds)
           .gte('created_at', sinceISO)
-      : Promise.resolve({ data: [] }),
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        if (error) return { data: [], error };
+        allDonations = allDonations.concat(pageData || []);
+        if (!pageData || pageData.length < pageSize) break;
+        page++;
+      }
+      return { data: allDonations };
+    })(),
   ]);
 
   const orders = ordersResult.data ?? [];

@@ -55,29 +55,43 @@ export async function recalculateFundraiserRaised(fundraiserId: string) {
       ?.external_raised_baseline ?? 0
   );
 
-  const initial = await supabaseAdmin
-    .from("donations")
-    .select("amount, status")
-    .eq("fundraiser_id", fundraiserId);
-  let data = initial.data as DonationTotalRow[] | null;
-  let error = initial.error;
+  // Paginate all donation rows to prevent PostgREST's default 1,000-row silent truncation
+  let allDonations: DonationTotalRow[] = [];
+  let page = 0;
+  const pageSize = 1000;
 
-  if (error && error.code === "42703") {
-    const retry = await supabaseAdmin
+  while (true) {
+    const { data: pageData, error } = await supabaseAdmin
       .from("donations")
-      .select("amount")
-      .eq("fundraiser_id", fundraiserId);
+      .select("amount, status")
+      .eq("fundraiser_id", fundraiserId)
+      .range(page * pageSize, (page + 1) * pageSize - 1);
 
-    data = retry.data as DonationTotalRow[] | null;
-    error = retry.error;
+    if (error && error.code === "42703") {
+      // Fallback if status column is missing in legacy schema
+      const { data: retryData, error: retryError } = await supabaseAdmin
+        .from("donations")
+        .select("amount")
+        .eq("fundraiser_id", fundraiserId)
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (retryError) {
+        console.error("Donation total recalculation retry error:", retryError.message);
+        return;
+      }
+      allDonations = allDonations.concat((retryData as DonationTotalRow[]) || []);
+      if (!retryData || retryData.length < pageSize) break;
+    } else if (error) {
+      console.error("Donation total recalculation error:", error.message);
+      return;
+    } else {
+      allDonations = allDonations.concat((pageData as DonationTotalRow[]) || []);
+      if (!pageData || pageData.length < pageSize) break;
+    }
+    page++;
   }
 
-  if (error) {
-    console.error("Donation total recalculation error:", error.message);
-    return;
-  }
-
-  const donationsTotal = (data || []).reduce((sum, donation) => {
+  const donationsTotal = allDonations.reduce((sum, donation) => {
     const status = donation.status ?? "succeeded";
     return status === "completed" || status === "succeeded"
       ? sum + Number(donation.amount || 0)
