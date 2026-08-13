@@ -580,6 +580,7 @@ export type Database = {
           is_homepage_featured: boolean | null
           organizer: string | null
           organizer_id: string | null
+          external_raised_baseline: number | null
           raised: number | null
           raised_amount: number | null
           review_count: number | null
@@ -603,6 +604,7 @@ export type Database = {
           is_homepage_featured?: boolean | null
           organizer?: string | null
           organizer_id?: string | null
+          external_raised_baseline?: number | null
           raised?: number | null
           raised_amount?: number | null
           review_count?: number | null
@@ -626,6 +628,7 @@ export type Database = {
           is_homepage_featured?: boolean | null
           organizer?: string | null
           organizer_id?: string | null
+          external_raised_baseline?: number | null
           raised?: number | null
           raised_amount?: number | null
           review_count?: number | null

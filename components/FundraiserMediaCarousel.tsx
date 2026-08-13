@@ -72,15 +72,29 @@ export default function FundraiserMediaCarousel({
     >
       <div className="relative h-[260px] w-full sm:h-[440px] lg:h-[520px]">
         {activeSrc && slide ? (
-          <Image
-            src={activeSrc}
-            alt={slide.caption || title}
-            fill
-            priority={active === 0}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1200px"
-            className="object-cover"
-            onError={() => setImgError(true)}
-          />
+          <>
+            {/* Blurred backdrop — fills space left over by object-contain.
+                Requested at tiny size; it is blurred beyond recognition so a
+                full-resolution second fetch would be pure waste. */}
+            <Image
+              src={activeSrc}
+              alt=""
+              aria-hidden
+              fill
+              sizes="64px"
+              className="scale-110 object-cover blur-2xl"
+              onError={() => setImgError(true)}
+            />
+            <Image
+              src={activeSrc}
+              alt={slide.caption || title}
+              fill
+              priority={active === 0}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 1200px"
+              className="object-contain"
+              onError={() => setImgError(true)}
+            />
+          </>
         ) : (
           <LocalBrandedPlaceholder variant="fundraiser" title={title} />
         )}

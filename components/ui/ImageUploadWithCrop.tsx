@@ -61,6 +61,19 @@ export interface ImageUploadWithCropProps {
   helperText?: string;
   disabled?: boolean;
   className?: string;
+  /**
+   * When true, the crop box is automatically sized to match the uploaded
+   * image's own aspect ratio — the complete image is visible by default and
+   * no pixels are cropped away unless the user deliberately zooms in.
+   *
+   * The detected ratio is stored in state BEFORE the <Cropper> mounts, so
+   * it never briefly renders at the caller-supplied `aspectRatio` first.
+   *
+   * Use this for fundraiser photos where the full composition must be
+   * preserved. Leave false (default) for avatars, logos, and any upload
+   * that intentionally requires a fixed crop ratio.
+   */
+  preserveAspectRatio?: boolean;
 }
 
 /**
@@ -69,6 +82,9 @@ export interface ImageUploadWithCropProps {
  * uploads the result through the shared `uploadPublicFile` utility, then
  * hands the caller back a public URL. One image in, one URL out — for
  * multi-photo galleries, render one instance per photo slot.
+ *
+ * When `preserveAspectRatio` is true, the crop box is dynamically set to the
+ * image's own natural aspect ratio so the full image is the default export.
  */
 export default function ImageUploadWithCrop({
   aspectRatio,
@@ -88,6 +104,7 @@ export default function ImageUploadWithCrop({
   helperText,
   disabled,
   className,
+  preserveAspectRatio = false,
 }: ImageUploadWithCropProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [sourceUrl, setSourceUrl] = useState<string | null>(null);
@@ -96,6 +113,18 @@ export default function ImageUploadWithCrop({
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [uploading, setUploading] = useState(false);
   const [modalError, setModalError] = useState("");
+  /**
+   * Detected natural aspect ratio of the selected image. Only populated when
+   * preserveAspectRatio=true. Set in the same state-update batch as sourceUrl
+   * so the <Cropper> always receives the correct ratio on its very first render.
+   */
+  const [detectedAspect, setDetectedAspect] = useState<number | null>(null);
+
+  // The ratio passed to <Cropper aspect={...}>.
+  // When preserving: use the image's own ratio (always set before Cropper mounts).
+  // When fixed crop: use the caller-supplied aspectRatio prop.
+  const activeCropAspect =
+    preserveAspectRatio && detectedAspect !== null ? detectedAspect : aspectRatio;
 
   const open = useCallback(() => {
     if (disabled) return;
@@ -157,6 +186,16 @@ export default function ImageUploadWithCrop({
       return;
     }
 
+    // When preserving aspect ratio, detect the image's own w/h ratio and store
+    // it BEFORE setting sourceUrl. React batches these state updates together,
+    // so by the time <Cropper> first mounts it already sees the correct aspect —
+    // it never briefly renders at the caller-supplied fixed ratio.
+    if (preserveAspectRatio && dimensions.width > 0 && dimensions.height > 0) {
+      setDetectedAspect(dimensions.width / dimensions.height);
+    } else {
+      setDetectedAspect(null);
+    }
+
     setModalError("");
     setCrop({ x: 0, y: 0 });
     setZoom(1);
@@ -172,6 +211,7 @@ export default function ImageUploadWithCrop({
     if (uploading) return;
     setSourceUrl(null);
     setModalError("");
+    setDetectedAspect(null);
   }
 
   async function confirmCrop() {
@@ -199,6 +239,7 @@ export default function ImageUploadWithCrop({
       });
 
       setSourceUrl(null);
+      setDetectedAspect(null);
       onUploaded(uploaded.publicUrl);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Upload failed.";
@@ -245,19 +286,28 @@ export default function ImageUploadWithCrop({
       <Dialog open={Boolean(sourceUrl)} onOpenChange={(next) => !next && closeModal()}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Reposition your photo</DialogTitle>
-            <DialogDescription className="sr-only">
-              Drag to reposition and use the slider to zoom, then save to crop your photo.
+            <DialogTitle>
+              {preserveAspectRatio ? "Preview your photo" : "Reposition your photo"}
+            </DialogTitle>
+            <DialogDescription className={preserveAspectRatio ? undefined : "sr-only"}>
+              {preserveAspectRatio
+                ? "Your full photo will be uploaded. Zoom in if you'd like to frame a closer view."
+                : "Drag to reposition and use the slider to zoom, then save to crop your photo."}
             </DialogDescription>
           </DialogHeader>
 
+          {/* Only render the Cropper once both sourceUrl AND the correct aspect
+              ratio are available. Because detectedAspect is set in the same
+              React state-update batch as sourceUrl (inside handleFileChange),
+              this condition is always satisfied together — no flicker at the
+              old fixed ratio before the detected ratio takes effect. */}
           {sourceUrl && (
             <div className="relative h-[50vh] min-h-[320px] w-full overflow-hidden rounded-xl bg-zinc-900">
               <Cropper
                 image={sourceUrl}
                 crop={crop}
                 zoom={zoom}
-                aspect={aspectRatio}
+                aspect={activeCropAspect}
                 cropShape={shape}
                 showGrid={shape === "rect"}
                 onCropChange={setCrop}

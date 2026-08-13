@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   parseDonorsPaste,
   parseCommentsPaste,
@@ -39,11 +40,17 @@ function SkippedRows({ errors }: { errors: RowError[] }) {
  * never in the user-facing create/edit fundraiser flow.
  */
 export default function FundraiserImportPanel({ fundraiserId }: { fundraiserId: string }) {
+  const router = useRouter();
   const [donorsText, setDonorsText] = useState("");
   const [commentsText, setCommentsText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    duplicateCount: number;
+    totalRows: number;
+    message: string;
+  } | null>(null);
 
   const donors = useMemo(() => parseDonorsPaste(donorsText), [donorsText]);
   const comments = useMemo(() => parseCommentsPaste(commentsText), [commentsText]);
@@ -51,18 +58,30 @@ export default function FundraiserImportPanel({ fundraiserId }: { fundraiserId: 
 
   const canImport = donors.rows.length > 0 || comments.rows.length > 0;
 
-  async function handleImport() {
+  async function handleImport(confirmDuplicate = false) {
     setLoading(true);
     setError("");
     setResult(null);
+    if (!confirmDuplicate) {
+      setDuplicateWarning(null);
+    }
+
     try {
       const res = await fetch(`/api/admin/fundraisers/${fundraiserId}/import`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ donorsText, commentsText }),
+        body: JSON.stringify({ donorsText, commentsText, confirmDuplicate }),
       });
       const data = await res.json();
       if (!res.ok) {
+        if (res.status === 409 && data.warning === "duplicate_risk") {
+          setDuplicateWarning({
+            duplicateCount: data.duplicateCount,
+            totalRows: data.totalRows,
+            message: data.message,
+          });
+          return;
+        }
         setError(data.error ?? "Import failed.");
         return;
       }
@@ -71,8 +90,10 @@ export default function FundraiserImportPanel({ fundraiserId }: { fundraiserId: 
         commentsInserted: data.commentsInserted,
         raised: data.raised,
       });
+      setDuplicateWarning(null);
       setDonorsText("");
       setCommentsText("");
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed.");
     } finally {
@@ -167,6 +188,36 @@ export default function FundraiserImportPanel({ fundraiserId }: { fundraiserId: 
         </div>
       </div>
 
+      {duplicateWarning && (
+        <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 shadow-sm">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⚠️</span>
+            <div className="flex-1 text-xs">
+              <p className="font-black text-amber-950">Potential Duplicate Import Detected</p>
+              <p className="mt-1 font-medium">{duplicateWarning.message}</p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleImport(true)}
+                  disabled={loading}
+                  className="rounded-lg bg-amber-700 px-3.5 py-1.5 font-black text-white hover:bg-amber-800 disabled:opacity-50"
+                >
+                  {loading ? "Importing…" : "Import Anyway"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDuplicateWarning(null)}
+                  disabled={loading}
+                  className="rounded-lg bg-white px-3.5 py-1.5 font-bold text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700">
           {error}
@@ -188,7 +239,7 @@ export default function FundraiserImportPanel({ fundraiserId }: { fundraiserId: 
       <button
         type="button"
         disabled={!canImport || loading}
-        onClick={handleImport}
+        onClick={() => handleImport(false)}
         className="mt-4 rounded-xl bg-brand-700 px-5 py-2.5 text-sm font-black text-white transition hover:bg-brand-800 disabled:opacity-50"
       >
         {loading

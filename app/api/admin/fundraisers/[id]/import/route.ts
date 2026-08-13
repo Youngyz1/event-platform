@@ -32,7 +32,11 @@ export async function POST(
   }
 
   const { id } = await params;
-  const body = (await req.json()) as { donorsText?: string; commentsText?: string };
+  const body = (await req.json()) as {
+    donorsText?: string;
+    commentsText?: string;
+    confirmDuplicate?: boolean;
+  };
 
   const donors = parseDonorsPaste(body.donorsText ?? "");
   const comments = parseCommentsPaste(body.commentsText ?? "");
@@ -56,6 +60,53 @@ export async function POST(
     .maybeSingle();
   if (frError) return NextResponse.json({ error: frError.message }, { status: 500 });
   if (!fundraiser) return NextResponse.json({ error: "Fundraiser not found." }, { status: 404 });
+
+  // Pre-import duplicate check: if >= 30% of pasted rows match existing donations, return warning unless confirmed
+  if (donors.rows.length > 0 && !body.confirmDuplicate) {
+    let existingDonations: { donor_name: string | null; amount: number | null; created_at: string | null }[] = [];
+    let page = 0;
+    while (true) {
+      const { data: pageData } = await supabaseAdmin
+        .from("donations")
+        .select("donor_name, amount, created_at")
+        .eq("fundraiser_id", id)
+        .range(page * 1000, (page + 1) * 1000 - 1);
+      if (!pageData || pageData.length === 0) break;
+      existingDonations = existingDonations.concat(pageData);
+      if (pageData.length < 1000) break;
+      page++;
+    }
+
+    const existingSet = new Set(
+      existingDonations.map((d) => {
+        const dateStr = d.created_at ? d.created_at.substring(0, 10) : "";
+        const nameStr = (d.donor_name || "").trim().toLowerCase();
+        const amtStr = Number(d.amount || 0).toFixed(2);
+        return `${nameStr}|${amtStr}|${dateStr}`;
+      })
+    );
+
+    let duplicateCount = 0;
+    for (const r of donors.rows) {
+      const key = `${r.name.trim().toLowerCase()}|${r.amount.toFixed(2)}|${r.date}`;
+      if (existingSet.has(key)) {
+        duplicateCount++;
+      }
+    }
+
+    const duplicateRatio = donors.rows.length > 0 ? duplicateCount / donors.rows.length : 0;
+    if (duplicateCount > 0 && duplicateRatio >= 0.3) {
+      return NextResponse.json(
+        {
+          warning: "duplicate_risk",
+          duplicateCount,
+          totalRows: donors.rows.length,
+          message: `This looks similar to an already-imported batch — ${duplicateCount} of ${donors.rows.length} rows (${Math.round(duplicateRatio * 100)}%) appear to be duplicates. Continue anyway?`,
+        },
+        { status: 409 }
+      );
+    }
+  }
 
   const importBatchId = randomUUID();
 
@@ -106,11 +157,17 @@ export async function POST(
     await recalculateFundraiserRaised(id);
     const { data } = await supabaseAdmin
       .from("fundraisers")
-      .select("raised")
+      .select("id, slug, raised")
       .eq("id", id)
       .maybeSingle();
     raised = data ? Number(data.raised ?? 0) : null;
     revalidatePath("/");
+    revalidatePath("/campaigns");
+    revalidatePath("/admin/fundraisers");
+    revalidatePath(`/admin/fundraisers/${id}`);
+    if (data?.slug) {
+      revalidatePath(`/fundraisers/${data.slug}`);
+    }
   }
 
   return NextResponse.json({

@@ -36,7 +36,25 @@ async function donationExists(paymentIntentId: string) {
   return Boolean(data);
 }
 
+/**
+ * IMPORTANT POSTGREST PAGINATION NOTE:
+ * Supabase JS (PostgREST) silently caps unpaginated `.select()` queries at 1,000 rows by default.
+ * If a fundraiser has >1,000 donations, a single `.select()` without `.range()` pagination will be truncated.
+ * For queries expected to return >1,000 rows (such as auditing or exporting donations), always use
+ * explicit `.range(start, end)` pagination loops.
+ */
 export async function recalculateFundraiserRaised(fundraiserId: string) {
+  // Fetch the external baseline (0 for normal campaigns, set once for externally-seeded ones)
+  const { data: fundraiserRow } = await supabaseAdmin
+    .from("fundraisers")
+    .select("external_raised_baseline")
+    .eq("id", fundraiserId)
+    .maybeSingle();
+  const baseline = Number(
+    (fundraiserRow as { external_raised_baseline?: number | null } | null)
+      ?.external_raised_baseline ?? 0
+  );
+
   const initial = await supabaseAdmin
     .from("donations")
     .select("amount, status")
@@ -59,16 +77,20 @@ export async function recalculateFundraiserRaised(fundraiserId: string) {
     return;
   }
 
-  const total = (data || []).reduce((sum, donation) => {
+  const donationsTotal = (data || []).reduce((sum, donation) => {
     const status = donation.status ?? "succeeded";
     return status === "completed" || status === "succeeded"
       ? sum + Number(donation.amount || 0)
       : sum;
   }, 0);
 
+  // raised = external_raised_baseline + SUM(valid donations)
+  // For all normal campaigns, baseline = 0 and this is identical to before.
+  const displayed = baseline + donationsTotal;
+
   const { error: updateError } = await supabaseAdmin
     .from("fundraisers")
-    .update({ raised: total })
+    .update({ raised: displayed, raised_amount: displayed })
     .eq("id", fundraiserId);
 
   if (updateError) {

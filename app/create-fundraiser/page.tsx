@@ -21,9 +21,10 @@ import BeneficiarySelector, {
 import { validateBeneficiary, beneficiaryTypeLabel } from "@/lib/beneficiary";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
 
-// Matches the detail-page hero (FundraiserMediaSlider)'s mobile ratio — the
-// single ratio every uploaded photo is cropped to.
-const FUNDRAISER_PHOTO_ASPECT_RATIO = 4 / 5;
+// Upper-bound for fundraiser photo exports. Images larger than this are scaled
+// down proportionally; the original aspect ratio is always preserved and nothing
+// is cropped to fill a fixed canvas.
+const FUNDRAISER_PHOTO_MAX_DIMENSION = 1920;
 const MAX_FUNDRAISER_PHOTOS = 8;
 
 const FUNDRAISER_STEPS = [
@@ -637,9 +638,10 @@ export default function CreateFundraiserPage() {
                   <ImageUploadWithCrop
                     bucket="fundraiser-media"
                     folder="fundraiser-photos"
-                    aspectRatio={FUNDRAISER_PHOTO_ASPECT_RATIO}
-                    maxOutputWidth={1080}
-                    maxOutputHeight={1350}
+                    aspectRatio={1}
+                    preserveAspectRatio={true}
+                    maxOutputWidth={FUNDRAISER_PHOTO_MAX_DIMENSION}
+                    maxOutputHeight={FUNDRAISER_PHOTO_MAX_DIMENSION}
                     onUploaded={addPhoto}
                     onError={setError}
                     disabled={photoUrls.length >= MAX_FUNDRAISER_PHOTOS}

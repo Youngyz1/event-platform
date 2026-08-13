@@ -53,11 +53,15 @@ $$;
 CREATE INDEX IF NOT EXISTS idx_donations_fundraiser_id ON donations(fundraiser_id);
 CREATE INDEX IF NOT EXISTS idx_donations_payment_intent_id ON donations(payment_intent_id);
 
--- 3. Create function and trigger to automatically update fundraiser's total raised amount
+-- 3. Create function and trigger to automatically update fundraiser's total raised amount.
+-- Formula: raised = external_raised_baseline + SUM(valid donations)
+-- raised_amount is kept identical to raised.
 CREATE OR REPLACE FUNCTION update_fundraiser_raised()
 RETURNS TRIGGER AS $$
 DECLARE
     target_fundraiser_id UUID;
+    total    numeric;
+    baseline numeric;
 BEGIN
     IF TG_OP = 'DELETE' THEN
         target_fundraiser_id := OLD.fundraiser_id;
@@ -65,12 +69,20 @@ BEGIN
         target_fundraiser_id := NEW.fundraiser_id;
     END IF;
 
+    SELECT COALESCE(SUM(d.amount), 0)
+    INTO total
+    FROM donations d
+    WHERE d.fundraiser_id = target_fundraiser_id
+      AND d.status IN ('succeeded', 'completed');
+
+    SELECT COALESCE(f.external_raised_baseline, 0)
+    INTO baseline
+    FROM fundraisers f
+    WHERE f.id = target_fundraiser_id;
+
     UPDATE fundraisers
-    SET raised = COALESCE((
-        SELECT SUM(amount)
-        FROM donations
-        WHERE fundraiser_id = target_fundraiser_id AND status = 'succeeded'
-    ), 0)
+    SET raised        = baseline + total,
+        raised_amount = baseline + total
     WHERE id = target_fundraiser_id;
 
     RETURN NULL;
