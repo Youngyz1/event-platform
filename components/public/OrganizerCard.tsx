@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
-import { CalendarDays, Heart, Users } from "lucide-react";
+import { Heart, Users } from "lucide-react";
 import { safeImageSrc } from "@/lib/image-url";
 import LocalBrandedPlaceholder from "@/components/ui/LocalBrandedPlaceholder";
 
@@ -17,7 +17,6 @@ export type OrganizerCardData = {
   banner?: string | null;
   status?: string | null;
   org_type?: string | null;
-  eventCount?: number;
   fundraiserCount?: number;
   followerCount?: number;
 };
@@ -107,12 +106,6 @@ export default function OrganizerCard({
           </p>
 
           <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs font-bold text-zinc-500 sm:justify-start">
-            {(organizer.eventCount ?? 0) > 0 && (
-              <span className="inline-flex items-center gap-1">
-                <CalendarDays className="h-3.5 w-3.5" />
-                {organizer.eventCount} events
-              </span>
-            )}
             {(organizer.fundraiserCount ?? 0) > 0 && (
               <span className="inline-flex items-center gap-1">
                 <Heart className="h-3.5 w-3.5" />

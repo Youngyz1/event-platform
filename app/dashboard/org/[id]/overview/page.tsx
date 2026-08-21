@@ -10,7 +10,7 @@ import { DonationList } from "@/components/dashboard/fund4good/DonationList";
 import { WorkspaceCampaignCard, type WorkspaceCampaign } from "./WorkspaceCampaignCard";
 import { PendingTasksList, type PendingTask } from "./PendingTasksList";
 import {
-  Heart, DollarSign, Users, Calendar, Plus, Megaphone, UserPlus, Globe, LayoutGrid,
+  Heart, DollarSign, Users, Plus, Megaphone, UserPlus, Globe, LayoutGrid,
 } from "lucide-react";
 
 // No end_date column exists on fundraisers yet — every campaign gets the
@@ -45,15 +45,12 @@ export default async function OrgOverviewPage({
 
   if (!org) return null;
 
-  const [{ data: fundraisers }, { count: eventCount }] = await Promise.all([
-    supabase
-      .from("fundraisers")
-      .select("id, title, slug, goal, raised, raised_amount, status, created_at")
-      .eq("organizer_id", id)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false }),
-    supabase.from("events").select("id", { count: "exact", head: true }).eq("organizer_id", id),
-  ]);
+  const { data: fundraisers } = await supabase
+    .from("fundraisers")
+    .select("id, title, slug, goal, raised, raised_amount, status, created_at")
+    .eq("organizer_id", id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
 
   const ownFundraisers = fundraisers ?? [];
   const fundraiserIds = ownFundraisers.map((f) => f.id);
@@ -187,13 +184,12 @@ export default async function OrgOverviewPage({
         </div>
       </header>
 
-      {/* Stats — 2x2 mobile, 4 columns desktop */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      {/* Stats — 2x2 mobile, 3 columns desktop */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         {[
           { label: "Campaigns", value: activeCampaigns.toLocaleString(), icon: Heart, tint: "bg-brand-50 text-brand-700" },
           { label: "Raised", value: `$${raised.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: DollarSign, tint: "bg-brand-50 text-brand-700" },
           { label: "Donors", value: donorCount.toLocaleString(), icon: Users, tint: "bg-sky-50 text-sky-600" },
-          { label: "Events", value: (eventCount ?? 0).toLocaleString(), icon: Calendar, tint: "bg-violet-50 text-violet-600" },
         ].map((stat) => (
           <div key={stat.label} className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5">
             <div className="flex items-center justify-between gap-2">

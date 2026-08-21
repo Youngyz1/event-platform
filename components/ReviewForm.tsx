@@ -12,6 +12,7 @@ export interface ReviewFormValues {
   rating: number;
   title: string;
   review: string;
+  display_preference: "full" | "initial" | "anonymous";
 }
 
 interface ReviewFormProps {
@@ -49,6 +50,9 @@ export default function ReviewForm({
   const [rating, setRating] = useState(initialValues?.rating ?? 0);
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [review, setReview] = useState(initialValues?.review ?? "");
+  const [displayPreference, setDisplayPreference] = useState<"full" | "initial" | "anonymous">(
+    initialValues?.display_preference ?? "full"
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -66,7 +70,12 @@ export default function ReviewForm({
 
     setSubmitting(true);
     try {
-      await onSubmit({ rating, title: title.trim(), review: review.trim() });
+      await onSubmit({
+        rating,
+        title: title.trim(),
+        review: review.trim(),
+        display_preference: displayPreference,
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -127,6 +136,48 @@ export default function ReviewForm({
           className={`w-full resize-none rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-900 placeholder-zinc-400 outline-none focus:ring-2 ${ringClass} transition`}
         />
         <p className="mt-1 text-right text-xs text-zinc-400">{review.length}/2000</p>
+      </div>
+
+      {/* Display preference radio options */}
+      <div>
+        <label className="mb-1.5 block text-sm font-bold text-zinc-700">
+          Display name preference
+        </label>
+        <div className="space-y-2 rounded-xl border border-zinc-200 bg-white p-3">
+          <label className="flex items-center gap-2.5 text-xs font-semibold text-zinc-800 cursor-pointer">
+            <input
+              type="radio"
+              name="display_preference"
+              value="full"
+              checked={displayPreference === "full"}
+              onChange={() => setDisplayPreference("full")}
+              className="h-4 w-4 accent-violet-600"
+            />
+            My profile name and photo
+          </label>
+          <label className="flex items-center gap-2.5 text-xs font-semibold text-zinc-800 cursor-pointer">
+            <input
+              type="radio"
+              name="display_preference"
+              value="initial"
+              checked={displayPreference === "initial"}
+              onChange={() => setDisplayPreference("initial")}
+              className="h-4 w-4 accent-violet-600"
+            />
+            First name + last initial (e.g. Jane D.)
+          </label>
+          <label className="flex items-center gap-2.5 text-xs font-semibold text-zinc-800 cursor-pointer">
+            <input
+              type="radio"
+              name="display_preference"
+              value="anonymous"
+              checked={displayPreference === "anonymous"}
+              onChange={() => setDisplayPreference("anonymous")}
+              className="h-4 w-4 accent-violet-600"
+            />
+            Anonymous
+          </label>
+        </div>
       </div>
 
       {/* Error message */}

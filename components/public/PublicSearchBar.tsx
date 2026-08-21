@@ -106,7 +106,7 @@ export default function PublicSearchBar({
           )}
         >
           <Search className="h-4 w-4" />
-          <span>Search events</span>
+          <span>Search fundraisers</span>
         </button>
       )}
 

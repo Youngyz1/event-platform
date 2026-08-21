@@ -44,18 +44,17 @@ const PAGE_SIZE = 9;
 // literal string type, and `+` widens it to `string`, which collapses the
 // result type to GenericStringError.
 // prettier-ignore
-const ORGANIZER_PUBLIC_COLUMNS = "id, user_id, name, bio, photo, banner, slug, org_type, visibility, status, verified_at, website, facebook, twitter, instagram, linkedin, youtube, tiktok, contact_email, average_rating, review_count, follower_offset, events_offset, organization_name, created_at, updated_at, deleted_at" as const;
+const ORGANIZER_PUBLIC_COLUMNS = "id, user_id, name, bio, photo, banner, slug, org_type, visibility, status, verified_at, website, facebook, twitter, instagram, linkedin, youtube, tiktok, contact_email, average_rating, review_count, follower_offset, organization_name, created_at, updated_at, deleted_at" as const;
 
 async function getOrganizerStats(ids: string[]) {
-  const stats = new Map<string, { events: number; fundraisers: number; followers: number }>();
+  const stats = new Map<string, { fundraisers: number; followers: number }>();
   if (ids.length === 0) return stats;
 
   for (const id of ids) {
-    stats.set(id, { events: 0, fundraisers: 0, followers: 0 });
+    stats.set(id, { fundraisers: 0, followers: 0 });
   }
 
-  const [{ data: events }, { data: fundraisers }, { data: follows }] = await Promise.all([
-    supabase.from("events").select("organizer_id").in("organizer_id", ids).eq("visibility", "public"),
+  const [{ data: fundraisers }, { data: follows }] = await Promise.all([
     supabase.from("fundraisers").select("organizer_id").in("organizer_id", ids),
     // Aggregate view, not the raw table: migration_53 stopped publishing the
     // (user_id, organizer_id) follow graph to anonymous callers. This directory
@@ -66,11 +65,6 @@ async function getOrganizerStats(ids: string[]) {
       .in("organizer_id", ids),
   ]);
 
-  for (const row of events ?? []) {
-    if (row.organizer_id && stats.has(row.organizer_id)) {
-      stats.get(row.organizer_id)!.events += 1;
-    }
-  }
   for (const row of fundraisers ?? []) {
     if (row.organizer_id && stats.has(row.organizer_id)) {
       stats.get(row.organizer_id)!.fundraisers += 1;
@@ -96,9 +90,8 @@ function enrichOrganizers(
     status: string | null;
     org_type?: string | null;
     follower_offset?: number;
-    events_offset?: number;
   }>,
-  stats: Map<string, { events: number; fundraisers: number; followers: number }>
+  stats: Map<string, { fundraisers: number; followers: number }>
 ): OrganizerCardData[] {
   return organizers.map((org) => ({
     id: org.id,
@@ -109,7 +102,6 @@ function enrichOrganizers(
     banner: org.banner,
     status: org.status,
     org_type: org.org_type,
-    eventCount: (stats.get(org.id)?.events ?? 0) + (org.events_offset ?? 0),
     fundraiserCount: stats.get(org.id)?.fundraisers ?? 0,
     followerCount: (stats.get(org.id)?.followers ?? 0) + (org.follower_offset ?? 0),
   }));
@@ -123,7 +115,6 @@ export default async function OrganizersDirectoryPage({
   const filters = await searchParams;
   const query = filters.q?.trim();
   const statusFilter = filters.status === "verified" ? "verified" : "all";
-  const sort = filters.sort === "events" ? "events" : "name";
   const page = Math.max(1, parseInt(filters.page || "1", 10) || 1);
 
   const adminClient = createSupabaseAdmin();
@@ -132,18 +123,15 @@ export default async function OrganizersDirectoryPage({
   const [
     { data: cmsRows },
     { count: verifiedCount },
-    { count: hostedCount },
     { data: raisedData }
   ] = await Promise.all([
     adminClient.from("platform_settings").select("key, value").in("key", HOMEPAGE_SETTING_KEYS),
     adminClient.from("organizers").select("id", { count: "exact", head: true }).eq("status", "verified").eq("visibility", "public").is("deleted_at", null),
-    adminClient.from("events").select("id", { count: "exact", head: true }).eq("visibility", "public").eq("status", "approved").is("deleted_at", null),
     adminClient.from("fundraisers").select("raised").eq("status", "published").is("deleted_at", null)
   ]);
 
   const cms = getHomepageSettings(cmsRows);
   const totalVerifiedOrganizers = verifiedCount ?? 0;
-  const totalEventsHosted = hostedCount ?? 0;
   const totalCommunityRaised = raisedData?.reduce((sum, f) => sum + Number(f.raised || 0), 0) || 0;
 
   // 2. Fetch main directory organizers (Step 3)
@@ -161,11 +149,7 @@ export default async function OrganizersDirectoryPage({
 
   if (query) organizersQuery = organizersQuery.ilike("name", `%${query}%`);
 
-  if (sort === "name") {
-    organizersQuery = organizersQuery.order("name", { ascending: true });
-  } else {
-    organizersQuery = organizersQuery.order("created_at", { ascending: false });
-  }
+  organizersQuery = organizersQuery.order("name", { ascending: true });
 
   const from = (page - 1) * PAGE_SIZE;
   organizersQuery = organizersQuery.range(from, from + PAGE_SIZE - 1);
@@ -198,7 +182,6 @@ export default async function OrganizersDirectoryPage({
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (statusFilter === "verified") params.set("status", "verified");
-    if (sort === "events") params.set("sort", "events");
     Object.entries(updates).forEach(([k, v]) => params.set(k, v));
     return `/organizers?${params.toString()}`;
   }
@@ -238,8 +221,6 @@ export default async function OrganizersDirectoryPage({
           <div className="mx-auto mt-8 flex max-w-md flex-wrap justify-center gap-x-6 gap-y-2 border-t border-white/10 pt-6 text-xs font-bold text-zinc-400 sm:text-sm">
             <span>{totalVerifiedOrganizers.toLocaleString()} Organizers</span>
             <span>•</span>
-            <span>{totalEventsHosted.toLocaleString()} Events Hosted</span>
-            <span>•</span>
             <span>{money(totalCommunityRaised)} Community Raised</span>
           </div>
         </div>
@@ -265,7 +246,7 @@ export default async function OrganizersDirectoryPage({
         <div className="mb-8 border-b border-zinc-200 pb-6">
           <div>
             <h2 className="text-2xl font-black tracking-tight text-zinc-950 sm:text-3xl">Search Directory</h2>
-            <p className="text-sm font-medium text-zinc-500 mt-1 font-bold">Discover creators by name, verified status, or events hosted.</p>
+            <p className="text-sm font-medium text-zinc-500 mt-1 font-bold">Discover fundraising organizers by name or verified status.</p>
           </div>
 
           <div className="mt-6">
@@ -273,7 +254,6 @@ export default async function OrganizersDirectoryPage({
               <OrganizersDirectoryControls
                 defaultQuery={query || ""}
                 activeStatus={statusFilter}
-                activeSort={sort}
               />
             </Suspense>
           </div>
@@ -310,11 +290,11 @@ export default async function OrganizersDirectoryPage({
         {/* ── Become Organizer Section (Step 4) ── */}
         <section className="mt-20 border-t border-zinc-200 pt-16 flex justify-center">
           <CallToAction
-            headline="Ready to host your next big event?"
-            subtext="Create events, run fundraisers, and grow your audience — all in one platform."
+            headline="Ready to make a difference?"
+            subtext="Run fundraisers and grow your community — all in one platform."
             ctaLabel="Become an Organizer"
             ctaHref="/create-organizer"
-            memberCount="1,200+ organizers"
+            memberCount="99+ organizers"
           />
         </section>
 

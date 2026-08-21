@@ -12,7 +12,8 @@ import ProfileAvatar from "@/components/profile/ProfileAvatar";
 import FollowButton from "@/components/profile/FollowButton";
 import ShareButton from "@/components/profile/ShareButton";
 import IdentityStatusBadge from "@/components/trust/IdentityStatusBadge";
-import { Users, UserPlus, Pencil } from "lucide-react";
+import { Users, UserPlus, Pencil, Heart } from "lucide-react";
+import type { DonorStats } from "@/lib/donor-stats";
 
 interface ProfileClientProps {
   profile: {
@@ -30,7 +31,7 @@ interface ProfileClientProps {
   identityVerified: boolean;
 }
 
-type TabId = "overview" | "followers" | "following";
+type TabId = "overview" | "followers" | "following" | "giving";
 
 type ListedProfile = {
   id: string;
@@ -115,6 +116,10 @@ export default function ProfileClient({
   const [followersLoading, setFollowersLoading] = useState(false);
   const [followingLoading, setFollowingLoading] = useState(false);
 
+  // Donor giving history state (for profile owner)
+  const [donorStats, setDonorStats] = useState<DonorStats | null>(null);
+  const [givingLoading, setGivingLoading] = useState(false);
+
   const name = profile.display_name || "Fund4Good Member";
 
   async function handleFollow() {
@@ -164,6 +169,19 @@ export default function ProfileClient({
       } finally {
         setFollowingLoading(false);
       }
+    } else if (tabId === "giving" && donorStats === null) {
+      setGivingLoading(true);
+      try {
+        const res = await fetch("/api/donor/history");
+        if (res.ok) {
+          const json = await res.json();
+          setDonorStats(json.stats ?? null);
+        }
+      } catch (error) {
+        console.error("Failed to load donor giving history:", error);
+      } finally {
+        setGivingLoading(false);
+      }
     }
   }
 
@@ -172,11 +190,27 @@ export default function ProfileClient({
     { label: "Following", value: followingCount.toLocaleString(), icon: UserPlus },
   ];
 
+  if (isOwnProfile && donorStats) {
+    metrics.push({
+      label: "Total Donated",
+      value: `$${donorStats.totalDonated.toFixed(2)}`,
+      icon: Heart,
+    });
+  }
+
   const tabs: ProfileTab[] = [
     { id: "overview", label: "Overview" },
     { id: "followers", label: "Followers", count: followerCount },
     { id: "following", label: "Following", count: followingCount },
   ];
+
+  if (isOwnProfile) {
+    tabs.push({
+      id: "giving",
+      label: "My Giving",
+      count: donorStats?.perFundraiser.length,
+    });
+  }
 
   return (
     <main className="min-h-screen bg-white px-4 py-6 text-zinc-950 sm:py-8">
@@ -260,6 +294,72 @@ export default function ProfileClient({
                       <ProfileListRow key={p.id} profile={p} />
                     ))}
                   </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "giving" && isOwnProfile && (
+              <div className="py-1 space-y-6">
+                {givingLoading || donorStats === null ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+                  </div>
+                ) : donorStats.perFundraiser.length === 0 ? (
+                  <EmptyListState label="You haven't made any donations yet." />
+                ) : (
+                  <>
+                    {/* Summary stats */}
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
+                        <p className="text-xs font-black uppercase tracking-wider text-zinc-400">Total Donated</p>
+                        <p className="mt-1 text-2xl font-black text-brand-800">
+                          ${donorStats.totalDonated.toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
+                        <p className="text-xs font-black uppercase tracking-wider text-zinc-400">Total Gifts</p>
+                        <p className="mt-1 text-2xl font-black text-zinc-950">
+                          {donorStats.donationCount}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4">
+                        <p className="text-xs font-black uppercase tracking-wider text-zinc-400">Causes Supported</p>
+                        <p className="mt-1 text-2xl font-black text-zinc-950">
+                          {donorStats.perFundraiser.length}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Per-campaign table */}
+                    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white">
+                      <div className="border-b border-zinc-100 bg-zinc-50/80 px-4 py-3 text-xs font-black uppercase tracking-wider text-zinc-400">
+                        Supported Campaigns
+                      </div>
+                      <div className="divide-y divide-zinc-100">
+                        {donorStats.perFundraiser.map((pf) => (
+                          <div
+                            key={pf.fundraiser_id}
+                            className="flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-zinc-50/60 transition"
+                          >
+                            <div>
+                              <Link
+                                href={pf.slug ? `/fundraisers/${pf.slug}` : `/fundraisers/${pf.fundraiser_id}`}
+                                className="font-bold text-zinc-900 hover:text-brand-700 hover:underline"
+                              >
+                                {pf.title}
+                              </Link>
+                              <p className="mt-0.5 text-xs text-zinc-500">
+                                {pf.donationCount} {pf.donationCount === 1 ? "donation" : "donations"}
+                              </p>
+                            </div>
+                            <span className="font-black text-brand-800 text-sm sm:text-base">
+                              ${pf.subtotal.toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
             )}

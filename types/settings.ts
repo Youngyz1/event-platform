@@ -39,6 +39,7 @@ export interface PrivacySettings {
   show_email: boolean;
   show_organized_events?: boolean;
   show_donations: boolean;
+  show_donation_totals?: boolean;
   allow_search_indexing: boolean;
 }
 

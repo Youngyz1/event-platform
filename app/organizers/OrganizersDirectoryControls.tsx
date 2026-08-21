@@ -8,13 +8,11 @@ import { cn } from "@/lib/utils";
 type OrganizersDirectoryControlsProps = {
   defaultQuery?: string;
   activeStatus?: "all" | "verified";
-  activeSort?: "name" | "events";
 };
 
 export default function OrganizersDirectoryControls({
   defaultQuery = "",
   activeStatus = "all",
-  activeSort = "name",
 }: OrganizersDirectoryControlsProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -65,21 +63,6 @@ export default function OrganizersDirectoryControls({
             )}
           >
             {status === "all" ? "All organizers" : "Verified only"}
-          </button>
-        ))}
-        {(["name", "events"] as const).map((sort) => (
-          <button
-            key={sort}
-            type="button"
-            onClick={() => pushUpdates({ sort: sort === "name" ? null : sort })}
-            className={cn(
-              "rounded-full px-4 py-2 text-xs font-black transition",
-              activeSort === sort
-                ? "bg-zinc-900 text-white"
-                : "bg-white text-zinc-600 ring-1 ring-zinc-200 hover:text-zinc-900"
-            )}
-          >
-            {sort === "name" ? "A–Z" : "Most events"}
           </button>
         ))}
       </div>

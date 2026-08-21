@@ -3,7 +3,7 @@
 /**
  * app/admin/fundraisers/page.tsx
  * Fundraiser moderation — feature/unfeature and backdate fundraiser creation date.
- * Uses the same admin design system as the organizers/events admin pages.
+ * Uses the same admin design system as the organizers admin page.
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";

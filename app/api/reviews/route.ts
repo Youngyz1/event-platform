@@ -7,6 +7,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServer } from "@/lib/supabase-server";
+import { getDonorStats } from "@/lib/donor-stats";
 import { NextRequest, NextResponse } from "next/server";
 
 const supabaseAdmin = createClient(
@@ -19,6 +20,18 @@ const UUID_PATTERN =
 
 function isValidUuid(v: string | null): v is string {
   return Boolean(v && UUID_PATTERN.test(v));
+}
+
+function formatDisplayName(name: string | null | undefined, pref: string | undefined): string | null {
+  if (!name || pref === "anonymous") return null;
+  if (pref === "initial") {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0];
+    const firstName = parts[0];
+    const lastInitial = parts[parts.length - 1][0].toUpperCase();
+    return `${firstName} ${lastInitial}.`;
+  }
+  return name;
 }
 
 // ── GET — list reviews ────────────────────────────────────────────────────────
@@ -37,7 +50,7 @@ export async function GET(request: NextRequest) {
     target = { column: "organizer_id", id: organizerId };
   }
 
-  const baseSelect = "id, rating, title, review, is_verified, created_at, updated_at, user_id";
+  const baseSelect = "id, rating, title, review, is_verified, created_at, updated_at, user_id, display_preference";
 
   let query = supabaseAdmin
     .from("reviews")
@@ -64,19 +77,38 @@ export async function GET(request: NextRequest) {
   const { data: profiles } = userIds.length
     ? await supabaseAdmin
         .from("profiles")
-        .select("id, display_name, avatar_url")
+        .select("id, display_name, avatar_url, profile_photo")
         .in("id", userIds)
     : { data: [] };
+
   const profileById = new Map(
     (profiles ?? []).map((profile) => [
       profile.id,
-      { display_name: profile.display_name, avatar_url: profile.avatar_url },
+      {
+        display_name: profile.display_name,
+        avatar_url: profile.profile_photo || profile.avatar_url || null,
+      },
     ])
   );
-  const reviews = (data ?? []).map((review) => ({
-    ...review,
-    profiles: review.user_id ? profileById.get(review.user_id) ?? null : null,
-  }));
+
+  const reviews = (data ?? []).map((review) => {
+    const pref = (review.display_preference as string | undefined) ?? "full";
+    const rawProfile = review.user_id ? profileById.get(review.user_id) ?? null : null;
+    let shapedProfile: { display_name: string | null; avatar_url: string | null } | null = null;
+
+    if (rawProfile && pref !== "anonymous") {
+      shapedProfile = {
+        display_name: formatDisplayName(rawProfile.display_name, pref),
+        avatar_url: pref === "full" ? rawProfile.avatar_url : null,
+      };
+    }
+
+    return {
+      ...review,
+      user_id: pref === "full" ? review.user_id : null,
+      profiles: shapedProfile,
+    };
+  });
 
   return NextResponse.json({ reviews });
 }
@@ -98,13 +130,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { fundraiser_id, organizer_id, review_type, rating, title, review } = body as {
+  const { fundraiser_id, organizer_id, review_type, rating, title, review, display_preference } = body as {
     fundraiser_id?: string;
     organizer_id?: string;
     review_type?: string;
     rating?: number;
     title?: string;
     review?: string;
+    display_preference?: string;
   };
 
   // Validate rating
@@ -115,6 +148,10 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+
+  // Validate display_preference
+  const cleanDisplayPref =
+    display_preference === "initial" || display_preference === "anonymous" ? display_preference : "full";
 
   // Determine if it is a platform review
   const isPlatform = review_type === "platform" || (!fundraiser_id && !organizer_id);
@@ -130,6 +167,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Check verification status based on donor stats from Phase 1
+  const donorStats = await getDonorStats(user.id);
+  let isVerified = false;
+
+  if (isPlatform) {
+    isVerified = donorStats.donationCount > 0;
+  } else if (hasFundraiser && fundraiser_id) {
+    isVerified = donorStats.fundraiserIds.includes(fundraiser_id);
+  }
+
   // Validate text fields
   const cleanTitle = (title ?? "").trim().slice(0, 200) || null;
   const cleanReview = (review ?? "").trim().slice(0, 2000) || null;
@@ -142,13 +189,15 @@ export async function POST(request: NextRequest) {
     rating: ratingNum,
     title: cleanTitle,
     review: cleanReview,
+    display_preference: cleanDisplayPref,
+    is_verified: isVerified,
     is_approved: true,
   };
 
   const { data, error } = await supabaseAdmin
     .from("reviews")
     .insert(payload)
-    .select("id, rating, title, review, is_verified, created_at, user_id")
+    .select("id, rating, title, review, is_verified, display_preference, created_at, user_id")
     .single();
 
   if (error) {

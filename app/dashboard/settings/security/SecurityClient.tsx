@@ -257,7 +257,7 @@ export default function SecurityClient({
             <p className="mt-1 text-sm font-medium text-zinc-500 max-w-md">
               Schedule your account for permanent deletion. You will have a{" "}
               <strong className="text-zinc-700">14-day grace period</strong> to change your
-              mind. After that, all your data — profile, events, fundraisers, and organizer
+              mind. After that, all your data — profile, fundraisers, and organizer
               pages — will be irreversibly purged.
             </p>
           </div>
@@ -310,7 +310,7 @@ export default function SecurityClient({
               <p className="mb-2 font-black">What will happen:</p>
               <ul className="space-y-1.5 font-medium">
                 <li>• Your public profile and organizer pages are hidden immediately.</li>
-                <li>• All your events and fundraisers are hidden from public listings.</li>
+                <li>• All your fundraisers are hidden from public listings.</li>
                 <li>• You are signed out of all sessions.</li>
                 {/* Accurate as of the soft-delete design: nothing is destroyed
                     at 14 days. Saying "permanently deleted" would have been a

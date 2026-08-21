@@ -24,8 +24,8 @@ const DEFAULT_AVATARS = [
 ];
 
 export function CallToAction({
-  headline    = "Join thousands of event organizers on Fund4Good.",
-  subtext     = "Create events, launch fundraisers, and grow your community — all in one place.",
+  headline    = "Join thousands of organizers on Fund4Good.",
+  subtext     = "Launch fundraisers and grow your community — all in one place.",
   ctaLabel    = "Become an Organizer",
   ctaHref     = "/create-organizer",
   memberCount = "1,200+ organizers",

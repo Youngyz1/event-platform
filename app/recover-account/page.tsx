@@ -69,7 +69,7 @@ export default function RecoverAccountPage() {
           <ul className="space-y-2 text-sm font-medium text-amber-900">
             <li className="flex gap-2">
               <span className="mt-0.5 shrink-0">•</span>
-              Your profile, organizer pages, events, and fundraisers will be permanently and
+              Your profile, organizer pages, and fundraisers will be permanently and
               irreversibly deleted when the grace period expires.
             </li>
             <li className="flex gap-2">
@@ -88,7 +88,7 @@ export default function RecoverAccountPage() {
           <h2 className="text-base font-black text-zinc-900 mb-1">Changed your mind?</h2>
           <p className="text-sm font-medium text-zinc-500 mb-5">
             Click below to cancel the deletion and restore your account immediately. All your
-            events, fundraisers, and organizer profiles will be made public again.
+            fundraisers and organizer profiles will be made public again.
           </p>
 
           {error && (

@@ -97,6 +97,7 @@ export default function ProfileClient({
       const { error: dbError } = await supabase
         .from("profiles")
         .update({
+          display_name: nextDisplayName,
           account_info: accountInfo,
           profile_photo: nextPhoto || null,
         })
@@ -331,7 +332,7 @@ export default function ProfileClient({
       {/* Public Organizer Section */}
       <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-5 sm:rounded-2xl sm:p-6">
         <h3 className="text-sm font-black tracking-tight text-zinc-950 sm:text-base">Organizer Profile</h3>
-        <p className="mt-1 text-xs text-zinc-500 sm:text-sm">Manage the public identity used for your hosted events.</p>
+        <p className="mt-1 text-xs text-zinc-500 sm:text-sm">Manage the public identity used for your fundraising campaigns.</p>
         
         <div className="mt-4">
           {organizer ? (

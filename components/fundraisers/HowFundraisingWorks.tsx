@@ -132,7 +132,7 @@ export default function HowFundraisingWorks() {
     <HowItWorks
       eyebrow="How it works"
       heading="Start strong in three simple steps"
-      subheading="From your first draft to funds in your account — Fund4Good keeps every step clear and secure."
+      subheading="From your first draft to funds in your account, Fund4Good keeps every step clear and secure."
       steps={FUNDRAISER_STEPS}
     />
   );

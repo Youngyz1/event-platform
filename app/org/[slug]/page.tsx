@@ -29,7 +29,7 @@ export async function generateMetadata({
   const resolvedSlug = org?.slug ?? slug;
   const title = org?.name ? `${org.name} — Fund4Good` : "Organization — Fund4Good";
   const description =
-    org?.bio || "View this organization's events and fundraisers on Fund4Good.";
+    org?.bio || "View this organization's fundraisers on Fund4Good.";
   const image = normalizeImageUrl(org?.photo || org?.banner, "/og-image.jpg");
 
   return {

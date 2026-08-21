@@ -141,9 +141,9 @@ export default function PrivacyPage() {
                 <h3 className="mt-5 text-lg font-semibold text-zinc-950">1.2 Who's Who.</h3>
                 <p className="mt-3">
                   "Organizer" means a person or business that creates, lists, imports, manages,
-                  promotes, or hosts events or fundraisers on Fund4Good. "Consumer" means a
-                  person who browses, registers for, purchases, donates to, or attends events or
-                  fundraisers. Organizers, Consumers, visitors, and other users are collectively
+                  promotes, or manages fundraisers on Fund4Good. "Consumer" means a
+                  person who browses, donates to, or supports fundraisers. Organizers, Consumers,
+                  visitors, and other users are collectively
                   called "Users," "you," or "your." "Fund4Good," "we," "us," and "our" mean
                   Fund4Good.
                 </p>
@@ -165,9 +165,9 @@ export default function PrivacyPage() {
                 <h3 className="mt-5 text-lg font-semibold text-zinc-950">3.1 Information Collected From All Users.</h3>
                 <p className="mt-3">
                   We may collect information you provide directly, such as your name, email
-                  address, password, account details, event interests, messages, survey
-                  responses, support requests, ticket details, registration details, donation
-                  details, and any other information you choose to provide.
+                  address, password, account details, campaign interests, messages, survey
+                  responses, support requests, donation details, and any other information
+                  you choose to provide.
                 </p>
                 <p className="mt-3">
                   We may also automatically collect technical information such as IP address,
@@ -176,17 +176,16 @@ export default function PrivacyPage() {
                 </p>
                 <h3 className="mt-5 text-lg font-semibold text-zinc-950">3.2 Information Collected From Organizers.</h3>
                 <p className="mt-3">
-                  If you create or manage events, we may collect organizer profile details,
-                  event details, payout or tax information, phone numbers, billing details,
+                  If you create or manage fundraisers, we may collect organizer profile details,
+                  campaign details, payout or tax information, phone numbers, billing details,
                   verification information, and information from payment processors, banks, or
                   fraud prevention partners.
                 </p>
                 <h3 className="mt-5 text-lg font-semibold text-zinc-950">3.3 Information Collected From Consumers.</h3>
                 <p className="mt-3">
-                  If you buy or register for a ticket, we may collect attendee names, email
-                  addresses, order details, payment status, ticket delivery information, answers
-                  to organizer registration questions, and other information needed to complete
-                  the transaction.
+                  If you make a donation, we may collect donor names, email addresses, order
+                  details, payment status, donation receipts, and other information needed to
+                  complete the transaction.
                 </p>
                 <h3 className="mt-5 text-lg font-semibold text-zinc-950">3.4 Information From Other Sources.</h3>
                 <p className="mt-3">
@@ -201,12 +200,12 @@ export default function PrivacyPage() {
                 <p className="mt-3">We may use personal data to:</p>
                 <ul className="mt-3 list-disc space-y-2 pl-6">
                   <li>Provide, operate, personalize, and improve Fund4Good services.</li>
-                  <li>Create accounts, publish events, process registrations, and deliver tickets.</li>
+                  <li>Create accounts, publish fundraisers, and process donations.</li>
                   <li>Process payments, payouts, refunds, donations, tax records, and fraud checks.</li>
                   <li>Provide customer support and respond to questions or complaints.</li>
-                  <li>Send transactional notices, ticket confirmations, security alerts, and policy updates.</li>
+                  <li>Send transactional notices, donation confirmations, security alerts, and policy updates.</li>
                   <li>Send marketing messages where allowed by law and your communication choices.</li>
-                  <li>Recommend events, fundraisers, organizers, or content that may interest you.</li>
+                  <li>Recommend fundraisers, organizers, or content that may interest you.</li>
                   <li>Protect our users, prevent abuse, enforce our terms, and comply with law.</li>
                   <li>Analyze usage, debug errors, and develop new products and features.</li>
                 </ul>
@@ -227,10 +226,10 @@ export default function PrivacyPage() {
                   operate Fund4Good.
                 </p>
                 <p className="mt-3">
-                  When you register for, buy, donate to, or express interest in an event or
-                  fundraiser, the organizer may receive the information needed to manage that
-                  event or fundraiser. Organizers are responsible for their own use of that
-                  information and may have their own privacy practices.
+                  When you donate to or express interest in a fundraiser, the organizer may
+                  receive the information needed to manage that fundraiser. Organizers are
+                  responsible for their own use of that information and may have their own privacy
+                  practices.
                 </p>
                 <p className="mt-3">
                   We may also disclose information if required by law, to protect rights and
@@ -265,7 +264,7 @@ export default function PrivacyPage() {
                 </p>
                 <p className="mt-3">
                   If your information has already been shared with an organizer because you
-                  registered for or interacted with that organizer's event, you may also need to
+                  donated to or interacted with that organizer's fundraiser, you may also need to
                   contact the organizer directly.
                 </p>
               </section>
@@ -305,15 +304,15 @@ export default function PrivacyPage() {
                 <h3 className="mt-5 text-lg font-semibold text-zinc-950">10.1 Limit The Personal Data You Provide.</h3>
                 <p className="mt-3">
                   You may browse some parts of Fund4Good without creating an account. Certain
-                  features, including buying tickets, receiving ticket confirmations, creating
-                  events, and receiving payouts, require personal data.
+                  features, including creating fundraisers, donating, and receiving payouts, require
+                  personal data.
                 </p>
                 <h3 className="mt-5 text-lg font-semibold text-zinc-950">10.2 Opt Out From Electronic Communications.</h3>
                 <p className="mt-3">
                   You may unsubscribe from marketing emails by using the unsubscribe link in the
-                  message or contacting us. Transactional messages, including ticket receipts,
-                  password resets, refund updates, event notices, and security alerts, may still
-                  be sent when needed to provide the services.
+                  message or contacting us. Transactional messages, including donation receipts,
+                  password resets, refund updates, and security alerts, may still be sent when
+                  needed to provide the services.
                 </p>
                 <h3 className="mt-5 text-lg font-semibold text-zinc-950">10.3 Do Not Track.</h3>
                 <p className="mt-3">

@@ -110,19 +110,19 @@ export default function NotificationsClient({
       {/* General Notifications */}
       <SettingsCard
         title="General Updates"
-        description="Receive reminders and promotional material regarding community gatherings."
+        description="Receive reminders and updates regarding fundraising campaigns."
       >
         <Toggle
           checked={!!prefs.notify_event_reminder}
           onChange={(v) => setPrefs((prev) => ({ ...prev, notify_event_reminder: v }))}
-          label="Event Reminders"
-          description="Get reminders prior to upcoming events you register for as an attendee."
+          label="Campaign Updates"
+          description="Get updates on fundraising campaigns you support or follow."
         />
         <Toggle
           checked={!!prefs.notify_marketing}
           onChange={(v) => setPrefs((prev) => ({ ...prev, notify_marketing: v }))}
           label="Marketing & Promotional"
-          description="Receive updates on new features, events recommendations, and seasonal offers."
+          description="Receive updates on new features, campaign recommendations, and seasonal offers."
         />
         <Toggle
           checked={true}

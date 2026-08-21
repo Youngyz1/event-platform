@@ -13,6 +13,7 @@ const defaultPrivacy: PrivacySettings = {
   show_email: false,
   show_organized_events: true,
   show_donations: true,
+  show_donation_totals: false,
   allow_search_indexing: true,
 };
 

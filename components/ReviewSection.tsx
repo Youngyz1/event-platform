@@ -10,6 +10,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import StarRating from "@/components/StarRating";
 import ReviewForm, { type ReviewFormValues } from "@/components/ReviewForm";
 import { supabase } from "@/lib/supabase";
@@ -26,6 +27,11 @@ interface ReviewItem {
   created_at: string;
   updated_at: string;
   user_id: string;
+  display_preference?: "full" | "initial" | "anonymous";
+  profiles?: {
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
 }
 
 interface ReviewSectionProps {
@@ -311,6 +317,7 @@ export default function ReviewSection({
                       rating: r.rating,
                       title: r.title ?? "",
                       review: r.review ?? "",
+                      display_preference: r.display_preference ?? "full",
                     }}
                     submitLabel="Save Changes"
                     onSubmit={handleSubmit}
@@ -319,19 +326,71 @@ export default function ReviewSection({
                 </>
               ) : (
                 <>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <StarRating value={r.rating} size={16} />
-                      {r.is_verified && (
-                        <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-brand-800">
-                          Verified
+                  {/* Header: Author info, rating & date */}
+                  {(() => {
+                    const canLinkProfile = Boolean(
+                      r.user_id && (r.display_preference === "full" || !r.display_preference)
+                    );
+
+                    const avatarContent = r.profiles?.avatar_url ? (
+                      <img
+                        src={r.profiles.avatar_url}
+                        alt={r.profiles.display_name || "Reviewer"}
+                        className="h-9 w-9 rounded-full object-cover ring-1 ring-zinc-200"
+                      />
+                    ) : (
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-100 text-xs font-black text-zinc-500">
+                        {(r.profiles?.display_name || "A")[0].toUpperCase()}
+                      </span>
+                    );
+
+                    const nameContent = (
+                      <span className={`text-sm font-bold text-zinc-900 leading-tight block ${canLinkProfile ? "hover:underline hover:text-brand-700" : ""}`}>
+                        {r.profiles?.display_name || "Anonymous Member"}
+                      </span>
+                    );
+
+                    return (
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex items-center gap-3">
+                          {canLinkProfile ? (
+                            <Link href={`/profile/${r.user_id}`} className="flex items-center gap-3 group">
+                              {avatarContent}
+                              <div>
+                                {nameContent}
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <StarRating value={r.rating} size={14} />
+                                  {r.is_verified && (
+                                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-brand-800">
+                                      Verified
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </Link>
+                          ) : (
+                            <>
+                              {avatarContent}
+                              <div>
+                                {nameContent}
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <StarRating value={r.rating} size={14} />
+                                  {r.is_verified && (
+                                    <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-brand-800">
+                                      Verified
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                        <span className="text-xs text-zinc-400 shrink-0">
+                          {formatDate(r.created_at)}
                         </span>
-                      )}
-                    </div>
-                    <span className="text-xs text-zinc-400">
-                      {formatDate(r.created_at)}
-                    </span>
-                  </div>
+                      </div>
+                    );
+                  })()}
 
                   {r.title && (
                     <p className="mt-2 font-bold text-zinc-950">{r.title}</p>

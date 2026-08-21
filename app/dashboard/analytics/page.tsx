@@ -1,6 +1,6 @@
 import { getDashboardContext, supabaseAdmin } from "@/lib/dashboard-context";
 import { redirect } from "next/navigation";
-import { BarChart2, Calendar, Heart, DollarSign } from "lucide-react";
+import { BarChart2, Heart, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { StatCard } from "@/components/dashboard/fund4good/StatCard";
 
@@ -10,24 +10,16 @@ export default async function AccountAnalyticsPage() {
 
   const { organizerIds } = ctx;
 
-  let eventCount = 0;
   let fundraiserCount = 0;
   let totalRaised = 0;
 
   if (organizerIds.length > 0) {
-    const [eventsRes, fundraisersRes] = await Promise.all([
-      supabaseAdmin
-        .from("events")
-        .select("id", { count: "exact", head: true })
-        .in("organizer_id", organizerIds),
-      supabaseAdmin
-        .from("fundraisers")
-        .select("raised, raised_amount")
-        .in("organizer_id", organizerIds)
-        .is("deleted_at", null),
-    ]);
+    const fundraisersRes = await supabaseAdmin
+      .from("fundraisers")
+      .select("raised, raised_amount")
+      .in("organizer_id", organizerIds)
+      .is("deleted_at", null);
 
-    eventCount = eventsRes.count ?? 0;
     fundraiserCount = fundraisersRes.data?.length ?? 0;
     totalRaised =
       fundraisersRes.data?.reduce((sum, f) => sum + Number(f.raised_amount ?? f.raised ?? 0), 0) ?? 0;
@@ -42,14 +34,7 @@ export default async function AccountAnalyticsPage() {
       </header>
 
       {/* Stats cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard
-          label="Total Events Hosted"
-          value={eventCount.toLocaleString()}
-          icon={Calendar}
-          iconBg="bg-brand-50"
-          iconColor="text-brand-700"
-        />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard
           label="Total Campaigns Launched"
           value={fundraiserCount.toLocaleString()}

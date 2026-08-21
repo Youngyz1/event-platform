@@ -134,17 +134,19 @@ export default function PrivacyClient({
           label="Display Email"
           description="Display your email address on your public organizer profile page."
         />
-        <Toggle
-          checked={!!privacy.show_organized_events}
-          onChange={(v) => setPrivacy((prev) => ({ ...prev, show_organized_events: v }))}
-          label="Show Organized Events"
-          description="List your currently active hosted events on your public organizer profile."
-        />
+
         <Toggle
           checked={!!privacy.show_donations}
           onChange={(v) => setPrivacy((prev) => ({ ...prev, show_donations: v }))}
           label="Display Donation Badges"
           description="Display donation amount badges on the public fundraiser support boards."
+        />
+
+        <Toggle
+          checked={!!privacy.show_donation_totals}
+          onChange={(v) => setPrivacy((prev) => ({ ...prev, show_donation_totals: v }))}
+          label="Display Giving Totals"
+          description="Allow visitors to your profile to view your supported causes and overall contribution totals once public giving profile is enabled."
         />
       </SettingsCard>
 

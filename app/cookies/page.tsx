@@ -76,7 +76,7 @@ export default function CookiesPage() {
               </p>
               <p className="mt-6 text-lg leading-8 text-zinc-600">
                 This Cookie Policy explains how Fund4Good uses cookies and similar tracking
-                technologies when you visit our event platform, buy tickets, run events, or support fundraisers.
+                technologies when you visit our platform or support fundraisers.
               </p>
             </div>
 

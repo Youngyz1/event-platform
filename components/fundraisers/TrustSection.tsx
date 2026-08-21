@@ -11,14 +11,12 @@ import { getCuratedFundraiserImages } from "@/lib/fundraiser-data";
  *  - #faq     : in-page anchor to <FundraiserFaq>, rendered further down this
  *               same page. That section must keep id="faq" or this breaks.
  *
- * Right column: a real, warm campaign photo from the same verified curated Hero
- * pool (getCuratedFundraiserImages). Of that pool, this is the only genuine
- * person/moment photo — MAREA is a promo poster and "we-can-do-it" is a video —
- * so it necessarily reuses the Hero's primary image. If the fetch ever returns
- * nothing, it degrades to a branded ShieldCheck tile rather than stock imagery.
+ * Right column: a real, warm campaign photo resolved via getCuratedFundraiserImages.
+ * Uses the "Help Shadae and Her Daughter Find a Safe Home" fundraiser — a genuine
+ * family/warmth/hope moment photo hosted in Supabase storage. If the fetch ever
+ * returns nothing, it degrades to a branded ShieldCheck tile rather than stock imagery.
  */
-const TRUST_IMAGE_SLUG =
-  "donate-to-supporting-miracle-amiris-recovery-and-rebuilding-organized-by-destiny-keith";
+const TRUST_IMAGE_SLUG = "help-shadae-and-her-daughter-find-a-safe-home-";
 
 export default async function TrustSection() {
   const [trustImage] = await getCuratedFundraiserImages([TRUST_IMAGE_SLUG]);
@@ -27,7 +25,7 @@ export default async function TrustSection() {
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-3xl shadow-xl ring-1 ring-white/10">
       <Image
         src={trustImage}
-        alt="A parent and child sharing a joyful moment outdoors"
+        alt="A mother and daughter finding safety and a new home"
         fill
         sizes="(max-width: 1024px) 100vw, 40vw"
         className="object-cover"
@@ -46,7 +44,7 @@ export default async function TrustSection() {
       media={media}
     >
       There&apos;s no platform fee to start a campaign, and every donation runs
-      through Stripe-secured, encrypted checkout — so supporters can give in
+      through Stripe-secured, encrypted checkout so supporters can give in
       seconds and you can stay focused on your cause. See what organizers say in
       our <Link href="/reviews">real reviews</Link>, or find{" "}
       <Link href="#faq">answers to common questions</Link> before you begin.
