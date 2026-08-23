@@ -1,18 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { safeImageSrc } from "@/lib/image-url";
+import LocalBrandedPlaceholder from "@/components/ui/LocalBrandedPlaceholder";
+import ProgressBar from "@/components/ui/ProgressBar";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileSidebar from "@/components/profile/ProfileSidebar";
 import ProfileMetrics, { type ProfileMetric } from "@/components/profile/ProfileMetrics";
 import ProfileTabs, { type ProfileTab } from "@/components/profile/ProfileTabs";
+import ProfileSection from "@/components/profile/ProfileSection";
 import ProfileAvatar from "@/components/profile/ProfileAvatar";
 import FollowButton from "@/components/profile/FollowButton";
 import ShareButton from "@/components/profile/ShareButton";
 import IdentityStatusBadge from "@/components/trust/IdentityStatusBadge";
-import { Users, UserPlus, Pencil, Heart } from "lucide-react";
+import { Users, UserPlus, Pencil, Heart, Rocket, ArrowUpRight } from "lucide-react";
 import type { DonorStats } from "@/lib/donor-stats";
 
 interface ProfileClientProps {
@@ -31,12 +36,23 @@ interface ProfileClientProps {
   identityVerified: boolean;
 }
 
-type TabId = "overview" | "followers" | "following" | "giving";
+type TabId = "overview" | "campaigns" | "followers" | "following" | "giving";
 
 type ListedProfile = {
   id: string;
   display_name: string | null;
   avatar_url: string | null;
+};
+
+type FundraiserItem = {
+  id: string;
+  title: string;
+  slug: string;
+  banner: string | null;
+  image_url: string | null;
+  goal: number | string | null;
+  raised: number | string | null;
+  category: string | null;
 };
 
 const FOLLOW_LIST_TIMEOUT_MS = 15000;
@@ -79,6 +95,56 @@ async function fetchFollowList(
   return (profiles ?? []) as ListedProfile[];
 }
 
+function formatMoney(val: number | string | null) {
+  const n = Number(val ?? 0);
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
+  return `$${n.toFixed(0)}`;
+}
+
+function CampaignRow({ f }: { f: FundraiserItem }) {
+  const [imgError, setImgError] = useState(false);
+  const goal = Number(f.goal ?? 0);
+  const raised = Number(f.raised ?? 0);
+  const pct = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
+  const imageSrc = !imgError ? safeImageSrc(f.image_url || f.banner) : null;
+
+  return (
+    <Link
+      href={`/fundraisers/${f.slug}`}
+      className="group flex gap-4 rounded-xl border border-zinc-100 p-3 transition hover:border-brand-200 hover:bg-brand-50/40"
+    >
+      <div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-zinc-100">
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt={f.title}
+            fill
+            className="object-cover"
+            sizes="80px"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <LocalBrandedPlaceholder variant="fundraiser" title={f.title} />
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-black text-zinc-900 line-clamp-1 group-hover:text-brand-800">
+          {f.title}
+        </p>
+        <div className="mt-1.5">
+          <ProgressBar percentage={pct} height={6} />
+        </div>
+        <p className="mt-1 text-xs text-zinc-500">
+          <span className="font-bold text-zinc-700">{formatMoney(raised)}</span>{" "}
+          raised of {formatMoney(goal)} goal
+        </p>
+      </div>
+      <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-zinc-300 group-hover:text-brand-600" />
+    </Link>
+  );
+}
+
 function ProfileListRow({ profile }: { profile: ListedProfile }) {
   const name = profile.display_name || "Fund4Good Member";
   return (
@@ -111,6 +177,9 @@ export default function ProfileClient({
   const [pending, setPending] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
 
+  const [campaignsList, setCampaignsList] = useState<FundraiserItem[] | null>(null);
+  const [campaignsLoading, setCampaignsLoading] = useState(false);
+
   const [followersList, setFollowersList] = useState<ListedProfile[] | null>(null);
   const [followingList, setFollowingList] = useState<ListedProfile[] | null>(null);
   const [followersLoading, setFollowersLoading] = useState(false);
@@ -121,6 +190,31 @@ export default function ProfileClient({
   const [givingLoading, setGivingLoading] = useState(false);
 
   const name = profile.display_name || "Fund4Good Member";
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadCampaigns() {
+      setCampaignsLoading(true);
+      try {
+        const { data } = await supabase
+          .from("fundraisers")
+          .select("id, title, slug, banner, image_url, goal, raised, category")
+          .eq("user_id", profile.id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false });
+        if (!cancelled) setCampaignsList(data ?? []);
+      } catch (err) {
+        console.error("Failed to load user campaigns:", err);
+        if (!cancelled) setCampaignsList([]);
+      } finally {
+        if (!cancelled) setCampaignsLoading(false);
+      }
+    }
+    loadCampaigns();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.id]);
 
   async function handleFollow() {
     if (!isLoggedIn) {
@@ -186,6 +280,7 @@ export default function ProfileClient({
   }
 
   const metrics: ProfileMetric[] = [
+    { label: "Campaigns", value: (campaignsList?.length ?? 0).toString(), icon: Rocket },
     { label: "Followers", value: followerCount.toLocaleString(), icon: Users },
     { label: "Following", value: followingCount.toLocaleString(), icon: UserPlus },
   ];
@@ -200,6 +295,7 @@ export default function ProfileClient({
 
   const tabs: ProfileTab[] = [
     { id: "overview", label: "Overview" },
+    { id: "campaigns", label: "Campaigns", count: campaignsList?.length },
     { id: "followers", label: "Followers", count: followerCount },
     { id: "following", label: "Following", count: followingCount },
   ];
@@ -255,11 +351,40 @@ export default function ProfileClient({
             <ProfileTabs tabs={tabs} activeId={activeTab} onChange={handleTabChange} />
 
             {activeTab === "overview" && (
-              <div className="py-1">
-                <p className="text-sm font-medium text-zinc-500">
-                  {name} is a member of the Fund4Good community.
-                </p>
+              <div className="space-y-5">
+                <div className="py-1">
+                  <p className="text-sm font-medium text-zinc-500">
+                    {name} is a member of the Fund4Good community.
+                  </p>
+                </div>
+                {campaignsList && campaignsList.length > 0 && (
+                  <ProfileSection title="Campaigns">
+                    <div className="space-y-3">
+                      {campaignsList.slice(0, 3).map((f) => (
+                        <CampaignRow key={f.id} f={f} />
+                      ))}
+                    </div>
+                  </ProfileSection>
+                )}
               </div>
+            )}
+
+            {activeTab === "campaigns" && (
+              <ProfileSection title="Campaigns">
+                {campaignsLoading || campaignsList === null ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+                  </div>
+                ) : campaignsList.length === 0 ? (
+                  <EmptyListState label="No campaigns created yet." />
+                ) : (
+                  <div className="space-y-3">
+                    {campaignsList.map((f) => (
+                      <CampaignRow key={f.id} f={f} />
+                    ))}
+                  </div>
+                )}
+              </ProfileSection>
             )}
 
             {activeTab === "followers" && (

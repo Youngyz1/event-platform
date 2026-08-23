@@ -15,13 +15,13 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.fund4agoodcause.com"),
   title: "Organizers — Fund4Good",
-  description: "Discover event organizers and causes on Fund4Good.",
+  description: "Browse people and organizations fundraising for causes on Fund4Good.",
   alternates: {
     canonical: "https://www.fund4agoodcause.com/organizers",
   },
   openGraph: {
     title: "Organizers — Fund4Good",
-    description: "Discover event organizers and causes on Fund4Good.",
+    description: "Browse people and organizations fundraising for causes on Fund4Good.",
     url: "https://www.fund4agoodcause.com/organizers",
     siteName: "Fund4Good",
     images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: "Fund4Good Organizers" }],
@@ -291,10 +291,10 @@ export default async function OrganizersDirectoryPage({
         <section className="mt-20 border-t border-zinc-200 pt-16 flex justify-center">
           <CallToAction
             headline="Ready to make a difference?"
-            subtext="Run fundraisers and grow your community — all in one platform."
+            subtext="Run fundraisers and grow your community."
             ctaLabel="Become an Organizer"
             ctaHref="/create-organizer"
-            memberCount="99+ organizers"
+            memberCount="9+ organizers"
           />
         </section>
 

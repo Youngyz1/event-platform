@@ -240,6 +240,7 @@ export default async function FundraiserPage({
     updatesResult,
     donationsResult,
     organizerResult,
+    ownerProfileResult,
     commentsResult,
     relatedFundraisers,
   ] = await Promise.all([
@@ -265,11 +266,22 @@ export default async function FundraiserPage({
       .order("id", { ascending: true })
       .limit(5),
     fundraiser.organizer_id
-      ? supabase
+      ? supabaseAdmin
           .from("organizers")
           // `photo` powers the avatar in the hero attribution overlay.
           .select("id, name, photo, slug")
           .eq("id", fundraiser.organizer_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    // For personal campaigns (organizer_id null), resolve the credit from
+    // profiles.display_name so it always reflects the current display name
+    // rather than the username/handle snapshotted into fundraisers.organizer
+    // at creation time. Runs in parallel — no extra sequential round trip.
+    !fundraiser.organizer_id && fundraiser.user_id
+      ? supabaseAdmin
+          .from("profiles")
+          .select("display_name")
+          .eq("id", fundraiser.user_id)
           .maybeSingle()
       : Promise.resolve({ data: null }),
     supabaseAdmin
@@ -282,9 +294,16 @@ export default async function FundraiserPage({
   ]);
 
   const organizer = organizerResult.data as (OrganizerRow & { slug?: string | null }) | null;
+  const ownerProfile = ownerProfileResult.data as { display_name: string | null } | null;
 
+  // Fallback chain:
+  //   org-mode:      organizer.name (organizers table, unchanged)
+  //   personal-mode: profiles.display_name → fundraisers.organizer snapshot → default
   const organizerName =
-    organizer?.name || fundraiser.organizer || "Campaign organizer";
+    organizer?.name ||
+    ownerProfile?.display_name ||
+    fundraiser.organizer ||
+    "Campaign organizer";
   const recentDonors = (donationsResult.data ?? []) as DonationRow[];
   // Computed early (was previously computed just before use, much later)
   // so its lookup query can join Batch 2 below instead of running alone.
@@ -348,6 +367,12 @@ export default async function FundraiserPage({
     organizer?.id ?? organizerByName?.id ?? null;
   const organizerSlug: string | null =
     organizer?.slug ?? (organizerByName as { slug?: string | null } | null)?.slug ?? null;
+
+  const organizerHref: string | null = organizerProfileId
+    ? `/organizers/${organizerProfileId}`
+    : ownerProfile && fundraiser.user_id
+      ? `/profile/${fundraiser.user_id}`
+      : null;
 
   /**
    * Who the campaign is for, and whether that person has an account yet.
@@ -560,9 +585,7 @@ export default async function FundraiserPage({
             title={fundraiser.title}
             category={fundraiserCategory}
             organizerName={organizerName}
-            organizerHref={
-              organizerProfileId ? `/organizers/${organizerProfileId}` : null
-            }
+            organizerHref={organizerHref}
             organizerPhoto={organizer?.photo ?? null}
             beneficiaryLabel={showBeneficiary ? beneficiaryDisplayName : null}
           />
@@ -700,9 +723,9 @@ export default async function FundraiserPage({
                 {initial(organizerName)}
               </div>
               <div className="min-w-0">
-                {organizerProfileId ? (
+                {organizerHref ? (
                   <Link
-                    href={`/organizers/${organizerProfileId}`}
+                    href={organizerHref}
                     className="block truncate text-sm font-black text-zinc-950 hover:text-brand-700 hover:underline transition"
                   >
                     {organizerName}

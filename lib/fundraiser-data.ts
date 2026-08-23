@@ -45,7 +45,7 @@ export const getFundraiserBySlug = cache(async (slug: string) => {
   const { data: fundraiser } = await supabase
     .from("fundraisers")
     .select(
-      "id, title, slug, banner, image_url, goal, raised, raised_amount, organizer_id, organizer, story, category, created_at, review_count, average_rating"
+      "id, title, slug, banner, image_url, goal, raised, raised_amount, organizer_id, organizer, story, category, created_at, review_count, average_rating, user_id"
     )
     .eq("slug", slug)
     .is("deleted_at", null)
@@ -88,16 +88,37 @@ export async function getFundraiserCardData(slug: string) {
 
   const optionalFundraiser = await getOptionalFundraiserFields(fundraiser.id);
 
-  const { data: organizer } = fundraiser.organizer_id
-    ? await supabase
-        .from("organizers")
-        .select("id, name")
-        .eq("id", fundraiser.organizer_id)
-        .maybeSingle()
-    : { data: null };
+  // Run both lookups in parallel:
+  // - org lookup: only when organizer_id is set (org-mode campaign)
+  // - profile lookup: only for personal campaigns (organizer_id null) so
+  //   the OG card always shows the current display_name rather than the
+  //   username/handle snapshotted into fundraisers.organizer at creation.
+  const [{ data: organizer }, { data: ownerProfile }] = await Promise.all([
+    fundraiser.organizer_id
+      ? supabase
+          .from("organizers")
+          .select("id, name")
+          .eq("id", fundraiser.organizer_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    !fundraiser.organizer_id && fundraiser.user_id
+      ? createSupabaseAdmin()
+          .from("profiles")
+          .select("display_name")
+          .eq("id", fundraiser.user_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+  ]);
 
+  // Fallback chain for personal campaigns:
+  //   profiles.display_name → fundraisers.organizer snapshot → default
+  // For org-mode campaigns organizer?.name always wins and the profile
+  // branch is never reached (ownerProfile will be null).
   const organizerName =
-    organizer?.name || fundraiser.organizer || "Campaign organizer";
+    organizer?.name ||
+    (ownerProfile as { display_name: string | null } | null)?.display_name ||
+    fundraiser.organizer ||
+    "Campaign organizer";
 
   // Previously fell through to `fundraiser.title` when no beneficiary was
   // stored, which meant every campaign displayed its own title as the

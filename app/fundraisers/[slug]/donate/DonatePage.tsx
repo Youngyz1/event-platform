@@ -29,6 +29,10 @@ type DonatePageProps = {
   fundraiserTitle: string;
   fundraiserSlug: string;
   organizerName: string;
+  /** When set, wraps the organizer credit in a link to their public profile
+   *  (personal campaigns) or org page (org-mode campaigns). Only non-null when
+   *  the profile/org page is confirmed to exist and be publicly visible. */
+  organizerHref?: string | null;
   banner: string;
   raised: number;
   goal: number;
@@ -42,6 +46,7 @@ export default function DonatePage({
   fundraiserTitle,
   fundraiserSlug,
   organizerName,
+  organizerHref,
   banner,
   raised,
   goal,
@@ -329,7 +334,17 @@ export default function DonatePage({
             {fundraiserTitle}
           </h2>
           <p className="mt-0.5 truncate text-sm text-zinc-500">
-            Your donation will benefit {organizerName}
+            Your donation will benefit{" "}
+            {organizerHref ? (
+              <Link
+                href={organizerHref}
+                className="font-semibold text-zinc-700 hover:underline"
+              >
+                {organizerName}
+              </Link>
+            ) : (
+              organizerName
+            )}
           </p>
         </div>
       </div>
