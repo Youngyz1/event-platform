@@ -1,6 +1,7 @@
 import {
   LayoutDashboard, Heart, Briefcase,
   Users, Star, ImageIcon, BarChart2, Settings,
+  BadgeCheck,
 } from "lucide-react";
 import type { NavItem } from "@/components/nav/nav-active";
 
@@ -9,6 +10,7 @@ export function getOrgNavItems(orgId: string): NavItem[] {
   return [
     { label: "Overview",    href: `${base}/overview`,    icon: LayoutDashboard },
     { label: "Campaigns",   href: `${base}/fundraisers`, icon: Heart },
+    { label: "Verification", href: `/dashboard/verification?organizerId=${orgId}`, icon: BadgeCheck },
     { label: "Services",    href: `${base}/services`,    icon: Briefcase,  comingSoon: true },
     { label: "Volunteers",  href: `${base}/volunteers`,  icon: Users,      comingSoon: true },
     { label: "Reviews",     href: `${base}/reviews`,     icon: Star },

@@ -16,6 +16,7 @@ export type OrganizerCardData = {
   photo?: string | null;
   banner?: string | null;
   status?: string | null;
+  organizerVerified?: boolean;
   org_type?: string | null;
   fundraiserCount?: number;
   followerCount?: number;
@@ -31,7 +32,7 @@ export default function OrganizerCard({
   const [bannerError, setBannerError] = useState(false);
   const [photoError, setPhotoError] = useState(false);
 
-  const verified = organizer.status === "verified";
+  const verified = Boolean(organizer.organizerVerified);
   const href = organizer.slug
     ? `/org/${organizer.slug}`
     : `/organizers/${organizer.id}`;

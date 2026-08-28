@@ -1,13 +1,17 @@
 import { supabase } from "@/lib/supabase";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { HOMEPAGE_SETTING_KEYS, getHomepageSettings } from "@/lib/homepage-hero";
-import Link from "next/link";
 import { Suspense } from "react";
 import { CallToAction } from "@/components/ui/call-to-action";
 import OrganizerCard, { type OrganizerCardData } from "@/components/public/OrganizerCard";
 import PublicPagination from "@/components/public/PublicPagination";
 import PublicEmptyState from "@/components/public/PublicEmptyState";
 import OrganizersDirectoryControls from "./OrganizersDirectoryControls";
+import {
+  fetchVerificationFactsBatch,
+  isFullyVerified,
+  type VerificationFacts,
+} from "@/lib/verification-facts";
 import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -91,7 +95,8 @@ function enrichOrganizers(
     org_type?: string | null;
     follower_offset?: number;
   }>,
-  stats: Map<string, { fundraisers: number; followers: number }>
+  stats: Map<string, { fundraisers: number; followers: number }>,
+  verificationFacts: Map<string, VerificationFacts>
 ): OrganizerCardData[] {
   return organizers.map((org) => ({
     id: org.id,
@@ -101,6 +106,12 @@ function enrichOrganizers(
     photo: org.photo,
     banner: org.banner,
     status: org.status,
+    organizerVerified: isFullyVerified(verificationFacts.get(org.id) ?? {
+      organizerType: null,
+      identityVerified: false,
+      organizationApplicable: true,
+      organizationVerified: false,
+    }),
     org_type: org.org_type,
     fundraiserCount: stats.get(org.id)?.fundraisers ?? 0,
     followerCount: (stats.get(org.id)?.followers ?? 0) + (org.follower_offset ?? 0),
@@ -157,8 +168,11 @@ export default async function OrganizersDirectoryPage({
   const { data: organizers, error, count: totalCount } = await organizersQuery;
 
   const ids = (organizers ?? []).map((o) => o.id);
-  const stats = await getOrganizerStats(ids);
-  const enriched = enrichOrganizers(organizers ?? [], stats);
+  const [stats, verificationFacts] = await Promise.all([
+    getOrganizerStats(ids),
+    fetchVerificationFactsBatch(adminClient, ids),
+  ]);
+  const enriched = enrichOrganizers(organizers ?? [], stats, verificationFacts);
 
   // 3. Fetch Featured Verified Organizers (Step 2) when no search query
   const { data: featuredOrganizers } = !query
@@ -173,8 +187,15 @@ export default async function OrganizersDirectoryPage({
     : { data: null };
 
   const featuredIds = (featuredOrganizers ?? []).map((o) => o.id);
-  const featuredStats = await getOrganizerStats(featuredIds);
-  const featuredEnriched = enrichOrganizers(featuredOrganizers ?? [], featuredStats);
+  const [featuredStats, featuredVerificationFacts] = await Promise.all([
+    getOrganizerStats(featuredIds),
+    fetchVerificationFactsBatch(adminClient, featuredIds),
+  ]);
+  const featuredEnriched = enrichOrganizers(
+    featuredOrganizers ?? [],
+    featuredStats,
+    featuredVerificationFacts
+  );
 
   const totalPages = Math.max(1, Math.ceil((totalCount ?? 0) / PAGE_SIZE));
 

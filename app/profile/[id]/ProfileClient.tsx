@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -17,7 +17,7 @@ import ProfileAvatar from "@/components/profile/ProfileAvatar";
 import FollowButton from "@/components/profile/FollowButton";
 import ShareButton from "@/components/profile/ShareButton";
 import IdentityStatusBadge from "@/components/trust/IdentityStatusBadge";
-import { Users, UserPlus, Pencil, Heart, Rocket, ArrowUpRight } from "lucide-react";
+import { Users, UserPlus, Pencil, Heart, Rocket, ArrowUpRight, Lock } from "lucide-react";
 import type { DonorStats } from "@/lib/donor-stats";
 
 interface ProfileClientProps {
@@ -34,6 +34,7 @@ interface ProfileClientProps {
   /** From identity_verification, via a service-role read in page.tsx — this
    *  page is public, and that table's RLS is owner-or-admin only. */
   identityVerified: boolean;
+  personalCampaigns: FundraiserItem[];
 }
 
 type TabId = "overview" | "campaigns" | "followers" | "following" | "giving";
@@ -162,6 +163,17 @@ function EmptyListState({ label }: { label: string }) {
   return <p className="py-8 text-center text-sm font-medium text-zinc-500">{label}</p>;
 }
 
+function PrivateListNotice({ name }: { name: string }) {
+  return (
+    <div className="flex flex-col items-center gap-3 py-12 text-zinc-400">
+      <Lock className="h-8 w-8" />
+      <p className="text-sm font-medium">
+        Only <span className="font-bold text-zinc-600">{name}</span> can see this list.
+      </p>
+    </div>
+  );
+}
+
 export default function ProfileClient({
   profile,
   followerCount: initialFollowerCount,
@@ -170,6 +182,7 @@ export default function ProfileClient({
   isOwnProfile,
   isLoggedIn,
   identityVerified,
+  personalCampaigns,
 }: ProfileClientProps) {
   const router = useRouter();
   const [isFollowing, setIsFollowing] = useState(initialIsFollowing);
@@ -177,8 +190,7 @@ export default function ProfileClient({
   const [pending, setPending] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
 
-  const [campaignsList, setCampaignsList] = useState<FundraiserItem[] | null>(null);
-  const [campaignsLoading, setCampaignsLoading] = useState(false);
+  const [campaignsList] = useState<FundraiserItem[]>(personalCampaigns);
 
   const [followersList, setFollowersList] = useState<ListedProfile[] | null>(null);
   const [followingList, setFollowingList] = useState<ListedProfile[] | null>(null);
@@ -190,31 +202,6 @@ export default function ProfileClient({
   const [givingLoading, setGivingLoading] = useState(false);
 
   const name = profile.display_name || "Fund4Good Member";
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadCampaigns() {
-      setCampaignsLoading(true);
-      try {
-        const { data } = await supabase
-          .from("fundraisers")
-          .select("id, title, slug, banner, image_url, goal, raised, category")
-          .eq("user_id", profile.id)
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false });
-        if (!cancelled) setCampaignsList(data ?? []);
-      } catch (err) {
-        console.error("Failed to load user campaigns:", err);
-        if (!cancelled) setCampaignsList([]);
-      } finally {
-        if (!cancelled) setCampaignsLoading(false);
-      }
-    }
-    loadCampaigns();
-    return () => {
-      cancelled = true;
-    };
-  }, [profile.id]);
 
   async function handleFollow() {
     if (!isLoggedIn) {
@@ -244,6 +231,10 @@ export default function ProfileClient({
     setActiveTab(tabId);
 
     if (tabId === "followers" && followersList === null) {
+      // Non-owners are gated at the RLS layer (migration_71) and shown a lock
+      // message by the render block below — no need to attempt a fetch that
+      // would return zero rows anyway.
+      if (!isOwnProfile) return;
       setFollowersLoading(true);
       try {
         setFollowersList(await withTimeout(fetchFollowList("followers", profile.id), FOLLOW_LIST_TIMEOUT_MS));
@@ -254,6 +245,7 @@ export default function ProfileClient({
         setFollowersLoading(false);
       }
     } else if (tabId === "following" && followingList === null) {
+      if (!isOwnProfile) return;
       setFollowingLoading(true);
       try {
         setFollowingList(await withTimeout(fetchFollowList("following", profile.id), FOLLOW_LIST_TIMEOUT_MS));
@@ -280,7 +272,7 @@ export default function ProfileClient({
   }
 
   const metrics: ProfileMetric[] = [
-    { label: "Campaigns", value: (campaignsList?.length ?? 0).toString(), icon: Rocket },
+    { label: "Campaigns", value: campaignsList.length.toString(), icon: Rocket },
     { label: "Followers", value: followerCount.toLocaleString(), icon: Users },
     { label: "Following", value: followingCount.toLocaleString(), icon: UserPlus },
   ];
@@ -295,7 +287,7 @@ export default function ProfileClient({
 
   const tabs: ProfileTab[] = [
     { id: "overview", label: "Overview" },
-    { id: "campaigns", label: "Campaigns", count: campaignsList?.length },
+    { id: "campaigns", label: "Campaigns", count: campaignsList.length },
     { id: "followers", label: "Followers", count: followerCount },
     { id: "following", label: "Following", count: followingCount },
   ];
@@ -357,7 +349,7 @@ export default function ProfileClient({
                     {name} is a member of the Fund4Good community.
                   </p>
                 </div>
-                {campaignsList && campaignsList.length > 0 && (
+                {campaignsList.length > 0 && (
                   <ProfileSection title="Campaigns">
                     <div className="space-y-3">
                       {campaignsList.slice(0, 3).map((f) => (
@@ -371,11 +363,7 @@ export default function ProfileClient({
 
             {activeTab === "campaigns" && (
               <ProfileSection title="Campaigns">
-                {campaignsLoading || campaignsList === null ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="h-6 w-6 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
-                  </div>
-                ) : campaignsList.length === 0 ? (
+                {campaignsList.length === 0 ? (
                   <EmptyListState label="No campaigns created yet." />
                 ) : (
                   <div className="space-y-3">
@@ -389,7 +377,9 @@ export default function ProfileClient({
 
             {activeTab === "followers" && (
               <div className="py-1">
-                {followersLoading || followersList === null ? (
+                {!isOwnProfile ? (
+                  <PrivateListNotice name={name} />
+                ) : followersLoading || followersList === null ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="h-6 w-6 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
                   </div>
@@ -407,7 +397,9 @@ export default function ProfileClient({
 
             {activeTab === "following" && (
               <div className="py-1">
-                {followingLoading || followingList === null ? (
+                {!isOwnProfile ? (
+                  <PrivateListNotice name={name} />
+                ) : followingLoading || followingList === null ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="h-6 w-6 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
                   </div>

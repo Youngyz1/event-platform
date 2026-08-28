@@ -49,3 +49,5 @@ next-env.d.ts
 parity_report.*
 parity-check.js
 .mcp.json
+
+supabase/.temp

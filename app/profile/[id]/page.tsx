@@ -11,6 +11,17 @@ type PublicProfile = {
   avatar_url: string | null;
 };
 
+type PersonalCampaign = {
+  id: string;
+  title: string;
+  slug: string;
+  banner: string | null;
+  image_url: string | null;
+  goal: number | string | null;
+  raised: number | string | null;
+  category: string | null;
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -42,8 +53,10 @@ export default async function PublicProfilePage({
   const { id } = await params;
   const supabaseAdmin = createSupabaseAdmin();
 
-  // Fetch profile + follower/following counts in parallel
-  const [profileResult, followerResult, followingResult, identityStatus] = await Promise.all([
+  // Fetch profile + public counts/facts in parallel. Personal campaigns are
+  // fundraisers owned by the user directly; organizer-owned fundraisers also
+  // carry user_id for manager/creator access, so organizer_id must be null.
+  const [profileResult, followerResult, followingResult, identityStatus, campaignsResult] = await Promise.all([
     supabaseAdmin
       .from("public_profiles")
       .select("id, display_name, avatar_url")
@@ -63,6 +76,14 @@ export default async function PublicProfilePage({
     // the row itself (status, timestamps) never crosses that boundary, and
     // the underlying documents were never reachable from here regardless.
     fetchIdentityVerificationStatus(supabaseAdmin, id),
+    supabaseAdmin
+      .from("fundraisers")
+      .select("id, title, slug, banner, image_url, goal, raised, category")
+      .eq("user_id", id)
+      .is("organizer_id", null)
+      .eq("status", "published")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
   ]);
 
   const profile = profileResult.data as PublicProfile | null;
@@ -107,6 +128,7 @@ export default async function PublicProfilePage({
       isOwnProfile={isOwnProfile}
       isLoggedIn={Boolean(viewerId)}
       identityVerified={isIdentityVerifiedForProfile}
+      personalCampaigns={(campaignsResult.data ?? []) as PersonalCampaign[]}
     />
   );
 }

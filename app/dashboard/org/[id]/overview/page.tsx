@@ -9,8 +9,10 @@ import { ActivityFeed } from "@/components/dashboard/fund4good/ActivityFeed";
 import { DonationList } from "@/components/dashboard/fund4good/DonationList";
 import { WorkspaceCampaignCard, type WorkspaceCampaign } from "./WorkspaceCampaignCard";
 import { PendingTasksList, type PendingTask } from "./PendingTasksList";
+import { getOrganizerVerificationSummary } from "@/lib/organizer-verification-status";
 import {
   Heart, DollarSign, Users, Plus, Megaphone, UserPlus, Globe, LayoutGrid,
+  BadgeCheck,
 } from "lucide-react";
 
 // No end_date column exists on fundraisers yet — every campaign gets the
@@ -27,6 +29,14 @@ function donorTier(amount: number): DonationTier {
 function isAnonDonor(donorName: string | null | undefined): boolean {
   return donorName === "Anonymous";
 }
+
+const VERIFICATION_TONE_CLASSES = {
+  neutral: "border-zinc-200 bg-white text-slate-700",
+  pending: "border-amber-200 bg-amber-50 text-amber-900",
+  success: "border-brand-200 bg-brand-50 text-brand-900",
+  warning: "border-orange-200 bg-orange-50 text-orange-900",
+  danger: "border-red-200 bg-red-50 text-red-900",
+} as const;
 
 export default async function OrgOverviewPage({
   params,
@@ -45,12 +55,23 @@ export default async function OrgOverviewPage({
 
   if (!org) return null;
 
-  const { data: fundraisers } = await supabase
-    .from("fundraisers")
-    .select("id, title, slug, goal, raised, raised_amount, status, created_at")
-    .eq("organizer_id", id)
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+  const [{ data: fundraisers }, { data: verification }] = await Promise.all([
+    supabase
+      .from("fundraisers")
+      .select("id, title, slug, goal, raised, raised_amount, status, created_at")
+      .eq("organizer_id", id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("organizer_verification")
+      .select("status")
+      .eq("organizer_id", id)
+      .maybeSingle(),
+  ]);
+
+  const verificationSummary = getOrganizerVerificationSummary(
+    verification?.status ?? null
+  );
 
   const ownFundraisers = fundraisers ?? [];
   const fundraiserIds = ownFundraisers.map((f) => f.id);
@@ -152,6 +173,14 @@ export default async function OrgOverviewPage({
     ...(!org.photo
       ? [{ id: "missing-photo", message: "Upload a logo for your organization", href: `${base}/settings`, urgency: "low" as const }]
       : []),
+    ...(verificationSummary.actionLabel
+      ? [{
+          id: "organizer-verification",
+          message: verificationSummary.label,
+          href: `/dashboard/verification?organizerId=${id}`,
+          urgency: verificationSummary.tone === "warning" ? "high" as const : "medium" as const,
+        }]
+      : []),
   ];
 
   const mostRecentFundraiser = ownFundraisers[0];
@@ -202,6 +231,33 @@ export default async function OrgOverviewPage({
           </div>
         ))}
       </div>
+
+      <section
+        className={`rounded-xl border p-5 ${VERIFICATION_TONE_CLASSES[verificationSummary.tone]}`}
+      >
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70">
+              <BadgeCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold">Organizer Verification</h2>
+              <p className="mt-1 text-sm font-semibold">{verificationSummary.label}</p>
+              <p className="mt-1 max-w-2xl text-xs leading-relaxed opacity-80">
+                {verificationSummary.description}
+              </p>
+            </div>
+          </div>
+          {verificationSummary.actionLabel && (
+            <Link
+              href={`/dashboard/verification?organizerId=${id}`}
+              className="inline-flex min-h-[40px] shrink-0 items-center justify-center rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800"
+            >
+              {verificationSummary.actionLabel}
+            </Link>
+          )}
+        </div>
+      </section>
 
       {/* Quick Actions */}
       <section>

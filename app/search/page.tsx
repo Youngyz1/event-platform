@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
+import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { buildFundraiserSearchFilter } from "@/lib/fundraiser-data";
+import { fetchVerificationFactsBatch, isFullyVerified } from "@/lib/verification-facts";
 import SearchPageClient from "./SearchPageClient";
 
 export const metadata: Metadata = {
@@ -68,11 +70,26 @@ export default async function SearchPage({
         .limit(6),
     ]);
 
+  const rawOrganizers = organizersResult.data ?? [];
+  const orgIds = rawOrganizers.map((o) => o.id);
+  const adminClient = createSupabaseAdmin();
+  const verificationFacts = await fetchVerificationFactsBatch(adminClient, orgIds);
+
+  const enrichedOrganizers = rawOrganizers.map((org) => ({
+    ...org,
+    organizerVerified: isFullyVerified(verificationFacts.get(org.id) ?? {
+      organizerType: null,
+      identityVerified: false,
+      organizationApplicable: true,
+      organizationVerified: false,
+    }),
+  }));
+
   return (
     <SearchPageClient
       query={query}
       fundraisers={fundraisersResult.data ?? []}
-      organizers={organizersResult.data ?? []}
+      organizers={enrichedOrganizers}
     />
   );
 }

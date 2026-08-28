@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, FileText, Info, Loader2, Upload, X } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import {
@@ -16,6 +17,7 @@ import {
   type OrganizerType,
   type RequirementRow,
 } from "@/lib/verification-requirements";
+import { getOrganizerVerificationSummary } from "@/lib/organizer-verification-status";
 
 /**
  * Verification onboarding wizard — type selection and requirement preview.
@@ -63,19 +65,37 @@ export default function VerificationWizard({
   requirementRows,
   organizers,
   userId,
+  selectedOrganizerId,
+  initialVerification,
+  initialDocuments,
 }: {
   requirementRows: RequirementRow[];
   organizers: { id: string; name: string }[];
   userId: string;
+  selectedOrganizerId: string;
+  initialVerification: {
+    id: string;
+    organizer_id: string;
+    organizer_type: OrganizerType;
+    subcategory: string | null;
+    country: string | null;
+    status: string;
+    on_behalf_of_org?: boolean | null;
+    on_behalf_relationship?: string | null;
+  } | null;
+  initialDocuments: DocumentRecord[];
 }) {
-  const [step, setStep] = useState(0);
+  const router = useRouter();
+  const [step, setStep] = useState(initialVerification ? 2 : 0);
   const [draft, setDraft] = useState<Draft>({
-    organizerId: organizers[0]?.id ?? "",
-    organizerType: null,
-    subcategory: "",
-    country: "",
-    onBehalfOfOrg: false,
-    onBehalfRelationship: "",
+    organizerId: selectedOrganizerId,
+    organizerType: initialVerification?.on_behalf_of_org
+      ? "individual"
+      : initialVerification?.organizer_type ?? null,
+    subcategory: initialVerification?.subcategory ?? "",
+    country: initialVerification?.country ?? "",
+    onBehalfOfOrg: Boolean(initialVerification?.on_behalf_of_org),
+    onBehalfRelationship: initialVerification?.on_behalf_relationship ?? "",
   });
 
   // Same step-change scroll reset used by the campaign wizard: advancing only
@@ -85,11 +105,32 @@ export default function VerificationWizard({
     topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [step]);
 
-  const [verificationId, setVerificationId] = useState<string | null>(null);
-  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
-  const [status, setStatus] = useState<string>("draft");
+  const [verificationId, setVerificationId] = useState<string | null>(
+    initialVerification?.id ?? null
+  );
+  const [documents, setDocuments] = useState<DocumentRecord[]>(initialDocuments);
+  const [status, setStatus] = useState<string>(initialVerification?.status ?? "draft");
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setStep(initialVerification ? 2 : 0);
+    setDraft({
+      organizerId: selectedOrganizerId,
+      organizerType: initialVerification?.on_behalf_of_org
+        ? "individual"
+        : initialVerification?.organizer_type ?? null,
+      subcategory: initialVerification?.subcategory ?? "",
+      country: initialVerification?.country ?? "",
+      onBehalfOfOrg: Boolean(initialVerification?.on_behalf_of_org),
+      onBehalfRelationship: initialVerification?.on_behalf_relationship ?? "",
+    });
+    setVerificationId(initialVerification?.id ?? null);
+    setDocuments(initialDocuments);
+    setStatus(initialVerification?.status ?? "draft");
+    setBusy(null);
+    setError("");
+  }, [selectedOrganizerId, initialVerification, initialDocuments]);
 
   // An individual fundraising ON BEHALF OF an organization is routed through
   // the nonprofit requirement set — same documents, same review queue, no
@@ -130,6 +171,7 @@ export default function VerificationWizard({
         ? !draft.onBehalfOfOrg || draft.onBehalfRelationship.trim().length > 0
         : true;
   const locked = status !== "draft" && status !== "changes_requested";
+  const statusSummary = getOrganizerVerificationSummary(verificationId ? status : null);
 
   /**
    * Create or update the draft before showing upload slots.
@@ -139,7 +181,12 @@ export default function VerificationWizard({
    * merely opening the wizard should not create a record.
    */
   async function ensureVerification(): Promise<string | null> {
-    if (verificationId) return verificationId;
+    if (locked) return verificationId;
+    if (!effectiveOrganizerType) {
+      setError("Choose who you are fundraising as before continuing.");
+      return null;
+    }
+
     setBusy("verification");
     setError("");
     try {
@@ -246,6 +293,24 @@ export default function VerificationWizard({
     }
   }
 
+  function handleOrganizerChange(organizerId: string) {
+    setDraft((d) => ({ ...d, organizerId }));
+    router.push(`/dashboard/verification?organizerId=${encodeURIComponent(organizerId)}`);
+  }
+
+  if (organizers.length === 0) {
+    return (
+      <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+        <h1 className="text-2xl font-black text-zinc-950 sm:text-3xl">
+          Get verified
+        </h1>
+        <p className="mt-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 text-sm font-semibold text-zinc-600">
+          Create an organizer profile before starting organizer verification.
+        </p>
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
       <div ref={topRef} aria-hidden className="scroll-mt-24" />
@@ -257,6 +322,13 @@ export default function VerificationWizard({
         We ask for different things depending on who you are. Tell us that
         first and we&apos;ll only ask for what applies to you.
       </p>
+
+      <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+        <p className="text-sm font-black text-zinc-950">{statusSummary.label}</p>
+        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+          {statusSummary.description}
+        </p>
+      </div>
 
       {/* Progress */}
       <ol className="mt-6 flex items-center gap-2" aria-label="Progress">
@@ -444,9 +516,7 @@ export default function VerificationWizard({
               </span>
               <select
                 value={draft.organizerId}
-                onChange={(event) =>
-                  setDraft((d) => ({ ...d, organizerId: event.target.value }))
-                }
+                onChange={(event) => handleOrganizerChange(event.target.value)}
                 className="w-full rounded-xl border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-brand-600"
               >
                 {organizers.map((organizer) => (
@@ -581,8 +651,8 @@ export default function VerificationWizard({
             <p className="mt-6 flex gap-2 rounded-2xl border border-brand-200 bg-brand-50 p-4 text-xs leading-relaxed text-brand-900">
               <Check size={16} aria-hidden className="mt-0.5 shrink-0" />
               <span>
-                Submitted for review. We&apos;ll be in touch — documents
-                can&apos;t be changed while a review is in progress.
+                {statusSummary.description} Documents can&apos;t be changed
+                while this status is active.
               </span>
             </p>
           ) : (

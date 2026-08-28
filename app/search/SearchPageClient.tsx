@@ -26,6 +26,7 @@ type SearchResultsProps = {
     photo: string | null;
     banner: string | null;
     status: string | null;
+    organizerVerified?: boolean;
   }>;
 };
 
@@ -110,6 +111,7 @@ function SearchResultsContent({ query, fundraisers, organizers }: SearchResultsP
                         photo: org.photo,
                         banner: org.banner,
                         status: org.status,
+                        organizerVerified: org.organizerVerified,
                       }}
                     />
                   ))}
