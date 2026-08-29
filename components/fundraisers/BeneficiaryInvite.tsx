@@ -66,7 +66,9 @@ export default function BeneficiaryInvite({
 
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-4">
-      <p className="text-sm font-black text-zinc-950">Invite {beneficiaryName}</p>
+      <p className="text-sm font-black text-zinc-950">
+        Invite {beneficiaryName.trim() || "beneficiary"}
+      </p>
       <p className="mt-1 text-xs font-medium text-zinc-500">
         Optional. Sends a link letting them add their own photo, bio and contact
         details. They will not get access to this campaign or its funds.

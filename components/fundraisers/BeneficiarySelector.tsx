@@ -62,12 +62,18 @@ export default function BeneficiarySelector({
   const shows = (field: string) => Boolean(config?.fields.includes(field as never));
 
   function selectType(type: BeneficiaryType) {
+    const isSelf = type === "self";
+    const wasSelf = value.type === "self";
+    const nextName = isSelf
+      ? (organizerName ?? "").trim()
+      : wasSelf
+      ? ""
+      : value.name;
+
     onChange({
       ...value,
       type,
-      // "Myself" carries no extra fields — the beneficiary is the organizer,
-      // so the name is derived rather than asked for again.
-      name: type === "self" ? (organizerName ?? "").trim() : value.name,
+      name: nextName,
     });
   }
 
@@ -76,41 +82,31 @@ export default function BeneficiarySelector({
   }
 
   return (
-    <div className="space-y-5">
-      <div
-        role="radiogroup"
-        aria-label="Who are you fundraising for?"
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2"
-      >
-        {BENEFICIARY_TYPE_OPTIONS.map((option) => {
-          const isSelected = value.type === option.value;
-          return (
-            <button
-              key={option.value}
-              type="button"
-              role="radio"
-              aria-checked={isSelected}
-              onClick={() => selectType(option.value)}
-              className={`flex min-h-[64px] flex-col justify-center rounded-2xl border-2 px-4 py-3 text-left transition ${
-                isSelected
-                  ? "border-brand-700 bg-brand-50"
-                  : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"
-              }`}
-            >
-              <span
-                className={`text-sm font-black ${
-                  isSelected ? "text-brand-800" : "text-zinc-900"
-                }`}
-              >
-                {option.label}
-              </span>
-              <span className="mt-0.5 text-xs font-medium text-zinc-500">
-                {option.helper}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="space-y-4">
+      <label className="block">
+        <span className="mb-1.5 block text-xs font-black uppercase tracking-wide text-zinc-500">
+          Who are you fundraising for? *
+        </span>
+        <select
+          value={value.type ?? ""}
+          onChange={(e) => {
+            const selected = e.target.value as BeneficiaryType;
+            if (selected) {
+              selectType(selected);
+            }
+          }}
+          className={inputClassName}
+        >
+          <option value="" disabled>
+            Select who this fundraiser helps...
+          </option>
+          {BENEFICIARY_TYPE_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label} — {option.helper}
+            </option>
+          ))}
+        </select>
+      </label>
 
       {/* Progressive disclosure — nothing below appears until a type is picked. */}
       {config && (

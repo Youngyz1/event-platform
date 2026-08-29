@@ -264,12 +264,19 @@ export default function CreateFundraiserPage() {
       return;
     }
 
+    // For personal fundraisers, the creator is the beneficiary by definition ("self").
+    // For organization fundraisers, use the selected beneficiary draft.
+    const effectiveBeneficiaryDraft: BeneficiaryDraft =
+      fundraisingAs === "personal"
+        ? { ...EMPTY_BENEFICIARY_DRAFT, type: "self", name: resolvedOwnerName }
+        : {
+            ...beneficiary,
+            name: beneficiary.type === "self" ? resolvedOwnerName : beneficiary.name,
+          };
+
     // Type + name are required; the validator also strips fields that don't
     // apply to the chosen type before storage.
-    const beneficiaryResult = validateBeneficiary({
-      ...beneficiary,
-      name: beneficiary.type === "self" ? resolvedOwnerName : beneficiary.name,
-    });
+    const beneficiaryResult = validateBeneficiary(effectiveBeneficiaryDraft);
     if (!beneficiaryResult.ok) {
       setError(beneficiaryResult.error);
       setLoading(false);
@@ -395,7 +402,12 @@ export default function CreateFundraiserPage() {
     // Best-effort on purpose: the campaign is already created and the organizer
     // should not be dropped back into the form over a failed email. If it does
     // not go through, the same invite is available on the edit page.
-    if (beneficiaryId && beneficiaryInviteEmail.trim()) {
+    if (
+      fundraisingAs === "organization" &&
+      beneficiary.type !== "self" &&
+      beneficiaryId &&
+      beneficiaryInviteEmail.trim()
+    ) {
       try {
         await fetch("/api/beneficiary/invite", {
           method: "POST",
@@ -595,42 +607,48 @@ export default function CreateFundraiserPage() {
               </div>
             </CreatorPanel>
 
-            {/* Sits immediately after Organizer: who runs the fundraiser, then
-                who it actually helps. */}
-            <CreatorPanel title="Who are you fundraising for?">
-              <BeneficiarySelector
-                value={beneficiary}
-                onChange={setBeneficiary}
-                organizerName={resolvedOwnerName}
-                inputClassName={greenInputClass}
-                onError={setError}
-              />
+            {/* Beneficiary selection is only relevant for organization fundraisers.
+                For personal fundraisers, the creator is the beneficiary by definition ("self"). */}
+            {fundraisingAs === "organization" && (
+              <CreatorPanel title="Who are you fundraising for?">
+                <BeneficiarySelector
+                  value={beneficiary}
+                  onChange={setBeneficiary}
+                  organizerName={resolvedOwnerName}
+                  inputClassName={greenInputClass}
+                  onError={setError}
+                />
 
-              {/* Invite is offered here as well as on the edit page, so it does
-                  not depend on the organizer knowing to come back and edit.
-                  Hidden for "Myself" — there is nobody to invite.
-
-                  The email is only collected here; the invite is sent after the
-                  campaign exists, because /api/beneficiary/invite requires the
-                  caller to already own a fundraiser naming this beneficiary. */}
-              {beneficiary.type && beneficiary.type !== "self" && (
-                <div className="mt-5 border-t border-zinc-200 pt-5">
-                  <CreatorField
-                    label="Invite them to manage their profile (optional)"
-                    hint="We'll email a link so they can add a photo, a short bio, and ways for supporters to reach them. They never get control of your campaign."
-                  >
-                    <input
-                      type="email"
-                      value={beneficiaryInviteEmail}
-                      onChange={(event) => setBeneficiaryInviteEmail(event.target.value)}
-                      placeholder="their@email.com"
-                      className={greenInputClass}
-                      autoComplete="off"
-                    />
-                  </CreatorField>
-                </div>
-              )}
-            </CreatorPanel>
+                {/* Invite is offered here as well as on the edit page, so it does
+                    not depend on the organizer knowing to come back and edit.
+                    Hidden for "Myself" — there is nobody to invite. */}
+                {beneficiary.type && beneficiary.type !== "self" && (
+                  <div className="mt-5 border-t border-zinc-200 pt-5">
+                    <CreatorField
+                      label={
+                        beneficiary.name.trim()
+                          ? `Invite ${beneficiary.name.trim()} to manage their profile (optional)`
+                          : "Invite beneficiary to manage their profile (optional)"
+                      }
+                      hint="We'll email a link so they can add a photo, a short bio, and ways for supporters to reach them. They never get control of your campaign."
+                    >
+                      <input
+                        type="email"
+                        value={beneficiaryInviteEmail}
+                        onChange={(event) => setBeneficiaryInviteEmail(event.target.value)}
+                        placeholder={
+                          beneficiary.name.trim()
+                            ? `${beneficiary.name.trim().toLowerCase().replace(/\s+/g, ".")}@example.com`
+                            : "their@email.com"
+                        }
+                        className={greenInputClass}
+                        autoComplete="off"
+                      />
+                    </CreatorField>
+                  </div>
+                )}
+              </CreatorPanel>
+            )}
 
             <CreatorPanel title="Fundraiser Photos">
               <div className="grid gap-5">

@@ -277,10 +277,15 @@ export default function EditFundraiserPage() {
         }
       }
 
-      const beneficiaryResult = validateBeneficiary({
-        ...beneficiary,
-        name: beneficiary.type === "self" ? resolvedOwnerName : beneficiary.name,
-      });
+      const effectiveBeneficiaryDraft: BeneficiaryDraft =
+        fundraisingAs === "personal"
+          ? { ...EMPTY_BENEFICIARY_DRAFT, type: "self", name: resolvedOwnerName }
+          : {
+              ...beneficiary,
+              name: beneficiary.type === "self" ? resolvedOwnerName : beneficiary.name,
+            };
+
+      const beneficiaryResult = validateBeneficiary(effectiveBeneficiaryDraft);
       if (!beneficiaryResult.ok) {
         throw new Error(beneficiaryResult.error);
       }
@@ -415,30 +420,32 @@ export default function EditFundraiserPage() {
             <input value={form.goal} onChange={(event) => update("goal", event.target.value)} required type="number" min="1" placeholder="Goal" className={inputClass} />
             <input value={form.raised} onChange={(event) => update("raised", event.target.value)} type="number" min="0" placeholder="Raised so far" className={inputClass} />
           </div>
-          <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
-            <h2 className="mb-1 text-lg font-black text-zinc-950">Who are you fundraising for?</h2>
-            <p className="mb-4 text-sm font-semibold text-zinc-500">
-              The organizer runs this fundraiser — the beneficiary is who it helps.
-            </p>
-            <BeneficiarySelector
-              value={beneficiary}
-              onChange={setBeneficiary}
-              organizerName={resolvedOwnerName}
-              inputClassName={inputClass}
-              onError={setError}
-            />
+          {fundraisingAs === "organization" && (
+            <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
+              <h2 className="mb-1 text-lg font-black text-zinc-950">Who are you fundraising for?</h2>
+              <p className="mb-4 text-sm font-semibold text-zinc-500">
+                The organizer runs this fundraiser — the beneficiary is who it helps.
+              </p>
+              <BeneficiarySelector
+                value={beneficiary}
+                onChange={setBeneficiary}
+                organizerName={resolvedOwnerName}
+                inputClassName={inputClass}
+                onError={setError}
+              />
 
-            {beneficiaryRecord && (
-              <div className="mt-4">
-                <BeneficiaryInvite
-                  beneficiaryId={beneficiaryRecord.id}
-                  beneficiaryName={beneficiaryRecord.name}
-                  alreadyClaimed={beneficiaryRecord.claimed}
-                  initialInviteEmail={beneficiaryRecord.claimEmail}
-                />
-              </div>
-            )}
-          </div>
+              {beneficiary.type && beneficiary.type !== "self" && beneficiaryRecord && (
+                <div className="mt-4">
+                  <BeneficiaryInvite
+                    beneficiaryId={beneficiaryRecord.id}
+                    beneficiaryName={beneficiary.name.trim() || beneficiaryRecord.name || "beneficiary"}
+                    alreadyClaimed={beneficiaryRecord.claimed}
+                    initialInviteEmail={beneficiaryRecord.claimEmail}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="rounded-3xl border border-zinc-200 bg-zinc-50 p-5">
             <h2 className="mb-4 text-lg font-black text-zinc-950">Banner Image</h2>
