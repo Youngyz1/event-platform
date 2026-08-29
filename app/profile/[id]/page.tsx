@@ -53,6 +53,21 @@ export default async function PublicProfilePage({
   const { id } = await params;
   const supabaseAdmin = createSupabaseAdmin();
 
+  // Determine the current viewer early so we only fetch private owner metrics
+  // (like following count) when the viewer is the profile owner.
+  let viewerId: string | null = null;
+  try {
+    const supabaseServer = await createSupabaseServer();
+    const {
+      data: { user },
+    } = await supabaseServer.auth.getUser();
+    viewerId = user?.id ?? null;
+  } catch {
+    // Unauthenticated or cookie error — leave viewerId null
+  }
+
+  const isOwnProfile = viewerId === id;
+
   // Fetch profile + public counts/facts in parallel. Personal campaigns are
   // fundraisers owned by the user directly; organizer-owned fundraisers also
   // carry user_id for manager/creator access, so organizer_id must be null.
@@ -66,15 +81,13 @@ export default async function PublicProfilePage({
       .from("follows")
       .select("*", { count: "exact", head: true })
       .eq("following_id", id),
-    supabaseAdmin
-      .from("follows")
-      .select("*", { count: "exact", head: true })
-      .eq("follower_id", id),
-    // identity_verification's RLS is owner-or-admin only (Phase 1) — this
-    // page is public, so the read must go through the service-role client.
-    // Only the derived boolean below ever reaches the client component;
-    // the row itself (status, timestamps) never crosses that boundary, and
-    // the underlying documents were never reachable from here regardless.
+    // Following count is private to the profile owner — do not query it for non-owners.
+    isOwnProfile
+      ? supabaseAdmin
+          .from("follows")
+          .select("*", { count: "exact", head: true })
+          .eq("follower_id", id)
+      : Promise.resolve({ count: 0 }),
     fetchIdentityVerificationStatus(supabaseAdmin, id),
     supabaseAdmin
       .from("fundraisers")
@@ -94,21 +107,8 @@ export default async function PublicProfilePage({
   const followerCount = followerResult.count ?? 0;
   const followingCount = followingResult.count ?? 0;
 
-  // Determine the current viewer — no redirect on failure, page is public
-  let viewerId: string | null = null;
-  try {
-    const supabaseServer = await createSupabaseServer();
-    const {
-      data: { user },
-    } = await supabaseServer.auth.getUser();
-    viewerId = user?.id ?? null;
-  } catch {
-    // Unauthenticated or cookie error — leave viewerId null
-  }
-
   // Check if the viewer is already following this profile
   let isFollowing = false;
-  const isOwnProfile = viewerId === id;
   if (viewerId && !isOwnProfile) {
     const { data: followRow } = await supabaseAdmin
       .from("follows")

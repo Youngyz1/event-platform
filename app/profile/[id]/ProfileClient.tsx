@@ -274,8 +274,15 @@ export default function ProfileClient({
   const metrics: ProfileMetric[] = [
     { label: "Campaigns", value: campaignsList.length.toString(), icon: Rocket },
     { label: "Followers", value: followerCount.toLocaleString(), icon: Users },
-    { label: "Following", value: followingCount.toLocaleString(), icon: UserPlus },
   ];
+
+  if (isOwnProfile) {
+    metrics.push({
+      label: "Following",
+      value: followingCount.toLocaleString(),
+      icon: UserPlus,
+    });
+  }
 
   if (isOwnProfile && donorStats) {
     metrics.push({
@@ -289,10 +296,10 @@ export default function ProfileClient({
     { id: "overview", label: "Overview" },
     { id: "campaigns", label: "Campaigns", count: campaignsList.length },
     { id: "followers", label: "Followers", count: followerCount },
-    { id: "following", label: "Following", count: followingCount },
   ];
 
   if (isOwnProfile) {
+    tabs.push({ id: "following", label: "Following", count: followingCount });
     tabs.push({
       id: "giving",
       label: "My Giving",

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   type Campaign,
   formatCurrency,
@@ -11,7 +12,8 @@ import { copyTextToClipboard } from "@/lib/clipboard";
 import { getSiteUrl } from "@/lib/site-url";
 import { cn } from "@/lib/utils";
 import { getStatusMeta } from "./campaign-status";
-import { Share2, Pencil, ExternalLink, Check } from "lucide-react";
+import { Share2, Pencil, ExternalLink, Check, Trash2 } from "lucide-react";
+import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
 
 interface CampaignHeaderProps {
   campaign: Campaign;
@@ -19,9 +21,34 @@ interface CampaignHeaderProps {
 }
 
 export function CampaignHeader({ campaign, className }: CampaignHeaderProps) {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
   const status = getStatusMeta(campaign.status, campaign.healthScore);
   const progress = getProgressPercentage(campaign.raised, campaign.goal);
+  const hasDonations = Number(campaign.raised ?? 0) > 0 || Number(campaign.donorCount ?? 0) > 0;
+
+  async function handleDelete() {
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch(`/api/dashboard/fundraisers/${campaign.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setDeleteError(data.error ?? "Delete failed.");
+        return;
+      }
+      setShowDeleteConfirm(false);
+      router.refresh();
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function handleShare() {
     const url = `${getSiteUrl()}/fundraisers/${campaign.slug}`;
@@ -46,6 +73,31 @@ export function CampaignHeader({ campaign, className }: CampaignHeaderProps) {
         className
       )}
     >
+      {/* Moderation approval status banner for owner */}
+      {campaign.reviewStatus && campaign.reviewStatus !== "published" && (
+        <div
+          className={cn(
+            "mb-4 rounded-xl border px-4 py-3 text-xs font-bold sm:text-sm",
+            campaign.reviewStatus === "rejected"
+              ? "border-red-200 bg-red-50 text-red-800"
+              : "border-amber-200 bg-amber-50 text-amber-900"
+          )}
+        >
+          {campaign.reviewStatus === "rejected" ? (
+            <p>
+              This campaign was rejected during moderation. Reason:{" "}
+              <span className="font-normal">
+                {campaign.rejectionReason || "No reason provided."}
+              </span>
+            </p>
+          ) : (
+            <p>
+              This campaign is pending admin review and is not yet publicly visible.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Title row */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
@@ -101,8 +153,40 @@ export function CampaignHeader({ campaign, className }: CampaignHeaderProps) {
             <ExternalLink className="h-3.5 w-3.5" aria-hidden />
             View Page
           </Link>
+          <button
+            type="button"
+            disabled={hasDonations}
+            title={hasDonations ? "Campaigns with donations cannot be deleted to preserve payment history." : "Delete fundraiser"}
+            onClick={() => { setDeleteError(""); setShowDeleteConfirm(true); }}
+            className={cn(
+              "flex min-h-[40px] items-center gap-1.5 rounded-lg border px-3.5 py-2 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600",
+              hasDonations
+                ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-400 opacity-60"
+                : "border-red-200 bg-white text-red-700 hover:bg-red-50"
+            )}
+          >
+            <Trash2 className="h-3.5 w-3.5" aria-hidden />
+            Delete
+          </button>
         </div>
       </div>
+
+      {deleteError && (
+        <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-800">
+          {deleteError}
+        </div>
+      )}
+
+      <AdminConfirmDialog
+        open={showDeleteConfirm}
+        onOpenChange={(open) => !open && setShowDeleteConfirm(false)}
+        title="Delete Fundraiser"
+        description={`Delete "${campaign.title}"? Fundraisers with donation payment records are blocked to preserve payment history.`}
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        loading={deleting}
+        variant="danger"
+      />
 
       {/* Progress section */}
       <div className="mt-5 space-y-2">

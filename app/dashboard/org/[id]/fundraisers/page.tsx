@@ -1,12 +1,7 @@
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import Link from "next/link";
 import { Heart, Plus } from "lucide-react";
-import ProgressBar from "@/components/ui/ProgressBar";
-import { calculateFundraisingPercentage } from "@/lib/fundraising-progress";
-
-function money(v: number | string | null) {
-  return `$${Number(v ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
-}
+import { OrgFundraisersTable } from "./OrgFundraisersTable";
 
 export default async function OrgFundraisersPage({
   params,
@@ -48,47 +43,7 @@ export default async function OrgFundraisersPage({
           </Link>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
-              <thead className="border-b border-zinc-100 bg-zinc-50">
-                <tr>
-                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wide text-zinc-500">Campaign</th>
-                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wide text-zinc-500">Raised</th>
-                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wide text-zinc-500">Goal</th>
-                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wide text-zinc-500">Progress</th>
-                  <th className="px-5 py-3 text-left text-xs font-black uppercase tracking-wide text-zinc-500">Status</th>
-                  <th className="px-5 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-                {(fundraisers ?? []).map((f) => {
-                  const pct = calculateFundraisingPercentage(f.raised, f.goal);
-                  return (
-                    <tr key={f.id} className="hover:bg-zinc-50">
-                      <td className="px-5 py-4 font-bold text-zinc-900">{f.title}</td>
-                      <td className="px-5 py-4 font-bold text-brand-800">{money(f.raised)}</td>
-                      <td className="px-5 py-4 text-zinc-600">{money(f.goal)}</td>
-                      <td className="px-5 py-4">
-                        <ProgressBar percentage={pct} height={6} className="w-24" />
-                        <span className="mt-0.5 text-xs text-zinc-500">{pct}%</span>
-                      </td>
-                      <td className="px-5 py-4">
-                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                          f.status === "published" ? "bg-brand-100 text-brand-800" :
-                          f.status === "draft" ? "bg-zinc-100 text-zinc-600" : "bg-yellow-100 text-yellow-700"
-                        }`}>{f.status ?? "draft"}</span>
-                      </td>
-                      <td className="px-5 py-4 text-right">
-                        <Link href={`/fundraisers/${f.slug}`} className="text-xs font-bold text-brand-700 hover:underline">View</Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <OrgFundraisersTable fundraisers={(fundraisers ?? []) as any} />
       )}
     </div>
   );

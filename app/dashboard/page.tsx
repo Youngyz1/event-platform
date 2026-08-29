@@ -184,7 +184,7 @@ export default async function DashboardPage() {
   const { data: rawFundraisers, error: fundraisersError } = await supabaseAdmin
     .from("fundraisers")
     .select(
-      "id, title, story, category, raised, raised_amount, goal, slug, status, deleted_at, created_at, organizer_id"
+      "id, title, story, category, raised, raised_amount, goal, slug, status, rejection_reason, deleted_at, created_at, organizer_id"
     )
     .or(ownerFundraiserFilter)
     .is("deleted_at", null)
@@ -341,6 +341,8 @@ export default async function DashboardPage() {
       dailyPaceRequired,
       healthScore: computeHealthScore(status, dailyPaceRequired, avgDaily),
       projectedFinishDate: computeProjectedFinishDate(raised, goal, avgDaily),
+      reviewStatus: (f.status ?? "published") as string,
+      rejectionReason: (f.rejection_reason ?? null) as string | null,
       healthMessage:
         status === "completed"
           ? "Goal reached! Campaign completed successfully."

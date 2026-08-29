@@ -46,6 +46,9 @@ export interface Campaign {
   healthScore: number;
   /** ISO date the campaign is projected to hit its goal, or null if not enough pace data yet. */
   projectedFinishDate: string | null;
+  /** DB moderation approval status: 'pending_review' | 'published' | 'rejected' */
+  reviewStatus?: string;
+  rejectionReason?: string | null;
   /** Metrics we don't have a real tracking source for yet — never fabricated, always undefined until wired up. */
   pageViews?: number;
   conversionRate?: number;

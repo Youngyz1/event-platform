@@ -281,7 +281,20 @@ function FundraisersClientInner() {
                 <p className="mt-2 text-xs font-bold text-zinc-500">{row.progress}% of {formatAdminMoney(row.goal)}</p>
                 <div className="mt-4 flex flex-wrap gap-1.5">
                   <Link href={`/fundraisers/edit/${row.id}`} className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50">Edit</Link>
-                  <button type="button" onClick={() => setDeleteTarget(row)} className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-black text-red-700 hover:bg-red-50">Delete</button>
+                  <button
+                    type="button"
+                    disabled={Number(row.raised ?? 0) > 0 || Number(row.donor_count ?? 0) > 0}
+                    title={Number(row.raised ?? 0) > 0 || Number(row.donor_count ?? 0) > 0 ? "Campaigns with donations cannot be deleted to preserve payment history." : "Delete fundraiser"}
+                    onClick={() => setDeleteTarget(row)}
+                    className={cn(
+                      "rounded-lg border px-2.5 py-1.5 text-xs font-black transition",
+                      Number(row.raised ?? 0) > 0 || Number(row.donor_count ?? 0) > 0
+                        ? "cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-60"
+                        : "border-red-200 bg-white text-red-700 hover:bg-red-50"
+                    )}
+                  >
+                    Delete
+                  </button>
                 </div>
               </article>
             ))}
@@ -325,7 +338,20 @@ function FundraisersClientInner() {
                       <div className="flex flex-wrap gap-1.5">
                         <button type="button" onClick={() => openDrawer(row.id)} className="rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-xs font-black text-zinc-700 hover:bg-zinc-50">View</button>
                         <Link href={`/fundraisers/edit/${row.id}`} className="rounded-lg border border-brand-200 bg-white px-2.5 py-1.5 text-xs font-black text-brand-800 hover:bg-brand-50">Edit</Link>
-                        <button type="button" onClick={() => setDeleteTarget(row)} className="rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-xs font-black text-red-700 hover:bg-red-50">Delete</button>
+                        <button
+                          type="button"
+                          disabled={Number(row.raised ?? 0) > 0 || Number(row.donor_count ?? 0) > 0}
+                          title={Number(row.raised ?? 0) > 0 || Number(row.donor_count ?? 0) > 0 ? "Campaigns with donations cannot be deleted to preserve payment history." : "Delete fundraiser"}
+                          onClick={() => setDeleteTarget(row)}
+                          className={cn(
+                            "rounded-lg border px-2.5 py-1.5 text-xs font-black transition",
+                            Number(row.raised ?? 0) > 0 || Number(row.donor_count ?? 0) > 0
+                              ? "cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-60"
+                              : "border-red-200 bg-white text-red-700 hover:bg-red-50"
+                          )}
+                        >
+                          Delete
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -349,7 +375,20 @@ function FundraisersClientInner() {
               )}
               <Link href={`/fundraisers/edit/${drawerItem.id}`} className="rounded-xl border border-brand-200 px-4 py-2 text-sm font-black text-brand-800 hover:bg-brand-50">Edit</Link>
               <Link href={`/dashboard/fundraisers/${drawerItem.id}/updates`} className="rounded-xl border border-violet-200 px-4 py-2 text-sm font-black text-violet-700 hover:bg-violet-50">Updates ({drawerItem.update_count})</Link>
-              <button type="button" onClick={() => setDeleteTarget(drawerItem)} className="rounded-xl border border-red-200 px-4 py-2 text-sm font-black text-red-700 hover:bg-red-50">Delete</button>
+              <button
+                type="button"
+                disabled={Number(drawerItem.raised ?? 0) > 0 || Number(drawerItem.donor_count ?? 0) > 0}
+                title={Number(drawerItem.raised ?? 0) > 0 || Number(drawerItem.donor_count ?? 0) > 0 ? "Campaigns with donations cannot be deleted to preserve payment history." : "Delete fundraiser"}
+                onClick={() => setDeleteTarget(drawerItem)}
+                className={cn(
+                  "rounded-xl border px-4 py-2 text-sm font-black transition",
+                  Number(drawerItem.raised ?? 0) > 0 || Number(drawerItem.donor_count ?? 0) > 0
+                    ? "cursor-not-allowed border-zinc-200 bg-zinc-100 text-zinc-400 opacity-60"
+                    : "border-red-200 bg-white text-red-700 hover:bg-red-50"
+                )}
+              >
+                Delete
+              </button>
             </div>
           )
         }
