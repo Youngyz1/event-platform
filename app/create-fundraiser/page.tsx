@@ -532,7 +532,6 @@ export default function CreateFundraiserPage() {
       accent="green"
       title="Create Fundraiser"
       description="Set up your fundraiser and start making an impact."
-      email={email}
       steps={FUNDRAISER_STEPS}
       currentStep={currentStep}
       onStepChange={setCurrentStep}

@@ -20,7 +20,6 @@ export function CreatorWorkspace({
   accent,
   title,
   description,
-  email,
   steps,
   currentStep,
   onStepChange,
@@ -32,7 +31,6 @@ export function CreatorWorkspace({
   accent: "orange" | "green";
   title: string;
   description: string;
-  email?: string | null;
   steps: Step[];
   currentStep: number;
   onStepChange: (step: number) => void;
@@ -67,32 +65,7 @@ export function CreatorWorkspace({
 
         <div className="min-w-0 flex-1">
           <header className="border-b border-zinc-200 pb-4">
-            <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-              <div className="grid gap-3 sm:grid-cols-[1fr_220px] xl:w-[620px]">
-                <label className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm font-semibold text-zinc-500">
-                  <i className="ti ti-search text-lg" aria-hidden="true" />
-                  <input className="min-w-0 flex-1 bg-transparent outline-none" placeholder="Search events..." type="search" />
-                </label>
-                <label className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-sm font-semibold text-zinc-500">
-                  <i className="ti ti-map-pin text-lg" aria-hidden="true" />
-                  <input className="min-w-0 flex-1 bg-transparent outline-none" placeholder="Location" type="search" />
-                </label>
-              </div>
-
-              <div className="flex items-center justify-between gap-3 xl:justify-end">
-                <button className="hidden rounded-xl p-2.5 text-zinc-500 hover:bg-zinc-100 sm:block" type="button" aria-label="Notifications">
-                  <i className="ti ti-bell text-xl" aria-hidden="true" />
-                </button>
-                <div className="flex h-10 items-center gap-2 rounded-xl bg-zinc-100 px-3 text-sm font-black text-zinc-700">
-                  <span className={`flex h-6 w-6 items-center justify-center rounded-full ${theme.bg} text-xs text-white`}>
-                    {(email || "U").charAt(0).toUpperCase()}
-                  </span>
-                  <span className="max-w-32 truncate">{email || "User"}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
+            <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
               <div>
                 <h1 className="text-3xl font-black tracking-tight">{title}</h1>
                 <p className="mt-1 text-sm font-medium text-zinc-500">{description}</p>
