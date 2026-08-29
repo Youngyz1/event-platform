@@ -21,24 +21,7 @@ import type {
   DashboardFundraiserStats,
 } from "@/types/dashboard-management";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
-
-/** Owner-facing moderation badge — only shown while a campaign isn't public. */
-function ReviewBadge({ status }: { status: string }) {
-  if (status === "published") return null;
-  const label = status === "rejected" ? "Rejected" : "Pending review";
-  const style =
-    status === "rejected" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700";
-  return (
-    <span
-      className={cn(
-        "mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wide",
-        style
-      )}
-    >
-      {label}
-    </span>
-  );
-}
+import ReviewBadge from "@/components/trust/ReviewBadge";
 
 function FundraisersClientInner() {
   const { page, perPage, search, updateParams, getParam, buildQueryString } = useDashboardParams();

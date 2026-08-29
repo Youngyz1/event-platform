@@ -20,6 +20,7 @@ type PersonalCampaign = {
   goal: number | string | null;
   raised: number | string | null;
   category: string | null;
+  status?: string | null;
 };
 
 export async function generateMetadata({
@@ -68,9 +69,20 @@ export default async function PublicProfilePage({
 
   const isOwnProfile = viewerId === id;
 
-  // Fetch profile + public counts/facts in parallel. Personal campaigns are
-  // fundraisers owned by the user directly; organizer-owned fundraisers also
-  // carry user_id for manager/creator access, so organizer_id must be null.
+  // Build the personal campaigns query: non-owners only see published campaigns;
+  // profile owners see all their own campaigns (including pending_review & rejected).
+  let campaignsQuery = supabaseAdmin
+    .from("fundraisers")
+    .select("id, title, slug, banner, image_url, goal, raised, category, status")
+    .eq("user_id", id)
+    .is("organizer_id", null)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
+  if (!isOwnProfile) {
+    campaignsQuery = campaignsQuery.eq("status", "published");
+  }
+
   const [profileResult, followerResult, followingResult, identityStatus, campaignsResult] = await Promise.all([
     supabaseAdmin
       .from("public_profiles")
@@ -89,14 +101,7 @@ export default async function PublicProfilePage({
           .eq("follower_id", id)
       : Promise.resolve({ count: 0 }),
     fetchIdentityVerificationStatus(supabaseAdmin, id),
-    supabaseAdmin
-      .from("fundraisers")
-      .select("id, title, slug, banner, image_url, goal, raised, category")
-      .eq("user_id", id)
-      .is("organizer_id", null)
-      .eq("status", "published")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false }),
+    campaignsQuery,
   ]);
 
   const profile = profileResult.data as PublicProfile | null;

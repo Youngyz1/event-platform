@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { getStatusMeta } from "./campaign-status";
 import { Share2, Pencil, ExternalLink, Check, Trash2 } from "lucide-react";
 import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
+import ReviewBadge from "@/components/trust/ReviewBadge";
 
 interface CampaignHeaderProps {
   campaign: Campaign;
@@ -73,36 +74,12 @@ export function CampaignHeader({ campaign, className }: CampaignHeaderProps) {
         className
       )}
     >
-      {/* Moderation approval status banner for owner */}
-      {campaign.reviewStatus && campaign.reviewStatus !== "published" && (
-        <div
-          className={cn(
-            "mb-4 rounded-xl border px-4 py-3 text-xs font-bold sm:text-sm",
-            campaign.reviewStatus === "rejected"
-              ? "border-red-200 bg-red-50 text-red-800"
-              : "border-amber-200 bg-amber-50 text-amber-900"
-          )}
-        >
-          {campaign.reviewStatus === "rejected" ? (
-            <p>
-              This campaign was rejected during moderation. Reason:{" "}
-              <span className="font-normal">
-                {campaign.rejectionReason || "No reason provided."}
-              </span>
-            </p>
-          ) : (
-            <p>
-              This campaign is pending admin review and is not yet publicly visible.
-            </p>
-          )}
-        </div>
-      )}
-
       {/* Title row */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           {/* Badges */}
           <div className="mb-2.5 flex flex-wrap items-center gap-2">
+            <ReviewBadge status={campaign.reviewStatus} />
             <span
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold",

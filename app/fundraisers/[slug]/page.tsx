@@ -36,6 +36,7 @@ import {
   isExplicitBeneficiaryJson,
 } from "@/lib/beneficiary";
 import VerificationBadge from "@/components/trust/VerificationBadge";
+import ReviewBadge from "@/components/trust/ReviewBadge";
 import { getSiteUrl } from "@/lib/site-url";
 import { truncateWords, stripHtml, cleanTitle } from "@/lib/text";
 
@@ -556,20 +557,13 @@ export default async function FundraiserPage({
       />
       {fundraiser.status !== "published" && (
         <div className="mx-auto max-w-3xl px-4 pt-6 sm:px-6">
-          <div
-            className={`rounded-xl border px-4 py-3 text-sm font-bold ${
-              fundraiser.status === "rejected"
-                ? "border-red-200 bg-red-50 text-red-800"
-                : "border-amber-200 bg-amber-50 text-amber-900"
-            }`}
-          >
-            {fundraiser.status === "rejected"
-              ? `This campaign was rejected${
-                  fundraiser.rejection_reason
-                    ? `: ${fundraiser.rejection_reason.trim().replace(/\.+$/, "")}`
-                    : ""
-                }. It is not visible to the public.`
-              : "This campaign is pending admin review and isn’t visible to the public yet — you can see it because you have access to it."}
+          <div className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-2.5 text-xs font-semibold text-zinc-700">
+            <ReviewBadge status={fundraiser.status} />
+            <span>
+              {fundraiser.status === "rejected"
+                ? `Campaign rejected: ${fundraiser.rejection_reason || "No reason provided."}`
+                : "Owner preview — not visible to the public"}
+            </span>
           </div>
         </div>
       )}

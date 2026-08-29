@@ -17,7 +17,8 @@ import ProfileAvatar from "@/components/profile/ProfileAvatar";
 import FollowButton from "@/components/profile/FollowButton";
 import ShareButton from "@/components/profile/ShareButton";
 import IdentityStatusBadge from "@/components/trust/IdentityStatusBadge";
-import { Users, UserPlus, Pencil, Heart, Rocket, ArrowUpRight, Lock } from "lucide-react";
+import ReviewBadge from "@/components/trust/ReviewBadge";
+import { Users, UserPlus, Pencil, Heart, Rocket, ArrowUpRight } from "lucide-react";
 import type { DonorStats } from "@/lib/donor-stats";
 
 interface ProfileClientProps {
@@ -54,6 +55,7 @@ type FundraiserItem = {
   goal: number | string | null;
   raised: number | string | null;
   category: string | null;
+  status?: string | null;
 };
 
 const FOLLOW_LIST_TIMEOUT_MS = 15000;
@@ -130,9 +132,12 @@ function CampaignRow({ f }: { f: FundraiserItem }) {
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-black text-zinc-900 line-clamp-1 group-hover:text-brand-800">
-          {f.title}
-        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="font-black text-zinc-900 line-clamp-1 group-hover:text-brand-800">
+            {f.title}
+          </p>
+          <ReviewBadge status={f.status} />
+        </div>
         <div className="mt-1.5">
           <ProgressBar percentage={pct} height={6} />
         </div>
@@ -161,17 +166,6 @@ function ProfileListRow({ profile }: { profile: ListedProfile }) {
 
 function EmptyListState({ label }: { label: string }) {
   return <p className="py-8 text-center text-sm font-medium text-zinc-500">{label}</p>;
-}
-
-function PrivateListNotice({ name }: { name: string }) {
-  return (
-    <div className="flex flex-col items-center gap-3 py-12 text-zinc-400">
-      <Lock className="h-8 w-8" />
-      <p className="text-sm font-medium">
-        Only <span className="font-bold text-zinc-600">{name}</span> can see this list.
-      </p>
-    </div>
-  );
 }
 
 export default function ProfileClient({
@@ -382,11 +376,9 @@ export default function ProfileClient({
               </ProfileSection>
             )}
 
-            {activeTab === "followers" && (
+            {activeTab === "followers" && isOwnProfile && (
               <div className="py-1">
-                {!isOwnProfile ? (
-                  <PrivateListNotice name={name} />
-                ) : followersLoading || followersList === null ? (
+                {followersLoading || followersList === null ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="h-6 w-6 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
                   </div>
@@ -402,11 +394,9 @@ export default function ProfileClient({
               </div>
             )}
 
-            {activeTab === "following" && (
+            {activeTab === "following" && isOwnProfile && (
               <div className="py-1">
-                {!isOwnProfile ? (
-                  <PrivateListNotice name={name} />
-                ) : followingLoading || followingList === null ? (
+                {followingLoading || followingList === null ? (
                   <div className="flex items-center justify-center py-12">
                     <div className="h-6 w-6 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
                   </div>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ProgressBar from "@/components/ui/ProgressBar";
 import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
+import ReviewBadge from "@/components/trust/ReviewBadge";
 import { calculateFundraisingPercentage } from "@/lib/fundraising-progress";
 import { cn } from "@/lib/utils";
 
@@ -89,18 +90,13 @@ export function OrgFundraisersTable({ fundraisers }: { fundraisers: OrgFundraise
                       <span className="mt-0.5 text-xs text-zinc-500">{pct}%</span>
                     </td>
                     <td className="px-5 py-4">
-                      <span
-                        className={cn(
-                          "rounded-full px-2.5 py-0.5 text-xs font-bold",
-                          f.status === "published"
-                            ? "bg-brand-100 text-brand-800"
-                            : f.status === "rejected"
-                            ? "bg-red-100 text-red-700"
-                            : "bg-amber-100 text-amber-800"
-                        )}
-                      >
-                        {f.status ?? "pending_review"}
-                      </span>
+                      {f.status === "published" ? (
+                        <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-bold text-brand-800">
+                          Published
+                        </span>
+                      ) : (
+                        <ReviewBadge status={f.status} />
+                      )}
                     </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
