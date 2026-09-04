@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import NavbarWrapper from "@/components/NavbarWrapper";
-import Footer from "@/components/Footer";
 import CookieConsent from "@/components/CookieConsent";
 import { getSiteUrl } from "@/lib/site-url";
 import { GoogleAnalytics } from "@next/third-parties/google";
@@ -95,7 +94,6 @@ export default function RootLayout({
         <div className="flex-1">
           {children}
         </div>
-        <Footer />
         <CookieConsent />
       </body>
       <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID!} />

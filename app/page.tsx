@@ -22,6 +22,8 @@ import { normalizeImageUrl } from "@/lib/image-url";
 import { money } from "@/lib/format";
 import { unstable_cache } from "next/cache";
 import type { Metadata } from "next";
+import { HeartHandshake } from "lucide-react";
+import MarketingFooter from "@/components/footers/MarketingFooter";
 
 // ---------------------------------------------------------------------------
 // Cached data fetchers for the homepage (fundraisers landing content).
@@ -202,6 +204,7 @@ export default async function HomePage({
     adminHeroImages.length > 0 ? adminHeroImages : await getCachedHeroImages();
 
   return (
+    <>
     <main className="min-h-screen bg-zinc-50 text-zinc-950 pb-16">
       {/* ── Hero (CMS text preserved; layout redesigned) ── */}
       <LandingHero
@@ -232,7 +235,7 @@ export default async function HomePage({
           featured={showcaseFeatured}
           items={showcaseItems}
           emptyState={{
-            icon: "💚",
+            icon: HeartHandshake,
             title: "No fundraisers found",
             description: "Try a different filter to discover more campaigns to support.",
             action: { label: "Start a fundraiser", href: "/create-fundraiser" },
@@ -265,5 +268,9 @@ export default async function HomePage({
            this page for those in-page anchors to resolve. ── */}
       <FundraiserFaq />
     </main>
+      {/* Full marketing footer — home page only (all other public routes use
+          LightFooter via app/(site)/layout.tsx; admin/dashboard get none). */}
+      <MarketingFooter />
+    </>
   );
 }
