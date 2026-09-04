@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { type LucideIcon } from "lucide-react";
+import { Minus, TrendingDown, TrendingUp, type LucideIcon } from "lucide-react";
 
 interface StatCardProps {
   label: string;
@@ -73,13 +73,19 @@ export function StatCard({
             <div className="flex items-center gap-1.5">
               <span
                 className={cn(
-                  "text-xs font-semibold",
+                  "inline-flex items-center gap-1 text-xs font-semibold",
                   trend.direction === "up" && "text-brand-700",
                   trend.direction === "down" && "text-red-500",
                   trend.direction === "flat" && "text-slate-400"
                 )}
               >
-                {trend.direction === "up" ? "↑" : trend.direction === "down" ? "↓" : "→"}{" "}
+                {trend.direction === "up" ? (
+                  <TrendingUp className="h-3.5 w-3.5" aria-hidden />
+                ) : trend.direction === "down" ? (
+                  <TrendingDown className="h-3.5 w-3.5" aria-hidden />
+                ) : (
+                  <Minus className="h-3.5 w-3.5" aria-hidden />
+                )}
                 {trend.value}
               </span>
               {trend.label && <span className="text-xs text-slate-400">{trend.label}</span>}

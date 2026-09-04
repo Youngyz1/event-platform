@@ -86,7 +86,7 @@ export async function notifyOrganizerOfTicketPurchase(params: {
                     <tr>
                       <td style="background:linear-gradient(135deg,#6366f1,#4f46e5);padding:32px;text-align:center;">
                         <p style="margin:0;color:#c7d2fe;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Fund4Good Alerts</p>
-                        <h1 style="margin:8px 0 0;color:#ffffff;font-size:24px;font-weight:900;">New Ticket Purchase! 🎟️</h1>
+                        <h1 style="margin:8px 0 0;color:#ffffff;font-size:24px;font-weight:900;">New Ticket Purchase!</h1>
                       </td>
                     </tr>
                     <!-- Body -->
@@ -150,7 +150,7 @@ export async function notifyOrganizerOfTicketPurchase(params: {
       relatedType: "event",
       relatedId: params.eventId,
       email: shouldEmail
-        ? { to: email!, subject: `New ticket purchase for ${event.title} 🎟️`, html: emailHtml }
+        ? { to: email!, subject: `New ticket purchase for ${event.title}`, html: emailHtml }
         : null,
     });
   } catch (err) {
@@ -218,7 +218,7 @@ export async function notifyOrganizerOfDonation(params: {
                     <tr>
                       <td style="background:linear-gradient(135deg,#10b981,#059669);padding:32px;text-align:center;">
                         <p style="margin:0;color:#a7f3d0;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;">Fund4Good Alerts</p>
-                        <h1 style="margin:8px 0 0;color:#ffffff;font-size:24px;font-weight:900;">New Donation Received! 💚</h1>
+                        <h1 style="margin:8px 0 0;color:#ffffff;font-size:24px;font-weight:900;">New Donation Received!</h1>
                       </td>
                     </tr>
                     <!-- Body -->
@@ -286,7 +286,7 @@ export async function notifyOrganizerOfDonation(params: {
       relatedType: "fundraiser",
       relatedId: params.fundraiserId,
       email: shouldEmail
-        ? { to: email!, subject: `New donation received for ${fundraiser.title} 💚`, html: emailHtml }
+        ? { to: email!, subject: `New donation received for ${fundraiser.title}`, html: emailHtml }
         : null,
     });
   } catch (err) {

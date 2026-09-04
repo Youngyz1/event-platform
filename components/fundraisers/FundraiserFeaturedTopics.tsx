@@ -35,7 +35,7 @@ export default async function FundraiserFeaturedTopics() {
       tone: "emerald-soft",
       image: katieImage || null,
       imageAlt: "Help Katie In Her Battle Against Cancer And Homelessness",
-      title: "Help Katie In Her Battle Against Cancer And Homelessness ❤️",
+      title: "Help Katie In Her Battle Against Cancer And Homelessness",
       href: `/fundraisers/${KATIE_SLUG}`,
       cta: "Donate now",
     },

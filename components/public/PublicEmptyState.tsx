@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { HeartHandshake, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type PublicEmptyStateProps = {
-  icon?: string;
+  icon?: LucideIcon;
   title: string;
   description?: string;
   action?: { label: string; href: string };
@@ -10,7 +11,7 @@ type PublicEmptyStateProps = {
 };
 
 export default function PublicEmptyState({
-  icon = "✨",
+  icon: Icon = HeartHandshake,
   title,
   description,
   action,
@@ -23,9 +24,12 @@ export default function PublicEmptyState({
         className
       )}
     >
-      <p className="text-4xl" aria-hidden>
-        {icon}
-      </p>
+      <div
+        className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-zinc-100"
+        aria-hidden
+      >
+        <Icon className="h-6 w-6 text-zinc-400" />
+      </div>
       <h2 className="mt-4 text-xl font-black text-zinc-950 sm:text-2xl">{title}</h2>
       {description && <p className="mx-auto mt-2 max-w-md text-sm text-zinc-500 sm:text-base">{description}</p>}
       {action && (

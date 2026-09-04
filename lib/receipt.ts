@@ -159,7 +159,7 @@ export async function generateReceiptPdf(
     doc.setFont("helvetica", "bold");
     doc.setTextColor(16, 185, 129); // Emerald-600
     doc.setFontSize(10);
-    doc.text("★ Tax-Deductible Donation Certificate", 25, 169);
+    doc.text("Tax-Deductible Donation Certificate", 25, 169);
 
     doc.setFont("helvetica", "normal");
     doc.setTextColor(5, 150, 105);
@@ -334,8 +334,8 @@ export async function processDonationReceipt(donationId: string) {
       const resend = new Resend(process.env.RESEND_API_KEY);
       const fromAddress = `Fund4Good <${process.env.RESEND_FROM_EMAIL || "contact@fund4agoodcause.com"}>`;
       const subject = isNonprofit
-        ? `Your Tax-Deductible Donation Receipt for ${fundraiser.title} 📄`
-        : `Your Donation Receipt for ${fundraiser.title} 📄`;
+        ? `Your Tax-Deductible Donation Receipt for ${fundraiser.title}`
+        : `Your Donation Receipt for ${fundraiser.title}`;
 
       const htmlContent = `
         <div style="font-family: sans-serif; color: #18181b; max-width: 600px; margin: 0 auto; padding: 20px;">

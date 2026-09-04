@@ -6,6 +6,7 @@ import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import PublicPageHeader from "@/components/public/PublicPageHeader";
 import PublicEmptyState from "@/components/public/PublicEmptyState";
 import BeneficiaryProfileForm from "./BeneficiaryProfileForm";
+import { HeartHandshake } from "lucide-react";
 
 /**
  * A beneficiary's own profile. Only reachable for accounts that have claimed
@@ -53,7 +54,7 @@ export default async function BeneficiaryDashboardPage() {
 
         {owned.length === 0 ? (
           <PublicEmptyState
-            icon="💚"
+            icon={HeartHandshake}
             title="No beneficiary profile yet"
             description="If a campaign organizer names you as their beneficiary, they can invite you by email — the link in that invite connects the profile to this account."
             action={{ label: "Back to dashboard", href: "/dashboard" }}

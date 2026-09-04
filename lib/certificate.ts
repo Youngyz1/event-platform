@@ -301,7 +301,7 @@ export async function processDonationCertificate(donationId: string) {
       const { error: emailErr } = await resend.emails.send({
         from: "Fund4Good <contact@fund4agoodcause.com>",
         to: donation.donor_email,
-        subject: `Your Certificate of Appreciation — ${fundraiser.title} 🏅`,
+        subject: `Your Certificate of Appreciation — ${fundraiser.title}`,
         html: `
           <div style="font-family: sans-serif; color: #18181b; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 24px;">

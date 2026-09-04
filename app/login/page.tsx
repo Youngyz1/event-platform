@@ -207,7 +207,7 @@ function LoginForm() {
 
           {resetSuccess && (
             <div className="mb-6 rounded-2xl border border-brand-200 bg-brand-50 px-5 py-4 text-sm text-brand-800">
-              ✓ Password updated. You can now log in with your new password.
+              Password updated. You can now log in with your new password.
             </div>
           )}
 

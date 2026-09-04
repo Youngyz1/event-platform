@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { X } from "lucide-react";
 
 type CommentTarget = "event" | "fundraiser";
 
@@ -287,8 +288,9 @@ export default function CommentsSection({
                 onClick={() => { setVerifiedEmail(null); setVerifiedName(""); }}
                 className="ml-1 opacity-50 hover:opacity-100 transition"
                 title="Switch email"
+                aria-label="Switch email"
               >
-                ✕
+                <X className="h-3.5 w-3.5" aria-hidden />
               </button>
             </div>
 

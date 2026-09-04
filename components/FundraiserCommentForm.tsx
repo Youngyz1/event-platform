@@ -75,7 +75,7 @@ export default function FundraiserCommentForm({
       </div>
       {success && (
         <p className="text-sm font-semibold text-brand-700">
-          ✓ Your support has been posted!
+          Your support has been posted!
         </p>
       )}
       {error && (

@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import ImageUploadWithCrop from "@/components/ui/ImageUploadWithCrop";
 import { MIN_BANNER_WIDTH, MIN_BANNER_HEIGHT } from "@/lib/image-dimensions";
+import { Building2, ImagePlus } from "lucide-react";
 
 type FormState = {
   name:     string;
@@ -253,8 +254,8 @@ export default function CreateOrganizerPage() {
                   }
                 >
                   {!bannerUrl && (
-                    <div className="text-center">
-                      <p className="mb-2 text-4xl">🖼️</p>
+                    <div className="flex flex-col items-center text-center">
+                      <ImagePlus className="mb-2 h-8 w-8 text-zinc-400" aria-hidden />
                       <p className="font-semibold text-zinc-500">Click to upload banner</p>
                     </div>
                   )}
@@ -271,7 +272,7 @@ export default function CreateOrganizerPage() {
                 {photoUrl ? (
                   <img src={photoUrl} alt="preview" className="h-full w-full object-cover" />
                 ) : (
-                  <span className="text-4xl text-zinc-400">🏢</span>
+                  <Building2 className="h-8 w-8 text-zinc-400" aria-hidden />
                 )}
               </div>
               <div>

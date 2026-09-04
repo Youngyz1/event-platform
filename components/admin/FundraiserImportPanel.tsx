@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AlertTriangle } from "lucide-react";
 import {
   parseDonorsPaste,
   parseCommentsPaste,
@@ -173,7 +174,7 @@ export default function FundraiserImportPanel({ fundraiserId }: { fundraiserId: 
                 <ul className="mt-1 max-h-32 space-y-0.5 overflow-y-auto">
                   {comments.rows.slice(0, 20).map((r) => (
                     <li key={r.line} className="text-zinc-600">
-                      <span className="font-bold">{r.name}</span> · {r.date} · ♥ {r.likes}
+                      <span className="font-bold">{r.name}</span> · {r.date} · {r.likes} likes
                       <span className="block truncate text-zinc-500">{r.body}</span>
                     </li>
                   ))}
@@ -191,7 +192,7 @@ export default function FundraiserImportPanel({ fundraiserId }: { fundraiserId: 
       {duplicateWarning && (
         <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-amber-900 shadow-sm">
           <div className="flex items-start gap-3">
-            <span className="text-xl">⚠️</span>
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" aria-hidden />
             <div className="flex-1 text-xs">
               <p className="font-black text-amber-950">Potential Duplicate Import Detected</p>
               <p className="mt-1 font-medium">{duplicateWarning.message}</p>

@@ -269,7 +269,7 @@ export const recentDonations: Donation[] = [
     donorName: "Sarah Mitchell",
     amount: 250,
     currency: "USD",
-    message: "So proud of this community. Keep going! 💪",
+    message: "So proud of this community. Keep going!",
     timestamp: "2026-07-31T21:44:00Z",
     isAnonymous: false,
     tier: "silver",

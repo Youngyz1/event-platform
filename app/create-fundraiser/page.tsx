@@ -20,6 +20,7 @@ import BeneficiarySelector, {
 } from "@/components/fundraisers/BeneficiarySelector";
 import { validateBeneficiary, beneficiaryTypeLabel } from "@/lib/beneficiary";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
+import { X } from "lucide-react";
 
 // Upper-bound for fundraiser photo exports. Images larger than this are scaled
 // down proportionally; the original aspect ratio is always preserved and nothing
@@ -678,10 +679,10 @@ export default function CreateFundraiserPage() {
                         <button
                           type="button"
                           onClick={() => removePhoto(index)}
-                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-sm font-black text-white transition hover:bg-black"
+                          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-black"
                           aria-label={`Remove photo ${index + 1}`}
                         >
-                          ×
+                          <X className="h-4 w-4" aria-hidden />
                         </button>
                         {index === 0 && (
                           <span className="absolute bottom-2 left-2 rounded-full bg-brand-700 px-2 py-1 text-[10px] font-black uppercase text-white">

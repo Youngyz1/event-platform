@@ -1,5 +1,6 @@
 import PublicEmptyState from "@/components/public/PublicEmptyState";
 import CampaignShowcaseMobileList from "@/components/fundraisers/CampaignShowcaseMobileList";
+import type { LucideIcon } from "lucide-react";
 import CampaignShowcasePager, {
   type CampaignShowcasePage,
 } from "@/components/fundraisers/CampaignShowcasePager";
@@ -18,7 +19,7 @@ export interface CampaignShowcaseItem {
 }
 
 export interface CampaignShowcaseEmptyState {
-  icon?: string;
+  icon?: LucideIcon;
   title: string;
   description?: string;
   action?: { label: string; href: string };

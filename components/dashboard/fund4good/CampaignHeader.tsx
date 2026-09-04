@@ -86,7 +86,10 @@ export function CampaignHeader({ campaign, className }: CampaignHeaderProps) {
                 status.color
               )}
             >
-              <span aria-hidden>{status.emoji}</span>
+              {(() => {
+                const StatusIcon = status.icon;
+                return <StatusIcon className="h-3.5 w-3.5" aria-hidden />;
+              })()}
               {status.label}
             </span>
             <span className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-xs font-medium text-slate-600">

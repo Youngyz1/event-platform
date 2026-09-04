@@ -58,7 +58,10 @@ export function CampaignHealthCard({ campaign, className }: CampaignHealthCardPr
             status.color
           )}
         >
-          <span aria-hidden>{status.emoji}</span>
+          {(() => {
+            const StatusIcon = status.icon;
+            return <StatusIcon className="h-3.5 w-3.5" aria-hidden />;
+          })()}
           {status.label}
         </span>
       </div>

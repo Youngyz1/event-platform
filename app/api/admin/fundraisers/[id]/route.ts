@@ -148,7 +148,7 @@ async function notifyOwnerOfReviewDecision(
       email: shouldEmail
         ? {
             to: email!,
-            subject: `Your fundraiser "${fundraiser.title}" is approved 🎉`,
+            subject: `Your fundraiser "${fundraiser.title}" is approved`,
             html: approvalEmailHtml(fundraiser.title, link),
           }
         : null,
@@ -209,7 +209,7 @@ function approvalEmailHtml(title: string, link: string | null) {
   const base = process.env.NEXT_PUBLIC_BASE_URL ?? '';
   return emailShell(
     'linear-gradient(135deg,#10b981,#059669)',
-    'Fundraiser Approved! 🎉',
+    'Fundraiser Approved!',
     `
       <p style="margin:0 0 16px;color:#18181b;font-size:16px;line-height:1.6;">Hi there,</p>
       <p style="margin:0 0 24px;color:#18181b;font-size:16px;line-height:1.6;">
