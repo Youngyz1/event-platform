@@ -38,7 +38,7 @@ export default async function OrgDashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-zinc-100">
+    <div className="flex min-h-screen bg-zinc-100 lg:pl-64">
       <OrgDashboardSidebar org={org} />
 
       {/* Main content area */}

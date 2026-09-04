@@ -20,7 +20,7 @@ export default function AppSidebar({
   navAriaLabel: string;
 }) {
   return (
-    <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto bg-slate-950 text-white lg:flex">
+    <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col overflow-y-auto bg-slate-950 text-white lg:flex">
       {header}
       <SidebarNavList
         groups={groups}

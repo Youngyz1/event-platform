@@ -134,7 +134,11 @@
 html,
 body {
   max-width: 100vw;
-  overflow-x: hidden;
+  /* `clip` (not `hidden`) prevents horizontal scrolling WITHOUT creating a
+     scroll container — `hidden` on the root elements breaks every
+     `position: sticky` descendant (dashboard sidebars, sticky navbar,
+     sticky donate panel, …), making them scroll away with the page. */
+  overflow-x: clip;
 }
 
 html {

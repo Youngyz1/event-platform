@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   }
 
   return (
-    <div className="flex min-h-screen bg-zinc-100 text-zinc-950">
+    <div className="flex min-h-screen bg-zinc-100 text-zinc-950 lg:pl-64">
       <AdminSidebarNav />
 
       {/* ── Content column — the mobile top nav shows below lg; `children`
