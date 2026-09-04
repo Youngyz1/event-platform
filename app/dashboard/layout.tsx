@@ -103,7 +103,7 @@ export default function DashboardLayout({
                     : "text-zinc-600 hover:bg-zinc-100"
                 }`}
               >
-                <Icon className="h-[18px] w-[18px] shrink-0" />
+                {Icon && <Icon className="h-[18px] w-[18px] shrink-0" />}
                 {label}
               </Link>
             );
@@ -111,8 +111,8 @@ export default function DashboardLayout({
         </nav>
       </div>
 
-      {/* Main layout */}
-      <div className="flex">
+      {/* Main layout — lg:pl-64 offsets the fixed desktop sidebar (w-64) */}
+      <div className="flex lg:pl-64">
         <DashboardSidebar />
         <main className="min-w-0 flex-1">
           <div className="mx-auto max-w-7xl px-3 py-4 pb-28 sm:px-6 sm:py-6 lg:px-8 lg:pb-6">
@@ -121,28 +121,34 @@ export default function DashboardLayout({
         </main>
       </div>
 
-      {/* Mobile bottom nav */}
+      {/* Mobile bottom nav — one unified tab bar, horizontally swipeable.
+          Lightweight text tabs (no cards); the active tab gets green text
+          plus a green underline indicator. Desktop uses the fixed sidebar. */}
       <nav
-        aria-label="Bottom navigation"
-        className="fixed bottom-0 left-0 right-0 z-40 flex min-h-16 items-stretch justify-around border-t border-zinc-200 bg-white shadow-lg lg:hidden"
+        aria-label="Dashboard navigation"
+        className="fixed bottom-0 left-0 right-0 z-40 border-t border-zinc-200 bg-white/95 shadow-lg backdrop-blur lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {navLinks.map((item) => {
-          const { label, href, icon: Icon } = item;
-          const active = isNavItemActive(pathname, currentTab, item, sharedBases);
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex h-full flex-1 flex-col items-center justify-center gap-0.5 transition focus-visible:outline-none focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-brand-600 ${
-                active ? "text-brand-700" : "text-zinc-400"
-              }`}
-            >
-              <Icon className="h-[22px] w-[22px] shrink-0" />
-              <span className="text-[10px] font-bold">{label}</span>
-            </Link>
-          );
-        })}
+        <div className="scrollbar-hide flex items-stretch gap-1 overflow-x-auto px-2">
+          {navLinks.map((item) => {
+            const active = isNavItemActive(pathname, currentTab, item, sharedBases);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className="relative flex min-h-[60px] shrink-0 items-center justify-center px-5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-600"
+              >
+                <span className={`whitespace-nowrap text-sm font-bold ${active ? "text-brand-800" : "text-zinc-500"}`}>
+                  {item.label}
+                </span>
+                {active && (
+                  <span aria-hidden="true" className="absolute inset-x-5 bottom-1.5 h-1 rounded-full bg-brand-600" />
+                )}
+              </Link>
+            );
+          })}
+        </div>
       </nav>
     </div>
   );

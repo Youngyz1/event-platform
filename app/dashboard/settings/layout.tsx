@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { User, Lock, Bell, CreditCard, ShieldAlert } from "lucide-react";
+import { User, Lock, Bell, CreditCard, ShieldAlert, BadgeCheck } from "lucide-react";
 import DashboardPageHeader from "@/components/dashboard/DashboardPageHeader";
 import SidebarNavList from "@/components/nav/SidebarNavList";
 import MobilePillNav from "@/components/nav/MobilePillNav";
@@ -15,6 +15,7 @@ const groups: NavGroup[] = [
       { label: "Notifications", href: "/dashboard/settings/notifications", icon: Bell, description: "Email preference settings" },
       { label: "Payments", href: "/dashboard/settings/payments", icon: CreditCard, description: "Stripe payouts and currency" },
       { label: "Privacy", href: "/dashboard/settings/privacy", icon: ShieldAlert, description: "Profile and display privacy" },
+      { label: "Verification", href: "/dashboard/identity-verification", icon: BadgeCheck, description: "Identity verification status" },
     ],
   },
 ];
@@ -30,7 +31,7 @@ export default function SettingsLayout({
       <DashboardPageHeader
         eyebrow="Dashboard"
         title="Settings Center"
-        description="Manage your personal details, credentials, security, notifications, and integrations."
+        description="Manage your personal details, credentials, security, notifications, verification, and integrations."
       />
 
       {/* Main Settings Navigation and Content Container */}
