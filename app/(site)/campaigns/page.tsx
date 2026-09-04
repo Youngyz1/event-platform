@@ -8,6 +8,7 @@ import { getFundraiserList } from "@/lib/fundraiser-data";
 import { getDonationCounts } from "@/lib/donation-counts";
 import { resolveSmartFilter } from "@/lib/smart-filters";
 import { CAMPAIGN_CATEGORIES, categoryFromSlug, categoryToSlug } from "@/lib/categories";
+import { HeartHandshake } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -115,7 +116,7 @@ export default async function CampaignsPage({
 
         {fundraisers.length === 0 ? (
           <PublicEmptyState
-            icon="💚"
+            icon={HeartHandshake}
             title="No campaigns found"
             description={
               activeCategory

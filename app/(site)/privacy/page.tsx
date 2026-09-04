@@ -100,7 +100,7 @@ export default function PrivacyPage() {
               <p className="mt-6 text-lg leading-8 text-zinc-600">
                 This Privacy Policy explains how Fund4Good collects, uses, discloses,
                 transfers, stores, and protects personal information when people use our
-                event discovery, ticketing, registration, and fundraising services.
+                fundraising services.
               </p>
               <p className="mt-4 text-base leading-7 text-zinc-600">
                 Fund4Good is based in the United States. We do not have a public
@@ -131,17 +131,15 @@ export default function PrivacyPage() {
                 <h2 className="text-xl font-semibold text-zinc-950">1. Who We Are.</h2>
                 <h3 className="mt-5 text-lg font-semibold text-zinc-950">1.1 Fund4Good Services.</h3>
                 <p className="mt-3">
-                  Fund4Good is an event and ticketing platform that helps people create,
-                  discover, share, register for, and attend live experiences. Our services may
-                  include event pages, organizer tools, ticket purchasing, ticket delivery,
-                  fundraising pages, account services, customer support, and related features
+                  Fund4Good is a fundraising platform that helps people create,
+                  discover, share, and support charitable campaigns. Our services may
+                  include fundraising pages, organizer tools, account services, customer support, and related features
                   that we make available through our website, applications, APIs, and other
                   online services.
                 </p>
                 <h3 className="mt-5 text-lg font-semibold text-zinc-950">1.2 Who's Who.</h3>
                 <p className="mt-3">
-                  "Organizer" means a person or business that creates, lists, imports, manages,
-                  promotes, or manages fundraisers on Fund4Good. "Consumer" means a
+                  "Organizer" means a person or business that creates, manages fundraisers on Fund4Good. "Consumer" means a
                   person who browses, donates to, or supports fundraisers. Organizers, Consumers,
                   visitors, and other users are collectively
                   called "Users," "you," or "your." "Fund4Good," "we," "us," and "our" mean
@@ -209,11 +207,6 @@ export default function PrivacyPage() {
                   <li>Protect our users, prevent abuse, enforce our terms, and comply with law.</li>
                   <li>Analyze usage, debug errors, and develop new products and features.</li>
                 </ul>
-                <p className="mt-3">
-                  Fund4Good does not charge a separate service fee to ticket buyers. Ticket
-                  prices shown on the platform are intended to be all-inclusive unless a page
-                  clearly says otherwise.
-                </p>
               </section>
 
               <section id="how-we-disclose-and-transfer-your-personal-data">

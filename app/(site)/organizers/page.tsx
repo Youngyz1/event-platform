@@ -13,6 +13,7 @@ import {
   type VerificationFacts,
 } from "@/lib/verification-facts";
 import type { Metadata } from "next";
+import { Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -301,7 +302,7 @@ export default async function OrganizersDirectoryPage({
           </>
         ) : (
           <PublicEmptyState
-            icon="👋"
+            icon={Users}
             title="No organizers found"
             description={query ? "Try a different search term." : "Be the first to join the directory."}
             action={{ label: "Become an organizer", href: "/create-organizer" }}

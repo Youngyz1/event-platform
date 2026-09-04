@@ -7,6 +7,7 @@ import PublicEmptyState from "@/components/public/PublicEmptyState";
 import FundraiserCard from "@/components/FundraiserCard";
 import OrganizerCard from "@/components/public/OrganizerCard";
 import Link from "next/link";
+import { Search } from "lucide-react";
 
 type SearchResultsProps = {
   query: string;
@@ -57,7 +58,7 @@ function SearchResultsContent({ query, fundraisers, organizers }: SearchResultsP
 
         {!hasAnyResults ? (
           <PublicEmptyState
-            icon="🔍"
+            icon={Search}
             title={query ? "No results found" : "Start searching"}
             description={
               query

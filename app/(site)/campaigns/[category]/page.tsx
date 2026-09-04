@@ -10,6 +10,7 @@ import ShowcaseControls from "@/components/fundraisers/ShowcaseControls";
 import { getFundraiserList, type FundraiserSmartFilter } from "@/lib/fundraiser-data";
 import { getDonationCounts } from "@/lib/donation-counts";
 import { categoryFromSlug, categoryToSlug } from "@/lib/categories";
+import { HeartHandshake } from "lucide-react";
 
 const SMART_FILTERS = ["close-to-target", "just-launched", "needs-momentum", "trending"] as const;
 
@@ -80,7 +81,7 @@ export default async function CampaignCategoryPage({
 
         {fundraisers.length === 0 ? (
           <PublicEmptyState
-            icon="💚"
+            icon={HeartHandshake}
             title="No campaigns found"
             description="Try a different filter to discover more campaigns to support."
             action={{ label: "Start a fundraiser", href: "/create-fundraiser" }}
