@@ -1,7 +1,8 @@
 export type NavItem = {
   label: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  /** Optional decorative glyph. Omit for typography-only navigation. */
+  icon?: React.ComponentType<{ className?: string }>;
   comingSoon?: boolean;
   /** Match only the exact path, not descendant routes — for an item whose
    *  href is itself a path-prefix of sibling items (e.g. a root "Overview"). */

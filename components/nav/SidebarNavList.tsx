@@ -68,7 +68,7 @@ export default function SidebarNavList({
                   active ? t.active : t.inactive
                 }`}
               >
-                <Icon className="h-4 w-4 shrink-0" />
+                {Icon && <Icon className="h-4 w-4 shrink-0" />}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate">{item.label}</span>
                   {item.description && (

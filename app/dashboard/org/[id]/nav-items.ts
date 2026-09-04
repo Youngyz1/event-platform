@@ -1,21 +1,16 @@
-import {
-  LayoutDashboard, Heart, Briefcase,
-  Users, Star, ImageIcon, BarChart2, Settings,
-  BadgeCheck,
-} from "lucide-react";
 import type { NavItem } from "@/components/nav/nav-active";
 
 export function getOrgNavItems(orgId: string): NavItem[] {
   const base = `/dashboard/org/${orgId}`;
   return [
-    { label: "Overview",    href: `${base}/overview`,    icon: LayoutDashboard },
-    { label: "Campaigns",   href: `${base}/fundraisers`, icon: Heart },
-    { label: "Verification", href: `/dashboard/verification?organizerId=${orgId}`, icon: BadgeCheck },
-    { label: "Services",    href: `${base}/services`,    icon: Briefcase,  comingSoon: true },
-    { label: "Volunteers",  href: `${base}/volunteers`,  icon: Users,      comingSoon: true },
-    { label: "Reviews",     href: `${base}/reviews`,     icon: Star },
-    { label: "Gallery",     href: `${base}/gallery`,     icon: ImageIcon,  comingSoon: true },
-    { label: "Analytics",   href: `${base}/analytics`,   icon: BarChart2 },
-    { label: "Settings",    href: `${base}/settings`,    icon: Settings },
+    { label: "Overview",    href: `${base}/overview` },
+    { label: "Campaigns",   href: `${base}/fundraisers` },
+    { label: "Verification", href: `/dashboard/verification?organizerId=${orgId}` },
+    { label: "Services",    href: `${base}/services`,    comingSoon: true },
+    { label: "Volunteers",  href: `${base}/volunteers`,  comingSoon: true },
+    { label: "Reviews",     href: `${base}/reviews` },
+    { label: "Gallery",     href: `${base}/gallery`,     comingSoon: true },
+    { label: "Analytics",   href: `${base}/analytics` },
+    { label: "Settings",    href: `${base}/settings` },
   ];
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { X, AlertCircle } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface PendingTask {
@@ -12,10 +12,10 @@ export interface PendingTask {
   urgency: "high" | "medium" | "low";
 }
 
-const URGENCY_STYLES: Record<PendingTask["urgency"], string> = {
-  high: "bg-red-50 text-red-600 border-red-200",
-  medium: "bg-amber-50 text-amber-600 border-amber-200",
-  low: "bg-slate-50 text-slate-500 border-slate-200",
+const URGENCY_BORDER: Record<PendingTask["urgency"], string> = {
+  high: "border-red-200",
+  medium: "border-amber-200",
+  low: "border-zinc-200",
 };
 
 export function PendingTasksList({ tasks }: { tasks: PendingTask[] }) {
@@ -35,17 +35,11 @@ export function PendingTasksList({ tasks }: { tasks: PendingTask[] }) {
       {visible.map((task) => (
         <li
           key={task.id}
-          className="flex min-w-0 items-start gap-3 rounded-xl border border-zinc-200 bg-white p-4"
+          className={cn(
+            "flex min-w-0 items-start gap-3 rounded-xl border bg-white p-4",
+            URGENCY_BORDER[task.urgency]
+          )}
         >
-          <span
-            className={cn(
-              "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border",
-              URGENCY_STYLES[task.urgency]
-            )}
-            aria-hidden
-          >
-            <AlertCircle className="h-3.5 w-3.5" />
-          </span>
           <Link href={task.href} className="min-w-0 flex-1 break-words text-sm font-medium text-slate-700 hover:text-brand-700">
             {task.message}
           </Link>

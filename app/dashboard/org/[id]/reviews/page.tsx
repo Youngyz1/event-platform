@@ -27,15 +27,15 @@ export default async function OrgReviewsPage({
         <p className="text-xs font-black uppercase tracking-wide text-brand-700">Organization</p>
         <h1 className="mt-1 text-2xl font-black">Reviews</h1>
         {org?.average_rating && (
-          <p className="mt-1 text-sm font-medium text-zinc-500">
-            ★ {Number(org.average_rating).toFixed(1)} average · {org.review_count ?? 0} reviews
+          <p className="mt-1 flex items-center gap-1.5 text-sm font-medium text-zinc-500">
+            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" aria-hidden />
+            {Number(org.average_rating).toFixed(1)} average · {org.review_count ?? 0} reviews
           </p>
         )}
       </div>
 
       {(reviews ?? []).length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Star className="mb-3 h-10 w-10 text-zinc-300" />
           <p className="font-black text-zinc-900">No reviews yet</p>
           <p className="mt-1 text-sm text-zinc-500">Reviews from attendees and donors will appear here.</p>
         </div>

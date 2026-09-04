@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { HelpCircle, UserCircle } from "lucide-react";
 import AppSidebar from "@/components/nav/AppSidebar";
 import { dashboardNavGroups } from "./nav-items";
 
@@ -46,17 +45,15 @@ export default function DashboardSidebar() {
           {userId && (
             <Link
               href={`/profile/${userId}`}
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-white/10 hover:text-white"
+              className="block rounded-xl px-3 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-white/10 hover:text-white"
             >
-              <UserCircle className="h-4 w-4 shrink-0" />
               View my profile
             </Link>
           )}
           <Link
             href="/about"
-            className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-white/10 hover:text-white"
+            className="block rounded-xl px-3 py-2.5 text-sm font-bold text-slate-300 transition hover:bg-white/10 hover:text-white"
           >
-            <HelpCircle className="h-4 w-4 shrink-0" />
             Help &amp; Support
           </Link>
         </div>

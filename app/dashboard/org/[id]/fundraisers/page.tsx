@@ -1,6 +1,5 @@
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import Link from "next/link";
-import { Heart, Plus } from "lucide-react";
 import { OrgFundraisersTable } from "./OrgFundraisersTable";
 
 export default async function OrgFundraisersPage({
@@ -27,15 +26,14 @@ export default async function OrgFundraisersPage({
         </div>
         <Link
           href="/create-fundraiser"
-          className="flex items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-brand-800"
+          className="rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-black text-white transition hover:bg-brand-800"
         >
-          <Plus className="h-4 w-4" /> New Fundraiser
+          New Fundraiser
         </Link>
       </div>
 
       {(fundraisers ?? []).length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-          <Heart className="mb-3 h-10 w-10 text-zinc-300" />
           <p className="font-black text-zinc-900">No fundraisers yet</p>
           <p className="mt-1 text-sm text-zinc-500">Launch your first fundraiser campaign.</p>
           <Link href="/create-fundraiser" className="mt-4 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-black text-white hover:bg-brand-800">

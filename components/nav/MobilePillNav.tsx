@@ -44,7 +44,7 @@ export default function MobilePillNav({
                 : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
             }`}
           >
-            <Icon className="h-3.5 w-3.5 shrink-0" />
+            {Icon && <Icon className="h-3.5 w-3.5 shrink-0" />}
             {item.label}
             {item.comingSoon && (
               <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide text-zinc-400">
