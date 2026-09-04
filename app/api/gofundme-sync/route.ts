@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { normalizeImageUrl } from "@/lib/image-url";
+import { stripEmojis } from "@/lib/text";
 
 type SyncBody = {
   sourceId?: string;
@@ -201,7 +202,7 @@ async function fetchGoFundMeFundraiser(source: SourceRow) {
   const raised = findMoneyValue(html, ["raised", "amountRaised", "currentAmount", "current_amount", "totalRaised"]) ?? 0;
 
   return {
-    title: title || "GoFundMe Fundraiser",
+    title: stripEmojis(title) || "GoFundMe Fundraiser",
     story,
     organizer,
     banner,

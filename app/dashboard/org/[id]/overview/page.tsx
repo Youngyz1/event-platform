@@ -9,11 +9,8 @@ import { ActivityFeed } from "@/components/dashboard/fund4good/ActivityFeed";
 import { DonationList } from "@/components/dashboard/fund4good/DonationList";
 import { WorkspaceCampaignCard, type WorkspaceCampaign } from "./WorkspaceCampaignCard";
 import { PendingTasksList, type PendingTask } from "./PendingTasksList";
+import { stripEmojis } from "@/lib/text";
 import { getOrganizerVerificationSummary } from "@/lib/organizer-verification-status";
-import {
-  Heart, DollarSign, Users, Plus, Megaphone, UserPlus, Globe, LayoutGrid,
-  BadgeCheck,
-} from "lucide-react";
 
 // No end_date column exists on fundraisers yet — every campaign gets the
 // same honest default rather than a fabricated per-campaign countdown.
@@ -95,7 +92,9 @@ export default async function OrgOverviewPage({
 
   const donations = rawDonations ?? [];
   const updates = rawUpdates ?? [];
-  const fundraiserTitleById = new Map(ownFundraisers.map((f) => [f.id, f.title] as const));
+  // Imported (GoFundMe) titles often carry decorative emoji — sanitize once
+  // here so every activity description below renders clean.
+  const fundraiserTitleById = new Map(ownFundraisers.map((f) => [f.id, stripEmojis(f.title ?? "") || "a campaign"] as const));
 
   // ── stats ────────────────────────────────────────────────────────────────
   const activeCampaigns = ownFundraisers.filter((f) => f.status === "published").length;
@@ -121,7 +120,7 @@ export default async function OrgOverviewPage({
       id: `camp-${f.id}`,
       type: "campaign_started" as const,
       title: "Campaign created",
-      description: `"${f.title}" was created.`,
+      description: `"${stripEmojis(f.title ?? "") || "Untitled Campaign"}" was created.`,
       timestamp: f.created_at ?? new Date().toISOString(),
       campaignId: f.id,
     })),
@@ -131,7 +130,7 @@ export default async function OrgOverviewPage({
       title: "Donation received",
       description: isAnonDonor(d.donor_name)
         ? `Anonymous donated $${Number(d.amount).toLocaleString()} to "${fundraiserTitleById.get(d.fundraiser_id) ?? "a campaign"}"`
-        : `${d.donor_name ?? "Someone"} donated $${Number(d.amount).toLocaleString()} to "${fundraiserTitleById.get(d.fundraiser_id) ?? "a campaign"}"`,
+        : `${stripEmojis(d.donor_name ?? "") || "Someone"} donated $${Number(d.amount).toLocaleString()} to "${fundraiserTitleById.get(d.fundraiser_id) ?? "a campaign"}"`,
       timestamp: d.created_at ?? new Date().toISOString(),
       campaignId: d.fundraiser_id,
       metadata: { donorName: d.donor_name ?? undefined, amount: Number(d.amount), currency: d.currency ?? "USD" },
@@ -140,7 +139,7 @@ export default async function OrgOverviewPage({
       id: `upd-${u.id}`,
       type: "update_posted" as const,
       title: "Update posted",
-      description: `"${u.title ?? "Campaign update"}" was published`,
+      description: `"${stripEmojis(u.title ?? "") || "Campaign update"}" was published`,
       timestamp: u.created_at ?? new Date().toISOString(),
       campaignId: u.fundraiser_id,
       metadata: { updateTitle: u.title ?? undefined },
@@ -191,13 +190,13 @@ export default async function OrgOverviewPage({
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-wide text-brand-700">Organization</p>
-          <h1 className="mt-1 min-w-0 break-words text-2xl font-bold text-slate-900">{org.name}</h1>
+          <h1 className="mt-1 min-w-0 break-words text-2xl font-bold text-slate-900">{stripEmojis(org.name) || org.name}</h1>
           <p className="text-sm text-slate-500">Your organization at a glance</p>
         </div>
         <div className="flex gap-2">
           <Link
             href={`${base}/settings`}
-            className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:flex-none"
+            className="flex min-h-[44px] flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:flex-none"
           >
             Settings
           </Link>
@@ -205,9 +204,8 @@ export default async function OrgOverviewPage({
             type="button"
             disabled
             title="Team collaboration is coming soon"
-            className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-400 opacity-60 sm:flex-none"
+            className="flex min-h-[44px] flex-1 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-400 opacity-60 sm:flex-none"
           >
-            <UserPlus className="h-4 w-4" />
             Invite
           </button>
         </div>
@@ -216,17 +214,12 @@ export default async function OrgOverviewPage({
       {/* Stats — 2x2 mobile, 3 columns desktop */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-3">
         {[
-          { label: "Campaigns", value: activeCampaigns.toLocaleString(), icon: Heart, tint: "bg-brand-50 text-brand-700" },
-          { label: "Raised", value: `$${raised.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: DollarSign, tint: "bg-brand-50 text-brand-700" },
-          { label: "Donors", value: donorCount.toLocaleString(), icon: Users, tint: "bg-sky-50 text-sky-600" },
+          { label: "Campaigns", value: activeCampaigns.toLocaleString() },
+          { label: "Raised", value: `$${raised.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+          { label: "Donors", value: donorCount.toLocaleString() },
         ].map((stat) => (
-          <div key={stat.label} className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-slate-500">{stat.label}</span>
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${stat.tint}`}>
-                <stat.icon className="h-4 w-4" />
-              </div>
-            </div>
+          <div key={stat.label} className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-5">
+            <span className="text-sm font-medium text-slate-500">{stat.label}</span>
             <span className="text-2xl font-bold tracking-tight text-slate-900 tabular-nums">{stat.value}</span>
           </div>
         ))}
@@ -236,17 +229,12 @@ export default async function OrgOverviewPage({
         className={`rounded-xl border p-5 ${VERIFICATION_TONE_CLASSES[verificationSummary.tone]}`}
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white/70">
-              <BadgeCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold">Organizer Verification</h2>
-              <p className="mt-1 text-sm font-semibold">{verificationSummary.label}</p>
-              <p className="mt-1 max-w-2xl text-xs leading-relaxed opacity-80">
-                {verificationSummary.description}
-              </p>
-            </div>
+          <div>
+            <h2 className="text-sm font-bold">Organizer Verification</h2>
+            <p className="mt-1 text-sm font-semibold">{verificationSummary.label}</p>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed opacity-80">
+              {verificationSummary.description}
+            </p>
           </div>
           {verificationSummary.actionLabel && (
             <Link
@@ -265,17 +253,15 @@ export default async function OrgOverviewPage({
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <Link
             href="/create-fundraiser"
-            className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-brand-300 hover:bg-brand-50/40"
+            className="flex min-h-[64px] items-center justify-center rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-brand-300 hover:bg-brand-50/40"
           >
-            <Plus className="h-5 w-5 text-brand-700" />
             <span className="text-sm font-semibold text-slate-900">Create Campaign</span>
           </Link>
           {mostRecentFundraiser ? (
             <Link
               href={`/dashboard/fundraisers/${mostRecentFundraiser.id}/updates`}
-              className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-brand-300 hover:bg-brand-50/40"
+              className="flex min-h-[64px] items-center justify-center rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-brand-300 hover:bg-brand-50/40"
             >
-              <Megaphone className="h-5 w-5 text-brand-700" />
               <span className="text-sm font-semibold text-slate-900">Post Update</span>
             </Link>
           ) : (
@@ -283,9 +269,8 @@ export default async function OrgOverviewPage({
               type="button"
               disabled
               title="Create a campaign first"
-              className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center opacity-50"
+              className="flex min-h-[64px] items-center justify-center rounded-xl border border-zinc-200 bg-white p-4 text-center opacity-50"
             >
-              <Megaphone className="h-5 w-5 text-slate-400" />
               <span className="text-sm font-semibold text-slate-500">Post Update</span>
             </button>
           )}
@@ -293,17 +278,15 @@ export default async function OrgOverviewPage({
             type="button"
             disabled
             title="Team collaboration is coming soon"
-            className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center opacity-50"
+            className="flex min-h-[64px] items-center justify-center rounded-xl border border-zinc-200 bg-white p-4 text-center opacity-50"
           >
-            <UserPlus className="h-5 w-5 text-slate-400" />
             <span className="text-sm font-semibold text-slate-500">Invite Member</span>
           </button>
           <a
             href={org.slug ? `/org/${org.slug}` : `/organizers/${org.id}`}
             target="_blank"
-            className="flex min-h-[88px] flex-col items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-brand-300 hover:bg-brand-50/40"
+            className="flex min-h-[64px] items-center justify-center rounded-xl border border-zinc-200 bg-white p-4 text-center transition hover:border-brand-300 hover:bg-brand-50/40"
           >
-            <Globe className="h-5 w-5 text-brand-700" />
             <span className="text-sm font-semibold text-slate-900">View Public Page</span>
           </a>
         </div>
@@ -325,14 +308,12 @@ export default async function OrgOverviewPage({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <LayoutGrid className="mb-3 h-9 w-9 text-slate-300" />
             <p className="font-semibold text-slate-900">No campaigns yet</p>
             <p className="mt-1 max-w-xs text-sm text-slate-500">Launch your first campaign to start tracking donations here.</p>
             <Link
               href="/create-fundraiser"
-              className="mt-4 inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800"
+              className="mt-4 inline-flex min-h-[40px] items-center rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800"
             >
-              <Plus className="h-4 w-4" />
               Create Campaign
             </Link>
           </div>
@@ -361,7 +342,7 @@ export default async function OrgOverviewPage({
           </div>
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-800">
-              {org.name.charAt(0).toUpperCase()}
+              {(stripEmojis(org.name).charAt(0) || org.name.charAt(0)).toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-slate-900">You</p>

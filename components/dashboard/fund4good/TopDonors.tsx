@@ -9,7 +9,7 @@ import {
   type TopDonor,
 } from "@/lib/fund4good-data";
 import { cn } from "@/lib/utils";
-import { Medal } from "lucide-react";
+import { stripEmojis } from "@/lib/text";
 import { EmptyState } from "./EmptyState";
 
 interface TopDonorsProps {
@@ -23,15 +23,13 @@ export const TopDonors = memo(function TopDonors({ donors = [], className }: Top
   return (
     <div className={cn("rounded-xl border border-zinc-200 bg-white", className)}>
       {/* Header */}
-      <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-4">
-        <Medal className="h-4 w-4 text-amber-500" aria-hidden />
+      <div className="border-b border-slate-100 px-5 py-4">
         <h2 className="text-sm font-semibold text-slate-900">Top Donors</h2>
       </div>
 
       {/* Donor List */}
       {donors.length === 0 ? (
         <EmptyState
-          icon={Medal}
           title="No donors yet"
           description="Your top supporters will be ranked here once donations start coming in."
         />
@@ -55,7 +53,9 @@ function DonorRow({
   rank: number;
   rankColorClass: string;
 }) {
-  const initials = getDonorInitials(donor.name);
+  // Donor names are raw imported content — sanitize for display.
+  const displayName = donor.isAnonymous ? "Anonymous" : stripEmojis(donor.name) || "Supporter";
+  const initials = getDonorInitials(displayName);
 
   return (
     <li className="flex items-center gap-3 rounded-lg px-3 py-3 transition-colors hover:bg-slate-50">
@@ -83,7 +83,7 @@ function DonorRow({
       {/* Name + Donations */}
       <div className="flex flex-1 flex-col gap-0.5 min-w-0">
         <span className="text-sm font-semibold text-slate-900 truncate">
-          {donor.isAnonymous ? "Anonymous" : donor.name}
+          {displayName}
         </span>
         <span className="text-xs text-slate-400">
           {donor.donationCount} {donor.donationCount === 1 ? "donation" : "donations"}

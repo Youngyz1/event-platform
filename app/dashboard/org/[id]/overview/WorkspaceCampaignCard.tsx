@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { calculateFundraisingPercentage } from "@/lib/fundraising-progress";
+import { stripEmojis } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 export interface WorkspaceCampaign {
@@ -31,6 +32,9 @@ const STATUS_STYLES: Record<string, string> = {
 export function WorkspaceCampaignCard({ campaign }: { campaign: WorkspaceCampaign }) {
   const progress = calculateFundraisingPercentage(campaign.raised, campaign.goal);
   const statusStyle = STATUS_STYLES[campaign.status] ?? STATUS_STYLES.draft;
+  // Titles are often GoFundMe imports carrying decorative emoji (e.g. a
+  // trailing heart). Strip them for the typography-first dashboard.
+  const title = stripEmojis(campaign.title) || "Untitled Campaign";
 
   return (
     <div className="min-w-0 rounded-2xl border border-slate-100 bg-white p-5 shadow-sm transition hover:shadow-md">
@@ -39,13 +43,13 @@ export function WorkspaceCampaignCard({ campaign }: { campaign: WorkspaceCampaig
           href={`/dashboard/fundraisers`}
           className="min-w-0 break-words text-sm font-semibold leading-snug text-slate-900 line-clamp-2 hover:text-brand-700"
         >
-          {campaign.title}
+          {title}
         </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={`Manage ${campaign.title}`}
+              aria-label={`Manage ${title}`}
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-50 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
             >
               <MoreHorizontal className="h-4 w-4" />

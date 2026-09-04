@@ -11,7 +11,7 @@ import { DonationList } from "@/components/dashboard/fund4good/DonationList";
 import { TopDonors } from "@/components/dashboard/fund4good/TopDonors";
 import { WorkspaceCampaignCard, type WorkspaceCampaign } from "../overview/WorkspaceCampaignCard";
 import { FundraisingTrendChart, DonorGrowthChart, type DailyPoint, type DonorGrowthPoint } from "./OrgAnalyticsCharts";
-import { Heart, DollarSign, Users, Receipt, Download, LayoutGrid, TrendingUp } from "lucide-react";
+import { stripEmojis } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_DAYS_REMAINING = 30;
@@ -68,7 +68,7 @@ export default async function OrgAnalyticsPage({
 
   const ownFundraisers = fundraisers ?? [];
   const fundraiserIds = ownFundraisers.map((f) => f.id);
-  const fundraiserTitleById = new Map(ownFundraisers.map((f) => [f.id, f.title] as const));
+  const fundraiserTitleById = new Map(ownFundraisers.map((f) => [f.id, stripEmojis(f.title ?? "") || "a campaign"] as const));
 
   const donationsPromise = (async () => {
     if (!fundraiserIds.length) return { data: [] };
@@ -211,7 +211,7 @@ export default async function OrgAnalyticsPage({
       title: "Donation received",
       description: isAnonDonor(d.donor_name)
         ? `Anonymous donated $${Number(d.amount).toLocaleString()} to "${fundraiserTitleById.get(d.fundraiser_id) ?? "a campaign"}"`
-        : `${d.donor_name ?? "Someone"} donated $${Number(d.amount).toLocaleString()} to "${fundraiserTitleById.get(d.fundraiser_id) ?? "a campaign"}"`,
+        : `${stripEmojis(d.donor_name ?? "") || "Someone"} donated $${Number(d.amount).toLocaleString()} to "${fundraiserTitleById.get(d.fundraiser_id) ?? "a campaign"}"`,
       timestamp: d.created_at ?? new Date().toISOString(),
       campaignId: d.fundraiser_id,
       metadata: { donorName: d.donor_name ?? undefined, amount: Number(d.amount), currency: d.currency ?? "USD" },
@@ -220,7 +220,7 @@ export default async function OrgAnalyticsPage({
       id: `upd-${u.id}`,
       type: "update_posted" as const,
       title: "Update posted",
-      description: `"${u.title ?? "Campaign update"}" was published`,
+      description: `"${stripEmojis(u.title ?? "") || "Campaign update"}" was published`,
       timestamp: u.created_at ?? new Date().toISOString(),
       campaignId: u.fundraiser_id,
       metadata: { updateTitle: u.title ?? undefined },
@@ -246,9 +246,8 @@ export default async function OrgAnalyticsPage({
             type="button"
             disabled
             title="Export is coming soon"
-            className="flex min-h-[44px] items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-400 opacity-60"
+            className="flex min-h-[44px] items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-400 opacity-60"
           >
-            <Download className="h-4 w-4" />
             Export
           </button>
         </div>
@@ -273,19 +272,14 @@ export default async function OrgAnalyticsPage({
       {/* Top stats */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
         {[
-          { label: "Raised", value: `$${raisedInRange.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: DollarSign, tint: "bg-brand-50 text-brand-700" },
-          { label: "Goal", value: `$${totalGoal.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: TrendingUp, tint: "bg-violet-50 text-violet-600" },
-          { label: "Donors", value: donorsInRange.toLocaleString(), icon: Users, tint: "bg-sky-50 text-sky-600" },
-          { label: "Avg Donation", value: `$${avgDonation.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, icon: Receipt, tint: "bg-brand-50 text-brand-700" },
-          { label: "Campaigns", value: activeCampaigns.toLocaleString(), icon: Heart, tint: "bg-rose-50 text-rose-600" },
+          { label: "Raised", value: `$${raisedInRange.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+          { label: "Goal", value: `$${totalGoal.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+          { label: "Donors", value: donorsInRange.toLocaleString() },
+          { label: "Avg Donation", value: `$${avgDonation.toLocaleString(undefined, { maximumFractionDigits: 0 })}` },
+          { label: "Campaigns", value: activeCampaigns.toLocaleString() },
         ].map((stat) => (
-          <div key={stat.label} className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-5">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-sm font-medium text-slate-500">{stat.label}</span>
-              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${stat.tint}`}>
-                <stat.icon className="h-4 w-4" />
-              </div>
-            </div>
+          <div key={stat.label} className="flex flex-col gap-1 rounded-xl border border-zinc-200 bg-white p-5">
+            <span className="text-sm font-medium text-slate-500">{stat.label}</span>
             <span className="text-2xl font-bold tracking-tight text-slate-900 tabular-nums">{stat.value}</span>
           </div>
         ))}
@@ -351,12 +345,11 @@ export default async function OrgAnalyticsPage({
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center">
-            <LayoutGrid className="mb-3 h-9 w-9 text-slate-300" />
             <p className="font-semibold text-slate-900">No campaigns yet</p>
             <p className="mt-1 max-w-xs text-sm text-slate-500">Launch a campaign to start seeing performance data here.</p>
             <Link
               href="/create-fundraiser"
-              className="mt-4 inline-flex min-h-[40px] items-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800"
+              className="mt-4 inline-flex min-h-[40px] items-center rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-800"
             >
               Create Campaign
             </Link>

@@ -7,6 +7,7 @@ import ProgressBar from "@/components/ui/ProgressBar";
 import AdminConfirmDialog from "@/components/admin/AdminConfirmDialog";
 import ReviewBadge from "@/components/trust/ReviewBadge";
 import { calculateFundraisingPercentage } from "@/lib/fundraising-progress";
+import { stripEmojis } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 export interface OrgFundraiserItem {
@@ -82,7 +83,7 @@ export function OrgFundraisersTable({ fundraisers }: { fundraisers: OrgFundraise
 
                 return (
                   <tr key={f.id} className="hover:bg-zinc-50">
-                    <td className="px-5 py-4 font-bold text-zinc-900">{f.title}</td>
+                    <td className="px-5 py-4 font-bold text-zinc-900">{stripEmojis(f.title) || "Untitled Campaign"}</td>
                     <td className="px-5 py-4 font-bold text-brand-800">{money(f.raised)}</td>
                     <td className="px-5 py-4 text-zinc-600">{money(f.goal)}</td>
                     <td className="px-5 py-4">
@@ -147,7 +148,7 @@ export function OrgFundraisersTable({ fundraisers }: { fundraisers: OrgFundraise
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="Delete Fundraiser"
-        description={`Delete "${deleteTarget?.title ?? "this fundraiser"}"? Fundraisers with donation payment records are blocked to preserve payment history.`}
+        description={`Delete "${stripEmojis(deleteTarget?.title ?? "") || "this fundraiser"}"? Fundraisers with donation payment records are blocked to preserve payment history.`}
         confirmLabel="Delete"
         onConfirm={handleDelete}
         loading={deleting}

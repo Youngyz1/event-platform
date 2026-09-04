@@ -22,6 +22,7 @@ import type {
 } from "@/types/dashboard-management";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
 import ReviewBadge from "@/components/trust/ReviewBadge";
+import { stripEmojis } from "@/lib/text";
 
 function FundraisersClientInner() {
   const { page, perPage, search, updateParams, getParam, buildQueryString } = useDashboardParams();
@@ -251,7 +252,7 @@ function FundraisersClientInner() {
             {rows.map((row) => (
               <article key={row.id} className="rounded-xl border border-zinc-200/80 bg-zinc-50/60 p-4">
                 <button type="button" onClick={() => openDrawer(row.id)} className="text-left w-full">
-                  <h3 className="font-black text-zinc-950 line-clamp-1">{row.title}</h3>
+                  <h3 className="font-black text-zinc-950 line-clamp-1">{stripEmojis(row.title) || "Untitled Campaign"}</h3>
                   <ReviewBadge status={row.review_status} />
                   <div className="mt-1 flex items-center justify-between">
                     <span className="text-xs font-bold text-zinc-500 uppercase">{row.category || "Other"}</span>
@@ -303,7 +304,7 @@ function FundraisersClientInner() {
                   <tr key={row.id} className="hover:bg-zinc-50/70">
                     <td className="py-3 pr-4 pl-4">
                       <button type="button" onClick={() => openDrawer(row.id)} className="font-black text-zinc-900 hover:text-violet-700 hover:underline">
-                        {row.title}
+                        {stripEmojis(row.title) || "Untitled Campaign"}
                       </button>
                       <ReviewBadge status={row.review_status} />
                     </td>
@@ -348,7 +349,7 @@ function FundraisersClientInner() {
       <DashboardDrawer
         open={drawerItem !== null || drawerLoading}
         onClose={() => { setDrawerItem(null); setDrawerLoading(false); }}
-        title={drawerItem?.title ?? "Campaign"}
+        title={drawerItem ? stripEmojis(drawerItem.title) || "Campaign" : "Campaign"}
         subtitle={drawerItem?.organizer_name}
         footer={
           drawerItem && (
@@ -409,7 +410,7 @@ function FundraisersClientInner() {
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         title="Delete Fundraiser"
-        description={`Delete "${deleteTarget?.title ?? "this fundraiser"}"? Fundraisers with donation payment records are blocked to preserve payment history.`}
+        description={`Delete "${deleteTarget ? stripEmojis(deleteTarget.title) || "this fundraiser" : "this fundraiser"}"? Fundraisers with donation payment records are blocked to preserve payment history.`}
         confirmLabel="Delete"
         onConfirm={deleteFundraiser}
         loading={deleteTarget ? working === `delete:${deleteTarget.id}` : false}

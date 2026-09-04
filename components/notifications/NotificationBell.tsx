@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
 import { useNotifications, type NotificationRow } from "@/hooks/use-notifications";
+import { stripEmojis } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
 function timeAgo(value: string) {
@@ -35,10 +36,10 @@ function NotificationItem({
     >
       <div className="flex items-center gap-2">
         {isUnread && <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600" />}
-        <p className="truncate text-sm font-bold text-zinc-900">{notification.title}</p>
+        <p className="truncate text-sm font-bold text-zinc-900">{stripEmojis(notification.title) || notification.title}</p>
       </div>
       {notification.body && (
-        <p className="line-clamp-2 text-xs text-zinc-600">{notification.body}</p>
+        <p className="line-clamp-2 text-xs text-zinc-600">{stripEmojis(notification.body) || notification.body}</p>
       )}
       <p className="text-[11px] font-semibold text-zinc-400">{timeAgo(notification.created_at)}</p>
     </div>

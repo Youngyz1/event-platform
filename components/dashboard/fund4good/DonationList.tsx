@@ -11,7 +11,7 @@ import {
   type Donation,
 } from "@/lib/fund4good-data";
 import { cn } from "@/lib/utils";
-import { Heart } from "lucide-react";
+import { stripEmojis } from "@/lib/text";
 import { EmptyState } from "./EmptyState";
 
 interface DonationListProps {
@@ -31,10 +31,7 @@ export const DonationList = memo(function DonationList({
     <div className={cn("rounded-xl border border-zinc-200 bg-white", className)}>
       {/* Header */}
       <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4">
-        <div className="flex items-center gap-2">
-          <Heart className="h-4 w-4 text-rose-500" aria-hidden />
-          <h2 className="text-sm font-semibold text-slate-900">Recent Donations</h2>
-        </div>
+        <h2 className="text-sm font-semibold text-slate-900">Recent Donations</h2>
         <Link
           href="/dashboard/donations"
           className="text-xs font-medium text-brand-700 hover:text-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 rounded"
@@ -52,7 +49,6 @@ export const DonationList = memo(function DonationList({
         </ul>
       ) : (
         <EmptyState
-          icon={Heart}
           title="No donations yet"
           description="They'll show up here the moment your first gift comes in."
         />
@@ -62,7 +58,13 @@ export const DonationList = memo(function DonationList({
 });
 
 function DonationItem({ donation }: { donation: Donation }) {
-  const initials = getDonorInitials(donation.donorName);
+  // Donor names and messages are raw user/imported content and frequently
+  // contain emojis — sanitize for display (database rows are untouched).
+  const displayName = donation.isAnonymous
+    ? "Anonymous"
+    : stripEmojis(donation.donorName) || "Supporter";
+  const displayMessage = donation.message ? stripEmojis(donation.message) : "";
+  const initials = getDonorInitials(displayName);
   const tierClass = tierColors[donation.tier];
   const timeAgo = getTimeAgo(donation.timestamp);
 
@@ -85,7 +87,7 @@ function DonationItem({ donation }: { donation: Donation }) {
       <div className="flex flex-1 flex-col gap-0.5 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-bold tracking-tight text-slate-900 truncate">
-            {donation.isAnonymous ? "Anonymous" : donation.donorName}
+            {displayName}
           </span>
           <span
             className={cn(
@@ -97,9 +99,9 @@ function DonationItem({ donation }: { donation: Donation }) {
             {tierLabels[donation.tier]}
           </span>
         </div>
-        {donation.message && (
+        {displayMessage && (
           <p className="text-xs text-slate-500 leading-relaxed line-clamp-2 mt-0.5">
-            &ldquo;{donation.message}&rdquo;
+            &ldquo;{displayMessage}&rdquo;
           </p>
         )}
       </div>
