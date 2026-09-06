@@ -9,6 +9,7 @@ import { Node } from "@tiptap/core";
 import { useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import DOMPurify from "isomorphic-dompurify";
+import { isAllowedHttpUrl } from "@/lib/safe-url";
 import {
   Bold as BoldIcon,
   Italic as ItalicIcon,
@@ -188,6 +189,12 @@ export default function RichTextEditor({
       Underline,
       Link.configure({
         openOnClick: false,
+        // C2: TipTap-level allow-list. Both `isAllowedUri` (v2/v3 render gate)
+        // and `validate` (v3 link-validation hook) point at the same strict
+        // http(s)-only check so a bypass in one path cannot smuggle
+        // `javascript:` / `data:` / `vbscript:` / `file:` URLs into the doc.
+        isAllowedUri: (url: string) => isAllowedHttpUrl(url),
+        validate: (url: string) => isAllowedHttpUrl(url),
         HTMLAttributes: {
           target: "_blank",
           rel: "noopener noreferrer nofollow",
@@ -227,6 +234,9 @@ export default function RichTextEditor({
             "source",
           ],
           ALLOWED_ATTR: ["src", "href", "target", "rel", "controls", "width", "height", "alt"],
+          // C2: strip javascript:/data:/vbscript: pasted links at paste time.
+          ALLOWED_URI_REGEXP:
+            /^(?:(?:https?|mailto|tel):|[^a-z]|[a-z+.-]+(?:[^a-z+.-:]|$))/i,
         });
       },
     },
@@ -247,8 +257,13 @@ export default function RichTextEditor({
   const handleLinkSubmit = () => {
     if (modalInput === "") {
       editor.chain().focus().extendMarkRange("link").unsetLink().run();
+    } else if (!isAllowedHttpUrl(modalInput)) {
+      // C2: reject dangerous schemes before they enter the document. Matches
+      // the existing image/video UX (alert + keep modal open).
+      alert("Invalid link URL. Only http:// and https:// links are allowed.");
+      return;
     } else {
-      editor.chain().focus().extendMarkRange("link").setLink({ href: modalInput }).run();
+      editor.chain().focus().extendMarkRange("link").setLink({ href: modalInput.trim() }).run();
     }
     setModalType(null);
     setModalInput("");

@@ -32,7 +32,7 @@ export async function POST(request) {
         });
       } catch (fallbackErr) {
         console.error('[DailyPost Cron] Fallback text post also failed:', fallbackErr.message);
-        return Response.json({ error: fallbackErr.message }, { status: 500 });
+        return Response.json({ error: "Something went wrong. Please try again." }, { status: 500 });
       }
     }
   }
@@ -42,7 +42,7 @@ export async function POST(request) {
     const postId = await postToFacebook({ message: caption });
     return Response.json({ success: true, postId, withImage: false, source });
   } catch (err) {
-    console.error('[DailyPost Cron] Text post failed:', err.message);
-    return Response.json({ error: err.message }, { status: 500 });
+    console.error("[DailyPost Cron] Text post failed");
+    return Response.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 }

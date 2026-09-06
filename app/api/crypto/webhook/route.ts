@@ -5,6 +5,7 @@ import { processDonationCertificate } from "@/lib/certificate";
 import { processDonationReceipt } from "@/lib/receipt";
 import { recalculateFundraiserRaised } from "@/lib/donations";
 import { parseCryptoOrderId, getNowPaymentsConfig } from "@/lib/cryptoPayment";
+import { internalError } from "@/lib/api-error";
 import { markProductOrderPaid } from "@/lib/productOrders";
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -167,26 +168,40 @@ async function activateTicketOrder(
     return;
   }
 
-  const { error: updateError } = await supabaseAdmin
-    .from("ticket_orders")
-    .update({
-      status: "valid",
-      stripe_payment_intent_id: paymentId ? String(paymentId) : order.stripe_payment_intent_id,
-    })
-    .eq("id", order.id);
+  // Obj2: atomic pending->valid flip + inventory consume in one transaction
+  // (migration_73). Only the caller that flips the row consumes inventory, so
+  // duplicate IPN deliveries cannot double-consume.
+  const { data: activation, error: activationError } = await supabaseAdmin.rpc(
+    "activate_ticket_order_with_inventory",
+    {
+      p_order_id: order.id,
+      p_payment_id: paymentId ? String(paymentId) : null,
+    }
+  );
 
-  if (updateError) {
-    console.error("[crypto webhook] Failed to update ticket order status:", updateError.message);
+  if (activationError) {
+    console.error("[crypto webhook] Ticket activation RPC error:", activationError.message);
     return;
   }
 
-  console.log(`[crypto webhook] Ticket order ${order.id} updated to valid`);
-
-  if (order.seat_id) {
-    await supabaseAdmin
-      .from("seats")
-      .update({ status: "sold", reserved_until: null })
-      .eq("id", order.seat_id);
+  const activationStatus = (activation as { status?: string } | null)?.status;
+  if (activationStatus === "already") {
+    console.log(`[crypto webhook] Ticket order ${order.id} already activated (duplicate IPN).`);
+    return;
+  }
+  if (activationStatus === "missing") {
+    console.warn(`[crypto webhook] Ticket order ${order.id} disappeared during activation.`);
+    return;
+  }
+  if (activationStatus === "shortfall") {
+    // Payment succeeded but stock ran out after the invoice was issued. The
+    // order stays valid (paid is paid) with inventory untouched — reconcile
+    // manually (refund / contact buyer). Never drives quantity negative.
+    console.error(
+      `[crypto webhook] CRITICAL: ticket inventory shortfall for paid order ${order.id} — manual reconciliation required.`
+    );
+  } else {
+    console.log(`[crypto webhook] Ticket order ${order.id} updated to valid`);
   }
 
   const { data: event } = await supabaseAdmin
@@ -357,10 +372,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true });
   } catch (err: unknown) {
-    console.error("crypto webhook route error:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal server error" },
-      { status: 500 }
-    );
+    return internalError("crypto/webhook", err);
   }
 }

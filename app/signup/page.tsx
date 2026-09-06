@@ -91,34 +91,11 @@ export default function SignupPage() {
 
     setLoading(true);
 
-    // Guard: block re-registration if email is in pending-deletion grace period
-    try {
-      const guardRes = await fetch("/api/signup-guard", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: form.email }),
-      });
-      if (guardRes.ok) {
-        const guardData = await guardRes.json();
-        if (guardData.isPendingDeletion) {
-          const purgeDate = guardData.purgeAt
-            ? new Date(guardData.purgeAt).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })
-            : "soon";
-          setError(
-            `An account with this email is currently scheduled for deletion (purge date: ${purgeDate}). ` +
-              `Please log in to recover it, or wait until after the deletion date to register again.`
-          );
-          setLoading(false);
-          return;
-        }
-      }
-    } catch {
-      // Guard API failure is non-fatal; proceed with signup
-    }
+    // NOTE (H3): no pre-signup account-state probe. A previous guard endpoint
+    // let unauthenticated callers learn whether an email was pending deletion
+    // (account enumeration). Signup now relies on the generic "already exists
+    // → log in" response below, and recovery is handled post-login via
+    // /recover-account.
 
     // Carry any pending errand through email confirmation, so someone who came
     // from a claim link lands back on that link after verifying rather than on

@@ -24,7 +24,8 @@ export default function ProfileTabs({ tabs, activeId, onChange }: ProfileTabsPro
   return (
     <div
       role="tablist"
-      className="flex gap-1 overflow-x-auto rounded-full bg-zinc-100 p-1.5"
+      aria-label="Profile sections"
+      className="sticky top-16 z-30 flex gap-1 overflow-x-auto rounded-full bg-zinc-100 p-1.5"
     >
       {tabs.map((tab) => {
         const active = tab.id === activeId;

@@ -5,19 +5,22 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { safeImageSrc } from "@/lib/image-url";
+import { stripEmojis } from "@/lib/text";
 import StarRating from "@/components/StarRating";
 import ReviewSection from "@/components/ReviewSection";
+import LocalBrandedPlaceholder from "@/components/ui/LocalBrandedPlaceholder";
+import ProgressBar from "@/components/ui/ProgressBar";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileSidebar from "@/components/profile/ProfileSidebar";
-import ProfileMetrics, { type ProfileMetric } from "@/components/profile/ProfileMetrics";
 import ProfileTabs, { type ProfileTab } from "@/components/profile/ProfileTabs";
 import ProfileSection from "@/components/profile/ProfileSection";
 import FollowButton from "@/components/profile/FollowButton";
-import ShareButton from "@/components/profile/ShareButton";
+import type { ProfileMetric } from "@/components/profile/ProfileMetrics";
 import OrganizationStatusBadge from "@/components/trust/OrganizationStatusBadge";
 import type { VerificationFacts } from "@/lib/verification-facts";
 import {
-  Globe, Mail, Calendar, ExternalLink, ArrowUpRight,
+  Globe, Mail, ExternalLink, ArrowUpRight,
   Rocket, Users, Star, DollarSign, Pencil, Link2,
 } from "lucide-react";
 import {
@@ -130,35 +133,13 @@ function SocialLink({
   );
 }
 
-function EmptyTabState({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-100">
-        <Calendar className="h-6 w-6 text-zinc-400" />
-      </div>
-      <p className="text-sm font-medium text-zinc-500">{label}</p>
-    </div>
-  );
-}
-
-function LoadingSpinner() {
-  return (
-    <div className="flex items-center justify-center py-16">
-      <div className="h-7 w-7 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
-    </div>
-  );
-}
-
-import { safeImageSrc } from "@/lib/image-url";
-import LocalBrandedPlaceholder from "@/components/ui/LocalBrandedPlaceholder";
-import ProgressBar from "@/components/ui/ProgressBar";
-
 function CampaignRow({ f }: { f: FundraiserItem }) {
   const [imgError, setImgError] = useState(false);
   const goal = Number(f.goal ?? 0);
   const raised = Number(f.raised ?? 0);
   const pct = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
   const imageSrc = !imgError ? safeImageSrc(f.image_url || f.banner) : null;
+  const title = stripEmojis(f.title) || "Untitled Campaign";
 
   return (
     <Link
@@ -181,7 +162,7 @@ function CampaignRow({ f }: { f: FundraiserItem }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="font-black text-zinc-900 line-clamp-1 group-hover:text-brand-800">
-          {f.title}
+          {title}
         </p>
         <div className="mt-1.5">
           <ProgressBar percentage={pct} height={6} />
@@ -197,9 +178,7 @@ function CampaignRow({ f }: { f: FundraiserItem }) {
 }
 
 function ConnectSection({ org }: { org: Organization }) {
-  const hasConnect =
-    org.website || org.contact_email || org.facebook || org.twitter ||
-    org.instagram || org.linkedin || org.youtube || org.tiktok;
+  const hasConnect = org.website || org.contact_email;
   if (!hasConnect) return null;
 
   return (
@@ -227,15 +206,29 @@ function ConnectSection({ org }: { org: Organization }) {
           </a>
         )}
       </div>
-      <div className="mt-4 flex flex-wrap gap-2">
-        <SocialLink href={org.facebook} icon={FaFacebookF} label="Facebook" />
-        <SocialLink href={org.twitter} icon={FaXTwitter} label="X (Twitter)" />
-        <SocialLink href={org.instagram} icon={FaInstagram} label="Instagram" />
-        <SocialLink href={org.linkedin} icon={FaLinkedinIn} label="LinkedIn" />
-        <SocialLink href={org.youtube} icon={FaYoutube} label="YouTube" />
-        <SocialLink href={org.tiktok} icon={FaTiktok} label="TikTok" />
-      </div>
     </ProfileSection>
+  );
+}
+
+/** Social icon row — renders nothing (and takes no space) when the
+ *  organizer has no social links. Alignment adapts to its container. */
+function SocialIconRow({ org, align = "center" }: { org: Organization; align?: "center" | "start" }) {
+  const links = [
+    { href: org.facebook, icon: FaFacebookF, label: "Facebook" },
+    { href: org.twitter, icon: FaXTwitter, label: "X (Twitter)" },
+    { href: org.instagram, icon: FaInstagram, label: "Instagram" },
+    { href: org.linkedin, icon: FaLinkedinIn, label: "LinkedIn" },
+    { href: org.youtube, icon: FaYoutube, label: "YouTube" },
+    { href: org.tiktok, icon: FaTiktok, label: "TikTok" },
+  ].filter((l) => l.href);
+  if (links.length === 0) return null;
+
+  return (
+    <div className={`flex flex-wrap items-center gap-2 ${align === "center" ? "justify-center" : "justify-start"}`}>
+      {links.map(({ href, icon: Icon, label }) => (
+        <SocialLink key={label} href={href} icon={Icon} label={label} />
+      ))}
+    </div>
   );
 }
 
@@ -244,24 +237,24 @@ function ConnectSection({ org }: { org: Organization }) {
 export default function OrganizationProfileClient({
   initialData,
   verificationFacts,
+  initialFundraisers,
 }: {
   initialData: Organization;
   verificationFacts: VerificationFacts;
+  /** Campaigns loaded server-side in page.tsx so tab visibility is
+   *  determined from real data at render — no client-fetch flash. */
+  initialFundraisers: FundraiserItem[];
 }) {
   const router = useRouter();
   const [org] = useState<Organization>(initialData);
-  const [fundraisers, setFundraisers] = useState<FundraiserItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fundraisers] = useState<FundraiserItem[]>(initialFundraisers);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followerCount, setFollowerCount] = useState(org.follower_offset ?? 0);
   const [isOwner, setIsOwner] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
 
   useEffect(() => {
-    let settled = false;
-
-    async function load() {
+    async function loadViewerState() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
@@ -269,25 +262,15 @@ export default function OrganizationProfileClient({
           setIsOwner(session.user.id === org.user_id);
         }
 
-        const [{ data: raisers }, { data: followRow }] = await Promise.all([
-          supabase
-            .from("fundraisers")
-            .select("id, title, slug, banner, image_url, goal, raised, category")
-            .eq("organizer_id", org.id)
-            .is("deleted_at", null)
-            .order("created_at", { ascending: false }),
-          // Aggregate view rather than a head-count over organizer_follows:
-          // migration_53 restricted that table to the follower and the
-          // organizer, so an anonymous visitor counting rows directly would
-          // now always see 0.
-          supabase
-            .from("organizer_follower_counts")
-            .select("follower_count")
-            .eq("organizer_id", org.id)
-            .maybeSingle(),
-        ]);
-
-        setFundraisers(raisers ?? []);
+        // Aggregate view rather than a head-count over organizer_follows:
+        // migration_53 restricted that table to the follower and the
+        // organizer, so an anonymous visitor counting rows directly would
+        // now always see 0.
+        const { data: followRow } = await supabase
+          .from("organizer_follower_counts")
+          .select("follower_count")
+          .eq("organizer_id", org.id)
+          .maybeSingle();
         setFollowerCount(
           Number(followRow?.follower_count ?? 0) + (org.follower_offset ?? 0)
         );
@@ -303,25 +286,9 @@ export default function OrganizationProfileClient({
         }
       } catch (error) {
         console.error("Failed to load organizer profile data:", error);
-      } finally {
-        settled = true;
-        setLoading(false);
       }
     }
-    load();
-
-    // Safety net: a stalled (never resolving/rejecting) request would otherwise
-    // leave the page spinning forever — try/catch alone can't help since nothing
-    // throws in that case. Cap the wait so the UI always recovers to an
-    // (possibly incomplete) loaded state.
-    const timeout = setTimeout(() => {
-      if (!settled) {
-        console.error("Organizer profile data load timed out");
-        setLoading(false);
-      }
-    }, 15000);
-
-    return () => clearTimeout(timeout);
+    loadViewerState();
   }, [org.id, org.user_id, org.follower_offset]);
 
   async function toggleFollow() {
@@ -345,6 +312,36 @@ export default function OrganizationProfileClient({
   const orgTypeColor = ORG_TYPE_COLORS[org.org_type ?? "other"] ?? "bg-zinc-100 text-zinc-700";
   const totalRaised = fundraisers.reduce((sum, f) => sum + Number(f.raised ?? 0), 0);
 
+  const hasBio = Boolean(org.bio?.trim());
+  const hasContact = Boolean(org.website || org.contact_email);
+  const hasSocials = Boolean(
+    org.facebook || org.twitter || org.instagram ||
+    org.linkedin || org.youtube || org.tiktok
+  );
+  const hasCampaigns = fundraisers.length > 0;
+  const hasReviews = (org.review_count ?? 0) > 0;
+
+  // ── Data-driven sections: a tab renders only when it has real content.
+  // About shows unless the bio is literally the profile's only content (in
+  // which case Overview carries it). Overview renders when at least two
+  // sections would otherwise show — or as the bio's home when it is the
+  // only content available.
+  const showCampaigns = hasCampaigns;
+  const showReviews = hasReviews;
+  const showAbout = (hasBio || hasContact || hasSocials) && (hasCampaigns || hasReviews || hasContact || hasSocials);
+  const multiSection = [showCampaigns, showAbout, showReviews].filter(Boolean).length >= 2;
+  const showOverview = multiSection || ((hasBio || hasCampaigns) && !showCampaigns && !showAbout && !showReviews);
+
+  const visibleTabs: ProfileTab[] = [
+    ...(showOverview ? [{ id: "overview", label: "Overview" }] : []),
+    ...(showCampaigns ? [{ id: "campaigns", label: "Campaigns", count: fundraisers.length }] : []),
+    ...(showAbout ? [{ id: "about", label: "About" }] : []),
+    ...(showReviews ? [{ id: "reviews", label: "Reviews", count: org.review_count ?? undefined }] : []),
+  ];
+  const [activeTab, setActiveTab] = useState<TabId>(
+    (visibleTabs[0]?.id as TabId | undefined) ?? "overview"
+  );
+
   const metrics: ProfileMetric[] = [
     { label: "Campaigns", value: formatCount(fundraisers.length), icon: Rocket },
     { label: "Followers", value: formatCount(followerCount), icon: Users },
@@ -354,25 +351,24 @@ export default function OrganizationProfileClient({
     metrics.push({ label: "Rating", value: Number(org.average_rating).toFixed(1), icon: Star });
   }
 
-  const tabs: ProfileTab[] = [
-    { id: "overview", label: "Overview" },
-    { id: "campaigns", label: "Campaigns", count: fundraisers.length },
-    { id: "about", label: "About" },
-    { id: "reviews", label: "Reviews", count: org.review_count ?? undefined },
-  ];
-
   return (
     <main className="min-h-screen bg-white px-4 py-6 text-zinc-950 sm:py-8">
       <div className="mx-auto max-w-6xl">
         <ProfileHeader
           avatarSrc={org.photo}
-          name={org.name}
+          name={stripEmojis(org.name) || "Organization"}
           badge={
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${orgTypeColor}`}>
-              {orgTypeLabel}
-            </span>
+            <>
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${orgTypeColor}`}>
+                {orgTypeLabel}
+              </span>
+              <OrganizationStatusBadge
+                verified={verificationFacts.organizationVerified}
+                applicable={verificationFacts.organizationApplicable}
+              />
+            </>
           }
-          oneLiner={org.bio}
+          subline={`${formatCount(followerCount)} followers`}
           ratingSlot={
             org.average_rating && org.review_count ? (
               <span className="flex items-center gap-1">
@@ -382,122 +378,106 @@ export default function OrganizationProfileClient({
             ) : undefined
           }
           actions={
-            <>
+            isOwner ? (
+              <Link
+                href={`/dashboard/org/${org.id}/settings`}
+                className="flex items-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800"
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Link>
+            ) : (
               <FollowButton isFollowing={isFollowing} onToggle={toggleFollow} />
-              <ShareButton
-                getUrl={() => `${window.location.origin}/org/${org.slug ?? org.id}`}
-              />
-              {org.contact_email && (
-                <a
-                  href={`mailto:${org.contact_email}`}
-                  className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-bold text-zinc-700 transition hover:bg-zinc-50"
-                >
-                  <Mail className="h-4 w-4" />
-                  Contact
-                </a>
-              )}
-              {isOwner && (
-                <Link
-                  href={`/dashboard/org/${org.id}/settings`}
-                  className="flex items-center gap-2 rounded-xl bg-zinc-950 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-zinc-800"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Edit
-                </Link>
-              )}
-            </>
+            )
           }
+          socialRow={<SocialIconRow org={org} align="center" />}
         />
 
         <div className="mt-8 grid gap-8 border-t border-zinc-200 pt-8 lg:grid-cols-[288px_1fr]">
           <ProfileSidebar metrics={metrics} className="lg:border-r lg:border-zinc-200 lg:pr-8">
-            {/* The single, honest organization-verification signal on this
-                page (Phase 5). Previously stacked alongside the legacy
-                organizers.status directory badge (a manual admin toggle,
-                unrelated to real document review) and VerificationFactsPanel
-                (whose identity/campaign-approval facts belong on the user
-                profile and campaign page respectively, not here) — both
-                retired from this page in favor of this one fact. */}
-            <div className="flex flex-wrap gap-2">
-              <OrganizationStatusBadge
-                verified={verificationFacts.organizationVerified}
-                applicable={verificationFacts.organizationApplicable}
-              />
-            </div>
             <ConnectSection org={org} />
           </ProfileSidebar>
 
           <div className="min-w-0 space-y-6">
-            <div className="lg:hidden">
-              <ProfileMetrics metrics={metrics} layout="strip" />
-            </div>
+            {visibleTabs.length > 0 ? (
+              <>
+                <ProfileTabs tabs={visibleTabs} activeId={activeTab} onChange={(id) => setActiveTab(id as TabId)} />
 
-            <ProfileTabs tabs={tabs} activeId={activeTab} onChange={(id) => setActiveTab(id as TabId)} />
-
-            {activeTab === "overview" && (
-              <div className="space-y-5">
-                {org.bio && (
-                  <ProfileSection title="About">
-                    <p className="text-sm leading-relaxed text-zinc-700">{org.bio}</p>
-                  </ProfileSection>
-                )}
-                <ProfileSection title="Top Campaigns">
-                  {loading ? (
-                    <LoadingSpinner />
-                  ) : fundraisers.length === 0 ? (
-                    <EmptyTabState label="No active campaigns yet." />
-                  ) : (
-                    <div className="space-y-3">
-                      {fundraisers.slice(0, 3).map((f) => (
-                        <CampaignRow key={f.id} f={f} />
-                      ))}
-                      {fundraisers.length > 3 && (
-                        <button
-                          type="button"
-                          onClick={() => setActiveTab("campaigns")}
-                          className="text-sm font-bold text-brand-700 hover:text-brand-800"
-                        >
-                          View all {fundraisers.length} campaigns →
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </ProfileSection>
-              </div>
-            )}
-
-            {activeTab === "campaigns" && (
-              <ProfileSection title="Campaigns">
-                {loading ? (
-                  <LoadingSpinner />
-                ) : fundraisers.length === 0 ? (
-                  <EmptyTabState label="No active campaigns yet." />
-                ) : (
-                  <div className="space-y-3">
-                    {fundraisers.map((f) => (
-                      <CampaignRow key={f.id} f={f} />
-                    ))}
+                {activeTab === "overview" && showOverview && (
+                  <div className="space-y-5">
+                    {hasBio && (
+                      <ProfileSection title="About">
+                        <p className="text-sm leading-relaxed text-zinc-700">{org.bio}</p>
+                      </ProfileSection>
+                    )}
+                    {hasCampaigns && (
+                      <ProfileSection title="Top Campaigns">
+                        <div className="space-y-3">
+                          {fundraisers.slice(0, 3).map((f) => (
+                            <CampaignRow key={f.id} f={f} />
+                          ))}
+                          {fundraisers.length > 3 && (
+                            <button
+                              type="button"
+                              onClick={() => setActiveTab("campaigns")}
+                              className="text-sm font-bold text-brand-700 hover:text-brand-800"
+                            >
+                              View all {fundraisers.length} campaigns →
+                            </button>
+                          )}
+                        </div>
+                      </ProfileSection>
+                    )}
                   </div>
                 )}
-              </ProfileSection>
-            )}
 
-            {activeTab === "about" && (
-              <div className="space-y-5">
-                <ConnectSection org={org} />
-              </div>
-            )}
+                {activeTab === "campaigns" && showCampaigns && (
+                  <ProfileSection title="Campaigns">
+                    <div className="space-y-3">
+                      {fundraisers.map((f) => (
+                        <CampaignRow key={f.id} f={f} />
+                      ))}
+                    </div>
+                  </ProfileSection>
+                )}
 
-            {activeTab === "reviews" && (
-              <ProfileSection title="Reviews">
-                <ReviewSection
-                  targetType="organizer"
-                  targetId={org.id}
-                  accentColor="orange"
-                  initialAverage={org.average_rating ?? undefined}
-                  initialCount={org.review_count ?? undefined}
-                />
-              </ProfileSection>
+                {activeTab === "about" && showAbout && (
+                  <div className="space-y-5">
+                    {hasBio && (
+                      <ProfileSection title="About">
+                        <p className="text-sm leading-relaxed text-zinc-700">{org.bio}</p>
+                      </ProfileSection>
+                    )}
+                    <ConnectSection org={org} />
+                    {hasSocials &&
+                      (hasBio || hasContact ? (
+                        <div className="pt-1">
+                          <SocialIconRow org={org} align="start" />
+                        </div>
+                      ) : (
+                        <ProfileSection title="Connect">
+                          <SocialIconRow org={org} align="start" />
+                        </ProfileSection>
+                      ))}
+                  </div>
+                )}
+
+                {activeTab === "reviews" && showReviews && (
+                  <ProfileSection title="Reviews">
+                    <ReviewSection
+                      targetType="organizer"
+                      targetId={org.id}
+                      accentColor="orange"
+                      initialAverage={org.average_rating ?? undefined}
+                      initialCount={org.review_count ?? undefined}
+                    />
+                  </ProfileSection>
+                )}
+              </>
+            ) : (
+              <p className="py-8 text-center text-sm font-medium text-zinc-500">
+                This organizer hasn&apos;t added any public content yet.
+              </p>
             )}
           </div>
         </div>

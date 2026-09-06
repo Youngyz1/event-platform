@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { internalError } from "@/lib/api-error";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   if (fundraiserError) {
-    return NextResponse.json({ error: fundraiserError.message }, { status: 500 });
+    return internalError("beneficiary/record", fundraiserError);
   }
   if (!fundraiser) {
     return NextResponse.json({ error: "Fundraiser not found." }, { status: 404 });
@@ -74,7 +75,7 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   if (recordError) {
-    return NextResponse.json({ error: recordError.message }, { status: 500 });
+    return internalError("beneficiary/record", recordError);
   }
   if (!record) {
     return NextResponse.json({ record: null });

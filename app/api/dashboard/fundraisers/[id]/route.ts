@@ -3,6 +3,7 @@ import { getDashboardApiContext } from '@/lib/dashboard-api';
 import { getDashboardFundraiserDetail } from '@/lib/dashboard-data';
 import { supabaseAdmin } from '@/lib/dashboard-context';
 import { deleteFundraisersWithoutPaymentRecords } from '@/lib/dashboard-delete';
+import { internalError } from '@/lib/api-error';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -45,8 +46,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: result.message }, { status: 409 });
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unable to delete fundraiser.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("dashboard/fundraisers/[id]", error);
   }
 
   return NextResponse.json({ success: true });

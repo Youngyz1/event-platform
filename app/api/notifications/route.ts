@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { internalError } from "@/lib/api-error";
 import { createSupabaseServer } from "@/lib/supabase-server";
 
 const PAGE_SIZE = 20;
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("notifications", error);
   }
 
   return NextResponse.json({

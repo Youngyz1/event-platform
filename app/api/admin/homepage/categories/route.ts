@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
+import { internalError } from "@/lib/api-error";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,7 +29,7 @@ export async function GET() {
     .order("position", { ascending: true });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/homepage/categories", error);
   }
 
   return NextResponse.json({ categories: data ?? [] });
@@ -59,12 +60,12 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return internalError("admin/homepage/categories", error);
 
     revalidatePath("/", "page");
     return NextResponse.json({ success: true, category: data });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 }
 
@@ -88,7 +89,7 @@ export async function PATCH(req: NextRequest) {
       const results = await Promise.all(updates);
       const failed = results.find((r) => r.error);
       if (failed) {
-        return NextResponse.json({ error: failed.error?.message }, { status: 500 });
+        return internalError("admin/homepage/categories", failed.error);
       }
 
       return NextResponse.json({ success: true });
@@ -116,12 +117,12 @@ export async function PATCH(req: NextRequest) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return internalError("admin/homepage/categories", error);
     }
 
     return NextResponse.json({ success: true, category: data });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 }
 
@@ -142,7 +143,7 @@ export async function DELETE(req: NextRequest) {
     .delete()
     .eq("id", id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return internalError("admin/homepage/categories", error);
 
   revalidatePath("/", "page");
   return NextResponse.json({ success: true });

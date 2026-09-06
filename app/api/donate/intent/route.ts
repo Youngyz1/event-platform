@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { internalError } from "@/lib/api-error";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error("STRIPE_SECRET_KEY is not set.");
@@ -34,11 +35,12 @@ export async function POST(req: NextRequest) {
     const supabase = await createSupabaseServer();
     const { data: authData } = await supabase.auth.getUser();
     const userId = authData.user?.id ?? "";
+    // H4 log hygiene: authentication outcome only — never emails, tokens, or
+    // payment fields.
     console.log("[donate/intent] auth check:", {
-  hasUser: Boolean(authData.user),
-  userId: authData.user?.id,
-  email: authData.user?.email,
-});
+      hasUser: Boolean(authData.user),
+      hasUserId: Boolean(authData.user?.id),
+    });
 
     // Before stripe.customers.create / paymentIntents.create below. Signed-in
     // donors are keyed on their user id; anonymous donation is supported, so
@@ -138,8 +140,6 @@ export async function POST(req: NextRequest) {
       clientSecret: paymentIntent.client_secret,
     });
   } catch (err: unknown) {
-    console.error("[donate/intent]", err);
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("donate/intent", err);
   }
 }

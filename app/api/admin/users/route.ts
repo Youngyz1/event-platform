@@ -8,6 +8,7 @@ import { getCurrentUser, isAdmin } from '@/lib/auth';
 import { parsePageParams, type DateFilter } from '@/lib/admin-query';
 import { queryUsers } from '@/lib/admin-data';
 import type { UserActivity, UserSort } from '@/types/admin-management';
+import { internalError } from '@/lib/api-error';
 
 const VALID_SORTS: UserSort[] = [
   'newest',
@@ -61,7 +62,6 @@ export async function GET(req: NextRequest) {
       current_user_id: currentUser?.id ?? null,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to load users.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("admin/users", err);
   }
 }

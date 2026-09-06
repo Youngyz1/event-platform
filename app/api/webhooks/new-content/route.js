@@ -15,7 +15,7 @@ export async function POST(request) {
     const postId = await postToFacebook({ message: caption, link: url });
     return Response.json({ success: true, postId });
   } catch (err) {
-    console.error(err);
-    return Response.json({ error: err.message }, { status: 500 });
+    console.error("[webhooks/new-content] failed");
+    return Response.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 }

@@ -20,6 +20,7 @@ import BeneficiarySelector, {
 } from "@/components/fundraisers/BeneficiarySelector";
 import { validateBeneficiary, beneficiaryTypeLabel } from "@/lib/beneficiary";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
+import { sanitizeRichTextHtml } from "@/lib/sanitize-html";
 import { X } from "lucide-react";
 
 // Upper-bound for fundraiser photo exports. Images larger than this are scaled
@@ -337,10 +338,17 @@ export default function CreateFundraiserPage() {
     // re-collection for an already-approved organizer works correctly without
     // any schema change — the reuse case was designed in from the start, just
     // never wired to this insert.
-    const story = [form.short_description, form.story].filter(Boolean).join("\n\n");
-    const { data: insertedFundraiser, error: insertError } = await supabase
-      .from("fundraisers")
-      .insert({
+    // Obj1: story HTML is created through POST /api/fundraisers, which
+    // authenticates, authorizes the organizer, and sanitizes server-side.
+    // The page no longer writes the story field directly (defense-in-depth
+    // client sanitization happens inside the shared helper below).
+    const story = sanitizeRichTextHtml(
+      [form.short_description, form.story].filter(Boolean).join("\n\n")
+    );
+    const createRes = await fetch("/api/fundraisers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         title: form.title,
         slug,
         story,
@@ -352,16 +360,18 @@ export default function CreateFundraiserPage() {
         beneficiary_id: beneficiaryId,
         category: form.category,
         video_url,
-        user_id: session.user.id,
-      })
-      .select("id, slug")
-      .single();
-
-    if (insertError || !insertedFundraiser) {
-      setError(insertError?.message || "Could not create fundraiser.");
+      }),
+    });
+    const created = await createRes.json().catch(() => null);
+    if (!createRes.ok || !created?.id) {
+      setError(created?.error || "Could not create fundraiser.");
       setLoading(false);
       return;
     }
+    const insertedFundraiser: { id: string; slug: string } = {
+      id: created.id,
+      slug: created.slug,
+    };
 
     // Photos are already cropped and uploaded (each ImageUploadWithCrop
     // instance uploads immediately on confirm), so this is just recording them.

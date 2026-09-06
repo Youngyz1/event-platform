@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { internalError } from "@/lib/api-error";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 
 export async function GET(
@@ -21,7 +22,7 @@ export async function GET(
     .range(offset, offset + limit - 1);
 
   if (error) {
-    return NextResponse.json({ ok: false, reason: error.message }, { status: 500 });
+    return internalError("fundraisers/[id]/donors", error);
   }
 
   const userIds = Array.from(

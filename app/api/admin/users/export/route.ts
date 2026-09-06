@@ -8,6 +8,8 @@ import { getCurrentUser, isAdmin } from '@/lib/auth';
 import { toCsv, type DateFilter } from '@/lib/admin-query';
 import { queryUsers } from '@/lib/admin-data';
 import type { UserActivity, UserSort } from '@/types/admin-management';
+import { internalError } from '@/lib/api-error';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   if (!(await isAdmin())) {
@@ -22,6 +24,10 @@ export async function GET(req: NextRequest) {
   const date = (sp.get('date') ?? 'all') as DateFilter;
   const search = sp.get('search') ?? '';
   const currentUser = await getCurrentUser();
+
+  // H2: full-table scans — per-admin budget.
+  const limited = await enforceRateLimit("dataExport", req, currentUser?.id ?? null);
+  if (limited) return limited;
 
   try {
     const result = await queryUsers({
@@ -75,7 +81,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Export failed.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("admin/users/export", err);
   }
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { isAdmin } from "@/lib/auth";
@@ -31,6 +32,10 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
+
+  // H2: signed-URL minting is cheap but path-probing must be metered.
+  const limited = await enforceRateLimit("verificationSubmit", req, user.id);
+  if (limited) return limited;
 
   let body: { path?: string };
   try {

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "supabase": "supabase",
-    "verify:requirements": "node --experimental-strip-types scripts/verify-requirements.mts"
+    "verify:requirements": "node --experimental-strip-types scripts/verify-requirements.mts",
+    "security:checks": "node --experimental-strip-types scripts/security-checks/c1-c2-checks.mts"
   },
   "overrides": {
     "postcss": "^8.5.23",

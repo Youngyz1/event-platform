@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/dashboard-context";
 import { isAuthorizedCronRequest } from "@/lib/cron-auth";
+import { internalError } from "@/lib/api-error";
 
 /**
  * Ends the 14-day account-deletion grace period.
@@ -81,8 +82,6 @@ export async function POST(request: NextRequest) {
       failed: ids.length - purged,
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[PurgeAccounts Cron] Fatal error:", msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return internalError("cron/purge-accounts", err);
   }
 }

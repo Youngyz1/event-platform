@@ -16,12 +16,14 @@ function CryptoPendingContent() {
     slug: string | null;
     qrCode: string | null;
     productName: string | null;
+    paymentIntentId: string | null;
   }>({
     type: null,
     recordId: null,
     slug: null,
     qrCode: null,
     productName: null,
+    paymentIntentId: null,
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +66,7 @@ function CryptoPendingContent() {
             slug: data.slug,
             qrCode: data.qrCode,
             productName: data.productName,
+            paymentIntentId: data.paymentIntentId ?? null,
           });
           clearInterval(pollInterval);
         } else if (data.status === "failed") {
@@ -77,6 +80,7 @@ function CryptoPendingContent() {
             slug: data.slug,
             qrCode: data.qrCode,
             productName: data.productName,
+            paymentIntentId: data.paymentIntentId ?? null,
           });
         }
       } catch (err) {
@@ -147,9 +151,9 @@ function CryptoPendingContent() {
 
         {isDonation ? (
           <div className="space-y-4">
-            {paymentDetails.recordId && (
+            {paymentDetails.recordId && paymentDetails.paymentIntentId && (
               <a
-                href={`/api/certificates/${paymentDetails.recordId}?paymentId=${orderId}`}
+                href={`/api/certificates/${paymentDetails.recordId}?paymentId=${encodeURIComponent(paymentDetails.paymentIntentId)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 w-full rounded-2xl bg-green-700 hover:bg-green-800 py-4 text-sm font-black text-white transition shadow-md"

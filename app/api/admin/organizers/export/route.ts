@@ -4,10 +4,12 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdmin } from '@/lib/auth';
+import { getCurrentUser, isAdmin } from '@/lib/auth';
 import { toCsv, type DateFilter } from '@/lib/admin-query';
 import { queryOrganizers } from '@/lib/admin-data';
 import type { OrganizerSort } from '@/types/admin-management';
+import { internalError } from '@/lib/api-error';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   if (!(await isAdmin())) {
@@ -19,6 +21,11 @@ export async function GET(req: NextRequest) {
   const sort = (sp.get('sort') ?? 'newest') as OrganizerSort;
   const date = (sp.get('date') ?? 'all') as DateFilter;
   const search = sp.get('search') ?? '';
+
+  // H2: full-table scans — per-admin budget.
+  const currentUser = await getCurrentUser();
+  const limited = await enforceRateLimit("dataExport", req, currentUser?.id ?? null);
+  if (limited) return limited;
 
   try {
     const result = await queryOrganizers({
@@ -65,7 +72,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Export failed.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("admin/organizers/export", err);
   }
 }

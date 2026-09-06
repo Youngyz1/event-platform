@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, isAdmin } from '@/lib/auth';
+import { internalError } from '@/lib/api-error';
 import { getUserDetail, supabaseAdmin } from '@/lib/admin-data';
 
 export async function GET(
@@ -26,8 +27,7 @@ export async function GET(
     }
     return NextResponse.json({ user });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to load user.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("admin/users/[id]", err);
   }
 }
 
@@ -103,14 +103,14 @@ export async function PATCH(
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/users/[id]", error);
   }
 
   if (!updatedProfile) {
     const insertPayload: Record<string, string> = { id, role: 'user', status: 'active', ...update };
     const { error: insertError } = await supabaseAdmin.from('profiles').insert(insertPayload);
     if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 });
+      return internalError("admin/users/[id]", insertError);
     }
   }
 

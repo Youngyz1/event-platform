@@ -45,7 +45,8 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     // RLS refusals land here: the row is past the point where you may edit it.
-    return NextResponse.json({ error: error.message }, { status: 403 });
+    console.error("[identity-verification] save failed");
+    return NextResponse.json({ error: "Could not save identity verification." }, { status: 403 });
   }
   if (!data) {
     return NextResponse.json({ error: "Could not save identity verification." }, { status: 403 });

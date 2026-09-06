@@ -14,6 +14,7 @@ import BeneficiarySelector, {
 import BeneficiaryInvite from "@/components/fundraisers/BeneficiaryInvite";
 import { validateBeneficiary, resolveBeneficiary } from "@/lib/beneficiary";
 import { CAMPAIGN_CATEGORIES } from "@/lib/categories";
+import { sanitizeRichTextHtml } from "@/lib/sanitize-html";
 
 // Upper-bound for fundraiser photo exports. Images larger than this are scaled
 // down proportionally; the original aspect ratio is always preserved and nothing
@@ -302,9 +303,13 @@ export default function EditFundraiserPage() {
         throw new Error(beneficiaryData.error || "Could not save the beneficiary.");
       }
 
-      const { error: updateError } = await supabase
-        .from("fundraisers")
-        .update({
+      // Obj1: story HTML is saved through PATCH /api/fundraisers/[id], which
+      // authenticates, authorizes the owner/organizer, and sanitizes
+      // server-side. The page no longer writes the story field directly.
+      const updateRes = await fetch(`/api/fundraisers/${fundraiserId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           title: form.title,
           slug: nextSlug,
           organizer: resolvedOwnerName,
@@ -315,12 +320,12 @@ export default function EditFundraiserPage() {
           raised: Number(form.raised) || 0,
           banner: form.banner,
           video_url: form.video_url || null,
-          story: form.story,
+          story: sanitizeRichTextHtml(form.story),
           category: form.category || "Other",
-        })
-        .eq("id", fundraiserId);
-
-      if (updateError) throw new Error(updateError.message);
+        }),
+      });
+      const updateData = await updateRes.json().catch(() => null);
+      if (!updateRes.ok) throw new Error(updateData?.error || "Could not save fundraiser.");
 
       const mediaItems = cleanGalleryItems();
       const { error: deleteMediaError } = await supabase

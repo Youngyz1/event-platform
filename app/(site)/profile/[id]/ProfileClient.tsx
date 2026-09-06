@@ -10,15 +10,15 @@ import LocalBrandedPlaceholder from "@/components/ui/LocalBrandedPlaceholder";
 import ProgressBar from "@/components/ui/ProgressBar";
 import ProfileHeader from "@/components/profile/ProfileHeader";
 import ProfileSidebar from "@/components/profile/ProfileSidebar";
-import ProfileMetrics, { type ProfileMetric } from "@/components/profile/ProfileMetrics";
 import ProfileTabs, { type ProfileTab } from "@/components/profile/ProfileTabs";
 import ProfileSection from "@/components/profile/ProfileSection";
 import ProfileAvatar from "@/components/profile/ProfileAvatar";
 import FollowButton from "@/components/profile/FollowButton";
-import ShareButton from "@/components/profile/ShareButton";
+import type { ProfileMetric } from "@/components/profile/ProfileMetrics";
 import IdentityStatusBadge from "@/components/trust/IdentityStatusBadge";
 import ReviewBadge from "@/components/trust/ReviewBadge";
 import { Users, UserPlus, Pencil, Heart, Rocket, ArrowUpRight } from "lucide-react";
+import { stripEmojis } from "@/lib/text";
 import type { DonorStats } from "@/lib/donor-stats";
 
 interface ProfileClientProps {
@@ -134,7 +134,7 @@ function CampaignRow({ f }: { f: FundraiserItem }) {
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-black text-zinc-900 line-clamp-1 group-hover:text-brand-800">
-            {f.title}
+            {stripEmojis(f.title) || "Untitled Campaign"}
           </p>
           <ReviewBadge status={f.status} />
         </div>
@@ -266,7 +266,10 @@ export default function ProfileClient({
   }
 
   const metrics: ProfileMetric[] = [
-    { label: "Campaigns", value: campaignsList.length.toString(), icon: Rocket },
+    // Campaigns metric only when the user actually has campaigns — never a "0" row.
+    ...(campaignsList.length > 0
+      ? [{ label: "Campaigns", value: campaignsList.length.toString(), icon: Rocket }]
+      : []),
     { label: "Followers", value: followerCount.toLocaleString(), icon: Users },
   ];
 
@@ -288,7 +291,11 @@ export default function ProfileClient({
 
   const tabs: ProfileTab[] = [
     { id: "overview", label: "Overview" },
-    { id: "campaigns", label: "Campaigns", count: campaignsList.length },
+    // Content-driven: no Campaigns tab at all when the user has none —
+    // never an empty campaigns page or a "Campaigns 0" badge.
+    ...(campaignsList.length > 0
+      ? [{ id: "campaigns", label: "Campaigns", count: campaignsList.length }]
+      : []),
     { id: "followers", label: "Followers", count: followerCount },
   ];
 
@@ -296,7 +303,7 @@ export default function ProfileClient({
     tabs.push({ id: "following", label: "Following", count: followingCount });
     tabs.push({
       id: "giving",
-      label: "My Giving",
+      label: "My Givings",
       count: donorStats?.perFundraiser.length,
     });
   }
@@ -315,6 +322,11 @@ export default function ProfileClient({
               <IdentityStatusBadge verified={identityVerified} />
             </>
           }
+          subline={
+            isOwnProfile
+              ? `${followerCount.toLocaleString()} followers · ${followingCount.toLocaleString()} following`
+              : `${followerCount.toLocaleString()} followers`
+          }
           actions={
             isOwnProfile ? (
               <Link
@@ -325,10 +337,7 @@ export default function ProfileClient({
                 Edit Profile
               </Link>
             ) : (
-              <>
-                <FollowButton isFollowing={isFollowing} isLoading={pending} onToggle={handleFollow} />
-                <ShareButton getUrl={() => `${window.location.origin}/profile/${profile.id}`} />
-              </>
+              <FollowButton isFollowing={isFollowing} isLoading={pending} onToggle={handleFollow} />
             )
           }
         />
@@ -337,10 +346,6 @@ export default function ProfileClient({
           <ProfileSidebar metrics={metrics} className="lg:border-r lg:border-zinc-200 lg:pr-8" />
 
           <div className="min-w-0 space-y-5">
-            <div className="lg:hidden">
-              <ProfileMetrics metrics={metrics} layout="strip" />
-            </div>
-
             <ProfileTabs tabs={tabs} activeId={activeTab} onChange={handleTabChange} />
 
             {activeTab === "overview" && (

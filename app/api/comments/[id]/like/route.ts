@@ -14,6 +14,7 @@ import { randomUUID } from "node:crypto";
 import { createNotification } from "@/lib/notifications";
 // Only enforceRateLimit — this module already defines its own clientIp().
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { internalError } from "@/lib/api-error";
 
 // Service role: bypasses RLS — comment_likes has no public policies.
 const supabaseAdmin = createClient(
@@ -169,7 +170,7 @@ export async function POST(
     // 23505 = unique violation: a concurrent request won the race. Our visitor
     // is "liked" only if it was our cookie that got the row.
     if (error.code !== "23505") {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return internalError("comments/[id]/like", error);
     }
     const { data: recheck } = await supabaseAdmin
       .from("comment_likes")

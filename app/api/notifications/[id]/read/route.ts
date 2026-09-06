@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { internalError } from "@/lib/api-error";
 import { createSupabaseServer } from "@/lib/supabase-server";
 
 const uuidPattern =
@@ -30,7 +31,7 @@ export async function PATCH(
     .is("read_at", null);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("notifications/[id]/read", error);
   }
 
   return NextResponse.json({ success: true });

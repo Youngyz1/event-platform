@@ -106,8 +106,9 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     // RLS refusals land here: not your organizer, or the row is past the point
-    // where you may edit it.
-    return NextResponse.json({ error: error.message }, { status: 403 });
+    // where you may edit it. Generic message — storage/RLS detail stays server-side.
+    console.error("[verification] save failed");
+    return NextResponse.json({ error: "Could not save verification." }, { status: 403 });
   }
   if (!data) {
     return NextResponse.json({ error: "Could not save verification." }, { status: 403 });

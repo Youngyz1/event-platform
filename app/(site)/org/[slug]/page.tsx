@@ -101,7 +101,21 @@ export default async function OrganizationProfilePage({
   // service-role client already in scope for this page's org fetch.
   const verificationFacts = await fetchVerificationFacts(supabase, org.id);
 
+  // The organizer's campaigns, fetched here (not client-side) so tab
+  // visibility can be determined from real data at render time — no
+  // flash-of-wrong-tabs while client fetching settles.
+  const { data: fundraiserRows } = await supabase
+    .from("fundraisers")
+    .select("id, title, slug, banner, image_url, goal, raised, category")
+    .eq("organizer_id", org.id)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+
   return (
-    <OrganizationProfileClient initialData={org} verificationFacts={verificationFacts} />
+    <OrganizationProfileClient
+      initialData={org}
+      verificationFacts={verificationFacts}
+      initialFundraisers={fundraiserRows ?? []}
+    />
   );
 }

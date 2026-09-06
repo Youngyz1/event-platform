@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
+import { internalError } from "@/lib/api-error";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,7 +34,7 @@ export async function GET(req: NextRequest) {
       .limit(30);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return internalError("admin/homepage/fundraisers", error);
     }
     return NextResponse.json({ fundraisers: data ?? [] });
   } else {
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
       .order("created_at", { ascending: false });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return internalError("admin/homepage/fundraisers", error);
     }
     return NextResponse.json({ fundraisers: data ?? [] });
   }
@@ -74,12 +75,12 @@ export async function PATCH(req: NextRequest) {
       .eq("id", id);
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return internalError("admin/homepage/fundraisers", error);
     }
 
     revalidatePath("/", "page");
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
 }

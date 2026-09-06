@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
+import { internalError } from "@/lib/api-error";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -32,7 +33,7 @@ export async function DELETE(
     .maybeSingle();
 
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    return internalError("fundraiser-updates/[id]", updateError);
   }
 
   if (!update) {
@@ -46,7 +47,7 @@ export async function DELETE(
     .maybeSingle();
 
   if (fundraiserError) {
-    return NextResponse.json({ error: fundraiserError.message }, { status: 500 });
+    return internalError("fundraiser-updates/[id]", fundraiserError);
   }
 
   if (!fundraiser) {
@@ -64,7 +65,7 @@ export async function DELETE(
       .maybeSingle();
 
     if (organizerError) {
-      return NextResponse.json({ error: organizerError.message }, { status: 500 });
+      return internalError("fundraiser-updates/[id]", organizerError);
     }
 
     owns = Boolean(organizer);
@@ -80,7 +81,7 @@ export async function DELETE(
     .eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("fundraiser-updates/[id]", error);
   }
 
   return NextResponse.json({ deleted: true });

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
+import { internalError } from "@/lib/api-error";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 /**
  * Binds a beneficiary profile to the signed-in account.
@@ -23,6 +25,10 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Sign in to claim this profile." }, { status: 401 });
   }
+
+  // H2: claim tokens are guessable strings — per-user budget blunts probing.
+  const limited = await enforceRateLimit("beneficiaryClaim", req, user.id);
+  if (limited) return limited;
 
   let body: { token?: string };
   try {
@@ -57,7 +63,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("beneficiary/claim", error);
   }
   if (!claimed) {
     return NextResponse.json(

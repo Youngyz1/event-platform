@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser, isAdmin } from '@/lib/auth';
+import { internalError } from '@/lib/api-error';
 import { supabaseAdmin } from '@/lib/admin-data';
 
 const VALID_ACTIONS = ['activate', 'suspend', 'promote', 'demote'] as const;
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     .in('id', ids);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/users/bulk", error);
   }
 
   return NextResponse.json({ success: true, updated: ids.length, ...update });

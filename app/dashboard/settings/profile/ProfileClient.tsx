@@ -144,7 +144,6 @@ export default function ProfileClient({
       {/* Profile Photo */}
       <SettingsCard
         title="Profile Photo"
-        description="This photo will be displayed on your profile and public posts."
       >
         <div className="flex flex-col gap-6 md:flex-row md:items-center">
           <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-50 overflow-hidden shadow-inner">
@@ -195,24 +194,13 @@ export default function ProfileClient({
 
       {/* Contact Details */}
       <SettingsCard
-        title="Contact Information"
-        description="Provide your default contact details used for billing, organizers, and event registration."
-      >
+        title="Contact Information"      >
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Display Name">
             <input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className={fieldClass} />
           </Field>
           <Field label="Email Address">
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} />
-          </Field>
-          <Field label="Prefix">
-            <select value={accountInfo.prefix} onChange={(e) => updateAccount("prefix", e.target.value)} className={fieldClass}>
-              <option value="">-- Select Prefix --</option>
-              <option>Mr.</option>
-              <option>Mrs.</option>
-              <option>Ms.</option>
-              <option>Dr.</option>
-            </select>
           </Field>
           <Field label="First Name">
             <input value={accountInfo.firstName} onChange={(e) => updateAccount("firstName", e.target.value)} className={fieldClass} />
@@ -247,7 +235,6 @@ export default function ProfileClient({
       {/* Address Details */}
       <SettingsCard
         title="Addresses"
-        description="Add multiple addresses for billing, shipping, or office purposes."
       >
         <div className="space-y-6">
           {/* Address Tabs */}
@@ -327,47 +314,6 @@ export default function ProfileClient({
         >
           {saving ? "Saving Changes..." : "Save Profile Details"}
         </button>
-      </div>
-
-      {/* Public Organizer Section */}
-      <div className="rounded-xl border border-zinc-200/80 bg-zinc-50/50 p-5 sm:rounded-2xl sm:p-6">
-        <h3 className="text-sm font-black tracking-tight text-zinc-950 sm:text-base">Organizer Profile</h3>
-        <p className="mt-1 text-xs text-zinc-500 sm:text-sm">Manage the public identity used for your fundraising campaigns.</p>
-        
-        <div className="mt-4">
-          {organizer ? (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-white border border-zinc-200/60 p-4">
-              <div>
-                <p className="text-sm font-bold text-zinc-900">{organizer.name}</p>
-                <p className="text-[11px] text-zinc-400 mt-0.5">Active organizer profile</p>
-              </div>
-              <div className="flex gap-2">
-                <a
-                  href={`/organizers/${organizer.id}`}
-                  className="rounded-lg border border-zinc-200 bg-white px-3.5 py-2 text-xs font-black text-zinc-700 hover:bg-zinc-50 transition"
-                >
-                  View Profile
-                </a>
-                <a
-                  href="/create-organizer"
-                  className="rounded-lg bg-brand-700 px-3.5 py-2 text-xs font-black text-white hover:bg-brand-800 transition"
-                >
-                  Edit Profile
-                </a>
-              </div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-white border border-zinc-200/60 p-4">
-              <p className="text-xs text-zinc-500">You don&apos;t have an organizer profile yet.</p>
-              <a
-                href="/create-organizer"
-                className="rounded-lg bg-brand-700 px-3.5 py-2 text-xs font-black text-white hover:bg-brand-800 transition shrink-0"
-              >
-                Add Organizer Profile
-              </a>
-            </div>
-          )}
-        </div>
       </div>
     </form>
   );

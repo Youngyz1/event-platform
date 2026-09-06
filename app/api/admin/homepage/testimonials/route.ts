@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { isAdmin } from "@/lib/auth";
+import { internalError } from "@/lib/api-error";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -25,7 +26,7 @@ export async function GET() {
     .select("*")
     .order("position", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return internalError("admin/homepage/testimonials", error);
   return NextResponse.json({ testimonials: data ?? [] });
 }
 
@@ -44,7 +45,7 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return internalError("admin/homepage/testimonials", error);
     revalidatePath("/", "page");
     return NextResponse.json({ success: true, testimonial: data });
   } catch (e: any) {
@@ -86,7 +87,7 @@ export async function PATCH(req: NextRequest) {
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return internalError("admin/homepage/testimonials", error);
     revalidatePath("/", "page");
     return NextResponse.json({ success: true, testimonial: data });
   } catch (e: any) {
@@ -101,7 +102,7 @@ export async function DELETE(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "ID required." }, { status: 400 });
 
   const { error } = await supabaseAdmin.from("homepage_testimonials").delete().eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return internalError("admin/homepage/testimonials", error);
   revalidatePath("/", "page");
   return NextResponse.json({ success: true });
 }

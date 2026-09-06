@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -15,6 +16,10 @@ const uuidPattern =
  * or a successful donation (fundraiser), otherwise { eligible: false }.
  */
 export async function GET(request: NextRequest) {
+  // H2: email-eligibility oracle — per-IP budget against donor enumeration.
+  const limited = await enforceRateLimit("commentPost", request);
+  if (limited) return limited;
+
   const { searchParams } = request.nextUrl;
   const targetType = searchParams.get("targetType");
   const targetId = searchParams.get("targetId") || "";

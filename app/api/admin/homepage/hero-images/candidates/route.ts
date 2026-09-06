@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdmin } from "@/lib/auth";
+import { internalError } from "@/lib/api-error";
 import { normalizeImageUrl } from "@/lib/image-url";
 
 const supabaseAdmin = createClient(
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await query;
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/homepage/hero-images", error);
   }
 
   const candidates = (data ?? [])

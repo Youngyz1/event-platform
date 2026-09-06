@@ -10,6 +10,8 @@ import {
   DEFAULT_VIDEO_TYPES,
   uploadPublicFile,
 } from "@/lib/uploads";
+import { internalError } from "@/lib/api-error";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -270,6 +272,10 @@ export async function POST(req: NextRequest) {
     return jsonError("Authentication required.", 401);
   }
 
+  // H2: outbound fetch + storage write per call.
+  const limited = await enforceRateLimit("mediaImport", req, user.id);
+  if (limited) return limited;
+
   let rawUrl: unknown;
 
   try {
@@ -335,7 +341,6 @@ export async function POST(req: NextRequest) {
       size: uploaded.size,
     });
   } catch (err) {
-    const reason = err instanceof Error ? err.message : "Could not import that media URL.";
-    return jsonError(reason, 502);
+    return internalError("media/import", err);
   }
 }

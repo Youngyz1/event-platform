@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDashboardApiContext } from '@/lib/dashboard-api';
 import { exportOrganizersCsv, queryDashboardOrganizers } from '@/lib/dashboard-data';
+import { internalError } from '@/lib/api-error';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   const auth = await getDashboardApiContext();
   if (!auth.ok) return auth.response;
+
+  // H2: full-table scans — per-user budget.
+  const limited = await enforceRateLimit("dataExport", req, auth.ctx.userId);
+  if (limited) return limited;
 
   const sp = req.nextUrl.searchParams;
 
@@ -27,7 +33,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Export failed.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("dashboard/organizers/export", err);
   }
 }

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { normalizeImageUrl } from "@/lib/image-url";
 import { stripEmojis } from "@/lib/text";
+import { sanitizeRichTextHtml } from "@/lib/sanitize-html";
+import { internalError } from "@/lib/api-error";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 type SyncBody = {
   sourceId?: string;
@@ -203,7 +206,9 @@ async function fetchGoFundMeFundraiser(source: SourceRow) {
 
   return {
     title: stripEmojis(title) || "GoFundMe Fundraiser",
-    story,
+    // Obj1: meta fallbacks are raw external text — sanitize server-side before
+    // persistence (plain text passes through unchanged).
+    story: sanitizeRichTextHtml(story),
     organizer,
     banner,
     goal,
@@ -359,6 +364,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "You must be logged in to sync GoFundMe." }, { status: 401 });
     }
 
+    // H2: outbound fetch + fundraiser writes per call.
+    const limited = await enforceRateLimit("gofundmeSync", req, user.id);
+    if (limited) return limited;
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("status")
@@ -397,7 +406,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ imported, updated, results });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "GoFundMe sync failed.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("gofundme-sync", err);
   }
 }

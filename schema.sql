@@ -1,3 +1,13 @@
-Need to install the following packages:
-supabase@2.109.0
-Ok to proceed? (y) 
+-- STALE / DO NOT USE (C3).
+--
+-- This file is a broken historical stub (it once captured npm install prompt
+-- output instead of SQL) and is kept only so old references fail loudly.
+--
+-- Canonical migration history: db/migration_01_*.sql ... db/migration_71_*.sql
+-- Authoritative snapshot policy and drift notes: docs/database-migrations.md
+--
+-- NEVER restore a database from this file or from db/schema.sql (stale dump
+-- that predates the migration_53 / migration_71 RLS hardening). Always apply
+-- the full db/migration_* chain; see docs/database-migrations.md section 3
+-- for the exact USING (true) policies that stale snapshots would re-open.
+SELECT 1;

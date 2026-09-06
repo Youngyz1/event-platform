@@ -274,7 +274,7 @@ export default function PrivacyPage() {
                 </p>
                 <p className="mt-3">
                   Refund requests may be considered within 10 days of the request, subject to
-                  organizer rules, event status, fraud checks, payment processor requirements,
+                  organizer rules, fraud checks, payment processor requirements,
                   and applicable law.
                 </p>
               </section>
@@ -416,8 +416,7 @@ export default function PrivacyPage() {
                 </h2>
                 <p className="mt-3">
                   We may receive personal data about people who do not have Fund4Good accounts,
-                  such as when an organizer imports a contact list, transfers a ticket, sends an
-                  invitation, or enters attendee information. If you believe we hold information
+                  If you believe we hold information
                   about you and you do not use Fund4Good, contact us at support@fund4agoodcause.com.
                 </p>
               </section>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { getNowPaymentsConfig } from "@/lib/cryptoPayment";
+import { internalError } from "@/lib/api-error";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set.");
@@ -110,6 +112,10 @@ async function findRecordByOrderId(orderId: string) {
 
 export async function GET(req: NextRequest) {
   try {
+    // H2: unauthenticated polling that can trigger provider API calls.
+    const limited = await enforceRateLimit("statusPoll", req);
+    if (limited) return limited;
+
     const { searchParams } = req.nextUrl;
     const orderId = searchParams.get("orderId") || searchParams.get("paymentId");
 
@@ -132,6 +138,7 @@ export async function GET(req: NextRequest) {
         slug: record.slug,
         qrCode: record.qrCode,
         productName: (record as any).productName || null,
+        paymentIntentId: (record as any).paymentIntentId || null,
       });
     }
 
@@ -197,12 +204,11 @@ export async function GET(req: NextRequest) {
       slug: record?.slug || null,
       qrCode: record?.qrCode || null,
       productName: (record as any)?.productName || null,
+      // H5: opaque payment identifier for the post-checkout certificate link.
+      // Never the row id — the certificate route verifies this server-side.
+      paymentIntentId: (record as any)?.paymentIntentId || null,
     });
   } catch (err: unknown) {
-    console.error("crypto/status route error:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal server error" },
-      { status: 500 }
-    );
+    return internalError("crypto/status", err);
   }
 }

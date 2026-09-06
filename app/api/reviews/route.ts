@@ -9,6 +9,8 @@ import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getDonorStats } from "@/lib/donor-stats";
 import { NextRequest, NextResponse } from "next/server";
+import { internalError } from "@/lib/api-error";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,7 +70,7 @@ export async function GET(request: NextRequest) {
     .limit(50);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("reviews", error);
   }
 
   const userIds = Array.from(
@@ -124,6 +126,10 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
+
+  // H2: per-user budget against review spam.
+  const limited = await enforceRateLimit("reviewPost", request, user.id);
+  if (limited) return limited;
 
   const body = await request.json().catch(() => null);
   if (!body) {
@@ -208,7 +214,7 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       );
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("reviews", error);
   }
 
   return NextResponse.json({ review: data }, { status: 201 });

@@ -2,6 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { tagCryptoOrderId, getNowPaymentsConfig } from "@/lib/cryptoPayment";
+import {
+  TICKET_CURRENCY,
+  clientPriceContradicts,
+  resolveTicketPrice,
+  validateDonationAmount,
+  validateDonationCurrency,
+  validateTicketQuantity,
+} from "@/lib/ticket-pricing";
+import { internalError } from "@/lib/api-error";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set.");
@@ -22,9 +32,15 @@ export async function POST(req: NextRequest) {
     const supabase = await createSupabaseServer();
     const { data: authData } = await supabase.auth.getUser();
     const userId = authData.user?.id ?? null;
+
+    // H2: invoice creation is provider-billable — same budget class as Stripe
+    // intents, keyed on user when signed in, else IP.
+    const limited = await enforceRateLimit("cryptoPayment", req, userId);
+    if (limited) return limited;
     const {
-      amount,
-      currency = "usd",
+      amount: clientAmount,
+      ticketPrice: clientTicketPrice,
+      currency: clientCurrency,
       fundraiserSlug,
       eventId,
       donorName,
@@ -40,10 +56,9 @@ export async function POST(req: NextRequest) {
       quantity = 1,
     } = body;
 
-    const numAmount = Number(amount);
-    if (!type || !numAmount || numAmount <= 0) {
+    if (!type || (type !== "donation" && type !== "ticket")) {
       return NextResponse.json(
-        { error: "Invalid payment details: type and amount are required." },
+        { error: "Invalid type. Must be donation or ticket." },
         { status: 400 }
       );
     }
@@ -62,15 +77,33 @@ export async function POST(req: NextRequest) {
     const ipnCallbackUrl = `${baseUrl}/api/crypto/webhook`;
 
     // Create NOWPayments invoice
+    // NOTE (C1): ticket pricing is NEVER taken from the client. Donations are
+    // donor-chosen amounts validated below; tickets resolve to a trusted DB
+    // unit price via resolveTicketPrice().
     let cancelUrl = baseUrl;
     let orderDescription = "";
     let fundraiserId: string | null = null;
     let eventSlug = "";
+    // Trusted charge, resolved per branch below.
+    let chargeAmount: number = 0;
+    let chargeCurrency: string = TICKET_CURRENCY;
+    let trustedQuantity = 1;
 
     if (type === "donation") {
       if (!fundraiserSlug) {
         return NextResponse.json({ error: "fundraiserSlug is required for donations." }, { status: 400 });
       }
+
+      const amountCheck = validateDonationAmount(clientAmount);
+      if (!amountCheck.ok) {
+        return NextResponse.json({ error: amountCheck.error }, { status: 400 });
+      }
+      const currencyCheck = validateDonationCurrency(clientCurrency ?? "usd");
+      if (!currencyCheck.ok) {
+        return NextResponse.json({ error: currencyCheck.error }, { status: 400 });
+      }
+      chargeAmount = amountCheck.amount;
+      chargeCurrency = currencyCheck.currency;
       
       // Look up fundraiser by slug
       const { data: fundraiser, error: fundErr } = await supabaseAdmin
@@ -90,24 +123,118 @@ export async function POST(req: NextRequest) {
       if (!eventId) {
         return NextResponse.json({ error: "eventId is required for ticket purchases." }, { status: 400 });
       }
-      
-      // Look up event slug for cancel_url
-      const { data: event, error: eventErr } = await supabaseAdmin
-        .from("events")
-        .select("slug, title")
-        .eq("id", eventId)
-        .maybeSingle();
-
-      if (eventErr || !event) {
-        return NextResponse.json({ error: "Event not found." }, { status: 404 });
+      if (!ticketId || typeof ticketId !== "string") {
+        return NextResponse.json({ error: "ticketId is required for ticket purchases." }, { status: 400 });
       }
 
-      eventSlug = event.slug;
+      const qtyCheck = validateTicketQuantity(quantity);
+      if (!qtyCheck.ok) {
+        return NextResponse.json({ error: qtyCheck.error }, { status: 400 });
+      }
+      trustedQuantity = qtyCheck.quantity;
+
+      // Trusted lookups. Events/tickets were removed by
+      // migration_65_remove_events_and_tickets; a missing relation means the
+      // feature is retired (410), never free.
+      let ticket: {
+        id: string;
+        event_id: string | null;
+        name: string | null;
+        price: number | null;
+        quantity: number | null;
+      } | null = null;
+      let event: { id: string; slug: string | null; title: string | null } | null =
+        null;
+      try {
+        const [{ data: ticketData }, { data: eventData }] = await Promise.all([
+          supabaseAdmin
+            .from("tickets")
+            .select("id, event_id, name, price, quantity")
+            .eq("id", ticketId)
+            .maybeSingle(),
+          supabaseAdmin
+            .from("events")
+            .select("id, slug, title")
+            .eq("id", eventId)
+            .maybeSingle(),
+        ]);
+        ticket = ticketData;
+        event = eventData;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("42P01") || msg.toLowerCase().includes("does not exist")) {
+          return NextResponse.json(
+            { error: "Ticket sales are no longer available." },
+            { status: 410 }
+          );
+        }
+        throw err;
+      }
+
+      if (!event) {
+        return NextResponse.json({ error: "Event not found." }, { status: 404 });
+      }
+      if (!ticket) {
+        return NextResponse.json({ error: "Ticket not found for this event." }, { status: 404 });
+      }
+
+      // Seat is fetched here for price/availability; the atomic
+      // reserve (eq status available) happens below before insert.
+      let seatForPricing: {
+        id: string;
+        event_id: string;
+        status: string;
+        price_override: number | null;
+        ticket_id: string | null;
+      } | null = null;
+      if (seatId && typeof seatId === "string" && seatId.length > 0) {
+        const { data: seatData } = await supabaseAdmin
+          .from("seats")
+          .select("id, event_id, status, price_override, ticket_id")
+          .eq("id", seatId)
+          .maybeSingle();
+        seatForPricing = seatData;
+        if (
+          seatForPricing &&
+          seatForPricing.ticket_id &&
+          seatForPricing.ticket_id !== ticketId
+        ) {
+          return NextResponse.json({ error: "Seat is no longer available." }, { status: 400 });
+        }
+      }
+
+      const resolved = resolveTicketPrice({
+        ticket,
+        event: { id: event.id, slug: event.slug, title: event.title },
+        seat: seatForPricing,
+        eventId,
+        quantity: trustedQuantity,
+      });
+      if (!resolved.ok) {
+        const status =
+          resolved.code === "ticket_not_found" || resolved.code === "event_not_found"
+            ? 404
+            : 400;
+        return NextResponse.json({ error: resolved.error }, { status });
+      }
+
+      if (clientPriceContradicts(clientAmount, resolved.value.unitPrice * trustedQuantity) ||
+          clientPriceContradicts(clientTicketPrice, resolved.value.unitPrice)) {
+        return NextResponse.json(
+          { error: "Ticket price mismatch. Please refresh and try again." },
+          { status: 400 }
+        );
+      }
+
+      chargeAmount = resolved.value.total;
+      chargeCurrency = resolved.value.currency;
+      eventSlug = resolved.value.eventSlug;
       cancelUrl = `${baseUrl}/events/${eventSlug}?cancelled=true`;
-      orderDescription = `Ticket order for "${event.title}"`;
-    } else {
-      return NextResponse.json({ error: "Invalid type. Must be donation or ticket." }, { status: 400 });
+      orderDescription = `Ticket order for "${resolved.value.eventTitle}"`;
     }
+
+    const numAmount = chargeAmount;
+    const currency = chargeCurrency;
 
     const orderId = crypto.randomUUID();
 
@@ -160,9 +287,10 @@ export async function POST(req: NextRequest) {
 
     const nowpaymentsData = await nowpaymentsRes.json();
     if (!nowpaymentsRes.ok || !nowpaymentsData.invoice_url) {
-      console.error("NOWPayments invoice error:", nowpaymentsData);
+      // Provider detail stays server-side; callers get a generic upstream error.
+      console.error("[crypto/create-payment] NOWPayments invoice failed");
       return NextResponse.json(
-        { error: nowpaymentsData.message || "Failed to create NOWPayments invoice." },
+        { error: "Payment provider unavailable. Please try again." },
         { status: 502 }
       );
     }
@@ -192,17 +320,24 @@ export async function POST(req: NextRequest) {
       }
     } else if (type === "ticket") {
       const qrCode = generateQRCode();
-      const safeQuantity = Math.max(1, Number(quantity) || 1);
+      // Trusted quantity/total from resolveTicketPrice above — never the
+      // client-supplied amount.
+      const safeQuantity = trustedQuantity;
 
-      // Reserve seat if applicable
+      // Reserve seat if applicable (atomic: only transitions available -> reserved)
       if (seatId) {
         const { data: seatData, error: seatCheckError } = await supabaseAdmin
           .from("seats")
-          .select("status")
+          .select("id, event_id, status, ticket_id")
           .eq("id", seatId)
           .single();
 
-        if (seatCheckError || seatData?.status !== "available") {
+        if (
+          seatCheckError ||
+          seatData?.status !== "available" ||
+          (seatData?.event_id && seatData.event_id !== eventId) ||
+          (seatData?.ticket_id && ticketId && seatData.ticket_id !== ticketId)
+        ) {
           return NextResponse.json({ error: "Seat is no longer available." }, { status: 400 });
         }
 
@@ -253,10 +388,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ paymentUrl, paymentId });
   } catch (err: unknown) {
-    console.error("create-payment route error:", err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal server error" },
-      { status: 500 }
-    );
+    return internalError("crypto/create-payment", err);
   }
 }

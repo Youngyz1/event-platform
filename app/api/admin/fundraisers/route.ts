@@ -6,6 +6,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin } from '@/lib/auth';
+import { internalError } from '@/lib/api-error';
 
 // Service role: bypasses RLS — admin operations only
 const supabaseAdmin = createClient(
@@ -24,7 +25,7 @@ export async function GET() {
     .order('created_at', { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/fundraisers", error);
   }
 
   return NextResponse.json({ fundraisers: data ?? [] });

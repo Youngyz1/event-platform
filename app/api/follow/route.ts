@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { createNotification } from "@/lib/notifications";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -19,6 +20,10 @@ export async function POST(req: NextRequest) {
       { status: 401 }
     );
   }
+
+  // H2: each toggle may write + notify; per-user budget stops follow-spam.
+  const limited = await enforceRateLimit("followToggle", req, user.id);
+  if (limited) return limited;
 
   // ── Payload validation ────────────────────────────────────────────────────
   const payload = await req.json().catch(() => null);

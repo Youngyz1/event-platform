@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdmin } from '@/lib/auth';
+import { internalError } from '@/lib/api-error';
 import { getOrganizerDetail, supabaseAdmin } from '@/lib/admin-data';
 
 const VALID_STATUSES = ['pending', 'verified', 'rejected', 'suspended'] as const;
@@ -27,8 +28,7 @@ export async function GET(
     }
     return NextResponse.json({ organizer });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to load organizer.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("admin/organizers/[id]", err);
   }
 }
 
@@ -58,7 +58,7 @@ export async function PATCH(
     .eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+      return internalError("admin/organizers/[id]", error);
   }
 
   return NextResponse.json({ success: true, id, status });

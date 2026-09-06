@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdmin, getCurrentUser } from '@/lib/auth';
+import { internalError } from '@/lib/api-error';
 import { createClient } from '@supabase/supabase-js';
 
 const supabaseAdmin = createClient(
@@ -184,7 +185,7 @@ export async function PATCH(
     .eq('id', id);
 
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    return internalError("admin/organizers/visibility", updateError);
   }
 
   // Write audit log entries

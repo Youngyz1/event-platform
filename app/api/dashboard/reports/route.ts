@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDashboardApiContext } from '@/lib/dashboard-api';
 import { supabaseAdmin } from '@/lib/dashboard-context';
 import type { DailyPoint, NamedValue, TopEvent } from '@/app/dashboard/reports/DashboardCharts';
+import { enforceRateLimit } from '@/lib/rate-limit';
 
 function buildDateRange(days: number): string[] {
   const result: string[] = [];
@@ -51,6 +52,10 @@ export async function GET(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   const { organizerIds, userId } = auth.ctx;
+
+  // H2: multi-table aggregation scans — per-user budget.
+  const limited = await enforceRateLimit("dataExport", req, userId);
+  if (limited) return limited;
 
   const { sinceISO, dateRange } = resolveRange(req.nextUrl.searchParams);
 

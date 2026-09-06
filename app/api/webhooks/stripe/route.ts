@@ -26,6 +26,29 @@ function metadataUserId(meta: Stripe.Metadata) {
   return uuidPattern.test(meta.user_id || "") ? meta.user_id : null;
 }
 
+/**
+ * Obj2 sold-out remedy: refund a captured payment intent when fulfillment
+ * found no inventory. Idempotent per payment intent; failures only log so a
+ * retried delivery attempts the refund again.
+ */
+async function refundPaymentIntent(paymentIntentId: string) {
+  try {
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error("[webhook] CRITICAL: cannot refund — Stripe not configured:", paymentIntentId);
+      return;
+    }
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    await stripe.refunds.create({ payment_intent: paymentIntentId });
+    console.log("[webhook] Refunded sold-out ticket intent:", paymentIntentId);
+  } catch (err) {
+    console.error(
+      "[webhook] CRITICAL: refund failed for sold-out ticket intent:",
+      paymentIntentId,
+      err instanceof Error ? err.message : String(err)
+    );
+  }
+}
+
 export async function notifyOrganizerOfTicketPurchase(params: {
   eventId: string;
   buyerName: string;
@@ -354,7 +377,6 @@ async function handlePaymentIntentSucceeded(
 
     const qty = parseInt(meta.quantity) || 1;
     const totalAmount = parseFloat(meta.total_amount) || pi.amount / 100;
-
     // pi.charges is an expandable field — cast to avoid TS error on the unexpanded type
     const piAny = pi as unknown as Record<string, unknown>;
     const chargesList = piAny.charges as { data?: { billing_details?: { email?: string | null; name?: string | null } }[] } | undefined;
@@ -369,32 +391,44 @@ async function handlePaymentIntentSucceeded(
       firstCharge?.billing_details?.name ||
       "";
 
-    const { error: insertError } = await supabaseAdmin
-      .from("ticket_orders")
-      .insert({
-        event_id: meta.event_id,
-        ticket_id: meta.ticket_id || null,
-        seat_id: meta.seat_id || null,
-        seat_label: meta.seat_label || null,
-        buyer_email: recipientEmail,
-        buyer_name: recipientName || null,
-        quantity: qty,
-        total_amount: totalAmount,
-        currency: meta.currency ?? pi.currency ?? "usd",
-        qr_code,
-        status: "valid",
-        stripe_payment_intent_id: pi.id,
-      });
+    // Obj2: fulfillment is a single atomic RPC (idempotency check + inventory
+    // consume + order insert + seat sold in one transaction, migration_73).
+    // Duplicate deliveries serialize on the payment-intent advisory lock and
+    // short-circuit on the existing order — inventory is consumed exactly once.
+    const { data: fulfillment, error: fulfillmentError } = await supabaseAdmin.rpc(
+      "create_ticket_order_with_inventory",
+      {
+        p_event_id: meta.event_id,
+        p_ticket_id: meta.ticket_id || null,
+        p_seat_id: meta.seat_id || null,
+        p_seat_label: meta.seat_label || null,
+        p_buyer_email: recipientEmail,
+        p_buyer_name: recipientName || null,
+        p_quantity: qty,
+        p_total_amount: totalAmount,
+        p_currency: meta.currency ?? pi.currency ?? "usd",
+        p_qr_code: qr_code,
+        p_payment_intent_id: pi.id,
+      }
+    );
 
-    if (insertError) {
-      console.error("[webhook] ticket_orders insert error:", insertError.message);
+    if (fulfillmentError) {
+      console.error("[webhook] ticket fulfillment RPC error:", fulfillmentError.message);
+      return;
     }
 
-    if (meta.seat_id) {
-      await supabaseAdmin
-        .from("seats")
-        .update({ status: "sold", reserved_until: null })
-        .eq("id", meta.seat_id);
+    if ((fulfillment as { status?: string } | null)?.status === "exists") {
+      console.log("[webhook] Ticket order already fulfilled for intent:", pi.id);
+      return;
+    }
+
+    if ((fulfillment as { status?: string } | null)?.status === "sold_out") {
+      // Payment is captured but stock ran out: refund so no money is taken
+      // without a ticket. Retried deliveries re-reach this branch and retry
+      // the refund until it succeeds (idempotent by payment intent).
+      console.error("[webhook] CRITICAL: ticket sold out after capture, refunding intent:", pi.id);
+      await refundPaymentIntent(pi.id);
+      return;
     }
 
     if (recipientEmail) {
@@ -723,43 +757,40 @@ async function handleCheckoutSessionCompleted(
     return;
   }
 
-  const { data: existing } = await supabaseAdmin
-    .from("ticket_orders")
-    .select("id")
-    .eq("qr_code", qr_code)
-    .maybeSingle();
+  const sessionIntentId =
+    typeof session.payment_intent === "string" ? session.payment_intent : null;
 
-  if (existing) {
+  // Obj2: same atomic fulfillment RPC as the PaymentIntent path (migration_73).
+  const { data: sessionFulfillment, error: sessionFulfillmentError } =
+    await supabaseAdmin.rpc("create_ticket_order_with_inventory", {
+      p_event_id: event_id,
+      p_ticket_id: ticket_id || null,
+      p_seat_id: seat_id || null,
+      p_seat_label: seat_label || null,
+      p_buyer_email: buyer_email || session.customer_email || null,
+      p_buyer_name: buyer_name || null,
+      p_quantity: parseInt(quantity) || 1,
+      p_total_amount: parseFloat(total_amount) || (session.amount_total ?? 0) / 100,
+      p_currency: session.currency ?? "usd",
+      p_qr_code: qr_code,
+      p_payment_intent_id: sessionIntentId,
+      p_stripe_session_id: session.id,
+    });
+
+  if (sessionFulfillmentError) {
+    console.error("[webhook] ticket fulfillment RPC error:", sessionFulfillmentError.message);
+    return;
+  }
+
+  if ((sessionFulfillment as { status?: string } | null)?.status === "exists") {
     console.log("[webhook] Ticket order already exists for qr_code:", qr_code);
     return;
   }
 
-  const { error: insertError } = await supabaseAdmin.from("ticket_orders").insert({
-    event_id,
-    ticket_id: ticket_id || null,
-    seat_id: seat_id || null,
-    seat_label: seat_label || null,
-    buyer_email: buyer_email || session.customer_email || null,
-    buyer_name: buyer_name || null,
-    quantity: parseInt(quantity) || 1,
-    total_amount: parseFloat(total_amount) || (session.amount_total ?? 0) / 100,
-    currency: session.currency ?? "usd",
-    qr_code,
-    status: "valid",
-    stripe_session_id: session.id,
-    stripe_payment_intent_id:
-      typeof session.payment_intent === "string" ? session.payment_intent : null,
-  });
-
-  if (insertError) {
-    console.error("[webhook] ticket_orders insert error:", insertError.message);
-  }
-
-  if (seat_id) {
-    await supabaseAdmin
-      .from("seats")
-      .update({ status: "sold", reserved_until: null })
-      .eq("id", seat_id);
+  if ((sessionFulfillment as { status?: string } | null)?.status === "sold_out") {
+    console.error("[webhook] CRITICAL: ticket sold out after capture, refunding session:", session.id);
+    if (sessionIntentId) await refundPaymentIntent(sessionIntentId);
+    return;
   }
 
   const recipientEmail = buyer_email || session.customer_email;

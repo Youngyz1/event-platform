@@ -8,6 +8,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { NextRequest, NextResponse } from "next/server";
+import { internalError } from "@/lib/api-error";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -70,7 +71,7 @@ export async function PATCH(
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/reviews/[id]", error);
   }
 
   if (!data) {
@@ -99,7 +100,7 @@ export async function DELETE(
   const { error } = await supabaseAdmin.from("reviews").delete().eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/reviews/[id]", error);
   }
 
   return NextResponse.json({ success: true });

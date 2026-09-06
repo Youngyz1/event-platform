@@ -25,7 +25,7 @@ export async function POST(request) {
   } catch (err) {
     console.error('[PromotionEngine Cron] Failed to query promotion content:', err.message);
     return Response.json(
-      { success: false, error: `Failed to query promotion: ${err.message}` },
+      { success: false, error: "Something went wrong. Please try again." },
       { status: 500 }
     );
   }
@@ -49,7 +49,7 @@ export async function POST(request) {
     // generatePromotionCaption has a built-in fallback, but handle unexpected errors
     console.error('[PromotionEngine Cron] Caption generation failed:', err.message);
     return Response.json(
-      { success: false, error: `Caption generation failed: ${err.message}` },
+      { success: false, error: "Something went wrong. Please try again." },
       { status: 500 }
     );
   }
@@ -99,7 +99,7 @@ export async function POST(request) {
       } catch (fallbackErr) {
         console.error('[PromotionEngine Cron] Fallback publishing failed:', fallbackErr.message);
         return Response.json(
-          { success: false, error: `Failed posting fallback: ${fallbackErr.message}` },
+          { success: false, error: "Something went wrong. Please try again." },
           { status: 500 }
         );
       }
@@ -117,7 +117,7 @@ export async function POST(request) {
     } catch (err) {
       console.error('[PromotionEngine Cron] Publishing failed:', err.message);
       return Response.json(
-        { success: false, error: `Failed posting text: ${err.message}` },
+        { success: false, error: "Something went wrong. Please try again." },
         { status: 500 }
       );
     }

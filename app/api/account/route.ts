@@ -3,6 +3,8 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/dashboard-context";
 import { checkEventDeleteBlocked, checkFundraiserDeleteBlocked } from "@/lib/dashboard-delete";
 import { Resend } from "resend";
+import { enforceRateLimit } from "@/lib/rate-limit";
+import { internalError } from "@/lib/api-error";
 
 export async function DELETE(req: NextRequest) {
   const supabase = await createSupabaseServer();
@@ -13,6 +15,10 @@ export async function DELETE(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // H2: destructive account action — tight per-user budget.
+  const limited = await enforceRateLimit("accountAction", req, user.id);
+  if (limited) return limited;
 
   let body;
   try {
@@ -43,7 +49,7 @@ export async function DELETE(req: NextRequest) {
     .eq("user_id", user.id);
 
   if (orgError) {
-    return NextResponse.json({ error: orgError.message }, { status: 500 });
+    return internalError("account", orgError);
   }
 
   const organizerIds = (organizers ?? []).map((o) => o.id);
@@ -99,7 +105,7 @@ export async function DELETE(req: NextRequest) {
     .eq("id", user.id);
 
   if (profileError) {
-    return NextResponse.json({ error: profileError.message }, { status: 500 });
+    return internalError("account", profileError);
   }
 
   if (organizerIds.length > 0) {

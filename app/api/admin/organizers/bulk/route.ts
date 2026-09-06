@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { isAdmin } from '@/lib/auth';
+import { internalError } from '@/lib/api-error';
 import { supabaseAdmin } from '@/lib/admin-data';
 
 type OrganizerStatus = 'pending' | 'verified' | 'rejected' | 'suspended';
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
     .in('id', ids);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/organizers/bulk", error);
   }
 
   return NextResponse.json({ success: true, updated: ids.length, status });

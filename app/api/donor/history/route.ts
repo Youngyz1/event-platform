@@ -1,6 +1,7 @@
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { getDonorStats } from "@/lib/donor-stats";
 import { NextResponse } from "next/server";
+import { internalError } from "@/lib/api-error";
 
 export async function GET() {
   try {
@@ -16,7 +17,6 @@ export async function GET() {
     const stats = await getDonorStats(user.id);
     return NextResponse.json({ stats });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Failed to load donor history.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("donor/history", err);
   }
 }

@@ -8,6 +8,7 @@ import { isAdmin } from '@/lib/auth';
 import { parsePageParams, type DateFilter } from '@/lib/admin-query';
 import { queryOrganizers } from '@/lib/admin-data';
 import type { OrganizerSort } from '@/types/admin-management';
+import { internalError } from '@/lib/api-error';
 
 const VALID_SORTS: OrganizerSort[] = [
   'newest',
@@ -52,7 +53,6 @@ export async function GET(req: NextRequest) {
       total_pages: result.total_pages,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to load organizers.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("admin/organizers", err);
   }
 }

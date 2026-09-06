@@ -5,6 +5,7 @@ import { createSupabaseServer } from "@/lib/supabase-server";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSiteUrl } from "@/lib/site-url";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { internalError } from "@/lib/api-error";
 
 /**
  * Invites a beneficiary to claim their profile.
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
     .eq("id", beneficiaryId);
 
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    return internalError("beneficiary/invite", updateError);
   }
 
   const claimUrl = `${getSiteUrl().replace(/\/$/, "")}/beneficiary/claim/${token}`;
@@ -197,10 +198,7 @@ export async function POST(req: NextRequest) {
       `,
     });
   } catch (err) {
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Could not send the invite email." },
-      { status: 500 }
-    );
+    return internalError("beneficiary/invite", err);
   }
 
   return NextResponse.json({ ok: true, emailed: true });

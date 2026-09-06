@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { parsePageParams } from '@/lib/admin-query';
 import { getDashboardApiContext } from '@/lib/dashboard-api';
 import { queryDashboardFundraisers } from '@/lib/dashboard-data';
+import { internalError } from '@/lib/api-error';
 
 export async function GET(req: NextRequest) {
   const auth = await getDashboardApiContext();
@@ -31,7 +32,6 @@ export async function GET(req: NextRequest) {
       total_pages: result.total_pages,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Failed to load fundraisers.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("dashboard/fundraisers", err);
   }
 }

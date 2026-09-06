@@ -15,7 +15,7 @@ export default function DashboardError({
         <p className="text-4xl font-black text-brand-600">Oops</p>
         <h2 className="mt-3 text-xl font-black">Dashboard failed to load</h2>
         <p className="mt-2 text-zinc-500 text-sm leading-6">
-          {error.message || "Something went wrong loading your dashboard. Please try again."}
+          Something went wrong loading your dashboard. Please try again.
         </p>
         {error.digest && (
           <p className="mt-1 text-xs text-zinc-400 font-mono">

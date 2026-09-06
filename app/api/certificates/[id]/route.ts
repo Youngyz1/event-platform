@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { generateCertificatePdf } from "@/lib/certificate";
+import {
+  isPaidDonationStatus,
+  isStripePaymentIntentId,
+  isStripeSessionId,
+  safeEqual,
+} from "@/lib/certificate-auth";
+import { enforceRateLimit } from "@/lib/rate-limit";
+import Stripe from "stripe";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -22,15 +30,24 @@ export async function GET(
       return NextResponse.json({ error: "Invalid donation ID." }, { status: 400 });
     }
 
-    // Retrieve donation
+    // H2: PDF generation is CPU-heavy and guest access is unauthenticated.
+    const limited = await enforceRateLimit("documentFetch", request);
+    if (limited) return limited;
+
+    // Retrieve donation (status-gated: certificates are proof of PAYMENT)
     const { data: donation, error: donError } = await supabaseAdmin
       .from("donations")
-      .select("id, donor_name, donor_email, amount, currency, created_at, payment_intent_id, fundraiser_id")
+      .select("id, donor_name, donor_email, amount, currency, created_at, payment_intent_id, fundraiser_id, status")
       .eq("id", id)
       .single();
 
     if (donError || !donation) {
       return NextResponse.json({ error: "Donation not found." }, { status: 404 });
+    }
+
+    // H5: unpaid/unverified donations never receive payment certificates.
+    if (!isPaidDonationStatus(donation.status)) {
+      return NextResponse.json({ error: "Access denied." }, { status: 403 });
     }
 
     // Retrieve fundraiser
@@ -51,19 +68,51 @@ export async function GET(
       organizer = org;
     }
 
-    // Authorization Check
+    // Authorization Check (H5: a predictable donation ID is NEVER sufficient —
+    // the `donation.id`-as-bearer clause was removed).
     let authorized = false;
 
-    // Check 1: paymentId / session_id in query params (for guests right after checkout)
+    // Check 1: guest access right after checkout, verified server-side.
+    // - Stripe checkout (session_id): session retrieved from Stripe, payment
+    //   intent must match (same pattern as /api/receipts/[id]).
+    // - Stripe inline (paymentId=pi_*): intent retrieved from Stripe, must be
+    //   succeeded and must match.
+    // - Crypto (opaque NOWPayments invoice id): constant-time equality against
+    //   the stored payment_intent_id. The id is server-generated per payment
+    //   and paired with the random donation UUID in the path; both are needed.
     const sp = request.nextUrl.searchParams;
-    const queryPaymentId = sp.get("paymentId") || sp.get("session_id");
+    const queryPaymentId = sp.get("paymentId");
+    const querySessionId = sp.get("session_id");
 
-    if (
-      queryPaymentId &&
-      ((donation.payment_intent_id && queryPaymentId === donation.payment_intent_id) ||
-        queryPaymentId === donation.id)
-    ) {
-      authorized = true;
+    if (querySessionId && process.env.STRIPE_SECRET_KEY) {
+      try {
+        const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+        const session = await stripe.checkout.sessions.retrieve(querySessionId);
+        const stripePi =
+          typeof session.payment_intent === "string" ? session.payment_intent : session.id;
+        if (stripePi && donation.payment_intent_id && stripePi === donation.payment_intent_id) {
+          authorized = true;
+        }
+        } catch {
+          console.error("[certificates] Stripe session verification failed");
+        }
+    }
+
+    if (!authorized && queryPaymentId && donation.payment_intent_id) {
+      if (isStripePaymentIntentId(queryPaymentId) && process.env.STRIPE_SECRET_KEY) {
+        try {
+          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+          const pi = await stripe.paymentIntents.retrieve(queryPaymentId);
+          if (pi.id === donation.payment_intent_id && pi.status === "succeeded") {
+            authorized = true;
+          }
+        } catch {
+          console.error("[certificates] Stripe intent verification failed");
+        }
+      } else if (!isStripePaymentIntentId(queryPaymentId) && !isStripeSessionId(queryPaymentId)) {
+        // Non-Stripe (crypto) opaque payment identifier.
+        authorized = safeEqual(queryPaymentId, donation.payment_intent_id);
+      }
     }
 
     // Check 2: Authenticated user

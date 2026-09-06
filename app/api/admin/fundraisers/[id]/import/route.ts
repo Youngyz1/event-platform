@@ -14,6 +14,7 @@ import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { isAdmin } from "@/lib/auth";
+import { internalError } from "@/lib/api-error";
 import { recalculateFundraiserRaised } from "@/lib/donations";
 import { parseDonorsPaste, parseCommentsPaste } from "@/lib/fundraiser-import";
 
@@ -58,7 +59,7 @@ export async function POST(
     .select("id")
     .eq("id", id)
     .maybeSingle();
-  if (frError) return NextResponse.json({ error: frError.message }, { status: 500 });
+  if (frError) return internalError("admin/fundraisers/import", frError);
   if (!fundraiser) return NextResponse.json({ error: "Fundraiser not found." }, { status: 404 });
 
   // Pre-import duplicate check: if >= 30% of pasted rows match existing donations, return warning unless confirmed
@@ -130,7 +131,7 @@ export async function POST(
       const chunk = donorPayload.slice(i, i + chunkSize);
       const { error } = await supabaseAdmin.from("donations").insert(chunk);
       if (error) {
-        return NextResponse.json({ error: `Donation import failed: ${error.message}` }, { status: 500 });
+        return internalError("admin/fundraisers/import", error);
       }
     }
   }
@@ -153,7 +154,7 @@ export async function POST(
       const chunk = commentPayload.slice(i, i + chunkSize);
       const { error } = await supabaseAdmin.from("comments").insert(chunk);
       if (error) {
-        return NextResponse.json({ error: `Comment import failed: ${error.message}` }, { status: 500 });
+        return internalError("admin/fundraisers/import", error);
       }
     }
   }

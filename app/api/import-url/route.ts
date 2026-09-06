@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { normalizeImageUrl } from "@/lib/image-url";
 import { safeFetchHtml, SsrfBlockedError } from "@/lib/ssrf-guard";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { internalError } from "@/lib/api-error";
 
 type JsonValue =
   | string
@@ -265,7 +266,6 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Could not import this URL.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("import-url", err);
   }
 }

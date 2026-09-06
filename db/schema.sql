@@ -1,6 +1,13 @@
 
 
 
+-- STALE SNAPSHOT / DO NOT DEPLOY AS-IS (C3).
+-- Predates the migration_53_security_hardening + migration_71_follows_privacy
+-- RLS fixes; contains USING (true) SELECT policies that the canonical
+-- db/migration_* chain intentionally removed (see docs/database-migrations.md
+-- section 3). Canonical history: db/migration_01_*.sql ... db/migration_71_*.sql.
+-- After any snapshot restore, apply the full migration chain.
+
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;

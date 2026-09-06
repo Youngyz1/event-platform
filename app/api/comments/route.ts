@@ -1,7 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
+import { internalError } from "@/lib/api-error";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { createNotification } from "@/lib/notifications";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -68,7 +70,7 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("comments", error);
   }
 
   const comments = data || [];
@@ -186,6 +188,10 @@ export async function POST(request: NextRequest) {
   const postDonationFlow = payload.type === "fundraiser" && Boolean(payload.fundraiser_id);
   const currentUserId = await getCurrentUserId();
 
+  // H2: anonymous posting allowed → key on user when known, else IP.
+  const limited = await enforceRateLimit("commentPost", request, currentUserId);
+  if (limited) return limited;
+
   if (!isTargetType(targetType) || !uuidPattern.test(targetId)) {
     return NextResponse.json({ error: "Invalid comment target." }, { status: 400 });
   }
@@ -263,8 +269,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "This fundraiser no longer exists." }, { status: 404 });
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unable to verify fundraiser.";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return internalError("comments/target", error);
   }
 
   const { data, error } = await supabaseAdmin
@@ -282,7 +287,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("comments", error);
   }
 
   const { data: profile } = data.user_id

@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { internalError } from "@/lib/api-error";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { supabaseAdmin } from "@/lib/dashboard-context";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   const supabase = await createSupabaseServer();
   const {
     data: { user },
@@ -11,6 +13,10 @@ export async function POST() {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  // H2: same tight budget as the delete side.
+  const limited = await enforceRateLimit("accountAction", req, user.id);
+  if (limited) return limited;
 
   // Fetch user profile to verify pending deletion
   const { data: profile, error: profileErr } = await supabaseAdmin
@@ -39,7 +45,7 @@ export async function POST() {
     .eq("id", user.id);
 
   if (updateProfileError) {
-    return NextResponse.json({ error: updateProfileError.message }, { status: 500 });
+    return internalError("account/recover", updateProfileError);
   }
 
   // Fetch organizers owned by user

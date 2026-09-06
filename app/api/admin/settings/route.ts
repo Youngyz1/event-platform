@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isAdmin, getCurrentUser } from "@/lib/auth";
+import { internalError } from "@/lib/api-error";
 import { PLATFORM_SETTING_KEYS, PLATFORM_SETTING_KEY_SET } from "@/types/platform-settings";
 
 const supabaseAdmin = createClient(
@@ -27,7 +28,7 @@ export async function GET() {
     .order("key");
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/settings", error);
   }
 
   return NextResponse.json({ settings: data ?? [] });
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
     .upsert(rows, { onConflict: "key" });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/settings", error);
   }
 
   return NextResponse.json({ success: true, count: rows.length });

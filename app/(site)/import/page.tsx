@@ -119,21 +119,6 @@ function buildPreviewRows(rows: CsvRow[], firstRowNumber: number) {
   }));
 }
 
-const optionalImportFields = ["source_url"];
-
-function isMissingOptionalImportColumn(message: string) {
-  const normalized = message.toLowerCase();
-  return optionalImportFields.some((field) => normalized.includes(field));
-}
-
-function omitOptionalImportFields<T extends Record<string, unknown>>(row: T) {
-  const copy = { ...row };
-  optionalImportFields.forEach((field) => {
-    delete copy[field];
-  });
-  return copy;
-}
-
 function exampleCsv() {
   return `${fundraiserColumns.join(",")}\nCommunity School Fund,Help build a local school,20000,Community Future Initiative,https://example.com/banner.jpg,,https://example.com/fundraiser`;
 }
@@ -274,47 +259,69 @@ function ImportClient() {
     });
   }
 
-  async function importFundraisers(userId: string) {
+  async function importFundraisers() {
     if (!organizerId) {
       throw new Error("Create or select an organizer profile before importing fundraisers.");
     }
 
-    const slugs = validRows.map((row) => generateSlug(row.data.title));
-    const { data: existingFundraisers } = await supabase
-      .from("fundraisers")
-      .select("slug")
-      .in("slug", slugs);
+    // Obj1: every row is created through POST /api/fundraisers, which
+    // authenticates, validates organizer ownership, enforces slug uniqueness,
+    // and sanitizes the story server-side. No direct Supabase story writes
+    // remain in this flow (trigger + renderer stay as defense-in-depth).
+    // Rows are sent sequentially so per-row outcomes stay attributable and a
+    // malicious row cannot affect any other row.
+    let imported = 0;
+    let skipped = 0;
+    const failed: string[] = [];
 
-    const existingSlugs = new Set((existingFundraisers ?? []).map((fundraiser) => fundraiser.slug));
-    const rowsToImport = validRows.filter((row) => !existingSlugs.has(generateSlug(row.data.title)));
-
-    const payload = rowsToImport.map((row) => ({
-      title: row.data.title,
-      slug: generateSlug(row.data.title),
-      story: row.data.story,
-      goal: Number(row.data.goal),
-      raised: 0,
-      organizer: row.data.organizer || "",
-      banner: row.data.banner || "",
-      video_url: row.data.video_url || null,
-      user_id: userId,
-      organizer_id: organizerId,
-      source_url: row.data.source_url || null,
-      category: row.data.category || "Other",
-    }));
-
-    if (payload.length > 0) {
-      const { error: insertError } = await supabase.from("fundraisers").insert(payload);
-      if (insertError && isMissingOptionalImportColumn(insertError.message)) {
-        const payloadWithoutSource = payload.map((row) => omitOptionalImportFields(row));
-        const { error: retryError } = await supabase.from("fundraisers").insert(payloadWithoutSource);
-        if (retryError) throw new Error(retryError.message);
-      } else if (insertError) {
-        throw new Error(insertError.message);
+    for (const row of validRows) {
+      let res: Response;
+      try {
+        res = await fetch("/api/fundraisers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: row.data.title,
+            slug: generateSlug(row.data.title),
+            story: row.data.story || "",
+            goal: Number(row.data.goal),
+            raised: 0,
+            organizer: row.data.organizer || "",
+            organizer_id: organizerId,
+            banner: row.data.banner || "",
+            video_url: row.data.video_url || null,
+            source_url: row.data.source_url || null,
+            category: row.data.category || "Other",
+          }),
+        });
+      } catch {
+        failed.push(`row ${row.rowNumber}: network error`);
+        continue;
       }
+
+      if (res.status === 409) {
+        skipped += 1;
+        continue;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        failed.push(`row ${row.rowNumber}: ${data?.error || "import failed"}`);
+        continue;
+      }
+
+      imported += 1;
     }
 
-    return { imported: payload.length, skipped: validRows.length - rowsToImport.length };
+    if (failed.length > 0) {
+      throw new Error(
+        `Imported ${imported} fundraiser${imported === 1 ? "" : "s"}. ` +
+        `Skipped ${skipped} duplicate${skipped === 1 ? "" : "s"}. ` +
+        `${failed.length} failed (${failed.slice(0, 3).join("; ")}${failed.length > 3 ? "; …" : ""}).`
+      );
+    }
+
+    return { imported, skipped };
   }
 
   async function handleImport() {
@@ -346,7 +353,7 @@ function ImportClient() {
         throw new Error("There are no valid rows to import.");
       }
 
-      const result = await importFundraisers(session.user.id);
+      const result = await importFundraisers();
 
       setMessage(`Imported ${result.imported} fundraisers. Skipped ${result.skipped} duplicate row${result.skipped === 1 ? "" : "s"}.`);
       setPreviewRows([]);

@@ -5,20 +5,17 @@
  */
 
 import Link from "next/link";
-import { headers } from "next/headers";
 import { requireAdmin } from "@/lib/auth";
 import { ReactNode } from "react";
 import { AdminSidebarNav, AdminMobileNav } from "./AdminSidebarNav";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  // proxy.ts already verifies admin role for every /admin/* request and
-  // marks it with this header — skip the redundant Supabase round-trip on
-  // that (expected) path. If the header is ever missing, fall back to the
-  // full check so a non-admin can never slip through.
-  const headerList = await headers();
-  if (headerList.get("x-admin-verified") !== "1") {
-    await requireAdmin();
-  }
+  // H6: admin authorization is always verified server-side here via
+  // requireAdmin() (session + database role). A previous optimization trusted
+  // a proxy-set request header to skip this check; any client-influenced
+  // header must never grant privileges, so the dependency was removed
+  // entirely. proxy.ts still gates /admin/* as defense-in-depth.
+  await requireAdmin();
 
   return (
     <div className="flex min-h-screen bg-zinc-100 text-zinc-950 lg:pl-64">

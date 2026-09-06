@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { createSupabaseServer } from "@/lib/supabase-server";
 
 /**
@@ -27,6 +28,10 @@ export async function POST(req: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
+
+  // H2: same budget as submissions (one verification flow).
+  const limited = await enforceRateLimit("verificationSubmit", req, user.id);
+  if (limited) return limited;
 
   let body: {
     verificationId?: string;
@@ -89,8 +94,9 @@ export async function POST(req: NextRequest) {
     .maybeSingle();
 
   if (error) {
-    // Not your verification, or it is no longer editable.
-    return NextResponse.json({ error: error.message }, { status: 403 });
+    // Not your verification, or it is no longer editable. Generic message.
+    console.error("[verification/document] attach failed");
+    return NextResponse.json({ error: "Could not attach document." }, { status: 403 });
   }
   if (!data) {
     return NextResponse.json({ error: "Could not attach document." }, { status: 403 });

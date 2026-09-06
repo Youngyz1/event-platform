@@ -2,6 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
+import { internalError } from "@/lib/api-error";
+import { sanitizePlainText, sanitizeRichTextHtml } from "@/lib/sanitize-html";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,10 +24,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Authentication required." }, { status: 401 });
   }
 
+  // H2: owner edits are cheap but unbounded automation is not.
+  const limited = await enforceRateLimit("fundraiserUpdate", request, user.id);
+  if (limited) return limited;
+
   const payload = await request.json().catch(() => null);
   const fundraiserId = cleanText(payload?.fundraiser_id);
-  const title = cleanText(payload?.title);
-  const content = cleanText(payload?.content);
+  // C2: server-side sanitization before persistence. The client editor
+  // validates links, but any caller can POST here directly, so raw HTML must
+  // never reach the database. Titles are plain text; content keeps the shared
+  // rich-text allow-list (dangerous schemes/attributes removed).
+  const title = sanitizePlainText(payload?.title, 200);
+  const content = sanitizeRichTextHtml(payload?.content);
 
   if (!uuidPattern.test(fundraiserId)) {
     return NextResponse.json({ error: "Invalid fundraiser." }, { status: 400 });
@@ -44,7 +55,7 @@ export async function POST(request: NextRequest) {
     .maybeSingle();
 
   if (fundraiserError) {
-    return NextResponse.json({ error: fundraiserError.message }, { status: 500 });
+    return internalError("fundraiser-updates", fundraiserError);
   }
 
   if (!fundraiser) {
@@ -62,7 +73,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (organizerError) {
-      return NextResponse.json({ error: organizerError.message }, { status: 500 });
+      return internalError("fundraiser-updates/org", organizerError);
     }
 
     owns = Boolean(organizer);
@@ -84,7 +95,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("fundraiser-updates", error);
   }
 
   return NextResponse.json({ update: data }, { status: 201 });

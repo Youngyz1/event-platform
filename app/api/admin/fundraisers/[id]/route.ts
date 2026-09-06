@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 import { isAdmin } from '@/lib/auth';
+import { internalError } from '@/lib/api-error';
 import { createNotification } from '@/lib/notifications';
 
 // Service role: bypasses RLS — admin operations only
@@ -84,7 +85,7 @@ export async function PATCH(
     .eq('id', id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return internalError("admin/fundraisers/[id]", error);
   }
 
   // A status change flips a campaign's public visibility, so bust the cached

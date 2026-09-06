@@ -36,6 +36,45 @@ export const RATE_LIMITS = {
    * comments while reading a campaign is normal behaviour.
    */
   commentLike: { limit: 60, windowSeconds: 3600 },
+
+  /**
+   * H2 — abuse-sensitive budgets. All enforced server-side via the same
+   * Postgres-backed limiter (multi-instance safe). Authenticated callers are
+   * keyed on user id; anonymous callers fall back to IP. Webhooks, cron, and
+   * internal server-to-server flows are deliberately NOT limited here — they
+   * authenticate via provider signatures / shared secrets and must stay
+   * reliable under retry storms.
+   */
+  /** NOWPayments invoice creation + pending-row insert (card-testing analogue). */
+  cryptoPayment: { limit: 10, windowSeconds: 600 },
+  /** Public comment posting (anonymous allowed) — spam. */
+  commentPost: { limit: 20, windowSeconds: 3600 },
+  /** Review posting (auth) — spam. */
+  reviewPost: { limit: 10, windowSeconds: 3600 },
+  /** Follow/unfollow toggles (auth, each may insert + notify). */
+  followToggle: { limit: 30, windowSeconds: 3600 },
+  /** Fundraiser creation (auth) — spam/fraud campaigns. */
+  fundraiserCreate: { limit: 5, windowSeconds: 3600 },
+  /** Fundraiser + update edits (auth, owner-scoped). */
+  fundraiserUpdate: { limit: 30, windowSeconds: 3600 },
+  /** Verification/identity submission + documents (auth, reviewer labor). */
+  verificationSubmit: { limit: 10, windowSeconds: 3600 },
+  /** Beneficiary claim attempts (auth, guessable tokens). */
+  beneficiaryClaim: { limit: 10, windowSeconds: 3600 },
+  /** Unauthenticated geocoding egress. */
+  geocode: { limit: 100, windowSeconds: 3600 },
+  /** Crypto status polling (each miss hits the NOWPayments API). */
+  statusPoll: { limit: 60, windowSeconds: 3600 },
+  /** Receipt/certificate/document fetch (Stripe API + PDF CPU per call). */
+  documentFetch: { limit: 30, windowSeconds: 3600 },
+  /** Outbound media fetch + storage write (auth). */
+  mediaImport: { limit: 20, windowSeconds: 3600 },
+  /** GoFundMe sync (outbound fetch + writes, auth). */
+  gofundmeSync: { limit: 10, windowSeconds: 3600 },
+  /** CSV/dashboard data exports (expensive scans, auth). */
+  dataExport: { limit: 30, windowSeconds: 3600 },
+  /** Destructive account actions: delete + recover (auth). */
+  accountAction: { limit: 5, windowSeconds: 3600 },
 } as const;
 
 export type RateLimitName = keyof typeof RATE_LIMITS;

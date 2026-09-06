@@ -17,7 +17,7 @@ interface ProfileSidebarProps {
 export default function ProfileSidebar({ metrics, children, className }: ProfileSidebarProps) {
   return (
     <aside className={cn("hidden space-y-5 lg:sticky lg:top-24 lg:block lg:self-start", className)}>
-      <ProfileMetrics metrics={metrics} layout="sidebar" />
+      <ProfileMetrics metrics={metrics} />
       {children}
     </aside>
   );

@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { generateReceiptPdf } from "@/lib/receipt";
 import { fetchVerificationFacts } from "@/lib/verification-facts";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import Stripe from "stripe";
 
 const supabaseAdmin = createClient(
@@ -22,6 +23,10 @@ export async function GET(
   if (!UUID_PATTERN.test(id)) {
     return NextResponse.json({ error: "Invalid receipt ID." }, { status: 400 });
   }
+
+  // H2: same document-fetch budget as certificates/lookup.
+  const limited = await enforceRateLimit("documentFetch", request);
+  if (limited) return limited;
 
   // Retrieve donation
   const { data: donation, error: donError } = await supabaseAdmin

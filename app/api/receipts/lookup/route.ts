@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { fetchVerificationFacts } from "@/lib/verification-facts";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -9,6 +10,10 @@ const supabaseAdmin = createClient(
 );
 
 export async function GET(request: NextRequest) {
+  // H2: each call can hit the Stripe API — per-IP budget.
+  const limited = await enforceRateLimit("documentFetch", request);
+  if (limited) return limited;
+
   const sp = request.nextUrl.searchParams;
   const sessionId = sp.get("session_id");
   const paymentIntentId = sp.get("payment_intent_id");
