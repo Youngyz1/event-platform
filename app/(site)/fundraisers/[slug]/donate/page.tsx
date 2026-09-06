@@ -1,7 +1,79 @@
+import type { Metadata } from "next";
 import { createSupabaseAdmin } from "@/lib/supabase-admin";
 import { notFound } from "next/navigation";
 import { getVisitorCountry } from "@/lib/request-geo";
+import { getSiteUrl } from "@/lib/site-url";
+import { safeImageSrc } from "@/lib/image-url";
+import { truncateWords, stripHtml, cleanTitle } from "@/lib/text";
 import DonatePage from "./DonatePage";
+
+// The parent `/fundraisers/[slug]` page owns the campaign's share tags. This
+// checkout sub-view intentionally re-emits them (canonical + og:url point at
+// the parent) so a shared /donate URL still unfurls as the campaign instead
+// of falling back to the site-wide homepage tags from the root layout.
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+
+  let fundraiser: {
+    title: string;
+    slug: string;
+    story: string | null;
+    banner: string | null;
+    image_url: string | null;
+  } | null = null;
+  try {
+    const adminSupabase = createSupabaseAdmin();
+    const { data } = await adminSupabase
+      .from("fundraisers")
+      .select("title, slug, story, banner, image_url")
+      .eq("slug", slug)
+      .maybeSingle();
+    fundraiser = data;
+  } catch {
+    fundraiser = null;
+  }
+
+  const siteUrl = getSiteUrl().replace(/\/$/, "");
+  const parentUrl = `${siteUrl}/fundraisers/${slug}`;
+  const cleanName = fundraiser?.title
+    ? cleanTitle(fundraiser.title)
+    : "Fundraiser";
+  const title = `Donate to ${cleanName} — Fund4Good`;
+  const rawStory = fundraiser?.story ? stripHtml(fundraiser.story) : "";
+  const description = rawStory
+    ? truncateWords(rawStory, 160)
+    : `Support ${cleanName} on Fund4Good.`;
+  const coverImage = safeImageSrc(
+    fundraiser?.image_url || fundraiser?.banner
+  );
+  const image = coverImage ?? `${siteUrl}/og-image.jpg`;
+
+  return {
+    metadataBase: new URL(siteUrl),
+    title,
+    description,
+    alternates: {
+      canonical: parentUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: parentUrl,
+      siteName: "Fund4Good",
+      images: [{ url: image, alt: cleanName }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
+}
 
 export default async function FundraiserDonatePage({
   params,

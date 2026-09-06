@@ -20,7 +20,7 @@ import { notFound } from "next/navigation";
 import { Flag, Zap, HeartHandshake, ShieldCheck } from "lucide-react";
 import FundraiserFloatingActions, { ShareFundraiserButton } from "./FundraiserActions";
 import StarRating from "@/components/StarRating";
-import { safeImageSrc, normalizeImageUrl } from "@/lib/image-url";
+import { safeImageSrc } from "@/lib/image-url";
 import { jsonLdScriptValue } from "@/lib/structured-data";
 import { money } from "@/lib/format";
 import { calculateFundraisingPercentage } from "@/lib/fundraising-progress";
@@ -48,6 +48,9 @@ export async function generateMetadata({
   const { slug } = await params;
   const fundraiser = await getFundraiserBySlug(slug);
 
+  const siteUrl = getSiteUrl().replace(/\/$/, "");
+  const pageUrl = `${siteUrl}/fundraisers/${slug}`;
+
   const rawTitle = fundraiser?.title || "Fundraiser";
   const cleanFundraiserTitle = cleanTitle(rawTitle);
   const title = `${cleanFundraiserTitle} — Fund4Good`;
@@ -56,34 +59,41 @@ export async function generateMetadata({
   const rawStory = fundraiser?.story ? stripHtml(fundraiser.story) : "";
   const description = rawStory
     ? truncateWords(rawStory, 160)
-    : `${raised} raised of ${goal} goal. Support this fundraiser on Fund4Good.`;
-  // Use the auto-generated live-data campaign card (opengraph-image.tsx),
-  // same as the hero-carousel share-card slide and FundraiserShare's
-  // preview — not the raw banner photo, so social previews always show
-  // current raised/goal/percentage rather than just the cover image.
-  const image = fundraiser
-    ? `${getSiteUrl()}/fundraisers/${fundraiser.slug}/opengraph-image`
-    : normalizeImageUrl(null, "/og-image.jpg");
+    : `${raised} raised of ${goal} goal. Support this fundraiser on Fund4Good`;
+  // NOTE: og:image previously pointed at this segment's `opengraph-image.tsx`
+  // file-convention route (`/fundraisers/[slug]/opengraph-image`). Because this
+  // segment lives under the `(site)` route group, Next.js serves that file at
+  // a hashed public URL (`/fundraisers/[slug]/opengraph-image-<hash>` — see
+  // `getMetadataRouteSuffix` in next/dist/lib/metadata/get-metadata-route.js),
+  // so the un-suffixed URL in the tag 404'd and every share showed no image.
+  // Point at the campaign's own cover photo instead: a real, absolute,
+  // publicly-accessible image URL, falling back to the site-wide OG image.
+  // Both resolve to absolute URLs (via metadataBase below) so scrapers
+  // (WhatsApp/iMessage/Slack/FB, which don't execute JS) can fetch them.
+  const coverImage = fundraiser
+    ? safeImageSrc(fundraiser.image_url || fundraiser.banner)
+    : null;
+  const image = coverImage ?? `${siteUrl}/og-image.jpg`;
 
   return {
-    metadataBase: new URL("https://www.fund4agoodcause.com"),
+    metadataBase: new URL(siteUrl),
     title,
     description,
     alternates: {
-      canonical: `https://www.fund4agoodcause.com/fundraisers/${slug}`,
+      canonical: pageUrl,
     },
     openGraph: {
       title,
       description,
-      url: `https://www.fund4agoodcause.com/fundraisers/${slug}`,
+      url: pageUrl,
       siteName: "Fund4Good",
-      ...(image ? { images: [{ url: image, width: 1200, height: 630, alt: cleanFundraiserTitle }] } : {}),
+      images: [{ url: image, alt: cleanFundraiserTitle }],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      ...(image ? { images: [image] } : {}),
+      images: [image],
     },
   };
 }
